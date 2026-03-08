@@ -408,6 +408,19 @@
         <button class="range-chip active" onclick="setRange('week',this)">שבועי</button>
         <button class="range-chip" onclick="setRange('month',this)">חודשי</button>
         <button class="range-chip" onclick="setRange('custom',this)">טווח מותאם</button>
+        <button class="range-chip" onclick="setRange('all',this)">הכל</button>
+    </div>
+
+    <div id="dash-week-nav" class="card" style="margin-bottom:10px;">
+        <div class="week-picker">
+            <button onclick="changeDashWeek(-1)">&#8594;</button>
+            <div class="week-display" id="dash-week-display">--</div>
+            <button onclick="changeDashWeek(1)">&#8592;</button>
+        </div>
+    </div>
+
+    <div id="dash-month-nav" class="card" style="display:none;margin-bottom:10px;">
+        <div class="form-group" style="margin-bottom:0;"><input type="month" id="dash-month-picker" onchange="loadDashboard()"></div>
     </div>
 
     <div id="custom-range" style="display:none;" class="card">
@@ -497,6 +510,7 @@ let db = null;
 let currentUser = null; // { name, isAdmin }
 let currentWeekStart = getWeekStart(new Date());
 let dashRange = 'week';
+let dashWeekStart = getWeekStart(new Date());
 let editingReportId = null;
 
 const TEAM_CATEGORIES = {
@@ -613,6 +627,7 @@ function showScreen(name) {
     } else if (name === 'dashboard') {
         document.getElementById('screen-dashboard').classList.add('active');
         document.getElementById('nav-dash').classList.add('active');
+        updateDashWeekDisplay();
         loadDashboard();
     } else if (name === 'payment') {
         document.getElementById('screen-payment').classList.add('active');
@@ -954,15 +969,17 @@ function editReportFromDash(personName, weekIdx) {
 }
 
 function getDateRange() {
-    const now = new Date();
     if (dashRange === 'week') {
-        const ws = getWeekStart(now);
+        const ws = dashWeekStart;
         const we = new Date(ws); we.setDate(we.getDate()+6);
         return {from: getWeekKey(ws), to: getWeekKey(we)};
     } else if (dashRange === 'month') {
-        const y=now.getFullYear(), m=now.getMonth();
-        const from = new Date(y,m,1), to = new Date(y,m+1,0);
-        return {from: getWeekKey(from), to: getWeekKey(to)};
+        const mv = document.getElementById('dash-month-picker').value;
+        if (!mv) { const now=new Date(); return {from: getWeekKey(new Date(now.getFullYear(),now.getMonth(),1)), to: getWeekKey(new Date(now.getFullYear(),now.getMonth()+1,0))}; }
+        const [y,m] = mv.split('-').map(Number);
+        return {from: getWeekKey(new Date(y,m-1,1)), to: getWeekKey(new Date(y,m,0))};
+    } else if (dashRange === 'all') {
+        return {from: '2020-01-01', to: '2099-12-31'};
     } else {
         return {from: document.getElementById('range-from').value, to: document.getElementById('range-to').value};
     }
@@ -972,8 +989,29 @@ function setRange(r, btn) {
     dashRange = r;
     document.querySelectorAll('.range-chip').forEach(c=>c.classList.remove('active'));
     btn.classList.add('active');
+    document.getElementById('dash-week-nav').style.display = r==='week' ? 'block' : 'none';
+    document.getElementById('dash-month-nav').style.display = r==='month' ? 'block' : 'none';
     document.getElementById('custom-range').style.display = r==='custom' ? 'block' : 'none';
+    if (r==='week') updateDashWeekDisplay();
+    if (r==='month' && !document.getElementById('dash-month-picker').value) {
+        const now=new Date(); document.getElementById('dash-month-picker').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    }
     loadDashboard();
+}
+
+function changeDashWeek(delta) {
+    dashWeekStart = new Date(dashWeekStart);
+    dashWeekStart.setDate(dashWeekStart.getDate() + delta*7);
+    updateDashWeekDisplay();
+    loadDashboard();
+}
+
+function updateDashWeekDisplay() {
+    const end = new Date(dashWeekStart); end.setDate(end.getDate()+6);
+    const greg = `${formatDate(dashWeekStart)} - ${formatDate(end)}`;
+    const hs = getHebrewDate(dashWeekStart), he = getHebrewDate(end);
+    const heb = (hs && he) ? `${hs} - ${he}` : '';
+    document.getElementById('dash-week-display').innerHTML = greg + (heb ? `<br><span style="font-size:0.8rem;color:var(--primary-lighter);font-weight:500;">${heb}</span>` : '');
 }
 
 // (Report detail is now inline in team cards)
