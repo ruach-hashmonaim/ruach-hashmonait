@@ -381,7 +381,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="dash-filter-card">
         <div class="date-range-bar">
             <select id="dash-filter-person" onchange="loadDashboard()">
                 <option value="">כל אנשי הצוות</option>
@@ -405,8 +405,8 @@
         <div class="dash-stat"><div class="number" id="dash-lessons">0</div><div class="label">שיעורי חוסן</div></div>
     </div>
 
-    <div style="margin-bottom:14px;">
-        <button class="btn-ai" onclick="generateAISummary()">✨ סיכום AI לתקופה</button>
+    <div style="margin-bottom:14px;" id="dash-ai-btn">
+        <button class="btn-ai" onclick="generateAISummary()">סיכום AI לתקופה</button>
     </div>
     <div id="ai-summary-container"></div>
 
@@ -703,7 +703,14 @@ function resetForm() {
 // ============================================================
 async function loadDashboard() {
     if (!db) return;
-    const filterPerson = document.getElementById('dash-filter-person').value;
+    const isAdmin = currentUser && currentUser.isAdmin;
+
+    // Show/hide admin-only elements
+    document.getElementById('dash-filter-card').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('dash-ai-btn').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('dash-scope-label').textContent = isAdmin ? '(כל הצוות)' : `(${currentUser.name})`;
+
+    const filterPerson = isAdmin ? document.getElementById('dash-filter-person').value : '';
     let reports = [];
     showLoading(true);
 
@@ -714,7 +721,7 @@ async function loadDashboard() {
     } catch(e) { console.error(e); showLoading(false); return; }
 
     // Filter by person (non-admin only sees self)
-    if (!currentUser.isAdmin) {
+    if (!isAdmin) {
         reports = reports.filter(r => r.person === currentUser.name);
     } else if (filterPerson) {
         reports = reports.filter(r => r.person === filterPerson);
@@ -731,7 +738,13 @@ async function loadDashboard() {
     const avgH = catA.length ? Math.round(catA.reduce((s,r)=>s+(r.totalHours||0),0)/catA.length) : 0;
     const catC = reports.find(r => r.category==='c');
     document.getElementById('dash-total').textContent = reports.length;
-    document.getElementById('dash-pending').textContent = Math.max(0, ALL_TEAM.length - reports.length);
+    // "Pending" only makes sense for admin; for regular user show 0 or hide
+    if (isAdmin) {
+        document.getElementById('dash-pending').textContent = Math.max(0, ALL_TEAM.length - reports.length);
+        document.getElementById('dash-pending').parentElement.style.display = '';
+    } else {
+        document.getElementById('dash-pending').parentElement.style.display = 'none';
+    }
     document.getElementById('dash-hours-avg').textContent = avgH;
     document.getElementById('dash-lessons').textContent = catC ? catC.lessonsCount||0 : 0;
 
