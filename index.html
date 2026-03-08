@@ -117,6 +117,43 @@
         .badge-ok { background: #EBF5EE; color: var(--success); }
         .badge-warn { background: #FFF3E0; color: var(--warning); }
         .badge-admin { background: #EDE7F6; color: #5E35B1; }
+        .badge-none { background: #FFEBEE; color: var(--danger); }
+
+        /* TEAM CARDS */
+        .team-card { background: white; border-radius: var(--radius); border: 1.5px solid var(--border); margin-bottom: 10px; overflow: hidden; transition: all 0.2s; }
+        .team-card.expanded { border-color: var(--primary-lighter); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .team-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; transition: background 0.2s; }
+        .team-card-header:hover { background: #FAFAF8; }
+        .team-card-left { display: flex; align-items: center; gap: 12px; }
+        .team-card-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; color: white; }
+        .team-card-avatar.cat-a { background: var(--primary); }
+        .team-card-avatar.cat-b { background: #5E35B1; }
+        .team-card-avatar.cat-c { background: #E07C24; }
+        .team-card-avatar.cat-d { background: #C0392B; }
+        .team-card-info h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+        .team-card-info .role { font-size: 0.78rem; color: var(--text-secondary); }
+        .team-card-right { display: flex; align-items: center; gap: 10px; }
+        .team-card-arrow { font-size: 0.9rem; color: var(--text-secondary); transition: transform 0.3s; }
+        .team-card.expanded .team-card-arrow { transform: rotate(180deg); }
+        .team-card-metrics { display: flex; gap: 6px; flex-wrap: wrap; }
+        .mini-metric { padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; background: #f0f0f0; color: var(--text-secondary); white-space: nowrap; }
+        .mini-metric.met { background: #EBF5EE; color: var(--success); }
+        .mini-metric.unmet { background: #FFF3E0; color: var(--warning); }
+        .team-card-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+        .team-card.expanded .team-card-body { display: block; padding-top: 14px; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .detail-item { background: #FAFAF8; border-radius: var(--radius-sm); padding: 10px 12px; border: 1px solid #eee; }
+        .detail-item .di-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; margin-bottom: 2px; }
+        .detail-item .di-value { font-size: 1rem; font-weight: 700; color: var(--primary); }
+        .detail-item .di-target { font-size: 0.7rem; color: var(--text-secondary); }
+        .qual-section { margin-top: 10px; }
+        .qual-item { margin-bottom: 8px; }
+        .qual-item .qi-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
+        .qual-item .qi-value { font-size: 0.88rem; background: #FAFAF8; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid #eee; white-space: pre-wrap; line-height: 1.5; }
+        .week-tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+        .week-tab { padding: 4px 10px; border: 1px solid var(--border); border-radius: 14px; cursor: pointer; font-size: 0.75rem; font-family: inherit; background: white; transition: all 0.2s; }
+        .week-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        @media (max-width: 480px) { .detail-grid { grid-template-columns: 1fr; } .team-card-metrics { display: none; } }
 
         /* DETAIL FIELDS */
         .report-detail-field { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #f0ede7; }
@@ -410,12 +447,7 @@
     </div>
     <div id="ai-summary-container"></div>
 
-    <div id="dash-reports-list"></div>
-
-    <div id="report-detail" style="display:none;">
-        <button class="back-btn" onclick="closeReportDetail()">→ חזרה לרשימה</button>
-        <div class="card" id="report-detail-content"></div>
-    </div>
+    <div id="dash-team-cards"></div>
 </div>
 
 <!-- ============ PAYMENT SCREEN ============ -->
@@ -760,22 +792,165 @@ async function loadDashboard() {
     document.getElementById('dash-hours-avg').textContent = avgH;
     document.getElementById('dash-lessons').textContent = catC ? catC.lessonsCount||0 : 0;
 
-    // Render list
-    const listEl = document.getElementById('dash-reports-list');
-    document.getElementById('report-detail').style.display = 'none';
+    // Group reports by person
+    const byPerson = {};
+    reports.forEach(r => { if (!byPerson[r.person]) byPerson[r.person]=[]; byPerson[r.person].push(r); });
+
+    window._dashReports = reports;
+    const listEl = document.getElementById('dash-team-cards');
     document.getElementById('dash-stats').style.display = 'grid';
 
     if (!reports.length) { listEl.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>אין דיווחים להצגה</p></div>'; showLoading(false); return; }
 
-    listEl.innerHTML = reports.map((r,i) => {
-        let bc='badge-ok', bt='תקין';
-        if (r.targets) { const met=Object.values(r.targets).every(t=>t.met); if(!met){bc='badge-warn';bt='חלקי';} }
-        const editBtn = currentUser.isAdmin ? `<span class="edit-badge" onclick="event.stopPropagation();editReport(${i})">ערוך</span>` : '';
-        return `<div class="report-item" onclick="showReportDetail(${i})"><div class="info"><div class="name">${r.person}</div><div class="date">${r.weekDisplay||r.weekStart} · ${CATEGORY_NAMES[r.category]||''}</div></div>${editBtn}<span class="badge ${bc}">${bt}</span></div>`;
-    }).join('');
+    // Build team cards — one per person
+    const teamOrder = isAdmin ? ALL_TEAM : [currentUser.name];
+    let cardsHTML = '';
+    teamOrder.forEach(name => {
+        const pReports = byPerson[name] || [];
+        const cat = getPersonCategory(name);
+        if (!cat) return;
+        const initials = name.replace('הרב ','').split(' ').map(w=>w[0]).join('');
+        const hasReport = pReports.length > 0;
+        const latestR = pReports[0]; // already sorted by timestamp desc
 
-    window._dashReports = reports;
+        // Build mini metrics for header
+        let metricsHTML = '';
+        let statusBadge = '';
+        if (!hasReport) {
+            statusBadge = '<span class="badge badge-none">לא דיווח</span>';
+        } else if (cat === 'a' && latestR) {
+            const t = latestR.targets || {};
+            metricsHTML += miniM('שעות', latestR.totalHours, 18, t.hours?.met);
+            metricsHTML += miniM('ימים', latestR.presenceDays?.length, 3, t.days?.met);
+            metricsHTML += miniM('לימוד', latestR.teachingHours, 3, t.teaching?.met);
+            metricsHTML += miniM('שיחות', latestR.personalConversations, null, null);
+            statusBadge = t.hours?.met && t.days?.met && t.teaching?.met ? '<span class="badge badge-ok">תקין</span>' : '<span class="badge badge-warn">חלקי</span>';
+        } else if (cat === 'b' && latestR) {
+            metricsHTML += miniM('ליווי', latestR.accompanyHours, null, null);
+            metricsHTML += miniM('סיורים', latestR.fieldVisits, null, null);
+            statusBadge = '<span class="badge badge-ok">דיווח</span>';
+        } else if (cat === 'c' && latestR) {
+            metricsHTML += miniM('שיעורים', latestR.lessonsCount, 15, latestR.targets?.lessons?.met);
+            statusBadge = '<span class="badge badge-ok">דיווח</span>';
+        } else if (cat === 'd') {
+            statusBadge = '<span class="badge badge-ok">דיווח</span>';
+        }
+
+        // Build expandable body with week tabs + detail
+        let bodyHTML = '';
+        if (pReports.length > 0) {
+            bodyHTML += `<div class="week-tabs" id="wtabs-${name.replace(/\s/g,'')}">`;
+            pReports.forEach((r,wi) => {
+                bodyHTML += `<button class="week-tab ${wi===0?'active':''}" onclick="switchWeekTab('${name.replace(/'/g,"\\'")}',${wi},this)">${r.weekDisplay||r.weekStart}</button>`;
+            });
+            bodyHTML += '</div>';
+            bodyHTML += `<div id="wdetail-${name.replace(/\s/g,'')}">${renderReportBody(pReports[0], cat)}</div>`;
+            if (currentUser.isAdmin) {
+                bodyHTML += `<div style="margin-top:10px;"><button class="btn-secondary btn-sm" onclick="editReportFromDash('${name.replace(/'/g,"\\'")}',0)">ערוך דיווח</button></div>`;
+            }
+        } else {
+            bodyHTML = '<div style="padding:10px;color:var(--text-secondary);text-align:center;">אין דיווחים בתקופה הנבחרת</div>';
+        }
+
+        cardsHTML += `<div class="team-card" id="tc-${name.replace(/\s/g,'')}">
+            <div class="team-card-header" onclick="toggleTeamCard('${name.replace(/\s/g,'')}')">
+                <div class="team-card-left">
+                    <div class="team-card-avatar cat-${cat}">${initials}</div>
+                    <div class="team-card-info"><h3>${name}</h3><div class="role">${CATEGORY_NAMES[cat]} · ${pReports.length} דיווחים</div></div>
+                </div>
+                <div class="team-card-right">
+                    <div class="team-card-metrics">${metricsHTML}</div>
+                    ${statusBadge}
+                    <span class="team-card-arrow">▼</span>
+                </div>
+            </div>
+            <div class="team-card-body">${bodyHTML}</div>
+        </div>`;
+    });
+    listEl.innerHTML = cardsHTML;
     showLoading(false);
+}
+
+function miniM(label, val, target, met) {
+    let cls = 'mini-metric';
+    if (met === true) cls += ' met';
+    else if (met === false) cls += ' unmet';
+    const tStr = target ? ` / ${target}` : '';
+    return `<span class="${cls}">${label}: ${val||0}${tStr}</span>`;
+}
+
+function renderReportBody(r, cat) {
+    if (!r) return '';
+    let h = '';
+    if (cat === 'a') {
+        h += '<div class="detail-grid">';
+        h += detailItem('שעות פעילות', r.totalHours, 'יעד: 18', r.targets?.hours?.met);
+        h += detailItem('ימי נוכחות', (r.presenceDays||[]).join(', ') || '—', 'יעד: 3', r.targets?.days?.met);
+        h += detailItem('שעות לימוד', r.teachingHours, 'יעד: 3-4', r.targets?.teaching?.met);
+        h += detailItem('שעות ת"ש', r.tashHours, 'יעד: 2', r.targets?.tash?.met);
+        h += detailItem('שיחות אישיות', r.personalConversations, 'יעד חודשי: 16');
+        h += '</div>';
+        h += qualSection([['הערות כמותיות', r.quantNotes], ['נושאי לימוד', r.topics], ['אווירה ומצב רוח', r.mood], ['דילמות/אתגרים', r.challenges], ['הערות נוספות', r.notes]]);
+    } else if (cat === 'b') {
+        h += '<div class="detail-grid">';
+        h += detailItem('שעות ליווי ר"מים', r.accompanyHours);
+        h += detailItem('סיורי שטח', r.fieldVisits);
+        h += detailItem('שעות הדרכת חתנים', r.groomHours);
+        h += detailItem('שעות מקרי קצה', r.edgeCaseHours);
+        h += '</div>';
+        h += qualSection([['הערות כמותיות', r.quantNotes], ['תובנות מסיורים', r.insights], ['סטטוס חתנים', r.groomStatus], ['אתגרים רוחביים', r.fieldChallenges], ['הערות נוספות', r.notes]]);
+    } else if (cat === 'c') {
+        h += '<div class="detail-grid">';
+        h += detailItem('שיעורי חוסן', r.lessonsCount, 'יעד: ~15', r.targets?.lessons?.met);
+        h += detailItem('מחלקות', r.deptsText || '—');
+        h += '</div>';
+        h += qualSection([['הערות כמותיות', r.quantNotes], ['נושאים שהועברו', r.topics], ['מדד חוסן ורוח', r.resilience], ['הערות נוספות', r.notes]]);
+    } else if (cat === 'd') {
+        h += qualSection([['ניהול אסטרטגי', r.strategic], ['פגישות וישיבות', r.meetings], ['סטטוס מול צבא', r.armyStatus], ['תוכניות ליווי', r.programs], ['עמידה ביעדים', r.goals], ['הערות נוספות', r.notes]]);
+    }
+    return h;
+}
+
+function detailItem(label, value, target, met) {
+    let statusDot = '';
+    if (met === true) statusDot = '<span class="metric-status green"></span>';
+    else if (met === false) statusDot = '<span class="metric-status red"></span>';
+    return `<div class="detail-item"><div class="di-label">${label} ${statusDot}</div><div class="di-value">${value || '—'}</div>${target ? `<div class="di-target">${target}</div>` : ''}</div>`;
+}
+
+function qualSection(items) {
+    const filled = items.filter(([,v]) => v && v.trim());
+    if (!filled.length) return '';
+    let h = '<div class="qual-section">';
+    filled.forEach(([label, value]) => {
+        h += `<div class="qual-item"><div class="qi-label">${label}</div><div class="qi-value">${value}</div></div>`;
+    });
+    h += '</div>';
+    return h;
+}
+
+function toggleTeamCard(id) {
+    const el = document.getElementById('tc-' + id);
+    if (el) el.classList.toggle('expanded');
+}
+
+function switchWeekTab(personName, weekIdx, btn) {
+    const pReports = (window._dashReports||[]).filter(r => r.person === personName);
+    const r = pReports[weekIdx]; if (!r) return;
+    const cat = getPersonCategory(personName);
+    const cleanId = personName.replace(/\s/g,'');
+    // Update active tab
+    const tabs = document.querySelectorAll(`#wtabs-${cleanId} .week-tab`);
+    tabs.forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    // Update detail
+    document.getElementById(`wdetail-${cleanId}`).innerHTML = renderReportBody(r, cat);
+}
+
+function editReportFromDash(personName, weekIdx) {
+    const pReports = (window._dashReports||[]).filter(r => r.person === personName);
+    const globalIdx = window._dashReports.indexOf(pReports[weekIdx]);
+    if (globalIdx >= 0) editReport(globalIdx);
 }
 
 function getDateRange() {
@@ -801,68 +976,7 @@ function setRange(r, btn) {
     loadDashboard();
 }
 
-// ============================================================
-// REPORT DETAIL
-// ============================================================
-function showReportDetail(idx) {
-    const r = window._dashReports[idx]; if (!r) return;
-    document.getElementById('dash-reports-list').style.display = 'none';
-    document.getElementById('dash-stats').style.display = 'none';
-    document.getElementById('report-detail').style.display = 'block';
-
-    let h = `<div class="card-title"><div class="icon">👤</div>${r.person} — ${r.weekDisplay||r.weekStart}</div>`;
-    h += df('סוג דיווח', CATEGORY_NAMES[r.category]);
-
-    if (r.category==='a') {
-        h += df('סה"כ שעות פעילות', r.totalHours, r.targets?.hours);
-        h += df('ימי נוכחות', (r.presenceDays||[]).join(', '), r.targets?.days);
-        h += df('נוכחות בשעות לימוד', r.teachingHours, r.targets?.teaching);
-        h += df('שעות ת"ש', r.tashHours, r.targets?.tash);
-        h += df('שיחות אישיות', r.personalConversations);
-        h += df('הערות כמותיות', r.quantNotes);
-        h += df('נושאי לימוד', r.topics);
-        h += df('אווירה ומצב רוח', r.mood);
-        h += df('דילמות/אתגרים', r.challenges);
-        h += df('הערות נוספות', r.notes);
-    } else if (r.category==='b') {
-        h += df('שעות ליווי ר"מים', r.accompanyHours);
-        h += df('סיורי שטח', r.fieldVisits);
-        h += df('שעות הדרכת חתנים', r.groomHours);
-        h += df('שעות מקרי קצה', r.edgeCaseHours);
-        h += df('הערות כמותיות', r.quantNotes);
-        h += df('תובנות מסיורים', r.insights);
-        h += df('סטטוס הדרכת חתנים', r.groomStatus);
-        h += df('אתגרים רוחביים', r.fieldChallenges);
-        h += df('הערות נוספות', r.notes);
-    } else if (r.category==='c') {
-        h += df('כמות שיעורי חוסן', r.lessonsCount, r.targets?.lessons);
-        h += df('מחלקות שקיבלו מענה', r.deptsText);
-        h += df('הערות כמותיות', r.quantNotes);
-        h += df('נושאים שהועברו', r.topics);
-        h += df('מדד חוסן ורוח', r.resilience);
-        h += df('הערות נוספות', r.notes);
-    } else if (r.category==='d') {
-        h += df('ניהול אסטרטגי', r.strategic);
-        h += df('פגישות וישיבות', r.meetings);
-        h += df('סטטוס מול צבא/חוץ', r.armyStatus);
-        h += df('תוכניות ליווי', r.programs);
-        h += df('עמידה ביעדים', r.goals);
-        h += df('הערות נוספות', r.notes);
-    }
-    document.getElementById('report-detail-content').innerHTML = h;
-}
-
-function df(label, value, target) {
-    let ind = '';
-    if (target) { ind = (target.met ? '<span class="metric-status green"></span>' : '<span class="metric-status red"></span>') + ` <span style="font-size:0.73rem;color:var(--text-secondary);">(יעד: ${target.target})</span>`; }
-    return `<div class="report-detail-field"><div class="field-label">${label} ${ind}</div><div class="field-value">${value || '<span style="color:#ccc;">לא מולא</span>'}</div></div>`;
-}
-
-function closeReportDetail() {
-    document.getElementById('report-detail').style.display = 'none';
-    document.getElementById('dash-reports-list').style.display = 'block';
-    document.getElementById('dash-stats').style.display = 'grid';
-}
+// (Report detail is now inline in team cards)
 
 // ============================================================
 // EDIT REPORT (ADMIN)
