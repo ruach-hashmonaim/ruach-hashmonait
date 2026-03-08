@@ -490,13 +490,12 @@ function initApp() {
 
 async function initDefaultUsers() {
     try {
-        const snap = await db.collection('users').limit(1).get();
-        if (snap.empty) {
-            const batch = db.batch();
-            for (const [name, data] of Object.entries(DEFAULT_USERS)) {
-                batch.set(db.collection('users').doc(name), data);
+        // Ensure all default users exist (add missing ones without overwriting existing)
+        for (const [name, data] of Object.entries(DEFAULT_USERS)) {
+            const doc = await db.collection('users').doc(name).get();
+            if (!doc.exists) {
+                await db.collection('users').doc(name).set(data);
             }
-            await batch.commit();
         }
     } catch(e) { console.warn('Users init:', e); }
 }
