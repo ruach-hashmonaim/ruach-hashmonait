@@ -161,6 +161,11 @@
 
         .empty-state { text-align: center; padding: 30px 20px; color: var(--text-secondary); }
         .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+        /* FOOTER */
+        .footer { text-align: center; padding: 20px 16px 30px; margin-top: 20px; border-top: 1px solid var(--border); }
+        .footer-logo { height: 32px; margin-bottom: 6px; opacity: 0.8; }
+        .footer-text { font-size: 0.72rem; color: var(--text-secondary); }
         .back-btn { background: none; border: none; color: var(--primary); font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; padding: 6px 0; }
 
         .edit-badge { background: var(--accent); color: var(--primary); padding: 3px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; margin-right: auto; cursor: pointer; }
@@ -213,6 +218,7 @@
                 <label>בחר שם</label>
                 <select id="login-name">
                     <option value="">-- בחר איש צוות --</option>
+                    <option value="יצחק">יצחק (מנהל)</option>
                     <option value="הרב דוד אורבך">הרב דוד אורבך</option>
                     <option value="הרב מנחם וולך">הרב מנחם וולך</option>
                     <option value="הרב יאיר שילוני">הרב יאיר שילוני</option>
@@ -425,6 +431,12 @@
     <div id="payment-result"></div>
 </div>
 
+<!-- FOOTER -->
+<div class="footer">
+    <img class="footer-logo" src="https://raw.githubusercontent.com/itzhak-iab/ruach-hashmonait/main/iab-logo.png" alt="IAB" onerror="this.style.display='none'">
+    <div class="footer-text">פותח ע"י IAB — Smart AI Solutions</div>
+</div>
+
 </div><!-- /container -->
 
 <script>
@@ -460,6 +472,7 @@ const CATEGORY_NAMES = { 'a':'ר"מ פלוגתי', 'b':'מפקח ומלווה', 
 const DEFAULT_USERS = {};
 ALL_TEAM.forEach(n => DEFAULT_USERS[n] = { pin: '1234', isAdmin: false });
 DEFAULT_USERS['הרב משה דוד רוטמן'].isAdmin = true;
+DEFAULT_USERS['יצחק'] = { pin: '123456', isAdmin: true };
 
 // ============================================================
 // INIT
