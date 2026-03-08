@@ -861,7 +861,7 @@ async function loadDashboard() {
             bodyHTML += '</div>';
             bodyHTML += `<div id="wdetail-${name.replace(/\s/g,'')}">${renderReportBody(pReports[0], cat)}</div>`;
             if (currentUser.isAdmin) {
-                bodyHTML += `<div style="margin-top:10px;"><button class="btn-secondary btn-sm" onclick="editReportFromDash('${name.replace(/'/g,"\\'")}',0)">ערוך דיווח</button></div>`;
+                bodyHTML += `<div style="margin-top:10px;" id="wedit-${name.replace(/\s/g,'')}"><button class="btn-secondary btn-sm" onclick="editReportFromDash('${name.replace(/'/g,"\\'")}',0)">ערוך דיווח זה</button></div>`;
             }
         } else {
             bodyHTML = '<div style="padding:10px;color:var(--text-secondary);text-align:center;">אין דיווחים בתקופה הנבחרת</div>';
@@ -960,12 +960,72 @@ function switchWeekTab(personName, weekIdx, btn) {
     btn.classList.add('active');
     // Update detail
     document.getElementById(`wdetail-${cleanId}`).innerHTML = renderReportBody(r, cat);
+    // Update edit button to point to this week
+    const editDiv = document.getElementById(`wedit-${cleanId}`);
+    if (editDiv) {
+        editDiv.innerHTML = `<button class="btn-secondary btn-sm" onclick="editReportFromDash('${personName.replace(/'/g,"\\'")}',${weekIdx})">ערוך דיווח זה</button>`;
+    }
 }
 
 function editReportFromDash(personName, weekIdx) {
     const pReports = (window._dashReports||[]).filter(r => r.person === personName);
-    const globalIdx = window._dashReports.indexOf(pReports[weekIdx]);
-    if (globalIdx >= 0) editReport(globalIdx);
+    const r = pReports[weekIdx]; if (!r) return;
+
+    editingReportId = r.id;
+    const cat = r.category;
+
+    // Show correct form
+    ['form-a','form-b','form-c','form-d'].forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById('form-' + cat).style.display = 'block';
+    document.getElementById('submit-area').style.display = 'block';
+    document.getElementById('person-type-indicator').style.display = 'block';
+    document.getElementById('person-type-text').textContent = `עריכת דיווח: ${r.person} — ${CATEGORY_NAMES[cat]}`;
+    document.getElementById('btn-submit').textContent = 'עדכן דיווח';
+
+    // Populate fields
+    if (cat==='a') {
+        document.getElementById('a-hours').value = r.totalHours||'';
+        document.querySelectorAll('#a-days .day-chip').forEach(c=>c.classList.remove('selected'));
+        (r.presenceDays||[]).forEach(d => { const chip = document.querySelector(`#a-days [data-day="${d}"]`); if(chip) chip.classList.add('selected'); });
+        document.getElementById('a-teaching-hours').value = r.teachingHours||'';
+        document.getElementById('a-tash-hours').value = r.tashHours||'';
+        document.getElementById('a-conversations').value = r.personalConversations||'';
+        document.getElementById('a-quant-notes').value = r.quantNotes||'';
+        document.getElementById('a-topics').value = r.topics||'';
+        document.getElementById('a-mood').value = r.mood||'';
+        document.getElementById('a-challenges').value = r.challenges||'';
+        document.getElementById('a-notes').value = r.notes||'';
+    } else if (cat==='b') {
+        document.getElementById('b-accompany-hours').value = r.accompanyHours||'';
+        document.getElementById('b-field-visits').value = r.fieldVisits||'';
+        document.getElementById('b-groom-hours').value = r.groomHours||'';
+        document.getElementById('b-edge-cases').value = r.edgeCaseHours||'';
+        document.getElementById('b-quant-notes').value = r.quantNotes||'';
+        document.getElementById('b-insights').value = r.insights||'';
+        document.getElementById('b-groom-status').value = r.groomStatus||'';
+        document.getElementById('b-field-challenges').value = r.fieldChallenges||'';
+        document.getElementById('b-notes').value = r.notes||'';
+    } else if (cat==='c') {
+        document.getElementById('c-lessons-count').value = r.lessonsCount||'';
+        document.getElementById('c-depts-text').value = r.deptsText||'';
+        document.getElementById('c-quant-notes').value = r.quantNotes||'';
+        document.getElementById('c-topics').value = r.topics||'';
+        document.getElementById('c-resilience').value = r.resilience||'';
+        document.getElementById('c-notes').value = r.notes||'';
+    } else if (cat==='d') {
+        document.getElementById('d-strategic').value = r.strategic||'';
+        document.getElementById('d-meetings').value = r.meetings||'';
+        document.getElementById('d-army-status').value = r.armyStatus||'';
+        document.getElementById('d-programs').value = r.programs||'';
+        document.getElementById('d-goals').value = r.goals||'';
+        document.getElementById('d-notes').value = r.notes||'';
+    }
+
+    // Set week and user context for save
+    currentWeekStart = new Date(r.weekStart + 'T00:00:00');
+    updateWeekDisplay();
+    currentUser = { name: r.person, isAdmin: true };
+    showScreen('home');
 }
 
 function getDateRange() {
@@ -1014,73 +1074,7 @@ function updateDashWeekDisplay() {
     document.getElementById('dash-week-display').innerHTML = greg + (heb ? `<br><span style="font-size:0.8rem;color:var(--primary-lighter);font-weight:500;">${heb}</span>` : '');
 }
 
-// (Report detail is now inline in team cards)
-
-// ============================================================
-// EDIT REPORT (ADMIN)
-// ============================================================
-function editReport(idx) {
-    if (!currentUser.isAdmin) return;
-    const r = window._dashReports[idx];
-    editingReportId = r.id;
-
-    // Switch to the right form temporarily
-    const origUser = currentUser.name;
-    const cat = r.category;
-
-    ['form-a','form-b','form-c','form-d'].forEach(id => document.getElementById(id).style.display = 'none');
-    document.getElementById('form-' + cat).style.display = 'block';
-    document.getElementById('submit-area').style.display = 'block';
-    document.getElementById('person-type-indicator').style.display = 'block';
-    document.getElementById('person-type-text').textContent = `עריכת דיווח: ${r.person} — ${CATEGORY_NAMES[cat]}`;
-    document.getElementById('btn-submit').textContent = 'עדכן דיווח';
-
-    // Populate fields
-    if (cat==='a') {
-        document.getElementById('a-hours').value = r.totalHours||'';
-        (r.presenceDays||[]).forEach(d => { const chip = document.querySelector(`#a-days [data-day="${d}"]`); if(chip) chip.classList.add('selected'); });
-        document.getElementById('a-teaching-hours').value = r.teachingHours||'';
-        document.getElementById('a-tash-hours').value = r.tashHours||'';
-        document.getElementById('a-conversations').value = r.personalConversations||'';
-        document.getElementById('a-quant-notes').value = r.quantNotes||'';
-        document.getElementById('a-topics').value = r.topics||'';
-        document.getElementById('a-mood').value = r.mood||'';
-        document.getElementById('a-challenges').value = r.challenges||'';
-        document.getElementById('a-notes').value = r.notes||'';
-    } else if (cat==='b') {
-        document.getElementById('b-accompany-hours').value = r.accompanyHours||'';
-        document.getElementById('b-field-visits').value = r.fieldVisits||'';
-        document.getElementById('b-groom-hours').value = r.groomHours||'';
-        document.getElementById('b-edge-cases').value = r.edgeCaseHours||'';
-        document.getElementById('b-quant-notes').value = r.quantNotes||'';
-        document.getElementById('b-insights').value = r.insights||'';
-        document.getElementById('b-groom-status').value = r.groomStatus||'';
-        document.getElementById('b-field-challenges').value = r.fieldChallenges||'';
-        document.getElementById('b-notes').value = r.notes||'';
-    } else if (cat==='c') {
-        document.getElementById('c-lessons-count').value = r.lessonsCount||'';
-        document.getElementById('c-depts-text').value = r.deptsText||'';
-        document.getElementById('c-quant-notes').value = r.quantNotes||'';
-        document.getElementById('c-topics').value = r.topics||'';
-        document.getElementById('c-resilience').value = r.resilience||'';
-        document.getElementById('c-notes').value = r.notes||'';
-    } else if (cat==='d') {
-        document.getElementById('d-strategic').value = r.strategic||'';
-        document.getElementById('d-meetings').value = r.meetings||'';
-        document.getElementById('d-army-status').value = r.armyStatus||'';
-        document.getElementById('d-programs').value = r.programs||'';
-        document.getElementById('d-goals').value = r.goals||'';
-        document.getElementById('d-notes').value = r.notes||'';
-    }
-
-    // Set the week
-    currentWeekStart = new Date(r.weekStart + 'T00:00:00');
-    updateWeekDisplay();
-
-    // Temporarily set currentUser to the report's person for collectFormData
-    currentUser = { name: r.person, isAdmin: true };
-    showScreen('home');
-}
+// (Edit report is handled by editReportFromDash above)
 
 // ============================================================
 // AI SUMMARY
