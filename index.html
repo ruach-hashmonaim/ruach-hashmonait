@@ -479,7 +479,7 @@ const CATEGORY_NAMES = { 'a':'ר"מ פלוגתי', 'b':'מפקח ומלווה', 
 // Default passwords — admin can change in Firestore
 const DEFAULT_USERS = {};
 ALL_TEAM.forEach(n => DEFAULT_USERS[n] = { pin: '1234', isAdmin: false });
-DEFAULT_USERS['הרב משה דוד רוטמן'].isAdmin = true;
+DEFAULT_USERS['הרב משה דוד רוטמן'] = { pin: '123456', isAdmin: true };
 DEFAULT_USERS['יצחק'] = { pin: '123456', isAdmin: true };
 
 // ============================================================
@@ -498,11 +498,15 @@ function initApp() {
 
 async function initDefaultUsers() {
     try {
-        // Ensure all default users exist (add missing ones without overwriting existing)
         for (const [name, data] of Object.entries(DEFAULT_USERS)) {
             const doc = await db.collection('users').doc(name).get();
             if (!doc.exists) {
                 await db.collection('users').doc(name).set(data);
+            } else {
+                // Sync pin & admin status for admin users
+                if (data.isAdmin) {
+                    await db.collection('users').doc(name).update({ pin: data.pin, isAdmin: true });
+                }
             }
         }
     } catch(e) { console.warn('Users init:', e); }
