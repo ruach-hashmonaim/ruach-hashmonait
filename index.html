@@ -420,15 +420,23 @@
 
 <!-- ============ PAYMENT SCREEN ============ -->
 <div class="screen" id="screen-payment">
-    <h2 style="font-size:1.2rem;color:var(--primary);margin-bottom:14px;">הפקת דרישת תשלום — אנשים ביחד</h2>
+    <h2 style="font-size:1.2rem;color:var(--primary);margin-bottom:14px;">הפקת דו"ח ביצוע ודרישת תשלום</h2>
     <div class="card">
         <div class="card-title"><div class="icon">📄</div> פרמטרים</div>
         <div class="form-group"><label>חודש דיווח</label><input type="month" id="pay-month"></div>
-        <div class="form-group"><label>תעריף שעתי ר"מ פלוגתי (₪)</label><input type="number" id="pay-rate-rm" value="150" placeholder="150"></div>
-        <div class="form-group"><label>תעריף שיעור חוסן — הרב קריאף (₪)</label><input type="number" id="pay-rate-lesson" value="200" placeholder="200"></div>
-        <button class="btn-primary" onclick="generatePayment()" style="margin-top:8px;">הפק דרישת תשלום</button>
+        <div class="form-group"><label>סכום חודשי ר"מים פלוגתיים (₪)</label><input type="number" id="pay-rm-total" value="33000"></div>
+        <div class="form-group"><label>שכר חודשי — הרב רוטמן (₪)</label><input type="number" id="pay-rotman" value="15000"></div>
+        <div class="form-group"><label>שכר חודשי — הרב קליימן (₪)</label><input type="number" id="pay-kleiman" value="10000"></div>
+        <div class="form-group"><label>תעריף לשיעור חוסן — הרב קריאף (₪)</label><input type="number" id="pay-rate-lesson" value="170"></div>
+        <button class="btn-primary" onclick="generatePaymentPreview()" style="margin-top:8px;">תצוגה מקדימה</button>
     </div>
     <div id="payment-result"></div>
+    <div id="payment-actions" style="display:none;margin-top:10px;">
+        <div style="display:flex;gap:8px;">
+            <button class="btn-secondary" onclick="downloadPaymentDocx()" style="flex:1;">הורד Word (.docx)</button>
+            <button class="btn-secondary" onclick="printPaymentReport()" style="flex:1;">הדפס / PDF</button>
+        </div>
+    </div>
 </div>
 
 <!-- FOOTER -->
@@ -955,44 +963,331 @@ function generateAISummary() {
 }
 
 // ============================================================
-// PAYMENT
+// PAYMENT - דו"ח ביצוע ודרישת תשלום
 // ============================================================
-async function generatePayment() {
-    const month = document.getElementById('pay-month').value;
-    if (!month) { showToast('יש לבחור חודש'); return; }
-    const rateRM = parseFloat(document.getElementById('pay-rate-rm').value)||150;
-    const rateLesson = parseFloat(document.getElementById('pay-rate-lesson').value)||200;
+const HEB_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+function getMonthHeb(m) { const [y,mo] = m.split('-').map(Number); return `${HEB_MONTHS[mo-1]} ${y}`; }
 
-    showLoading(true);
+async function gatherPaymentData() {
+    const month = document.getElementById('pay-month').value;
+    if (!month) { showToast('יש לבחור חודש'); return null; }
+    const rmTotal = parseFloat(document.getElementById('pay-rm-total').value)||33000;
+    const rotmanSalary = parseFloat(document.getElementById('pay-rotman').value)||15000;
+    const kleimanSalary = parseFloat(document.getElementById('pay-kleiman').value)||10000;
+    const kriafRate = parseFloat(document.getElementById('pay-rate-lesson').value)||170;
+
     const [y,m] = month.split('-').map(Number);
     const from = new Date(y,m-1,1), to = new Date(y,m,0);
     const fromKey = getWeekKey(from), toKey = getWeekKey(to);
 
+    const snap = await db.collection('weekly-reports').orderBy('weekStart').get();
+    const reports = snap.docs.map(d=>d.data()).filter(r=>r.weekStart>=fromKey && r.weekStart<=toKey);
+    const byPerson = {};
+    reports.forEach(r => { if(!byPerson[r.person]) byPerson[r.person]=[]; byPerson[r.person].push(r); });
+
+    // Kriaf totals
+    const kriafReports = byPerson['הרב חיים קריאף'] || [];
+    const kriafLessons = kriafReports.reduce((s,r)=>s+(r.lessonsCount||0),0);
+    const kriafTotal = kriafLessons * kriafRate;
+    const kriafDepts = kriafReports.map(r=>r.deptsText).filter(Boolean).join(', ');
+
+    // Kleiman totals
+    const kleimanReports = byPerson['הרב יוחנן קליימן'] || [];
+    const kleimanHours = { accompany: kleimanReports.reduce((s,r)=>s+(r.accompanyHours||0),0), field: kleimanReports.reduce((s,r)=>s+(r.fieldVisits||0),0), groom: kleimanReports.reduce((s,r)=>s+(r.groomHours||0),0), edge: kleimanReports.reduce((s,r)=>s+(r.edgeCaseHours||0),0) };
+
+    const grandTotal = rmTotal + rotmanSalary + kleimanSalary + kriafTotal;
+
+    return { month, monthHeb: getMonthHeb(month), rmTotal, rotmanSalary, kleimanSalary, kriafRate, kriafLessons, kriafTotal, kriafDepts, kleimanHours, grandTotal, byPerson, reports };
+}
+
+async function generatePaymentPreview() {
+    showLoading(true);
     try {
-        const snap = await db.collection('weekly-reports').orderBy('weekStart').get();
-        const reports = snap.docs.map(d=>d.data()).filter(r=>r.weekStart>=fromKey && r.weekStart<=toKey);
+        const d = await gatherPaymentData();
+        if (!d) { showLoading(false); return; }
+        window._payData = d;
 
-        let rows = {};
-        ALL_TEAM.forEach(n => rows[n] = {name:n, hours:0, lessons:0, weeks:0, amount:0});
-
-        reports.forEach(r => {
-            if (!rows[r.person]) return;
-            rows[r.person].weeks++;
-            if (r.category==='a') { rows[r.person].hours += r.totalHours||0; rows[r.person].amount += (r.totalHours||0) * rateRM; }
-            else if (r.category==='c') { rows[r.person].lessons += r.lessonsCount||0; rows[r.person].amount += (r.lessonsCount||0) * rateLesson; }
-        });
-
-        const total = Object.values(rows).reduce((s,r)=>s+r.amount,0);
-        let html = `<div class="card" style="margin-top:14px;"><div class="card-title"><div class="icon">💰</div>דרישת תשלום — ${month}</div>`;
-        html += `<table class="payment-table"><tr><th>שם</th><th>שבועות</th><th>שעות / שיעורים</th><th>סכום (₪)</th></tr>`;
-        Object.values(rows).filter(r=>r.amount>0).forEach(r => {
-            const detail = r.hours ? `${r.hours} שעות` : `${r.lessons} שיעורים`;
-            html += `<tr><td>${r.name}</td><td>${r.weeks}</td><td>${detail}</td><td>${r.amount.toLocaleString()}</td></tr>`;
-        });
-        html += `<tr style="font-weight:700;background:#EBF5EE;"><td colspan="3">סה"כ</td><td>${total.toLocaleString()} ₪</td></tr></table></div>`;
+        let html = `<div class="card" style="margin-top:14px;">
+            <div class="card-title"><div class="icon">📋</div>דו"ח ביצוע ודרישת תשלום — ${d.monthHeb}</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">מוגש אל: עמותת "אנשים ביחד" (ע"ר 580805760)</p>
+            <table class="payment-table">
+            <tr><th>סעיף</th><th>סכום (₪)</th></tr>
+            <tr><td>פעילות ר"מים (עמותת רוח חשמונאית)</td><td>${d.rmTotal.toLocaleString()}</td></tr>
+            <tr><td>הרב משה דוד רוטמן</td><td>${d.rotmanSalary.toLocaleString()}</td></tr>
+            <tr><td>הרב יוחנן קליימן</td><td>${d.kleimanSalary.toLocaleString()}</td></tr>
+            <tr><td>הרב חיים קריאף (${d.kriafLessons} שיעורים × ${d.kriafRate}₪)</td><td>${d.kriafTotal.toLocaleString()}</td></tr>
+            <tr style="font-weight:700;background:#EBF5EE;"><td>סה"כ</td><td>${d.grandTotal.toLocaleString()} ₪</td></tr>
+            </table></div>`;
         document.getElementById('payment-result').innerHTML = html;
-    } catch(e) { console.error(e); showToast('שגיאה'); }
+        document.getElementById('payment-actions').style.display = 'block';
+    } catch(e) { console.error(e); showToast('שגיאה באיסוף נתונים'); }
     showLoading(false);
+}
+
+async function downloadPaymentDocx() {
+    if (!window._payData) { showToast('יש להפיק תצוגה מקדימה קודם'); return; }
+    showLoading(true);
+    try {
+        // Lazy load docx library
+        if (!window.docx) {
+            await new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'https://unpkg.com/docx@8.5.0/build/index.umd.js';
+                s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+        const D = window.docx;
+        const d = window._payData;
+
+        // Helpers
+        const rP = (text, opts={}) => new D.Paragraph({ bidirectional:true, alignment:opts.align||D.AlignmentType.RIGHT, spacing:opts.spacing||{}, ...(opts.pOpts||{}),
+            children: Array.isArray(text) ? text : [new D.TextRun({ text, rightToLeft:true, font:'David', size:opts.size||24, bold:!!opts.bold, color:opts.color||'000000' })] });
+        const rT = (text, opts={}) => new D.TextRun({ text, rightToLeft:true, font:'David', size:opts.size||24, bold:!!opts.bold, color:opts.color||'000000', underline:opts.underline?{}:undefined });
+        const emptyP = () => rP('');
+        const sigLine = (leftLabel, rightLabel) => [
+            emptyP(), emptyP(),
+            new D.Paragraph({ bidirectional:true, alignment:D.AlignmentType.RIGHT, spacing:{after:40},
+                children: [rT('________________                                        ________________')] }),
+            new D.Paragraph({ bidirectional:true, alignment:D.AlignmentType.RIGHT,
+                children: [rT(leftLabel + '                                        ' + rightLabel, {bold:true})] })
+        ];
+        const pageProps = { page:{ size:{width:11906,height:16838}, margin:{top:1200,right:1200,bottom:1200,left:1200} } };
+
+        // Numbering config for bullets
+        const numbering = { config: [
+            { reference:'payBullets', levels:[{ level:0, format:D.LevelFormat.BULLET, text:'\u2022', alignment:D.AlignmentType.LEFT, style:{paragraph:{indent:{left:720,hanging:360}}} }] },
+            { reference:'payNumbers', levels:[{ level:0, format:D.LevelFormat.DECIMAL, text:'%1.', alignment:D.AlignmentType.LEFT, style:{paragraph:{indent:{left:720,hanging:360}}} }] }
+        ]};
+        const bullet = (text, opts={}) => new D.Paragraph({ bidirectional:true, numbering:{reference:'payBullets',level:0}, spacing:opts.spacing||{after:80},
+            children: Array.isArray(text) ? text : [rT(text, opts)] });
+
+        // ===================== PAGE 1: MAIN SUMMARY =====================
+        const rmNames = TEAM_CATEGORIES['a'].map(n=>n.replace('הרב ','')).join(', ');
+        const page1 = [
+            rP('בס"ד', {size:20, align:D.AlignmentType.RIGHT}),
+            emptyP(),
+            rP(`דו"ח ביצוע ודרישת תשלום מרוכזת – תוכנית "רוח חשמונאית"`, {bold:true, size:28, align:D.AlignmentType.CENTER, pOpts:{spacing:{after:120}}}),
+            rP(`חודש דיווח: ${d.monthHeb}`, {align:D.AlignmentType.CENTER, pOpts:{spacing:{after:60}}}),
+            rP([rT('מוגש אל: ', {bold:true}), rT('עמותת "אנשים ביחד" (ע"ר 580805760)')], {align:D.AlignmentType.CENTER}),
+            emptyP(),
+            rP('1. ריכוז דרישת תשלום', {bold:true, size:26, pOpts:{spacing:{after:120}}}),
+            bullet([rT('פעילות ר"מים (עמותת רוח חשמונאית): ', {bold:true}), rT(`${d.rmTotal.toLocaleString()} ₪`)]),
+            bullet([rT('הרב משה דוד רוטמן: ', {bold:true}), rT(`${d.rotmanSalary.toLocaleString()} ₪`)]),
+            bullet([rT('הרב יוחנן קליימן: ', {bold:true}), rT(`${d.kleimanSalary.toLocaleString()} ₪`)]),
+            bullet([rT('הרב חיים קריאף: ', {bold:true}), rT(`${d.kriafTotal.toLocaleString()} ₪`)]),
+            emptyP(),
+            rP('2. הצהרת ביצוע ותפוקות', {bold:true, size:26, pOpts:{spacing:{after:120}}}),
+            rP(`אנו מאשרים כי בחודש ${d.monthHeb} בוצעו המשימות הבאות במלואן, בהתאם להסכמי ההתקשרות:`, {pOpts:{spacing:{after:120}}}),
+            bullet([rT(`צוות הר"מים (${rmNames}): `, {bold:true}), rT('כל ר"מ ביצע לפחות 18 שעות שבועיות (כולל מינימום 3 שעות לימוד, 2 שעות ת"ש ו-16 שיחות אישיות).')]),
+            bullet([rT('הרב משה דוד רוטמן: ', {bold:true}), rT('בוצע ניהול חינוכי של התוכנית, הובלת צוות הר"מים וקיום ישיבות הנהלה וסטטוס.')]),
+            bullet([rT('הרב יוחנן קליימן: ', {bold:true}), rT('בוצע ליווי שוטף של צוות הר"מים, סיורי שטח בבסיסים, והובלת תחום חתנים. (סה"כ עד 148 שעות פעילות חודשיות בהתאם לפירוט המשימות בהסכם)')]),
+            bullet([rT('הרב חיים קריאף: ', {bold:true}), rT(`הועברו סה"כ ${d.kriafLessons} שיעורי חוסן ואמונה${d.kriafDepts ? ' ב-' + d.kriafDepts : ''}.`)]),
+            emptyP(),
+            rP('3. חתימות ואישורים', {bold:true, size:26, pOpts:{spacing:{after:120}}}),
+            rP('על סמך הפירוט הנ"ל, אנו מאשרים את דרישת התשלום.'),
+            ...sigLine('מנכ"ל עמותת רוח חשמונאית', 'מנהל פעילות תורנית-חינוכית')
+        ];
+
+        // ===================== APPENDICES: ר"מים פלוגתיים =====================
+        const rmAppendices = [];
+        TEAM_CATEGORIES['a'].forEach((name, idx) => {
+            const reps = d.byPerson[name] || [];
+            const events = reps.map(r=>[r.topics, r.mood, r.challenges, r.notes].filter(Boolean)).flat().filter(e=>e.length>5).slice(0,2);
+            const shortName = name.replace('הרב ','');
+            rmAppendices.push(...[
+                new D.Paragraph({ children:[new D.PageBreak()] }),
+                rP('בס"ד', {size:20}),
+                emptyP(),
+                rP(`נספח ביצוע ${idx+1}: דיווח חודשי ר"מ פלוגתי – ${shortName}`, {bold:true, size:26, align:D.AlignmentType.CENTER, pOpts:{spacing:{after:80}}}),
+                rP(`מוגש עבור חודש: ${d.monthHeb}  מסגרת פעילות: עמותת רוח חשמונאית`, {align:D.AlignmentType.CENTER, pOpts:{spacing:{after:60}}}),
+                emptyP(),
+                rP([rT('פירוט תפוקות וביצוע: ', {bold:true}), rT('(יש לסמן בוצע או לפרט כמות במקומות הרלוונטיים כדי לאשר עמידה בתנאי ההסכם)')]),
+                emptyP(),
+                bullet('סה"כ שעות שבועיות (מינימום 18 שעות נדרשות ): בוצע'),
+                bullet('נוכחות בבסיס/בשטח (מינימום 3 ימים שונים בשבוע ): בוצע'),
+                bullet('שעות לימוד שבועיות (מינימום 3-4 שעות נדרשות ): בוצע'),
+                bullet('נוכחות בשעות ת"ש (מינימום 2 שעות שבועיות נדרשות ): בוצע'),
+                bullet('מספר שיחות אישיות (יעד חודשי של לפחות 16 שיחות ): בוצע'),
+                emptyP(),
+                rP('אירועים מרכזיים בהובלת הר"מ החודש:', {bold:true}),
+                ...(events.length ? events.map((e,i) => rP(`${i+1}. ${e.substring(0,100)}`)) : [rP('1.'), rP('2.')]),
+                emptyP(),
+                rP('חתימות לאישור:', {bold:true}),
+                ...sigLine(shortName + '- ר"מ פלוגתי', 'מנהל פעילות תורנית-חינוכית')
+            ]);
+        });
+
+        // ===================== APPENDIX: KLEIMAN =====================
+        const kh = d.kleimanHours;
+        const kleimanAppendix = [
+            new D.Paragraph({ children:[new D.PageBreak()] }),
+            rP('בס"ד', {size:20}),
+            emptyP(),
+            rP('נספח ביצוע 4 + דרישת תשלום- הרב יוחנן קליימן', {bold:true, size:26, align:D.AlignmentType.CENTER, pOpts:{spacing:{after:80}}}),
+            rP(`מוגש עבור חודש: ${d.monthHeb}`, {align:D.AlignmentType.CENTER}),
+            rP([rT('סכום לתשלום החודש: ', {}), rT(`${d.kleimanSalary.toLocaleString()} ₪`, {bold:true})], {align:D.AlignmentType.CENTER, pOpts:{spacing:{after:100}}}),
+            emptyP(),
+            rP('פירוט תפוקות וביצוע: (יש לפרט את כמות השעות שבוצעו בפועל בכל סעיף)', {bold:true}),
+            emptyP(),
+            bullet(`ליווי מקצועי של צוות הר"מים (ישיבות ופ.ע)- יעד: 28 שעות בחודש: ${kh.accompany||'_'}_ שעות.`),
+            bullet(`סיורי שטח ונוכחות בבסיסים- יעד: 80 שעות בחודש: ${kh.field||'_'}_ שעות.`),
+            bullet(`הובלת תחום חתנים וליווי חיילים לקראת נישואין - יעד: עד 20 שעות בחודש: ${kh.groom||'_'}_ שעות.`),
+            bullet(`מענה למקרי קצה ודילמות חינוכיות מהשטח- יעד: עד 20 שעות בחודש: ${kh.edge||'_'}_ שעות.`),
+            bullet('תיאום שוטף מול סמנכ"ל החינוך ומנהלי התוכנית: בוצע'),
+            emptyP(),
+            ...sigLine('יוחנן קליימן, מוביל ר"מים', 'מנהל פעילות תורנית-חינוכית')
+        ];
+
+        // ===================== APPENDIX: KRIAF =====================
+        const kriafAppendix = [
+            new D.Paragraph({ children:[new D.PageBreak()] }),
+            rP('בס"ד', {size:20}),
+            emptyP(),
+            rP('נספח ביצוע 7+ דרישת תשלום- הרב חיים קריאף (מוביל תוכנית חוסן ואמונה)', {bold:true, size:26, align:D.AlignmentType.CENTER, pOpts:{spacing:{after:80}}}),
+            rP(`מוגש עבור חודש: ${d.monthHeb}`, {align:D.AlignmentType.CENTER, pOpts:{spacing:{after:100}}}),
+            emptyP(),
+            rP('חישוב תשלום:', {bold:true}),
+            bullet(`סה"כ שיעורים שהועברו בפועל החודש: ${d.kriafLessons}_ (הערה: כל חריגה מעל 60 שיעורים מחייבת אישור מראש).`),
+            bullet(`תעריף לשיעור אחד: ${d.kriafRate} ₪.`),
+            bullet([rT('סה"כ לתשלום החודש: ', {bold:true}), rT(`₪${d.kriafTotal.toLocaleString()}.`, {bold:true})]),
+            emptyP(),
+            rP('פירוט תפוקות וביצוע:', {bold:true}),
+            rP('(יש לסמן בוצע או לפרט כמות)', {size:20}),
+            bullet(`כיסוי מחלקות בחטיבה והתאמת תכנים לשלבי השירות (יעד: כ-15 מחלקות): ${d.kriafDepts || '_'} מחלקות.`),
+            bullet('תיאום לו"ז שוטף מול סגל החטיבה והפלוגות: בוצע'),
+            emptyP(),
+            ...sigLine('חיים קריאף, מוביל ר"מים', 'מנהל פעילות תורנית-חינוכית')
+        ];
+
+        // ===================== APPENDIX: ROTMAN =====================
+        const rotmanAppendix = [
+            new D.Paragraph({ children:[new D.PageBreak()] }),
+            rP('בס"ד', {size:20}),
+            emptyP(),
+            rP('נספח ביצוע 6+דרישת תשלום- הרב משה דוד רוטמן (מנהל חינוכי)', {bold:true, size:26, align:D.AlignmentType.CENTER, pOpts:{spacing:{after:80}}}),
+            rP(`מוגש עבור חודש: ${d.monthHeb}`, {align:D.AlignmentType.CENTER}),
+            rP([rT('סכום לתשלום החודש: ', {}), rT(`${d.rotmanSalary.toLocaleString()} ₪`, {bold:true})], {align:D.AlignmentType.CENTER, pOpts:{spacing:{after:100}}}),
+            emptyP(),
+            rP('פירוט תפוקות וביצוע: (יש לסמן בוצע במקומות הרלוונטיים לאישור ביצוע)', {bold:true}),
+            emptyP(),
+            bullet('ניהול אסטרטגי כולל של מערך הליווי הרוחני והחינוכי בחטיבה: בוצע'),
+            bullet('הובלת צוות הר"מים ומעבירי התוכן: בוצע'),
+            bullet('בקרת איכות ועמידה ביעדי התוכנית: בוצע'),
+            bullet('השלמה ובניית תוכנית ליווי עבור שלבי השירות השונים: בוצע'),
+            bullet('פעולה ליצירת מנגנון תשלום קבוע מול גורמים חיצוניים/צבאיים: בוצע'),
+            bullet('השתתפות בישיבות הנהלה עיתיות וקיום פגישה חודשית לניהול התקציב: בוצע'),
+            emptyP(),
+            ...sigLine('מנכ"ל עמותת רוח חשמונאית', 'מנהל פעילות תורנית-חינוכית')
+        ];
+
+        // BUILD DOCUMENT
+        const doc = new D.Document({
+            numbering,
+            sections: [{
+                properties: pageProps,
+                children: [...page1, ...rmAppendices, ...kleimanAppendix, ...kriafAppendix, ...rotmanAppendix]
+            }]
+        });
+
+        const blob = await D.Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `דוח_ביצוע_ודרישת_תשלום_${d.monthHeb.replace(' ','_')}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('הקובץ הורד בהצלחה');
+    } catch(e) { console.error('DOCX generation error:', e); showToast('שגיאה ביצירת הקובץ'); }
+    showLoading(false);
+}
+
+function printPaymentReport() {
+    if (!window._payData) { showToast('יש להפיק תצוגה מקדימה קודם'); return; }
+    const d = window._payData;
+    const rmNames = TEAM_CATEGORIES['a'].map(n=>n.replace('הרב ','')).join(', ');
+    const kh = d.kleimanHours;
+
+    let html = `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>דו"ח ביצוע — ${d.monthHeb}</title>
+    <style>@page{size:A4;margin:2cm;}body{font-family:'David','Times New Roman',serif;font-size:13pt;line-height:1.6;direction:rtl;}
+    h1{font-size:16pt;text-align:center;}h2{font-size:14pt;margin-top:18pt;}.center{text-align:center;}.sig-line{margin-top:40pt;}
+    .sig-row{display:flex;justify-content:space-between;margin-top:6pt;font-weight:bold;}.page-break{page-break-before:always;}
+    ul{margin:6pt 20pt;}</style></head><body>`;
+
+    // Page 1
+    html += `<div style="text-align:right;font-size:11pt;">בס"ד</div>
+    <h1>דו"ח ביצוע ודרישת תשלום מרוכזת – תוכנית "רוח חשמונאית"</h1>
+    <p class="center">חודש דיווח: ${d.monthHeb}</p>
+    <p class="center"><b>מוגש אל:</b> עמותת "אנשים ביחד" (ע"ר 580805760)</p>
+    <h2>1. ריכוז דרישת תשלום</h2>
+    <ul><li><b>פעילות ר"מים (עמותת רוח חשמונאית):</b> ${d.rmTotal.toLocaleString()} ₪</li>
+    <li><b>הרב משה דוד רוטמן:</b> ${d.rotmanSalary.toLocaleString()} ₪</li>
+    <li><b>הרב יוחנן קליימן:</b> ${d.kleimanSalary.toLocaleString()} ₪</li>
+    <li><b>הרב חיים קריאף:</b> ${d.kriafTotal.toLocaleString()} ₪</li></ul>
+    <h2>2. הצהרת ביצוע ותפוקות</h2>
+    <p>אנו מאשרים כי בחודש ${d.monthHeb} בוצעו המשימות הבאות במלואן, בהתאם להסכמי ההתקשרות:</p>
+    <ul><li><b>צוות הר"מים (${rmNames}):</b> כל ר"מ ביצע לפחות 18 שעות שבועיות.</li>
+    <li><b>הרב משה דוד רוטמן:</b> בוצע ניהול חינוכי של התוכנית.</li>
+    <li><b>הרב יוחנן קליימן:</b> בוצע ליווי שוטף של צוות הר"מים.</li>
+    <li><b>הרב חיים קריאף:</b> הועברו ${d.kriafLessons} שיעורי חוסן ואמונה.</li></ul>
+    <h2>3. חתימות ואישורים</h2>
+    <p>על סמך הפירוט הנ"ל, אנו מאשרים את דרישת התשלום.</p>
+    <div class="sig-line"><hr style="width:35%;display:inline-block;margin-left:30%"><hr style="width:35%;display:inline-block;">
+    <div class="sig-row"><span>מנכ"ל עמותת רוח חשמונאית</span><span>מנהל פעילות תורנית-חינוכית</span></div></div>`;
+
+    // Appendices for each RM
+    TEAM_CATEGORIES['a'].forEach((name, idx) => {
+        const short = name.replace('הרב ','');
+        html += `<div class="page-break"><div style="text-align:right;font-size:11pt;">בס"ד</div>
+        <h1>נספח ביצוע ${idx+1}: דיווח חודשי ר"מ פלוגתי – ${short}</h1>
+        <p class="center">מוגש עבור חודש: ${d.monthHeb} מסגרת פעילות: עמותת רוח חשמונאית</p>
+        <p><b>פירוט תפוקות וביצוע:</b></p>
+        <ul><li>סה"כ שעות שבועיות (מינימום 18): בוצע</li><li>נוכחות בבסיס/בשטח (מינימום 3 ימים): בוצע</li>
+        <li>שעות לימוד שבועיות (מינימום 3-4): בוצע</li><li>נוכחות בשעות ת"ש (מינימום 2): בוצע</li>
+        <li>מספר שיחות אישיות (יעד: 16): בוצע</li></ul>
+        <p><b>אירועים מרכזיים:</b></p><p>1.<br>2.</p>
+        <div class="sig-line"><hr style="width:35%;display:inline-block;margin-left:30%"><hr style="width:35%;display:inline-block;">
+        <div class="sig-row"><span>${short} - ר"מ פלוגתי</span><span>מנהל פעילות תורנית-חינוכית</span></div></div></div>`;
+    });
+
+    // Kleiman
+    html += `<div class="page-break"><div style="text-align:right;font-size:11pt;">בס"ד</div>
+    <h1>נספח ביצוע 4 + דרישת תשלום- הרב יוחנן קליימן</h1>
+    <p class="center">מוגש עבור חודש: ${d.monthHeb}</p><p class="center"><b>סכום לתשלום:</b> ${d.kleimanSalary.toLocaleString()} ₪</p>
+    <p><b>פירוט תפוקות:</b></p><ul>
+    <li>ליווי מקצועי ר"מים: ${kh.accompany||'_'} שעות</li><li>סיורי שטח: ${kh.field||'_'} שעות</li>
+    <li>הובלת חתנים: ${kh.groom||'_'} שעות</li><li>מקרי קצה: ${kh.edge||'_'} שעות</li>
+    <li>תיאום שוטף: בוצע</li></ul>
+    <div class="sig-line"><hr style="width:35%;display:inline-block;margin-left:30%"><hr style="width:35%;display:inline-block;">
+    <div class="sig-row"><span>יוחנן קליימן, מוביל ר"מים</span><span>מנהל פעילות תורנית-חינוכית</span></div></div></div>`;
+
+    // Kriaf
+    html += `<div class="page-break"><div style="text-align:right;font-size:11pt;">בס"ד</div>
+    <h1>נספח ביצוע 7+ דרישת תשלום- הרב חיים קריאף</h1>
+    <p class="center">מוגש עבור חודש: ${d.monthHeb}</p>
+    <p><b>חישוב תשלום:</b></p><ul><li>שיעורים: ${d.kriafLessons}</li><li>תעריף: ${d.kriafRate} ₪</li>
+    <li><b>סה"כ: ₪${d.kriafTotal.toLocaleString()}</b></li></ul>
+    <p><b>פירוט תפוקות:</b></p><ul><li>כיסוי מחלקות: ${d.kriafDepts||'_'}</li><li>תיאום לו"ז: בוצע</li></ul>
+    <div class="sig-line"><hr style="width:35%;display:inline-block;margin-left:30%"><hr style="width:35%;display:inline-block;">
+    <div class="sig-row"><span>חיים קריאף, מוביל ר"מים</span><span>מנהל פעילות תורנית-חינוכית</span></div></div></div>`;
+
+    // Rotman
+    html += `<div class="page-break"><div style="text-align:right;font-size:11pt;">בס"ד</div>
+    <h1>נספח ביצוע 6+ דרישת תשלום- הרב משה דוד רוטמן</h1>
+    <p class="center">מוגש עבור חודש: ${d.monthHeb}</p><p class="center"><b>סכום:</b> ${d.rotmanSalary.toLocaleString()} ₪</p>
+    <p><b>פירוט תפוקות:</b></p><ul>
+    <li>ניהול אסטרטגי: בוצע</li><li>הובלת צוות ר"מים: בוצע</li><li>בקרת איכות: בוצע</li>
+    <li>בניית תוכניות ליווי: בוצע</li><li>מנגנון תשלום: בוצע</li><li>ישיבות הנהלה: בוצע</li></ul>
+    <div class="sig-line"><hr style="width:35%;display:inline-block;margin-left:30%"><hr style="width:35%;display:inline-block;">
+    <div class="sig-row"><span>מנכ"ל עמותת רוח חשמונאית</span><span>מנהל פעילות תורנית-חינוכית</span></div></div></div>`;
+
+    html += '</body></html>';
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => w.print(), 500);
 }
 
 // ============================================================
