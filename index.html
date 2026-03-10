@@ -614,17 +614,22 @@ async function initDefaultUsers() {
             const hashedPin = await hashPin(data.pin);
             const doc = await db.collection('users').doc(name).get();
             if (!doc.exists) {
-                await db.collection('users').doc(name).set({ pinHash: hashedPin, isAdmin: data.isAdmin });
+                // New user — store both plain + hash for backward compatibility
+                await db.collection('users').doc(name).set({ pin: data.pin, pinHash: hashedPin, isAdmin: data.isAdmin });
             } else {
                 const existing = doc.data();
-                // Migrate from plain pin to hashed pin
+                // Add hash alongside existing plain pin (keep both!)
                 if (existing.pin && !existing.pinHash) {
                     const migratedHash = await hashPin(existing.pin);
-                    await db.collection('users').doc(name).update({ pinHash: migratedHash, pin: firebase.firestore.FieldValue.delete() });
+                    await db.collection('users').doc(name).update({ pinHash: migratedHash });
                 }
-                // Sync admin status
+                // Restore plain pin if it was deleted during migration
+                if (!existing.pin && existing.pinHash) {
+                    await db.collection('users').doc(name).update({ pin: data.pin });
+                }
+                // Sync admin status & pin for admins
                 if (data.isAdmin) {
-                    await db.collection('users').doc(name).update({ pinHash: hashedPin, isAdmin: true });
+                    await db.collection('users').doc(name).update({ pin: data.pin, pinHash: hashedPin, isAdmin: true });
                 }
             }
         }
@@ -648,16 +653,16 @@ async function doLogin() {
         if (!doc.exists) { showToast('משתמש לא נמצא'); showLoading(false); return; }
         const userData = doc.data();
 
-        // Support both hashed and legacy plain pins during migration
+        // Support both hashed and legacy plain pins
         const inputHash = await hashPin(pin);
         let pinMatch = false;
         if (userData.pinHash) {
             pinMatch = (userData.pinHash === inputHash);
         } else if (userData.pin) {
-            // Legacy plain text comparison + auto-migrate
+            // Legacy plain text — add hash alongside (keep plain for backward compat)
             pinMatch = (userData.pin === pin);
             if (pinMatch) {
-                await db.collection('users').doc(name).update({ pinHash: inputHash, pin: firebase.firestore.FieldValue.delete() });
+                await db.collection('users').doc(name).update({ pinHash: inputHash });
             }
         }
 
