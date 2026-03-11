@@ -2,8 +2,18 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>רוח חשמונאית - מערכת דיווח שבועי</title>
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1B4332">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="רוח חשמונאית">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/ruach-hashmonaim/ruach-hashmonait/main/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" onerror="">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" onerror="document.getElementById('filter-warning').style.display='block'"></script>
@@ -41,7 +51,7 @@
         body { font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
 
         /* HEADER */
-        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(27,67,50,0.3); }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 12px 20px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(27,67,50,0.3); }
         .header-content { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .header-right { display: flex; align-items: center; gap: 10px; }
         .header-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
@@ -1557,6 +1567,19 @@ function showLoading(show) { document.getElementById('loading').style.display = 
 // ============================================================
 initApp();
 setTimeout(tryAutoLogin, 500);
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+        console.log('SW registered:', reg.scope);
+    }).catch(err => console.warn('SW registration failed:', err));
+}
+
+// Handle Capacitor/native status bar padding
+if (window.Capacitor || CSS.supports('padding-top: env(safe-area-inset-top)')) {
+    document.documentElement.style.setProperty('--sat', 'env(safe-area-inset-top)');
+    document.documentElement.style.setProperty('--sab', 'env(safe-area-inset-bottom)');
+}
 </script>
 </body>
 </html>
