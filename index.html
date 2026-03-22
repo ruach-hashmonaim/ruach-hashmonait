@@ -426,11 +426,29 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- ====== LEARNING — והגית בו ====== -->
 <div class="page-section" id="page-learning">
     <div class="card">
-        <div class="card-title"><div class="icon">📖</div> והגית בו — תוכניות לימוד יומיות</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">בחר תוכנית לימוד, קרא את התוכן היומי ועקוב אחרי ההתקדמות שלך. ההתקדמות נשמרת אוטומטית.</p>
+        <div class="card-title"><div class="icon">📖</div> והגית בו — לוח קביעויות ופרסים</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">הצטרף לקביעויות לימוד, עקוב אחרי ההתקדמות שלך, והרוויח פרסים על סיומים!</p>
     </div>
-    <div class="program-grid" id="learning-programs"></div>
-    <div id="learning-detail" style="display:none;"></div>
+
+    <!-- Tab bar -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn-primary btn-sm" id="learning-tab-commitments" onclick="showLearningTab('commitments')">📋 הקביעויות שלי</button>
+        <button class="btn-secondary btn-sm" id="learning-tab-board" onclick="showLearningTab('board')">📌 לוח קביעויות</button>
+        <button class="btn-secondary btn-sm" id="learning-tab-prizes" onclick="showLearningTab('prizes')">🏆 פרסים ותשורות</button>
+        <button class="btn-secondary btn-sm" id="learning-tab-leaderboard" onclick="showLearningTab('leaderboard')">🥇 לוח מצטיינים</button>
+    </div>
+
+    <!-- My Commitments -->
+    <div id="learning-panel-commitments"></div>
+
+    <!-- Board: all programs to join -->
+    <div id="learning-panel-board" style="display:none;"></div>
+
+    <!-- Prizes -->
+    <div id="learning-panel-prizes" style="display:none;"></div>
+
+    <!-- Leaderboard -->
+    <div id="learning-panel-leaderboard" style="display:none;"></div>
 </div>
 
 <!-- ====== TRAINING BASIC ====== -->
@@ -746,22 +764,33 @@ const ALL_TEAM = Object.values(TEAM_CATEGORIES).flat();
 const CATEGORY_NAMES = { 'a':'ר"מ פלוגתי', 'b':'מפקח ומלווה', 'c':'מרצה חוסן ואמונה', 'd':'מנהל התוכנית' };
 
 // ============================================================
-// LEARNING PROGRAMS CONFIG — now with Sefaria API integration
+// LEARNING PROGRAMS CONFIG — commitment board + prizes
 // ============================================================
 const LEARNING_PROGRAMS = [
-    { id:'chok', name:'חק לישראל', desc:'לימוד יומי מתורה, נביאים, כתובים, משנה, גמרא, הלכה וזוהר', icon:'📜', calendarKey:'Chok LeYisrael' },
-    { id:'shnayim', name:'שניים מקרא ואחד תרגום', desc:'קריאת פרשת השבוע פעמיים ותרגום אונקלוס', icon:'📕', calendarKey:'Parashat Hashavua' },
-    { id:'rambam', name:'רמב״ם יומי', desc:'3 פרקים ביום — סיום משנה תורה בשנה', icon:'⚖️', calendarKey:'Daily Rambam' },
-    { id:'halacha', name:'הלכה יומית', desc:'לימוד הלכות מעשיות כל יום', icon:'📘', calendarKey:'Halakhah Yomit' },
-    { id:'tanya', name:'תניא יומי', desc:'לימוד ספר התניא לפי חלוקה יומית', icon:'🕯️', calendarKey:'Tanya Yomi' },
-    { id:'mesilat', name:'מסילת ישרים', desc:'לימוד ספר מסילת ישרים של הרמח״ל', icon:'🪜', sefariaRef:'Messilat Yesharim' },
-    { id:'mishna3', name:'משנה יומית — 3 פרקים', desc:'3 פרקי משניות ביום', icon:'📗', calendarKey:'Daily Mishnah' },
-    { id:'daf-bavli', name:'דף יומי בבלי', desc:'דף גמרא בבלי אחד ביום — מחזור של 7.5 שנים', icon:'📚', calendarKey:'Daf Yomi' },
-    { id:'daf-yerushalmi', name:'דף יומי ירושלמי', desc:'דף גמרא ירושלמי אחד ביום', icon:'📚', calendarKey:'Yerushalmi Yomi' },
-    { id:'tanach', name:'פרק תנ״ך יומי', desc:'פרק תנ״ך אחד כל יום', icon:'🏛️', calendarKey:'Tanakh Yomi' }
+    { id:'chok', name:'חק לישראל', desc:'לימוד יומי מתורה, נביאים, כתובים, משנה, גמרא, הלכה וזוהר', icon:'📜', category:'daily' },
+    { id:'shnayim', name:'שניים מקרא ואחד תרגום', desc:'קריאת פרשת השבוע פעמיים ותרגום אונקלוס', icon:'📕', category:'daily' },
+    { id:'rambam', name:'רמב״ם יומי', desc:'3 פרקים ביום — סיום משנה תורה בשנה', icon:'⚖️', category:'daily' },
+    { id:'halacha', name:'הלכה יומית', desc:'לימוד הלכות מעשיות כל יום', icon:'📘', category:'daily' },
+    { id:'tanya', name:'תניא יומי', desc:'לימוד ספר התניא לפי חלוקה יומית', icon:'🕯️', category:'daily' },
+    { id:'mesilat', name:'מסילת ישרים', desc:'לימוד ספר מסילת ישרים של הרמח״ל', icon:'🪜', category:'daily' },
+    { id:'mishna3', name:'משנה יומית — 3 פרקים', desc:'3 פרקי משניות ביום', icon:'📗', category:'daily' },
+    { id:'daf-bavli', name:'דף יומי בבלי', desc:'דף גמרא בבלי אחד ביום — מחזור של 7.5 שנים', icon:'📚', category:'daily' },
+    { id:'daf-yerushalmi', name:'דף יומי ירושלמי', desc:'דף גמרא ירושלמי אחד ביום', icon:'📚', category:'daily' },
+    { id:'tanach', name:'פרק תנ״ך יומי', desc:'פרק תנ״ך אחד כל יום', icon:'🏛️', category:'daily' }
 ];
 
-let sefariaCalendar = null;
+// Milestones & Prizes
+const MILESTONES = [
+    { id:'shas-mishna', name:'ש״ס משנה', desc:'סיום כל ששה סדרי משנה', icon:'🏆', prize:'ארוחה זוגית במסעדה', prizeIcon:'🍽️' },
+    { id:'masechet-gemara', name:'מסכת גמרא', desc:'סיום מסכת שלמה בגמרא', icon:'📚', prize:'ספר תורני מפואר מתנה', prizeIcon:'📖' },
+    { id:'seder-mishna', name:'סדר במשנה', desc:'סיום סדר שלם במשנה', icon:'🎯', prize:'שובר מתנה ₪150', prizeIcon:'🎁' },
+    { id:'shulchan-aruch', name:'שולחן ערוך — חלק שלם', desc:'סיום חלק שלם בשולחן ערוך', icon:'⚖️', prize:'סט ספרי הלכה', prizeIcon:'📚' },
+    { id:'rambam-complete', name:'סיום משנה תורה', desc:'סיום כל 14 ספרי הרמב"ם', icon:'👑', prize:'נסיעה לקבר הרמב"ם בטבריה + ארוחת חגיגה', prizeIcon:'✈️' },
+    { id:'tanach-complete', name:'סיום תנ״ך', desc:'סיום כל 24 ספרי התנ"ך', icon:'🏛️', prize:'תנ"ך מפואר בכריכת עור', prizeIcon:'📜' },
+    { id:'daf-yomi-cycle', name:'סיום ש״ס בבלי', desc:'סיום מחזור דף יומי שלם', icon:'💎', prize:'מסיבת סיום + מדליית הוקרה מהמח"ט', prizeIcon:'🎖️' },
+    { id:'30-day-streak', name:'רצף 30 יום', desc:'30 ימי למידה רצופים בלי הפסקה', icon:'🔥', prize:'כובע/חולצת רוח חשמונאית', prizeIcon:'👕' },
+    { id:'100-day-streak', name:'רצף 100 יום', desc:'100 ימי למידה רצופים', icon:'⚡', prize:'שעון יד + תעודת הצטיינות', prizeIcon:'⌚' }
+];
 
 // ============================================================
 // LOCAL STORAGE
@@ -1050,183 +1079,248 @@ function logout() {
 }
 
 // ============================================================
-// LEARNING — והגית בו — Sefaria API inline content
+// LEARNING — והגית בו — לוח קביעויות ופרסים
 // ============================================================
-async function fetchSefariaCalendar() {
-    if (sefariaCalendar) return sefariaCalendar;
-    try {
-        const resp = await fetch('https://www.sefaria.org/api/calendars');
-        const data = await resp.json();
-        sefariaCalendar = data.calendar_items || [];
-        return sefariaCalendar;
-    } catch(e) {
-        console.warn('Sefaria calendar unavailable:', e);
-        return [];
-    }
+function getMyCommitments() {
+    try { return JSON.parse(localStorage.getItem('ruach-commitments') || '[]'); } catch(e) { return []; }
 }
-
-function findCalendarItem(items, key) {
-    return items.find(i =>
-        (i.title?.en || '').includes(key) ||
-        (i.title?.he || '').includes(key)
-    );
-}
-
-async function fetchSefariaText(ref) {
-    try {
-        const url = `https://www.sefaria.org/api/v3/texts/${encodeURIComponent(ref)}?version=hebrew`;
-        const resp = await fetch(url);
-        const data = await resp.json();
-        // Extract Hebrew text
-        let heText = '';
-        if (data.versions && data.versions.length > 0) {
-            const ver = data.versions[0];
-            if (Array.isArray(ver.text)) {
-                heText = ver.text.flat(Infinity).filter(Boolean).join('<br>');
-            } else if (typeof ver.text === 'string') {
-                heText = ver.text;
-            }
-        }
-        return { text: heText, heRef: data.heRef || ref, ref: data.ref || ref };
-    } catch(e) {
-        console.warn('Sefaria text error:', e);
-        return null;
-    }
+function setMyCommitments(arr) {
+    localStorage.setItem('ruach-commitments', JSON.stringify(arr));
 }
 
 function loadLearningPrograms() {
-    const container = document.getElementById('learning-programs');
-    document.getElementById('learning-detail').style.display = 'none';
-    container.style.display = '';
-    const progress = getLocalProgress();
-
-    container.innerHTML = LEARNING_PROGRAMS.map(p => {
-        const progData = progress[p.id] || {};
-        const daysCompleted = progData.completedDays ? Object.keys(progData.completedDays).length : 0;
-        const pct = Math.min(100, Math.round((daysCompleted / 30) * 100));
-        return `
-        <div class="program-card" onclick="openLearningProgram('${p.id}')">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <span style="font-size:1.5rem;">${p.icon}</span>
-                <div style="flex:1;"><h3>${p.name}</h3></div>
-            </div>
-            <p>${p.desc}</p>
-            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-            <div class="progress-text">${daysCompleted} ימי למידה הושלמו</div>
-        </div>`;
-    }).join('');
+    showLearningTab('commitments');
 }
 
-async function openLearningProgram(programId) {
-    const prog = LEARNING_PROGRAMS.find(p => p.id === programId);
-    if (!prog) return;
+function showLearningTab(tab) {
+    const tabs = ['commitments','board','prizes','leaderboard'];
+    tabs.forEach(t => {
+        const panel = document.getElementById('learning-panel-' + t);
+        const btn = document.getElementById('learning-tab-' + t);
+        if (panel) panel.style.display = (t === tab) ? '' : 'none';
+        if (btn) {
+            btn.style.background = (t === tab) ? 'var(--primary)' : 'var(--bg-secondary)';
+            btn.style.color = (t === tab) ? '#fff' : 'var(--text-primary)';
+        }
+    });
+    if (tab === 'commitments') renderMyCommitments();
+    else if (tab === 'board') renderCommitmentBoard();
+    else if (tab === 'prizes') renderPrizes();
+    else if (tab === 'leaderboard') renderLeaderboard();
+}
 
-    document.getElementById('learning-programs').style.display = 'none';
-    const detail = document.getElementById('learning-detail');
-    detail.style.display = 'block';
-
-    const allProgress = getLocalProgress();
-    const progData = allProgress[programId] || { completedDays: {} };
-    const completedDays = progData.completedDays || {};
+function renderMyCommitments() {
+    const panel = document.getElementById('learning-panel-commitments');
+    if (!panel) return;
+    const mine = getMyCommitments();
+    const progress = getLocalProgress();
     const today = new Date().toISOString().split('T')[0];
-    const todayDone = !!completedDays[today];
 
-    const days = [];
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const key = d.toISOString().split('T')[0];
-        const dayNames = ['יום א׳','יום ב׳','יום ג׳','יום ד׳','יום ה׳','יום ו׳','שבת'];
-        days.push({ key, label: dayNames[d.getDay()], date: d.toLocaleDateString('he-IL',{day:'numeric',month:'short'}), done: !!completedDays[key] });
+    if (mine.length === 0) {
+        panel.innerHTML = `
+            <div class="card" style="text-align:center;padding:30px;">
+                <p style="font-size:1.2rem;margin-bottom:12px;">📋 עדיין לא נרשמת לקביעויות</p>
+                <p style="color:var(--text-secondary);margin-bottom:16px;">עבור ללוח הקביעויות כדי להירשם לתוכניות לימוד</p>
+                <button class="btn-primary" onclick="showLearningTab('board')">📌 לוח קביעויות</button>
+            </div>`;
+        return;
     }
 
-    // Build initial UI with loading state for content
-    detail.innerHTML = `
-        <div class="card">
-            <button class="btn-secondary btn-sm" onclick="loadLearningPrograms()" style="margin-bottom:12px;">← חזרה לתוכניות</button>
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-                <span style="font-size:2rem;">${prog.icon}</span>
-                <div><h2 style="color:var(--primary);font-size:1.1rem;">${prog.name}</h2><p style="font-size:0.85rem;color:var(--text-secondary);">${prog.desc}</p></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-title"><div class="icon">📄</div> תוכן הלימוד היומי</div>
-            <div id="learning-content-area">
-                <p style="text-align:center;color:var(--text-secondary);padding:20px;">טוען תוכן לימוד...</p>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-title"><div class="icon">✅</div> סימון למידה יומית</div>
-            <div class="daily-check ${todayDone ? 'done' : ''}" onclick="toggleDayLearning('${programId}','${today}',this)">
-                <div class="check-icon">${todayDone ? '✓' : ''}</div>
-                <div style="flex:1;"><b>היום</b> — ${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div>
-            </div>
-            <h4 style="font-size:0.85rem;margin:14px 0 8px;color:var(--text-secondary);">השבוע האחרון:</h4>
-            ${days.map(d => `
-                <div class="daily-check ${d.done ? 'done' : ''}" onclick="toggleDayLearning('${programId}','${d.key}',this)">
-                    <div class="check-icon">${d.done ? '✓' : ''}</div>
-                    <div>${d.label} — ${d.date}</div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+    let html = '';
+    mine.forEach(c => {
+        const prog = LEARNING_PROGRAMS.find(p => p.id === c.id);
+        const name = prog ? prog.name : (c.customName || c.id);
+        const icon = prog ? prog.icon : '📖';
+        const desc = prog ? prog.desc : (c.customDesc || '');
+        const progData = progress[c.id] || { completedDays: {} };
+        const completedDays = progData.completedDays || {};
+        const totalDays = Object.keys(completedDays).length;
+        const todayDone = !!completedDays[today];
 
-    // Fetch actual content from Sefaria
-    loadInlineLearningContent(prog);
+        // Calculate streak
+        let streak = 0;
+        const d = new Date();
+        while (true) {
+            const k = d.toISOString().split('T')[0];
+            if (completedDays[k]) { streak++; d.setDate(d.getDate() - 1); }
+            else break;
+        }
+
+        html += `
+        <div class="card" style="margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span style="font-size:1.5rem;">${icon}</span>
+                <div style="flex:1;">
+                    <h3 style="margin:0;font-size:1rem;">${name}</h3>
+                    <p style="margin:2px 0 0;font-size:0.82rem;color:var(--text-secondary);">${desc}</p>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:1.3rem;font-weight:700;color:var(--primary);">${totalDays}</div>
+                    <div style="font-size:0.7rem;color:var(--text-secondary);">ימים</div>
+                </div>
+            </div>
+            ${streak > 0 ? `<div style="font-size:0.82rem;color:var(--accent);margin-bottom:8px;">🔥 רצף: ${streak} ימים רצופים!</div>` : ''}
+            <div class="daily-check ${todayDone ? 'done' : ''}" onclick="toggleDayLearning('${c.id}','${today}',this)" style="cursor:pointer;">
+                <div class="check-icon">${todayDone ? '✓' : ''}</div>
+                <div style="flex:1;"><b>סימון היום</b> — ${new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}</div>
+            </div>
+        </div>`;
+    });
+
+    panel.innerHTML = html;
 }
 
-async function loadInlineLearningContent(prog) {
-    const area = document.getElementById('learning-content-area');
-    if (!area) return;
+function renderCommitmentBoard() {
+    const panel = document.getElementById('learning-panel-board');
+    if (!panel) return;
+    const mine = getMyCommitments();
+    const mineIds = mine.map(m => m.id);
+
+    let html = '<div class="card"><div class="card-title"><div class="icon">📌</div> תוכניות לימוד זמינות</div>';
+    LEARNING_PROGRAMS.forEach(p => {
+        const joined = mineIds.includes(p.id);
+        html += `
+        <div style="display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid var(--border-color);">
+            <span style="font-size:1.3rem;">${p.icon}</span>
+            <div style="flex:1;">
+                <b>${p.name}</b>
+                <div style="font-size:0.8rem;color:var(--text-secondary);">${p.desc}</div>
+            </div>
+            ${joined
+                ? `<button class="btn-secondary btn-sm" onclick="removeCommitment('${p.id}')" style="font-size:0.78rem;">✓ נרשמת</button>`
+                : `<button class="btn-primary btn-sm" onclick="addCommitment('${p.id}')" style="font-size:0.78rem;">+ הוסף</button>`
+            }
+        </div>`;
+    });
+    html += '</div>';
+
+    // Custom commitment
+    html += `
+    <div class="card" style="margin-top:12px;">
+        <div class="card-title"><div class="icon">✏️</div> הוסף קביעות אחרת</div>
+        <input type="text" id="custom-commitment-name" placeholder="שם הקביעות (לדוגמה: חומש עם רש״י)" style="margin-bottom:8px;">
+        <input type="text" id="custom-commitment-desc" placeholder="תיאור קצר (אופציונלי)" style="margin-bottom:8px;">
+        <button class="btn-primary" onclick="addCustomCommitment()">הוסף לקביעויות שלי</button>
+    </div>`;
+
+    panel.innerHTML = html;
+}
+
+function addCommitment(programId) {
+    const mine = getMyCommitments();
+    if (!mine.find(m => m.id === programId)) {
+        mine.push({ id: programId });
+        setMyCommitments(mine);
+    }
+    renderCommitmentBoard();
+    showToast('נוסף לקביעויות שלך! ✓');
+}
+
+function removeCommitment(programId) {
+    let mine = getMyCommitments();
+    mine = mine.filter(m => m.id !== programId);
+    setMyCommitments(mine);
+    renderCommitmentBoard();
+    showToast('הוסר מהקביעויות');
+}
+
+function addCustomCommitment() {
+    const name = document.getElementById('custom-commitment-name')?.value.trim();
+    if (!name) { showToast('נא להזין שם לקביעות'); return; }
+    const desc = document.getElementById('custom-commitment-desc')?.value.trim() || '';
+    const id = 'custom_' + Date.now();
+    const mine = getMyCommitments();
+    mine.push({ id, customName: name, customDesc: desc });
+    setMyCommitments(mine);
+    document.getElementById('custom-commitment-name').value = '';
+    document.getElementById('custom-commitment-desc').value = '';
+    renderCommitmentBoard();
+    showToast('קביעות חדשה נוספה! ✓');
+}
+
+function renderPrizes() {
+    const panel = document.getElementById('learning-panel-prizes');
+    if (!panel) return;
+
+    let html = '<div class="card"><div class="card-title"><div class="icon">🏆</div> פרסים ותשורות</div>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">סיימת יעד? דווח וקבל תשורה!</p>';
+    MILESTONES.forEach(m => {
+        html += `
+        <div style="border:1px solid var(--border-color);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--bg-secondary);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="font-size:1.8rem;">${m.icon}</span>
+                <div style="flex:1;">
+                    <b style="font-size:1rem;">${m.name}</b>
+                    <div style="font-size:0.8rem;color:var(--text-secondary);">${m.desc}</div>
+                </div>
+            </div>
+            <div style="background:var(--bg-card);border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <span style="font-size:1.3rem;">${m.prizeIcon}</span>
+                <div style="flex:1;">
+                    <div style="font-size:0.78rem;color:var(--text-secondary);">תשורה:</div>
+                    <b style="color:var(--primary);font-size:0.9rem;">${m.prize}</b>
+                </div>
+            </div>
+            <button class="btn-primary btn-sm" onclick="claimMilestone('${m.id}')" style="width:100%;">🎉 סיימתי! דווח על סיום</button>
+        </div>`;
+    });
+    html += '</div>';
+    panel.innerHTML = html;
+}
+
+async function claimMilestone(milestoneId) {
+    if (!currentUser) { showToast('יש להתחבר כדי לדווח על סיום'); return; }
+    const m = MILESTONES.find(x => x.id === milestoneId);
+    if (!m) return;
+    try {
+        if (db) {
+            await db.collection('milestone_claims').add({
+                milestoneId,
+                milestoneName: m.name,
+                prize: m.prize,
+                userId: currentUser.id || currentUser.email || currentUser.name,
+                userName: currentUser.name,
+                framework: currentUser.framework || '',
+                claimedAt: new Date(),
+                status: 'pending'
+            });
+        }
+        showToast(`🎉 מזל טוב! דיווח על סיום "${m.name}" נשלח לאישור`);
+    } catch(e) {
+        console.warn('Claim error:', e);
+        showToast('שגיאה בשליחת הדיווח, נסה שוב');
+    }
+}
+
+async function renderLeaderboard() {
+    const panel = document.getElementById('learning-panel-leaderboard');
+    if (!panel) return;
+
+    panel.innerHTML = '<div class="card" style="text-align:center;padding:20px;"><p>טוען לוח מצטיינים...</p></div>';
 
     try {
-        let textData = null;
-        let refTitle = '';
-
-        if (prog.calendarKey) {
-            const cal = await fetchSefariaCalendar();
-            const item = findCalendarItem(cal, prog.calendarKey);
-            if (item) {
-                // Prefer item.ref over item.url; skip collection URLs
-                let ref = item.ref || '';
-                if (!ref && item.url) {
-                    const rawUrl = item.url.replace(/^\//, '');
-                    if (!rawUrl.startsWith('collections/')) ref = rawUrl;
-                }
-                refTitle = item.displayValue?.he || item.displayValue?.en || ref;
-                // For collection-type items (e.g. Chok LeYisrael), fall back to parashat hashavua
-                if (!ref && item.url && item.url.startsWith('collections/')) {
-                    const parasha = findCalendarItem(cal, 'Parashat Hashavua');
-                    if (parasha) {
-                        ref = parasha.ref || parasha.url?.replace(/^\//, '') || '';
-                        refTitle = (refTitle || '') + ' — ' + (parasha.displayValue?.he || '');
-                    }
-                }
-                if (ref) textData = await fetchSefariaText(ref);
-            }
-        } else if (prog.sefariaRef) {
-            textData = await fetchSefariaText(prog.sefariaRef);
-            refTitle = textData?.heRef || prog.sefariaRef;
+        if (!db) throw new Error('No DB');
+        const snap = await db.collection('learning_progress').orderBy('totalDays', 'desc').limit(20).get();
+        if (snap.empty) {
+            panel.innerHTML = '<div class="card" style="text-align:center;padding:20px;"><p>אין נתונים עדיין. התחילו ללמוד!</p></div>';
+            return;
         }
-
-        if (textData && textData.text) {
-            area.innerHTML = `
-                <div class="learning-text-content">
-                    <h3>${refTitle}</h3>
-                    <div class="text-source">${textData.heRef || ''}</div>
-                    <div>${textData.text}</div>
-                </div>
-            `;
-        } else {
-            area.innerHTML = `
-                <div style="text-align:center;padding:20px;color:var(--text-secondary);">
-                    <p>לא ניתן לטעון את תוכן הלימוד כרגע.</p>
-                    <p style="font-size:0.82rem;margin-top:8px;">ייתכן שיש בעיית חיבור. נסה שוב מאוחר יותר.</p>
-                </div>
-            `;
-        }
+        let html = '<div class="card"><div class="card-title"><div class="icon">🥇</div> לוח מצטיינים</div>';
+        html += '<table class="data-table"><thead><tr><th>#</th><th>שם</th><th>ימי למידה</th></tr></thead><tbody>';
+        let rank = 1;
+        const medals = ['🥇','🥈','🥉'];
+        snap.forEach(doc => {
+            const d = doc.data();
+            const medal = rank <= 3 ? medals[rank-1] : rank;
+            const totalDays = d.totalDays || (d.completedDays ? Object.keys(d.completedDays).length : 0);
+            html += `<tr><td>${medal}</td><td>${d.userName || 'אנונימי'}</td><td><b>${totalDays}</b></td></tr>`;
+            rank++;
+        });
+        html += '</tbody></table></div>';
+        panel.innerHTML = html;
     } catch(e) {
-        console.warn('Learning content error:', e);
-        area.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">שגיאה בטעינת תוכן</p>';
+        console.warn('Leaderboard error:', e);
+        panel.innerHTML = '<div class="card" style="text-align:center;padding:20px;"><p>לא ניתן לטעון לוח מצטיינים כרגע</p></div>';
     }
 }
 
@@ -1244,10 +1338,21 @@ function toggleDayLearning(programId, dateKey, el) {
         el.querySelector('.check-icon').textContent = '✓';
     }
     setLocalProgress(allProgress);
+    // Sync total days to Firestore for leaderboard
     if (currentUser && db) {
-        const docRef = db.collection('learning_progress').doc((currentUser.id || currentUser.name) + '_' + programId);
-        if (isDone) docRef.update({ [`completedDays.${dateKey}`]: firebase.firestore.FieldValue.delete() }).catch(()=>{});
-        else docRef.set({ completedDays: { [dateKey]: true }, userId: currentUser.id, userName: currentUser.name }, { merge: true }).catch(()=>{});
+        const userId = currentUser.id || currentUser.email || currentUser.name;
+        // Count total unique days across ALL programs
+        let totalDays = 0;
+        Object.values(allProgress).forEach(p => {
+            if (p.completedDays) totalDays += Object.keys(p.completedDays).length;
+        });
+        db.collection('learning_progress').doc(userId).set({
+            userId,
+            userName: currentUser.name,
+            framework: currentUser.framework || '',
+            totalDays,
+            lastUpdate: new Date()
+        }, { merge: true }).catch(()=>{});
     }
 }
 
