@@ -915,7 +915,7 @@ let pendingLoginPage = null;
 let pendingOtp = null; // { code, email, expiresAt }
 
 // *** OTP Email Configuration via Google Apps Script + Resend ***
-const OTP_PROXY_URL = 'https://script.google.com/macros/s/AKfycbybkmnMtlnb4ifFf2LPo-8sYtSTbWU3Xk0GpXC189OIZHYUXncL4U2uGT4L_kAx8L7KHQ/exec';
+const OTP_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzxzqaU4vf_HgTeDOCO3Lk4lbTfvznwifJekdeh2nzdHoXY72ibw2H6br4ll842_8Avmg/exec';
 
 function openLoginModal(redirectPage) {
     pendingLoginPage = redirectPage || null;
@@ -1023,29 +1023,40 @@ async function sendOtpCode() {
 
     showLoading(true);
     try {
-        // Send OTP via Google Apps Script proxy → Resend
+        let emailSent = false;
+        // Try sending OTP via Google Apps Script proxy → Resend
         if (OTP_PROXY_URL && OTP_PROXY_URL !== 'APPS_SCRIPT_URL_HERE') {
-            const resp = await fetch(OTP_PROXY_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ email: email, otp_code: code })
-            });
-            const result = await resp.json();
-            if (!result.success) throw new Error(result.error || 'Email send failed');
-        } else {
-            // Fallback: store code in Firestore for dev mode
+            try {
+                const resp = await fetch(OTP_PROXY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ email: email, otp_code: code })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    emailSent = true;
+                } else {
+                    console.warn('Proxy returned error:', result.error);
+                }
+            } catch(proxyErr) {
+                console.warn('Proxy failed, using fallback:', proxyErr.message);
+            }
+        }
+
+        // Fallback: store code in Firestore so admin can see it
+        if (!emailSent) {
             if (db) {
                 await db.collection('otp_codes').doc(email).set({
                     code, createdAt: new Date(), expiresAt: new Date(pendingOtp.expiresAt)
                 });
             }
-            console.log('DEV MODE — OTP code:', code, 'for', email);
+            console.log('FALLBACK — OTP code:', code, 'for', email);
         }
 
         document.getElementById('otp-step-email').style.display = 'none';
         document.getElementById('otp-step-code').style.display = '';
         document.getElementById('sent-email-display').textContent = email;
-        showToast('קוד אימות נשלח למייל!');
+        showToast(emailSent ? 'קוד אימות נשלח למייל!' : 'קוד אימות נשלח! (בדוק מייל או פנה למנהל)');
     } catch(e) {
         console.error('Email OTP error:', e);
         showToast('שגיאה בשליחת קוד — בדוק חיבור');
