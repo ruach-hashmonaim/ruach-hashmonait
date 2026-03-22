@@ -63,6 +63,39 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .btn-staff-login:hover { background:rgba(255,255,255,0.15); color:#fff; }
 .credit-line { font-size:0.65rem; opacity:0.4; text-align:center; margin-top:10px; }
 
+/* SPLASH SCREEN */
+.splash-screen { position:fixed; inset:0; z-index:1000; background:linear-gradient(135deg,#0F2B1F 0%,var(--primary) 40%,var(--primary-light) 100%); display:flex; align-items:center; justify-content:center; }
+.splash-inner { text-align:center; color:#fff; padding:30px; max-width:420px; width:90%; }
+.splash-logo { width:120px; height:120px; border-radius:24px; object-fit:contain; margin:0 auto 20px; display:block; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
+.splash-title { font-size:1.8rem; font-weight:800; margin-bottom:4px; }
+.splash-subtitle { font-size:0.95rem; opacity:0.75; margin-bottom:36px; }
+.splash-buttons { display:flex; flex-direction:column; gap:14px; }
+.splash-btn { display:flex; align-items:center; justify-content:center; gap:10px; padding:16px 24px; border-radius:14px; font-family:inherit; font-size:1.05rem; font-weight:700; cursor:pointer; transition:all 0.25s; border:none; }
+.splash-btn-login { background:linear-gradient(135deg,var(--accent),var(--accent-light)); color:var(--primary); box-shadow:0 6px 25px rgba(212,168,67,0.4); }
+.splash-btn-login:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(212,168,67,0.5); }
+.splash-btn-guest { background:rgba(255,255,255,0.12); color:#fff; border:2px solid rgba(255,255,255,0.3); backdrop-filter:blur(4px); }
+.splash-btn-guest:hover { background:rgba(255,255,255,0.2); transform:translateY(-2px); }
+.splash-credit { font-size:0.7rem; opacity:0.35; margin-top:28px; }
+
+/* GUEST BAR */
+.guest-bar { background:linear-gradient(135deg,var(--accent),var(--accent-light)); color:var(--primary); padding:8px 20px; text-align:center; font-size:0.82rem; font-weight:600; display:none; position:fixed; top:0; left:0; right:0; z-index:400; margin-right:var(--sidebar-w); }
+.guest-bar a { color:var(--primary); text-decoration:underline; cursor:pointer; font-weight:700; margin-right:8px; }
+
+/* INTERNET SAFETY — שולטים ברשת */
+.safety-category { margin-bottom:24px; }
+.safety-category-title { font-size:1rem; font-weight:700; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.safety-card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; transition:all 0.2s; }
+.safety-card:hover { box-shadow:var(--shadow); border-color:var(--accent); }
+.safety-card h4 { font-size:0.92rem; font-weight:700; color:var(--primary); margin-bottom:6px; }
+.safety-card p { font-size:0.83rem; color:var(--text-secondary); margin-bottom:10px; line-height:1.6; }
+.safety-link { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:var(--primary); color:#fff; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
+.safety-link:hover { background:var(--primary-light); transform:translateY(-1px); }
+.safety-tip { background:#FFF8E7; border:1px solid #E8D48A; border-radius:var(--radius-sm); padding:12px; font-size:0.85rem; margin-bottom:10px; line-height:1.6; }
+.safety-tip b { color:var(--primary); }
+.safety-hotline { background:linear-gradient(135deg,#FFF3E0,#FFE0B2); border:1px solid #FFB74D; border-radius:var(--radius); padding:16px; text-align:center; margin-top:16px; }
+.safety-hotline h4 { color:#E65100; font-size:0.95rem; margin-bottom:6px; }
+.safety-hotline p { font-size:0.85rem; color:#333; }
+
 /* MAIN CONTENT */
 .main-content { flex:1; margin-right:var(--sidebar-w); min-height:100vh; }
 .main-header { background:#fff; border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
@@ -274,6 +307,20 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </head>
 <body>
 
+<!-- ========== SPLASH SCREEN ========== -->
+<div class="splash-screen" id="splash-screen">
+    <div class="splash-inner">
+        <img class="splash-logo" src="icons/icon-192x192.png" alt="רוח חשמונאית">
+        <div class="splash-title">רוח חשמונאית</div>
+        <div class="splash-subtitle">תוכנית הזהות והחוסן · חטיבת החשמונאים</div>
+        <div class="splash-buttons">
+            <button class="splash-btn splash-btn-login" onclick="splashLogin()">🔑 כניסה לאזור שלי</button>
+            <button class="splash-btn splash-btn-guest" onclick="splashGuest()">👤 כניסה כאורח</button>
+        </div>
+        <div class="splash-credit">פותח ע״י IAB-Smart AI Solutions</div>
+    </div>
+</div>
+
 <!-- ========== LOGIN MODAL (Email + OTP) ========== -->
 <div class="modal-overlay" id="login-modal">
     <div class="modal-box">
@@ -328,7 +375,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 <!-- ========== APP LAYOUT ========== -->
-<div id="app-layout" class="app-layout">
+<div id="app-layout" class="app-layout" style="display:none;">
+
+<!-- GUEST MODE BAR -->
+<div class="guest-bar" id="guest-bar">
+    👤 אתה במצב אורח — <a onclick="exitGuestMode()">כניסה לאזור שלי</a>
+</div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
@@ -345,6 +397,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <div class="nav-section">שטח וגיאוגרפיה</div>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">🗺️</span> בעקבות הנצח</a>
+
+        <div class="nav-section nav-section-safety">בטיחות ברשת</div>
+        <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">🛡️</span> שולטים ברשת</a>
 
         <div class="nav-section nav-training-section" style="display:none;">הכשרה</div>
         <a onclick="navigate('training-basic')" data-page="training-basic" class="nav-training" style="display:none;"><span class="nav-icon">⚔️</span> הכשרת יסוד</a>
@@ -422,7 +477,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="tile-title">קורס קצינים</div>
             <div class="tile-desc">תכני רוח מכבי — קצינים</div>
         </a>
-        <a class="home-tile" onclick="navigate('surveys')">
+        <a class="home-tile" onclick="navigate('internet-safety')">
+            <div class="tile-icon">🛡️</div>
+            <div class="tile-title">שולטים ברשת</div>
+            <div class="tile-desc">כלים להתמודדות עם אתגרי הרשת</div>
+        </a>
+        <a class="home-tile tile-surveys" onclick="navigate('surveys')">
             <div class="tile-icon">📊</div>
             <div class="tile-title">סקרים ומשובים</div>
             <div class="tile-desc">מילוי סקרים ותוצאות</div>
@@ -534,6 +594,132 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card geo-results" id="geo-results-container" style="display:none;">
         <div class="card-title"><div class="icon">📌</div> אתרים בקרבת מקום</div>
         <div id="geo-results-list"></div>
+    </div>
+</div>
+
+<!-- ====== INTERNET SAFETY — שולטים ברשת ====== -->
+<div class="page-section" id="page-internet-safety">
+    <div class="card" style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;margin-bottom:20px;">
+        <h2 style="font-size:1.15rem;display:flex;align-items:center;gap:8px;">🛡️ שולטים ברשת</h2>
+        <p style="opacity:0.85;font-size:0.88rem;margin-top:6px;">כלים, מידע ותמיכה להתמודדות עם אתגרי עולם האינטרנט והרשתות החברתיות</p>
+    </div>
+
+    <!-- סינון תוכן -->
+    <div class="safety-category">
+        <div class="safety-category-title">🔒 סינון תוכן והגנה</div>
+        <div class="safety-card">
+            <h4>אפליקציות סינון מומלצות</h4>
+            <p>התקנת אפליקציית סינון היא הצעד הראשון והחשוב ביותר. הנה כמה אפשרויות מובילות:</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                <a class="safety-link" href="https://netspark.com/he/" target="_blank" rel="noopener">NetSpark — סינון מקיף</a>
+                <a class="safety-link" href="https://rimon.net.il/" target="_blank" rel="noopener">רימון — אינטרנט כשר</a>
+                <a class="safety-link" href="https://www.gennet.co.il/" target="_blank" rel="noopener">GenNet — סינון חכם</a>
+            </div>
+            <div class="safety-tip">
+                <b>טיפ:</b> מומלץ להתקין סינון גם על הטלפון הנייד וגם על המחשב. הגדרות הסינון צריכות להיות מוגנות בסיסמה שמישהו אחר מחזיק.
+            </div>
+        </div>
+        <div class="safety-card">
+            <h4>הגדרות בטיחות במכשיר</h4>
+            <p>גם בלי אפליקציה חיצונית, ניתן לשפר את ההגנה:</p>
+            <div class="safety-tip">
+                <b>אייפון:</b> הגדרות → זמן מסך → הגבלות תוכן ופרטיות → הגבל תוכן מבוגרים<br>
+                <b>אנדרואיד:</b> Google Play → הגדרות → משפחה → בקרת הורים<br>
+                <b>גוגל:</b> SafeSearch → הפעלה בהגדרות החיפוש
+            </div>
+        </div>
+    </div>
+
+    <!-- התמודדות עם פורנוגרפיה -->
+    <div class="safety-category">
+        <div class="safety-category-title">💪 התמודדות עם פורנוגרפיה</div>
+        <div class="safety-card">
+            <h4>מה חשוב לדעת</h4>
+            <p>צפייה בפורנוגרפיה היא בעיה נפוצה שמשפיעה על בריאות הנפש, מערכות יחסים ודימוי עצמי. זו לא חולשה — זה אתגר שאפשר להתמודד איתו.</p>
+            <div class="safety-tip">
+                <b>עובדה:</b> מחקרים מראים שצפייה חוזרת בפורנוגרפיה משנה את מבנה המוח באופן דומה להתמכרות לסמים. החדשות הטובות — המוח יכול להחלים כשמפסיקים.
+            </div>
+        </div>
+        <div class="safety-card">
+            <h4>כלים מעשיים להתמודדות</h4>
+            <p>שלבים מוכחים שעוזרים:</p>
+            <div class="safety-tip">
+                <b>1. הסר את הנגישות</b> — התקן סינון, מחק היסטוריה, הרחק את המכשיר מחדר השינה<br>
+                <b>2. זהה טריגרים</b> — שעמום, בדידות, לחץ? הכר את הרגעים שבהם אתה חלש יותר<br>
+                <b>3. מצא חלופות</b> — פעילות גופנית, לימוד, שיחה עם חבר<br>
+                <b>4. אל תישאר לבד</b> — שתף מישהו שאתה סומך עליו (חבר, מדריך, יועץ)
+            </div>
+        </div>
+        <div class="safety-card">
+            <h4>מקורות תורניים</h4>
+            <p>התורה מדברת על שמירת העיניים והקדושה כחלק מרכזי מהחיים. הנה מקורות לחיזוק:</p>
+            <div class="safety-tip">
+                <b>״לא תתורו אחרי לבבכם ואחרי עיניכם״</b> (במדבר טו, לט)<br>
+                <b>מסילת ישרים פרק יא:</b> על הפרישות והריחוק מן העבירה<br>
+                <b>שמירת העיניים:</b> ספר ״גן נעול״ — מדריך מעשי לשמירת הקדושה
+            </div>
+        </div>
+    </div>
+
+    <!-- התמודדות עם אלימות -->
+    <div class="safety-category">
+        <div class="safety-category-title">🚫 התמודדות עם אלימות ברשת</div>
+        <div class="safety-card">
+            <h4>זיהוי אלימות דיגיטלית</h4>
+            <p>אלימות ברשת כוללת: בריונות, איומים, הפצת שמועות, שיתוף תמונות ללא הסכמה, והשפלה ברשתות חברתיות.</p>
+            <div class="safety-tip">
+                <b>אם אתה חווה אלימות ברשת:</b><br>
+                1. אל תגיב — תגובה נותנת כוח לפוגע<br>
+                2. שמור הוכחות — צילומי מסך של הודעות ופוסטים<br>
+                3. חסום ודווח — בכל פלטפורמה יש כפתור דיווח<br>
+                4. ספר למישהו — הורה, מחנך, מפקד
+            </div>
+        </div>
+        <div class="safety-card">
+            <h4>חוק ומשפט</h4>
+            <p>אלימות ברשת היא עבירה פלילית. הפצת תמונות אינטימיות ללא הסכמה, הטרדה מינית, ואיומים — כולם עבירות שעליהן ניתן להגיש תלונה במשטרה.</p>
+        </div>
+    </div>
+
+    <!-- התמכרות לאינטרנט -->
+    <div class="safety-category">
+        <div class="safety-category-title">📵 התמכרות לאינטרנט ורשתות חברתיות</div>
+        <div class="safety-card">
+            <h4>סימנים להתמכרות</h4>
+            <p>כמה סימנים שמעידים שהשימוש במסכים יצא מאיזון:</p>
+            <div class="safety-tip">
+                <b>בדוק את עצמך:</b><br>
+                • אתה מרגיש חרדה כשאין לך גישה לטלפון?<br>
+                • אתה מבלה יותר זמן ברשת ממה שתכננת?<br>
+                • זה פוגע בשינה, בלימודים או ביחסים?<br>
+                • אתה מרגיש ריק או עצוב אחרי גלילה ממושכת?<br>
+                אם ענית ״כן״ על 2 או יותר — כדאי לנקוט פעולה.
+            </div>
+        </div>
+        <div class="safety-card">
+            <h4>כלים מעשיים לצמצום</h4>
+            <div class="safety-tip">
+                <b>הגבל זמן מסך:</b> השתמש ב-Screen Time (אייפון) או Digital Wellbeing (אנדרואיד)<br>
+                <b>גבולות פיזיים:</b> אל תישן עם הטלפון ליד המיטה. קבע ״שעות ללא מסך״<br>
+                <b>חלופות:</b> ספורט, ספרים, שיחות פנים אל פנים, יצירה<br>
+                <b>מודעות:</b> שים לב מתי אתה פותח את הטלפון מתוך הרגל ולא מתוך צורך
+            </div>
+        </div>
+        <div class="safety-card">
+            <h4>אפליקציות שעוזרות</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <a class="safety-link" href="https://www.forestapp.cc/" target="_blank" rel="noopener">Forest — ריכוז וצמצום</a>
+                <a class="safety-link" href="https://one-sec.app/" target="_blank" rel="noopener">one sec — עצירה לפני פתיחה</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- קו חם -->
+    <div class="safety-hotline">
+        <h4>צריך לדבר עם מישהו?</h4>
+        <p>קו סיוע ער״ן (עזרה ראשונה נפשית): <b style="direction:ltr;display:inline-block;">1201</b><br>
+        קו סיוע לנוער: <b style="direction:ltr;display:inline-block;">*6500</b><br>
+        כל שיחה חסויה לחלוטין.</p>
     </div>
 </div>
 
@@ -828,10 +1014,15 @@ const PAGE_TITLES = {
     'training-nco': 'קורס מ״כים — רוח מכבי',
     'training-officer': 'קורס קצינים — רוח מכבי',
     'geography': 'בעקבות הנצח',
+    'internet-safety': 'שולטים ברשת',
     'reports': 'מעקב שבועי — צוות חינוכי',
     'surveys': 'סקרים ומשובים',
     'admin': 'ניהול מערכת'
 };
+
+// Guest mode pages (no auth needed)
+const GUEST_PAGES = ['home', 'learning', 'geography', 'internet-safety'];
+let isGuestMode = false;
 
 // Pages and their required permission
 const PAGE_PERMISSIONS = {
@@ -843,6 +1034,13 @@ const PAGE_PERMISSIONS = {
 };
 
 function navigate(page) {
+    // Guest mode: restrict to allowed pages
+    if (isGuestMode && !currentUser) {
+        if (!GUEST_PAGES.includes(page)) {
+            showToast('עמוד זה דורש כניסה למערכת');
+            return;
+        }
+    }
     const requiredPerm = PAGE_PERMISSIONS[page];
     if (requiredPerm) {
         if (!currentUser) { openLoginModal(page); return; }
@@ -925,6 +1123,11 @@ function openLoginModal(redirectPage) {
 function closeLoginModal() {
     document.getElementById('login-modal').classList.remove('open');
     pendingLoginPage = null;
+    // If no user logged in and not in guest mode, go back to splash
+    if (!currentUser && !isGuestMode) {
+        document.getElementById('app-layout').style.display = 'none';
+        document.getElementById('splash-screen').style.display = '';
+    }
 }
 
 function showPasswordLogin() {
@@ -1113,6 +1316,15 @@ function resetOtpLogin() {
 }
 
 function onLoginSuccess() {
+    isGuestMode = false;
+    document.getElementById('guest-bar').style.display = 'none';
+    // Restore survey nav that might have been hidden in guest mode
+    const surveyNav = document.querySelector('.sidebar-nav a[data-page="surveys"]');
+    if (surveyNav) surveyNav.style.display = '';
+    if (surveyNav && surveyNav.previousElementSibling && surveyNav.previousElementSibling.classList.contains('nav-section'))
+        surveyNav.previousElementSibling.style.display = '';
+    document.querySelectorAll('.tile-surveys').forEach(el => el.style.display = '');
+
     closeLoginModal();
 
     // Update sidebar
@@ -1165,20 +1377,24 @@ function updateUIForRole() {
 
 function logout() {
     currentUser = null;
+    isGuestMode = false;
     localStorage.removeItem('ruach-user');
 
     document.getElementById('sidebar-guest').style.display = '';
     document.getElementById('sidebar-user-info').style.display = 'none';
     document.getElementById('home-greeting').textContent = '';
     document.getElementById('home-framework-badge').style.display = 'none';
+    document.getElementById('guest-bar').style.display = 'none';
 
     // Hide role-based elements
     document.querySelectorAll('.nav-training, .nav-training-section, .tile-training').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-reports, .nav-reports-section, .tile-reports').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-admin, .tile-admin').forEach(el => el.style.display = 'none');
 
-    const page = window.location.hash.slice(1) || 'home';
-    if (PAGE_PERMISSIONS[page]) navigate('home');
+    // Return to splash screen
+    document.getElementById('app-layout').style.display = 'none';
+    document.getElementById('splash-screen').style.display = '';
+    window.location.hash = '';
 }
 
 // ============================================================
@@ -2101,6 +2317,53 @@ async function waitForFirebase(retries) {
     return false;
 }
 
+// ============================================================
+// SPLASH SCREEN & GUEST MODE
+// ============================================================
+function splashLogin() {
+    document.getElementById('splash-screen').style.display = 'none';
+    document.getElementById('app-layout').style.display = '';
+    isGuestMode = false;
+    openLoginModal();
+}
+
+function splashGuest() {
+    document.getElementById('splash-screen').style.display = 'none';
+    document.getElementById('app-layout').style.display = '';
+    isGuestMode = true;
+    applyGuestMode();
+    navigate('home');
+}
+
+function applyGuestMode() {
+    document.getElementById('guest-bar').style.display = '';
+    // Hide non-guest sidebar items
+    document.querySelectorAll('.nav-training, .nav-training-section').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-reports, .nav-reports-section').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'none');
+    const surveyNav = document.querySelector('.sidebar-nav a[data-page="surveys"]');
+    if (surveyNav) surveyNav.style.display = 'none';
+    const surveySection = surveyNav ? surveyNav.previousElementSibling : null;
+    if (surveySection && surveySection.classList.contains('nav-section')) surveySection.style.display = 'none';
+    // Hide non-guest home tiles
+    document.querySelectorAll('.tile-training, .tile-reports, .tile-admin, .tile-surveys').forEach(el => el.style.display = 'none');
+    // Sidebar footer: show login button
+    document.getElementById('sidebar-guest').style.display = '';
+    document.getElementById('sidebar-user-info').style.display = 'none';
+}
+
+function exitGuestMode() {
+    isGuestMode = false;
+    document.getElementById('guest-bar').style.display = 'none';
+    // Restore sidebar items to default (non-logged-in) state
+    const surveyNav = document.querySelector('.sidebar-nav a[data-page="surveys"]');
+    if (surveyNav) surveyNav.style.display = '';
+    if (surveyNav && surveyNav.previousElementSibling && surveyNav.previousElementSibling.classList.contains('nav-section'))
+        surveyNav.previousElementSibling.style.display = '';
+    document.querySelectorAll('.tile-surveys').forEach(el => el.style.display = '');
+    openLoginModal();
+}
+
 async function initApp() {
     const page = window.location.hash.slice(1) || 'home';
     if (!PAGE_PERMISSIONS[page]) activatePage(page);
@@ -2149,7 +2412,14 @@ function showLoading(show) { document.getElementById('loading').style.display = 
 // START
 // ============================================================
 initApp().then(() => {
-    setTimeout(tryAutoLogin, 300);
+    // Check if user has saved login — skip splash if so
+    const savedUser = localStorage.getItem('ruach-user');
+    if (savedUser) {
+        document.getElementById('splash-screen').style.display = 'none';
+        document.getElementById('app-layout').style.display = '';
+        setTimeout(tryAutoLogin, 300);
+    }
+    // Otherwise: splash screen stays visible, user picks guest or login
 });
 
 if ('serviceWorker' in navigator) {
