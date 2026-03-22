@@ -18,8 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-app-compat.js';document.head.appendChild(s);"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"
-        onerror="var s=document.createElement('script');s.src='firebase/firebase-auth-compat.js';document.head.appendChild(s);"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-firestore-compat.js';document.head.appendChild(s);"></script>
     <script>
@@ -275,42 +274,38 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </head>
 <body>
 
-<!-- ========== LOGIN MODAL (Phone + SMS) ========== -->
+<!-- ========== LOGIN MODAL (Email + OTP) ========== -->
 <div class="modal-overlay" id="login-modal">
     <div class="modal-box">
         <button class="modal-close" onclick="closeLoginModal()">&times;</button>
         <img class="login-logo" src="icons/icon-192x192.png" alt="רוח חשמונאית">
         <h2 style="color:var(--primary);margin-bottom:4px;">כניסה למערכת</h2>
-        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזדהות באמצעות מספר טלפון</p>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזדהות באמצעות כתובת מייל</p>
 
-        <!-- Step 1: Phone number -->
-        <div id="sms-step-phone">
+        <!-- Step 1: Email -->
+        <div id="otp-step-email">
             <div class="form-group" style="text-align:right;">
-                <label>מספר טלפון</label>
-                <div class="phone-input-group">
-                    <span class="prefix">972+</span>
-                    <input type="tel" id="login-phone" placeholder="50-1234567" maxlength="11" onkeydown="if(event.key==='Enter')sendSmsCode()">
-                </div>
+                <label>כתובת מייל</label>
+                <input type="email" id="login-email" placeholder="user@example.com" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')sendOtpCode()">
             </div>
-            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="sendSmsCode()" id="btn-send-sms">שלח קוד SMS</button>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="sendOtpCode()" id="btn-send-otp">שלח קוד אימות למייל</button>
         </div>
 
-        <!-- Step 2: SMS code verification -->
-        <div id="sms-step-code" style="display:none;">
-            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הקוד נשלח למספר <b id="sent-phone-display"></b></p>
+        <!-- Step 2: OTP code verification -->
+        <div id="otp-step-code" style="display:none;">
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הקוד נשלח לכתובת <b id="sent-email-display"></b></p>
             <div class="form-group" style="text-align:right;">
                 <label>קוד אימות</label>
-                <input type="text" id="login-code" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:6px;font-size:1.3rem;font-weight:700;direction:ltr;" onkeydown="if(event.key==='Enter')verifySmsCode()">
+                <input type="text" id="login-code" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:6px;font-size:1.3rem;font-weight:700;direction:ltr;" onkeydown="if(event.key==='Enter')verifyOtpCode()">
             </div>
-            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="verifySmsCode()">אימות וכניסה</button>
-            <button class="btn-secondary btn-sm" style="width:100%;margin-top:8px;" onclick="resetSmsLogin()">חזרה — שינוי מספר</button>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="verifyOtpCode()">אימות וכניסה</button>
+            <button class="btn-secondary btn-sm" style="width:100%;margin-top:8px;" onclick="resetOtpLogin()">חזרה — שינוי כתובת</button>
         </div>
 
-        <div id="recaptcha-container"></div>
         <div id="filter-warning" style="display:none;background:#FFF3E0;border-radius:8px;padding:12px;margin-top:14px;font-size:0.8rem;color:#333;">
             <b style="color:#E07C24;">בעיית חיבור</b><br>
             נראה שחלק מהשירותים חסומים. יש לפתוח בסינון:<br>
-            <code>firestore.googleapis.com</code> · <code>www.gstatic.com</code>
+            <code>firestore.googleapis.com</code>
         </div>
     </div>
 </div>
@@ -559,7 +554,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
         <button class="btn-secondary btn-sm admin-tab active" onclick="showAdminTab('users')">👥 משתמשים</button>
-        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">📱 טבלת טלפונים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">📱 טבלת משתמשים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">📊 סקרים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">⚔️ תכני הכשרה</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">📈 דשבורד</button>
@@ -574,7 +569,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <h4 style="margin-bottom:8px;">הוספת משתמש חדש</h4>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="text" id="new-user-name" placeholder="שם מלא" style="flex:1;min-width:130px;">
-                    <input type="tel" id="new-user-phone" placeholder="050-1234567" style="width:140px;direction:ltr;">
+                    <input type="email" id="new-user-email" placeholder="user@example.com" style="width:200px;direction:ltr;">
                     <select id="new-user-role" style="width:150px;">
                         <option value="lohem">לוחם</option>
                         <option value="mefaked_zater">מפקד זוטר</option>
@@ -594,7 +589,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <!-- Excel import -->
             <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
                 <h4 style="margin-bottom:8px;">ייבוא מאקסל</h4>
-                <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:8px;">העלה קובץ אקסל עם עמודות: שם, טלפון, תפקיד (lohem/mefaked_zater/katzin_bachir/segel/menahel), מסגרת (yonatan/shimon/maccabim/mifhat)</p>
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:8px;">העלה קובץ אקסל עם עמודות: שם, מייל, תפקיד (lohem/mefaked_zater/katzin_bachir/segel/menahel), מסגרת (yonatan/shimon/maccabim/mifhat)</p>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <input type="file" id="excel-import-file" accept=".xlsx,.xls,.csv" style="flex:1;">
                     <button class="btn-primary btn-sm" onclick="importUsersFromExcel()">ייבוא</button>
@@ -607,7 +602,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- Phone tables per framework -->
     <div class="admin-panel" id="admin-phones" style="display:none;">
         <div class="card">
-            <h3 style="margin-bottom:14px;">טבלת טלפונים לפי מסגרת</h3>
+            <h3 style="margin-bottom:14px;">טבלת משתמשים לפי מסגרת</h3>
             <div style="display:flex;gap:8px;margin-bottom:14px;">
                 <button class="admin-fw-tab active" onclick="showFrameworkPhones('yonatan',this)">גדוד יונתן</button>
                 <button class="admin-fw-tab" onclick="showFrameworkPhones('shimon',this)">גדוד שמעון</button>
@@ -693,7 +688,7 @@ const FIREBASE_CONFIG = {
 
 const PROXY_URL = 'https://api.ruach-hashmonaim.org';
 let db = null;
-let auth = null;
+// auth removed — using Email OTP instead of Firebase Phone Auth
 let currentUser = null;
 
 // ============================================================
@@ -867,78 +862,93 @@ function closeSidebar() {
 }
 
 // ============================================================
-// LOGIN MODAL & PHONE AUTH
+// LOGIN MODAL & EMAIL OTP AUTH
 // ============================================================
 let pendingLoginPage = null;
-let confirmationResult = null;
-let recaptchaVerifier = null;
+let pendingOtp = null; // { code, email, expiresAt }
+
+// *** EmailJS Configuration ***
+// Sign up free at https://www.emailjs.com and fill in these 3 values:
+const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';   // Account → API Keys → Public Key
+const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';   // Email Services → Service ID
+const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID'; // Email Templates → Template ID
 
 function openLoginModal(redirectPage) {
     pendingLoginPage = redirectPage || null;
     document.getElementById('login-modal').classList.add('open');
-    resetSmsLogin();
+    resetOtpLogin();
 }
 function closeLoginModal() {
     document.getElementById('login-modal').classList.remove('open');
     pendingLoginPage = null;
 }
 
-function formatPhone(input) {
-    let phone = input.replace(/[\s\-()]/g, '');
-    if (phone.startsWith('0')) phone = '+972' + phone.slice(1);
-    else if (!phone.startsWith('+')) phone = '+972' + phone;
-    return phone;
+function generateOtp() {
+    return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-async function sendSmsCode() {
-    const rawPhone = document.getElementById('login-phone').value.trim();
-    if (!rawPhone) { showToast('יש להזין מספר טלפון'); return; }
-    const phone = formatPhone(rawPhone);
+async function sendOtpCode() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    if (!email || !email.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
 
-    // Check if phone is registered in the system
+    // Check if email is registered in the system
     try {
         if (db) {
-            const snap = await db.collection('users').where('phone', '==', phone).limit(1).get();
+            const snap = await db.collection('users').where('email', '==', email).limit(1).get();
             if (snap.empty) {
-                showToast('מספר טלפון לא רשום במערכת — פנה למנהל');
+                showToast('כתובת מייל לא רשומה במערכת — פנה למנהל');
                 return;
             }
         }
-    } catch(e) { console.warn('Could not check phone:', e); }
+    } catch(e) { console.warn('Could not check email:', e); }
+
+    const code = generateOtp();
+    pendingOtp = { code, email, expiresAt: Date.now() + 5 * 60 * 1000 }; // 5 min expiry
 
     showLoading(true);
     try {
-        if (!recaptchaVerifier) {
-            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+        // Send OTP via EmailJS
+        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_email: email,
+                otp_code: code,
+                app_name: 'רוח חשמונאית'
+            }, EMAILJS_PUBLIC_KEY);
+        } else {
+            // Fallback: store code in Firestore for manual verification / dev mode
+            if (db) {
+                await db.collection('otp_codes').doc(email).set({
+                    code, createdAt: new Date(), expiresAt: new Date(pendingOtp.expiresAt)
+                });
+            }
+            console.log('DEV MODE — OTP code:', code, 'for', email);
         }
-        confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
-        document.getElementById('sms-step-phone').style.display = 'none';
-        document.getElementById('sms-step-code').style.display = '';
-        document.getElementById('sent-phone-display').textContent = phone;
-        showToast('קוד אימות נשלח!');
+
+        document.getElementById('otp-step-email').style.display = 'none';
+        document.getElementById('otp-step-code').style.display = '';
+        document.getElementById('sent-email-display').textContent = email;
+        showToast('קוד אימות נשלח למייל!');
     } catch(e) {
-        console.error('SMS error:', e);
-        if (e.code === 'auth/invalid-phone-number') showToast('מספר טלפון לא תקין');
-        else if (e.code === 'auth/too-many-requests') showToast('יותר מדי ניסיונות — נסה מאוחר יותר');
-        else showToast('שגיאה בשליחת SMS — בדוק חיבור');
-        // Reset recaptcha on error
-        try { recaptchaVerifier.clear(); } catch(x) {}
-        recaptchaVerifier = null;
+        console.error('Email OTP error:', e);
+        showToast('שגיאה בשליחת קוד — בדוק חיבור');
+        pendingOtp = null;
     }
     showLoading(false);
 }
 
-async function verifySmsCode() {
+async function verifyOtpCode() {
     const code = document.getElementById('login-code').value.trim();
     if (!code || code.length < 4) { showToast('יש להזין קוד אימות'); return; }
 
+    if (!pendingOtp) { showToast('יש לשלוח קוד חדש'); return; }
+    if (Date.now() > pendingOtp.expiresAt) { showToast('הקוד פג תוקף — שלח קוד חדש'); pendingOtp = null; return; }
+    if (code !== pendingOtp.code) { showToast('קוד שגוי — נסה שנית'); return; }
+
+    const email = pendingOtp.email;
     showLoading(true);
     try {
-        const result = await confirmationResult.confirm(code);
-        const phone = result.user.phoneNumber;
-
-        // Look up user in Firestore by phone
-        const snap = await db.collection('users').where('phone', '==', phone).limit(1).get();
+        // Look up user in Firestore by email
+        const snap = await db.collection('users').where('email', '==', email).limit(1).get();
         if (snap.empty) {
             showToast('משתמש לא נמצא במערכת');
             showLoading(false);
@@ -950,26 +960,28 @@ async function verifySmsCode() {
         currentUser = {
             id: userDoc.id,
             name: ud.name || userDoc.id,
-            phone: phone,
+            email: email,
             role: ud.role || 'lohem',
             framework: ud.framework || 'yonatan'
         };
         localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+        pendingOtp = null;
+        // Clean up OTP from Firestore
+        try { db.collection('otp_codes').doc(email).delete(); } catch(x) {}
         onLoginSuccess();
     } catch(e) {
         console.error('Verify error:', e);
-        if (e.code === 'auth/invalid-verification-code') showToast('קוד שגוי — נסה שנית');
-        else showToast('שגיאה באימות');
+        showToast('שגיאה באימות');
     }
     showLoading(false);
 }
 
-function resetSmsLogin() {
-    document.getElementById('sms-step-phone').style.display = '';
-    document.getElementById('sms-step-code').style.display = 'none';
-    document.getElementById('login-phone').value = '';
+function resetOtpLogin() {
+    document.getElementById('otp-step-email').style.display = '';
+    document.getElementById('otp-step-code').style.display = 'none';
+    document.getElementById('login-email').value = '';
     document.getElementById('login-code').value = '';
-    confirmationResult = null;
+    pendingOtp = null;
 }
 
 function onLoginSuccess() {
@@ -1608,12 +1620,12 @@ async function loadAdminUsers() {
     container.innerHTML = 'טוען...';
     try {
         const snap = await db.collection('users').get();
-        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>מסגרת</th><th>פעולות</th></tr></thead><tbody>';
+        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>מייל</th><th>תפקיד</th><th>מסגרת</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
             html += `<tr>
                 <td>${d.name || doc.id}</td>
-                <td style="direction:ltr;text-align:right;">${d.phone || '—'}</td>
+                <td style="direction:ltr;text-align:right;">${d.email || d.phone || '—'}</td>
                 <td>${ROLES[d.role]?.label || d.role || '—'}</td>
                 <td>${getFrameworkLabel(d.framework) || '—'}</td>
                 <td>
@@ -1629,16 +1641,15 @@ async function loadAdminUsers() {
 
 async function addUser() {
     const name = document.getElementById('new-user-name').value.trim();
-    const rawPhone = document.getElementById('new-user-phone').value.trim();
+    const email = document.getElementById('new-user-email').value.trim().toLowerCase();
     const role = document.getElementById('new-user-role').value;
     const framework = document.getElementById('new-user-framework').value;
-    if (!name || !rawPhone) { showToast('יש למלא שם וטלפון'); return; }
-    const phone = formatPhone(rawPhone);
+    if (!name || !email || !email.includes('@')) { showToast('יש למלא שם ומייל תקין'); return; }
     try {
-        await db.collection('users').doc(phone).set({ name, phone, role, framework, createdAt: new Date() });
+        await db.collection('users').doc(email).set({ name, email, role, framework, createdAt: new Date() });
         showToast('משתמש נוסף: ' + name);
         document.getElementById('new-user-name').value = '';
-        document.getElementById('new-user-phone').value = '';
+        document.getElementById('new-user-email').value = '';
         loadAdminUsers();
     } catch(e) { showToast('שגיאה בהוספת משתמש'); console.error(e); }
 }
@@ -1689,31 +1700,30 @@ async function importUsersFromExcel() {
 
         if (rows.length < 2) { statusEl.innerHTML = 'הקובץ ריק'; showLoading(false); return; }
 
-        // Expect columns: name, phone, role, framework
+        // Expect columns: name, email, role, framework
         const headers = rows[0].map(h => (h+'').trim().toLowerCase());
         const nameIdx = headers.findIndex(h => h.includes('שם') || h.includes('name'));
-        const phoneIdx = headers.findIndex(h => h.includes('טלפון') || h.includes('phone') || h.includes('נייד'));
+        const emailIdx = headers.findIndex(h => h.includes('מייל') || h.includes('email') || h.includes('דוא'));
         const roleIdx = headers.findIndex(h => h.includes('תפקיד') || h.includes('role'));
         const fwIdx = headers.findIndex(h => h.includes('מסגרת') || h.includes('framework') || h.includes('גדוד'));
 
-        if (phoneIdx === -1) { statusEl.innerHTML = 'לא נמצאה עמודת טלפון בקובץ'; showLoading(false); return; }
+        if (emailIdx === -1) { statusEl.innerHTML = 'לא נמצאה עמודת מייל בקובץ'; showLoading(false); return; }
 
         let added = 0, errors = 0;
         const batch = db.batch();
 
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            const rawPhone = (row[phoneIdx] || '').toString().trim();
-            if (!rawPhone) continue;
-            const phone = formatPhone(rawPhone);
+            const email = (row[emailIdx] || '').toString().trim().toLowerCase();
+            if (!email || !email.includes('@')) continue;
             const name = nameIdx >= 0 ? (row[nameIdx] || '').toString().trim() : '';
             const role = roleIdx >= 0 ? (row[roleIdx] || 'lohem').toString().trim() : 'lohem';
             const framework = fwIdx >= 0 ? (row[fwIdx] || 'yonatan').toString().trim() : 'yonatan';
 
-            const docRef = db.collection('users').doc(phone);
+            const docRef = db.collection('users').doc(email);
             batch.set(docRef, {
-                name: name || phone,
-                phone,
+                name: name || email,
+                email,
                 role: ROLES[role] ? role : 'lohem',
                 framework: FRAMEWORKS[framework] ? framework : 'yonatan',
                 importedAt: new Date()
@@ -1747,12 +1757,12 @@ async function showFrameworkPhones(framework, btn) {
             return;
         }
         let html = `<h4 style="margin-bottom:10px;"><span class="framework-badge ${getFrameworkClass(framework)}">${getFrameworkLabel(framework)}</span> — ${snap.size} משתמשים</h4>`;
-        html += '<table class="admin-table"><thead><tr><th>#</th><th>שם</th><th>טלפון</th><th>תפקיד</th></tr></thead><tbody>';
+        html += '<table class="admin-table"><thead><tr><th>#</th><th>שם</th><th>מייל</th><th>תפקיד</th></tr></thead><tbody>';
         let idx = 0;
         snap.forEach(doc => {
             idx++;
             const d = doc.data();
-            html += `<tr><td>${idx}</td><td>${d.name || doc.id}</td><td style="direction:ltr;text-align:right;">${d.phone || '—'}</td><td>${ROLES[d.role]?.label || d.role || '—'}</td></tr>`;
+            html += `<tr><td>${idx}</td><td>${d.name || doc.id}</td><td style="direction:ltr;text-align:right;">${d.email || d.phone || '—'}</td><td>${ROLES[d.role]?.label || d.role || '—'}</td></tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;
@@ -1836,7 +1846,7 @@ function loadReportsPage() {
 // ============================================================
 async function waitForFirebase(retries) {
     for (let i = 0; i < retries; i++) {
-        if (typeof firebase !== 'undefined' && firebase.firestore && firebase.auth) return true;
+        if (typeof firebase !== 'undefined' && firebase.firestore) return true;
         await new Promise(r => setTimeout(r, 500));
     }
     return false;
@@ -1851,8 +1861,10 @@ async function initApp() {
         if (!ready) { console.warn('Firebase not loaded'); return; }
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.firestore();
-        auth = firebase.auth();
-        auth.languageCode = 'he';
+        // EmailJS init
+        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
     } catch(e) { console.error('Init error:', e); }
 }
 
@@ -1861,12 +1873,12 @@ function tryAutoLogin() {
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
-            // Migrate old format {name, isAdmin} to new format {name, phone, role, framework}
+            // Migrate old format {name, isAdmin} to new format {name, email, role, framework}
             if (parsed.isAdmin !== undefined && !parsed.role) {
                 currentUser = {
                     id: parsed.name,
                     name: parsed.name,
-                    phone: '',
+                    email: '',
                     role: parsed.isAdmin ? 'menahel' : 'lohem',
                     framework: 'yonatan'
                 };
