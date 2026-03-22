@@ -1174,8 +1174,21 @@ async function loadInlineLearningContent(prog) {
             const cal = await fetchSefariaCalendar();
             const item = findCalendarItem(cal, prog.calendarKey);
             if (item) {
-                const ref = item.url ? item.url.replace(/^\//, '') : (item.ref || '');
+                // Prefer item.ref over item.url; skip collection URLs
+                let ref = item.ref || '';
+                if (!ref && item.url) {
+                    const rawUrl = item.url.replace(/^\//, '');
+                    if (!rawUrl.startsWith('collections/')) ref = rawUrl;
+                }
                 refTitle = item.displayValue?.he || item.displayValue?.en || ref;
+                // For collection-type items (e.g. Chok LeYisrael), fall back to parashat hashavua
+                if (!ref && item.url && item.url.startsWith('collections/')) {
+                    const parasha = findCalendarItem(cal, 'Parashat Hashavua');
+                    if (parasha) {
+                        ref = parasha.ref || parasha.url?.replace(/^\//, '') || '';
+                        refTitle = (refTitle || '') + ' — ' + (parasha.displayValue?.he || '');
+                    }
+                }
                 if (ref) textData = await fetchSefariaText(ref);
             }
         } else if (prog.sefariaRef) {
