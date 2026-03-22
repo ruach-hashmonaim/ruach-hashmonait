@@ -1847,7 +1847,20 @@ function tryAutoLogin() {
     const saved = localStorage.getItem('ruach-user');
     if (saved) {
         try {
-            currentUser = JSON.parse(saved);
+            const parsed = JSON.parse(saved);
+            // Migrate old format {name, isAdmin} to new format {name, phone, role, framework}
+            if (parsed.isAdmin !== undefined && !parsed.role) {
+                currentUser = {
+                    id: parsed.name,
+                    name: parsed.name,
+                    phone: '',
+                    role: parsed.isAdmin ? 'menahel' : 'lohem',
+                    framework: 'yonatan'
+                };
+                localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+            } else {
+                currentUser = parsed;
+            }
             onLoginSuccess();
             const page = window.location.hash.slice(1) || 'home';
             if (PAGE_PERMISSIONS[page] && hasPermission(PAGE_PERMISSIONS[page])) activatePage(page);
