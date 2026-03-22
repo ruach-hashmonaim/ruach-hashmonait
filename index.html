@@ -1109,13 +1109,18 @@ function onLoginSuccess() {
     document.getElementById('sidebar-guest').style.display = 'none';
     document.getElementById('sidebar-user-info').style.display = 'flex';
     document.getElementById('sidebar-username').textContent = currentUser.name;
-    document.getElementById('sidebar-role').textContent = userRoleLabel() + (currentUser.framework ? ' · ' + getFrameworkLabel(currentUser.framework) : '');
+    const isSystemAdmin = currentUser.role === 'menahel' && !currentUser.framework;
+    const roleText = isSystemAdmin ? 'מנהל מערכת' : (userRoleLabel() + (currentUser.framework ? ' · ' + getFrameworkLabel(currentUser.framework) : ''));
+    document.getElementById('sidebar-role').textContent = roleText;
     document.getElementById('sidebar-avatar').textContent = currentUser.name.charAt(0);
     document.getElementById('home-greeting').textContent = '— ' + currentUser.name;
 
     // Show framework badge on home
     const fwBadge = document.getElementById('home-framework-badge');
-    if (currentUser.framework) {
+    if (isSystemAdmin) {
+        fwBadge.style.display = '';
+        fwBadge.innerHTML = `<span class="framework-badge" style="background:var(--primary);color:#fff;">מנהל מערכת</span>`;
+    } else if (currentUser.framework) {
         fwBadge.style.display = '';
         fwBadge.innerHTML = `<span class="framework-badge ${getFrameworkClass(currentUser.framework)}">${getFrameworkLabel(currentUser.framework)}</span>`;
     }
