@@ -991,7 +991,7 @@ async function loginWithPassword() {
             name: ud.name || userDoc.id,
             email: email,
             role: ud.role || 'lohem',
-            framework: ud.framework || 'yonatan'
+            framework: ud.framework || ''
         };
         localStorage.setItem('ruach-user', JSON.stringify(currentUser));
         onLoginSuccess();
@@ -1081,7 +1081,7 @@ async function verifyOtpCode() {
             name: ud.name || userDoc.id,
             email: email,
             role: ud.role || 'lohem',
-            framework: ud.framework || 'yonatan'
+            framework: ud.framework || ''
         };
         localStorage.setItem('ruach-user', JSON.stringify(currentUser));
         pendingOtp = null;
