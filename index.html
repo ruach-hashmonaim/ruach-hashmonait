@@ -280,18 +280,35 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="modal-close" onclick="closeLoginModal()">&times;</button>
         <img class="login-logo" src="icons/icon-192x192.png" alt="רוח חשמונאית">
         <h2 style="color:var(--primary);margin-bottom:4px;">כניסה למערכת</h2>
-        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזדהות באמצעות כתובת מייל</p>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזדהות באמצעות מייל וסיסמה</p>
 
-        <!-- Step 1: Email -->
-        <div id="otp-step-email">
+        <!-- Password login (default) -->
+        <div id="login-step-password">
             <div class="form-group" style="text-align:right;">
                 <label>כתובת מייל</label>
-                <input type="email" id="login-email" placeholder="user@example.com" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')sendOtpCode()">
+                <input type="email" id="login-email" placeholder="user@example.com" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
             </div>
-            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="sendOtpCode()" id="btn-send-otp">שלח קוד אימות למייל</button>
+            <div class="form-group" style="text-align:right;">
+                <label>סיסמה</label>
+                <input type="password" id="login-password" placeholder="••••••" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')loginWithPassword()">
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="loginWithPassword()">כניסה</button>
+            <div style="text-align:center;margin-top:14px;">
+                <button class="btn-secondary btn-sm" style="font-size:0.78rem;" onclick="showOtpLogin()">כניסה עם קוד חד-פעמי למייל</button>
+            </div>
         </div>
 
-        <!-- Step 2: OTP code verification -->
+        <!-- OTP Step 1: Email -->
+        <div id="otp-step-email" style="display:none;">
+            <div class="form-group" style="text-align:right;">
+                <label>כתובת מייל</label>
+                <input type="email" id="login-email-otp" placeholder="user@example.com" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')sendOtpCode()">
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="sendOtpCode()" id="btn-send-otp">שלח קוד אימות למייל</button>
+            <button class="btn-secondary btn-sm" style="width:100%;margin-top:10px;" onclick="showPasswordLogin()">חזרה — כניסה עם סיסמה</button>
+        </div>
+
+        <!-- OTP Step 2: Code verification -->
         <div id="otp-step-code" style="display:none;">
             <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הקוד נשלח לכתובת <b id="sent-email-display"></b></p>
             <div class="form-group" style="text-align:right;">
@@ -299,7 +316,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <input type="text" id="login-code" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:6px;font-size:1.3rem;font-weight:700;direction:ltr;" onkeydown="if(event.key==='Enter')verifyOtpCode()">
             </div>
             <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="verifyOtpCode()">אימות וכניסה</button>
-            <button class="btn-secondary btn-sm" style="width:100%;margin-top:8px;" onclick="resetOtpLogin()">חזרה — שינוי כתובת</button>
+            <button class="btn-secondary btn-sm" style="width:100%;margin-top:8px;" onclick="showPasswordLogin()">חזרה — כניסה עם סיסמה</button>
         </div>
 
         <div id="filter-warning" style="display:none;background:#FFF3E0;border-radius:8px;padding:12px;margin-top:14px;font-size:0.8rem;color:#333;">
@@ -588,6 +605,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="text" id="new-user-name" placeholder="שם מלא" style="flex:1;min-width:130px;">
                     <input type="email" id="new-user-email" placeholder="user@example.com" style="width:200px;direction:ltr;">
+                    <input type="text" id="new-user-password" placeholder="סיסמה" style="width:120px;direction:ltr;">
                     <select id="new-user-role" style="width:150px;">
                         <option value="lohem">לוחם</option>
                         <option value="mefaked_zater">מפקד זוטר</option>
@@ -905,11 +923,83 @@ const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID'; // Email Templates → Template 
 function openLoginModal(redirectPage) {
     pendingLoginPage = redirectPage || null;
     document.getElementById('login-modal').classList.add('open');
-    resetOtpLogin();
+    showPasswordLogin();
 }
 function closeLoginModal() {
     document.getElementById('login-modal').classList.remove('open');
     pendingLoginPage = null;
+}
+
+function showPasswordLogin() {
+    document.getElementById('login-step-password').style.display = '';
+    document.getElementById('otp-step-email').style.display = 'none';
+    document.getElementById('otp-step-code').style.display = 'none';
+    document.getElementById('login-password').value = '';
+    pendingOtp = null;
+}
+function showOtpLogin() {
+    document.getElementById('login-step-password').style.display = 'none';
+    document.getElementById('otp-step-email').style.display = '';
+    document.getElementById('otp-step-code').style.display = 'none';
+    // Copy email from password form if entered
+    const em = document.getElementById('login-email').value.trim();
+    if (em) document.getElementById('login-email-otp').value = em;
+    pendingOtp = null;
+}
+
+// Simple hash for password storage (SHA-256)
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password + '_ruach_salt_2026');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function loginWithPassword() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const password = document.getElementById('login-password').value;
+    if (!email || !email.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
+    if (!password) { showToast('יש להזין סיסמה'); return; }
+
+    showLoading(true);
+    try {
+        const snap = await db.collection('users').where('email', '==', email).limit(1).get();
+        if (snap.empty) {
+            showToast('כתובת מייל לא רשומה במערכת');
+            showLoading(false);
+            return;
+        }
+
+        const userDoc = snap.docs[0];
+        const ud = userDoc.data();
+        const hashedInput = await hashPassword(password);
+
+        if (ud.passwordHash && ud.passwordHash !== hashedInput) {
+            showToast('סיסמה שגויה');
+            showLoading(false);
+            return;
+        }
+
+        // If user has no password yet, set it on first login
+        if (!ud.passwordHash) {
+            await db.collection('users').doc(userDoc.id).update({ passwordHash: hashedInput });
+        }
+
+        currentUser = {
+            id: userDoc.id,
+            name: ud.name || userDoc.id,
+            email: email,
+            role: ud.role || 'lohem',
+            framework: ud.framework || 'yonatan'
+        };
+        localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+        onLoginSuccess();
+    } catch(e) {
+        console.error('Login error:', e);
+        showToast('שגיאה בכניסה — בדוק חיבור');
+    }
+    showLoading(false);
 }
 
 function generateOtp() {
@@ -917,7 +1007,7 @@ function generateOtp() {
 }
 
 async function sendOtpCode() {
-    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const email = document.getElementById('login-email-otp').value.trim().toLowerCase();
     if (!email || !email.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
 
     // Check if email is registered in the system
@@ -1006,8 +1096,7 @@ async function verifyOtpCode() {
 }
 
 function resetOtpLogin() {
-    document.getElementById('otp-step-email').style.display = '';
-    document.getElementById('otp-step-code').style.display = 'none';
+    showPasswordLogin();
     document.getElementById('login-email').value = '';
     document.getElementById('login-code').value = '';
     pendingOtp = null;
@@ -1747,36 +1836,77 @@ async function loadAdminUsers() {
 async function addUser() {
     const name = document.getElementById('new-user-name').value.trim();
     const email = document.getElementById('new-user-email').value.trim().toLowerCase();
+    const password = document.getElementById('new-user-password').value.trim();
     const role = document.getElementById('new-user-role').value;
     const framework = document.getElementById('new-user-framework').value;
     if (!name || !email || !email.includes('@')) { showToast('יש למלא שם ומייל תקין'); return; }
     try {
-        await db.collection('users').doc(email).set({ name, email, role, framework, createdAt: new Date() });
+        const userData = { name, email, role, framework, createdAt: new Date() };
+        if (password) {
+            userData.passwordHash = await hashPassword(password);
+        }
+        await db.collection('users').doc(email).set(userData);
         showToast('משתמש נוסף: ' + name);
         document.getElementById('new-user-name').value = '';
         document.getElementById('new-user-email').value = '';
+        document.getElementById('new-user-password').value = '';
         loadAdminUsers();
     } catch(e) { showToast('שגיאה בהוספת משתמש'); console.error(e); }
 }
 
 async function editUserRole(docId) {
+    // Fetch current data
+    let currentData = {};
+    try {
+        const doc = await db.collection('users').doc(docId).get();
+        if (doc.exists) currentData = doc.data();
+    } catch(e) {}
+
     const roleKeys = Object.keys(ROLES);
-    const roleLabels = roleKeys.map(k => ROLES[k].label);
-    const chosen = prompt('בחר תפקיד חדש:\n' + roleKeys.map((k,i) => `${i+1}. ${ROLES[k].label}`).join('\n') + '\n\nהזן מספר:');
+    const fwKeys = Object.keys(FRAMEWORKS);
+
+    // Build edit form in a modal-style prompt
+    const newName = prompt('שם (נוכחי: ' + (currentData.name || docId) + '):', currentData.name || '');
+    if (newName === null) return; // cancelled
+
+    const newEmail = prompt('מייל (נוכחי: ' + (currentData.email || docId) + '):', currentData.email || docId);
+    if (newEmail === null) return;
+
+    const newPassword = prompt('סיסמה חדשה (השאר ריק לשמירת הנוכחית):', '');
+
+    const chosen = prompt('תפקיד:\n' + roleKeys.map((k,i) => `${i+1}. ${ROLES[k].label}${k === currentData.role ? ' ◄' : ''}`).join('\n') + '\n\nהזן מספר:');
     if (!chosen) return;
     const idx = parseInt(chosen) - 1;
     if (idx < 0 || idx >= roleKeys.length) { showToast('בחירה לא תקינה'); return; }
-    const fwChosen = prompt('בחר מסגרת:\n1. גדוד יונתן\n2. גדוד שמעון\n3. בה"ד מכבים\n4. מפח"ט\n\nהזן מספר:');
-    const fwKeys = Object.keys(FRAMEWORKS);
+
+    const fwChosen = prompt('מסגרת:\n' + fwKeys.map((k,i) => `${i+1}. ${FRAMEWORKS[k]}${k === currentData.framework ? ' ◄' : ''}`).join('\n') + '\n\nהזן מספר:');
     const fwIdx = parseInt(fwChosen) - 1;
-    const newFw = (fwIdx >= 0 && fwIdx < fwKeys.length) ? fwKeys[fwIdx] : undefined;
+    const newFw = (fwIdx >= 0 && fwIdx < fwKeys.length) ? fwKeys[fwIdx] : currentData.framework;
+
     try {
         const update = { role: roleKeys[idx] };
+        if (newName) update.name = newName;
         if (newFw) update.framework = newFw;
-        await db.collection('users').doc(docId).update(update);
-        showToast('עודכן');
+        if (newPassword) update.passwordHash = await hashPassword(newPassword);
+
+        const emailChanged = newEmail && newEmail.trim().toLowerCase() !== docId;
+
+        if (emailChanged) {
+            // Email changed — need to create new doc and delete old one
+            const cleanEmail = newEmail.trim().toLowerCase();
+            update.email = cleanEmail;
+            // Copy all existing data and merge updates
+            const fullData = { ...currentData, ...update };
+            await db.collection('users').doc(cleanEmail).set(fullData);
+            await db.collection('users').doc(docId).delete();
+            showToast('משתמש עודכן (מייל שונה)');
+        } else {
+            if (newEmail) update.email = newEmail.trim().toLowerCase();
+            await db.collection('users').doc(docId).update(update);
+            showToast('משתמש עודכן');
+        }
         loadAdminUsers();
-    } catch(e) { showToast('שגיאה'); }
+    } catch(e) { showToast('שגיאה בעדכון'); console.error(e); }
 }
 
 async function deleteUser(docId) {
