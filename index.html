@@ -18,7 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-app-compat.js';document.head.appendChild(s);"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- OTP emails sent via Google Apps Script + Resend proxy -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-firestore-compat.js';document.head.appendChild(s);"></script>
     <script>
@@ -914,11 +914,8 @@ function closeSidebar() {
 let pendingLoginPage = null;
 let pendingOtp = null; // { code, email, expiresAt }
 
-// *** EmailJS Configuration ***
-// Sign up free at https://www.emailjs.com and fill in these 3 values:
-const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';   // Account → API Keys → Public Key
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';   // Email Services → Service ID
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID'; // Email Templates → Template ID
+// *** OTP Email Configuration via Google Apps Script + Resend ***
+const OTP_PROXY_URL = 'https://script.google.com/macros/s/AKfycbybkmnMtlnb4ifFf2LPo-8sYtSTbWU3Xk0GpXC189OIZHYUXncL4U2uGT4L_kAx8L7KHQ/exec';
 
 function openLoginModal(redirectPage) {
     pendingLoginPage = redirectPage || null;
@@ -1026,15 +1023,17 @@ async function sendOtpCode() {
 
     showLoading(true);
     try {
-        // Send OTP via EmailJS
-        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                to_email: email,
-                otp_code: code,
-                app_name: 'רוח חשמונאית'
-            }, EMAILJS_PUBLIC_KEY);
+        // Send OTP via Google Apps Script proxy → Resend
+        if (OTP_PROXY_URL && OTP_PROXY_URL !== 'APPS_SCRIPT_URL_HERE') {
+            const resp = await fetch(OTP_PROXY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ email: email, otp_code: code })
+            });
+            const result = await resp.json();
+            if (!result.success) throw new Error(result.error || 'Email send failed');
         } else {
-            // Fallback: store code in Firestore for manual verification / dev mode
+            // Fallback: store code in Firestore for dev mode
             if (db) {
                 await db.collection('otp_codes').doc(email).set({
                     code, createdAt: new Date(), expiresAt: new Date(pendingOtp.expiresAt)
@@ -2100,10 +2099,7 @@ async function initApp() {
         if (!ready) { console.warn('Firebase not loaded'); return; }
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.firestore();
-        // EmailJS init
-        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
-            emailjs.init(EMAILJS_PUBLIC_KEY);
-        }
+        // OTP proxy ready (Google Apps Script + Resend)
     } catch(e) { console.error('Init error:', e); }
 }
 
