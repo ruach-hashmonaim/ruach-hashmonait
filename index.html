@@ -589,7 +589,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
         <button class="btn-secondary btn-sm admin-tab active" onclick="showAdminTab('users')">👥 משתמשים</button>
-        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">📱 טבלת משתמשים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">📋 טבלת משתמשים לפי מסגרת</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">📊 סקרים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">⚔️ תכני הכשרה</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">📈 דשבורד</button>
@@ -1156,7 +1156,6 @@ function updateUIForRole() {
 function logout() {
     currentUser = null;
     localStorage.removeItem('ruach-user');
-    if (auth) auth.signOut().catch(()=>{});
 
     document.getElementById('sidebar-guest').style.display = '';
     document.getElementById('sidebar-user-info').style.display = 'none';
