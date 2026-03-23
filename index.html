@@ -314,22 +314,20 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="splash-title">רוח חשמונאית</div>
         <div class="splash-subtitle">תוכנית הזהות והחוסן · חטיבת החשמונאים</div>
         <div class="splash-buttons">
-            <button class="splash-btn splash-btn-login" onclick="splashLogin()">🔑 כניסה לאזור שלי</button>
-            <button class="splash-btn splash-btn-guest" onclick="splashGuest()">👤 כניסה כאורח</button>
+            <button class="splash-btn splash-btn-login" onclick="splashEnter()">🏠 כניסה לאתר</button>
         </div>
         <div class="splash-credit">פותח ע״י IAB-Smart AI Solutions</div>
     </div>
 </div>
 
-<!-- ========== LOGIN MODAL (Email + OTP) ========== -->
+<!-- ========== STAFF LOGIN MODAL ========== -->
 <div class="modal-overlay" id="login-modal">
     <div class="modal-box">
         <button class="modal-close" onclick="closeLoginModal()">&times;</button>
         <img class="login-logo" src="icons/icon-192x192.png" alt="רוח חשמונאית">
-        <h2 style="color:var(--primary);margin-bottom:4px;">כניסה למערכת</h2>
-        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזדהות באמצעות מייל וסיסמה</p>
+        <h2 style="color:var(--primary);margin-bottom:4px;">כניסת צוות</h2>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">כניסה לאזור הניהול וההכשרה</p>
 
-        <!-- Password login (default) -->
         <div id="login-step-password">
             <div class="form-group" style="text-align:right;">
                 <label>כתובת מייל</label>
@@ -340,30 +338,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <input type="password" id="login-password" placeholder="••••••" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')loginWithPassword()">
             </div>
             <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="loginWithPassword()">כניסה</button>
-            <div style="text-align:center;margin-top:14px;">
-                <button class="btn-secondary btn-sm" style="font-size:0.78rem;" onclick="showOtpLogin()">כניסה עם קוד חד-פעמי למייל</button>
-            </div>
-        </div>
-
-        <!-- OTP Step 1: Email -->
-        <div id="otp-step-email" style="display:none;">
-            <div class="form-group" style="text-align:right;">
-                <label>כתובת מייל</label>
-                <input type="email" id="login-email-otp" placeholder="user@example.com" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')sendOtpCode()">
-            </div>
-            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="sendOtpCode()" id="btn-send-otp">שלח קוד אימות למייל</button>
-            <button class="btn-secondary btn-sm" style="width:100%;margin-top:10px;" onclick="showPasswordLogin()">חזרה — כניסה עם סיסמה</button>
-        </div>
-
-        <!-- OTP Step 2: Code verification -->
-        <div id="otp-step-code" style="display:none;">
-            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הקוד נשלח לכתובת <b id="sent-email-display"></b></p>
-            <div class="form-group" style="text-align:right;">
-                <label>קוד אימות</label>
-                <input type="text" id="login-code" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:6px;font-size:1.3rem;font-weight:700;direction:ltr;" onkeydown="if(event.key==='Enter')verifyOtpCode()">
-            </div>
-            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="verifyOtpCode()">אימות וכניסה</button>
-            <button class="btn-secondary btn-sm" style="width:100%;margin-top:8px;" onclick="showPasswordLogin()">חזרה — כניסה עם סיסמה</button>
         </div>
 
         <div id="filter-warning" style="display:none;background:#FFF3E0;border-radius:8px;padding:12px;margin-top:14px;font-size:0.8rem;color:#333;">
@@ -374,13 +348,69 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 </div>
 
+<!-- ========== USER REGISTRATION MODAL ========== -->
+<div class="modal-overlay" id="register-modal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeRegisterModal()">&times;</button>
+        <img class="login-logo" src="icons/icon-192x192.png" alt="רוח חשמונאית">
+        <h2 style="color:var(--primary);margin-bottom:4px;">יצירת חשבון</h2>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הירשם כדי לעקוב אחרי ההתקדמות שלך ולהצטרף לתוכניות</p>
+
+        <div id="register-step-form">
+            <div class="form-group" style="text-align:right;">
+                <label>שם מלא</label>
+                <input type="text" id="register-name" placeholder="ישראל ישראלי" onkeydown="if(event.key==='Enter')document.getElementById('register-username').focus()">
+            </div>
+            <div class="form-group" style="text-align:right;">
+                <label>שם משתמש (באנגלית)</label>
+                <input type="text" id="register-username" placeholder="israel123" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('register-pass').focus()">
+                <small style="color:var(--text-secondary);font-size:0.75rem;">ישמש לכניסה עתידית</small>
+            </div>
+            <div class="form-group" style="text-align:right;">
+                <label>סיסמה</label>
+                <input type="password" id="register-pass" placeholder="לפחות 4 תווים" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('register-pass2').focus()">
+            </div>
+            <div class="form-group" style="text-align:right;">
+                <label>אימות סיסמה</label>
+                <input type="password" id="register-pass2" placeholder="הזן שוב" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')registerUser()">
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="registerUser()">צור חשבון</button>
+            <div style="text-align:center;margin-top:14px;">
+                <span style="font-size:0.82rem;color:var(--text-secondary);">כבר יש לך חשבון? </span>
+                <button class="btn-secondary btn-sm" style="font-size:0.78rem;" onclick="closeRegisterModal();openUserLoginModal()">כניסה</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== USER LOGIN MODAL (username + password) ========== -->
+<div class="modal-overlay" id="user-login-modal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeUserLoginModal()">&times;</button>
+        <img class="login-logo" src="icons/icon-192x192.png" alt="רוח חשמונאית">
+        <h2 style="color:var(--primary);margin-bottom:4px;">כניסה לחשבון</h2>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזן את שם המשתמש והסיסמה שלך</p>
+
+        <div id="user-login-form">
+            <div class="form-group" style="text-align:right;">
+                <label>שם משתמש</label>
+                <input type="text" id="user-login-username" placeholder="israel123" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('user-login-pass').focus()">
+            </div>
+            <div class="form-group" style="text-align:right;">
+                <label>סיסמה</label>
+                <input type="password" id="user-login-pass" placeholder="••••••" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')userLogin()">
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="userLogin()">כניסה</button>
+            <div style="text-align:center;margin-top:14px;">
+                <span style="font-size:0.82rem;color:var(--text-secondary);">אין לך חשבון? </span>
+                <button class="btn-secondary btn-sm" style="font-size:0.78rem;" onclick="closeUserLoginModal();openRegisterModal()">הרשמה</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ========== APP LAYOUT ========== -->
 <div id="app-layout" class="app-layout" style="display:none;">
-
-<!-- GUEST MODE BAR -->
-<div class="guest-bar" id="guest-bar">
-    👤 אתה במצב אורח — <a onclick="exitGuestMode()">כניסה לאזור שלי</a>
-</div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
@@ -394,6 +424,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <div class="nav-section">למידה</div>
         <a onclick="navigate('learning')" data-page="learning"><span class="nav-icon">📖</span> והגית בו — למידה יומית</a>
+        <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">🔤</span> לימוד עברית</a>
 
         <div class="nav-section">שטח וגיאוגרפיה</div>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">🗺️</span> בעקבות הנצח</a>
@@ -415,11 +446,22 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('admin')" data-page="admin" class="nav-admin" style="display:none;"><span class="nav-icon">⚙️</span> ניהול מערכת</a>
     </nav>
     <div class="sidebar-footer">
-        <!-- Not logged in: show login button -->
+        <!-- No user logged in: show account buttons -->
         <div id="sidebar-guest">
-            <button class="btn-staff-login" onclick="openLoginModal()">📱 כניסה למערכת</button>
+            <button class="btn-secondary btn-sm" style="width:100%;margin-bottom:6px;" onclick="openUserLoginModal()">👤 כניסה לחשבון</button>
+            <button class="btn-secondary btn-sm" style="width:100%;margin-bottom:6px;font-size:0.78rem;" onclick="openRegisterModal()">יצירת חשבון חדש</button>
+            <button class="btn-staff-login" onclick="openLoginModal()" style="font-size:0.75rem;opacity:0.7;">🔑 כניסת צוות</button>
         </div>
-        <!-- Logged in: show user info -->
+        <!-- Participant logged in -->
+        <div id="sidebar-participant-info" class="sidebar-user" style="display:none;">
+            <div class="user-avatar" id="sidebar-participant-avatar">--</div>
+            <div class="user-info">
+                <div class="user-name" id="sidebar-participant-name">—</div>
+                <div class="user-role" id="sidebar-participant-role">משתתף</div>
+            </div>
+            <button class="btn-logout" onclick="logoutParticipant()">יציאה</button>
+        </div>
+        <!-- Staff logged in -->
         <div id="sidebar-user-info" class="sidebar-user" style="display:none;">
             <div class="user-avatar" id="sidebar-avatar">--</div>
             <div class="user-info">
@@ -476,6 +518,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="tile-icon">👨‍✈️</div>
             <div class="tile-title">קורס קצינים</div>
             <div class="tile-desc">תכני רוח מכבי — קצינים</div>
+        </a>
+        <a class="home-tile" onclick="navigate('hebrew')">
+            <div class="tile-icon">🔤</div>
+            <div class="tile-title">לימוד עברית</div>
+            <div class="tile-desc">חיזוק השפה העברית — קריאה, כתיבה ודקדוק</div>
         </a>
         <a class="home-tile" onclick="navigate('internet-safety')">
             <div class="tile-icon">🛡️</div>
@@ -556,6 +603,19 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="training-filter-bar" id="training-officer-filter"></div>
     </div>
     <div id="training-officer-modules"></div>
+</div>
+
+<!-- ====== HEBREW — לימוד עברית ====== -->
+<div class="page-section" id="page-hebrew">
+    <div class="card">
+        <div class="card-title"><div class="icon">🔤</div> לימוד עברית</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">חיזוק השפה העברית — קריאה, כתיבה, דקדוק ואוצר מילים. הצטרף לתוכנית לימוד והתקדם בקצב שלך.</p>
+    </div>
+    <div class="card" style="text-align:center;padding:40px 20px;">
+        <p style="font-size:1.3rem;margin-bottom:12px;">🚧 המודול בבנייה</p>
+        <p style="color:var(--text-secondary);">תכני לימוד עברית יתווספו בקרוב — שיעורים, תרגולים, ומבחנים.</p>
+        <p style="color:var(--text-secondary);margin-top:8px;">בקרוב: הרשמה לתוכניות לימוד עברית ומעקב התקדמות אישי.</p>
+    </div>
 </div>
 
 <!-- ====== GEOGRAPHY — בעקבות הנצח ====== -->
@@ -1010,6 +1070,7 @@ function setLocalReminders(data) { localStorage.setItem('ruach-reminders', JSON.
 const PAGE_TITLES = {
     'home': 'דף הבית',
     'learning': 'והגית בו — למידה יומית',
+    'hebrew': 'לימוד עברית',
     'training-basic': 'הכשרת יסוד — רוח מכבי',
     'training-nco': 'קורס מ״כים — רוח מכבי',
     'training-officer': 'קורס קצינים — רוח מכבי',
@@ -1020,9 +1081,11 @@ const PAGE_TITLES = {
     'admin': 'ניהול מערכת'
 };
 
-// Guest mode pages (no auth needed)
-const GUEST_PAGES = ['home', 'learning', 'geography', 'internet-safety'];
-let isGuestMode = false;
+// Public pages — accessible to everyone without login
+const PUBLIC_PAGES = ['home', 'learning', 'hebrew', 'geography', 'internet-safety', 'surveys'];
+
+// Participant user (self-registered)
+let currentParticipant = null;
 
 // Pages and their required permission
 const PAGE_PERMISSIONS = {
@@ -1034,13 +1097,7 @@ const PAGE_PERMISSIONS = {
 };
 
 function navigate(page) {
-    // Guest mode: restrict to allowed pages
-    if (isGuestMode && !currentUser) {
-        if (!GUEST_PAGES.includes(page)) {
-            showToast('עמוד זה דורש כניסה למערכת');
-            return;
-        }
-    }
+    // Staff-only pages require login with correct permissions
     const requiredPerm = PAGE_PERMISSIONS[page];
     if (requiredPerm) {
         if (!currentUser) { openLoginModal(page); return; }
@@ -1107,44 +1164,34 @@ function closeSidebar() {
 }
 
 // ============================================================
-// LOGIN MODAL & EMAIL OTP AUTH
+// LOGIN & REGISTRATION
 // ============================================================
 let pendingLoginPage = null;
-let pendingOtp = null; // { code, email, expiresAt }
 
-// *** OTP Email Configuration via Google Apps Script + MailApp ***
-const OTP_PROXY_URL = 'https://script.google.com/macros/s/AKfycby5rgsgi6MCByDOuPvWEEvGy2j69Blus_MWMQW3VO4wgFto0DnxiMuQdslaogemZv2i2w/exec';
-
+// --- Staff Login Modal ---
 function openLoginModal(redirectPage) {
     pendingLoginPage = redirectPage || null;
     document.getElementById('login-modal').classList.add('open');
-    showPasswordLogin();
 }
 function closeLoginModal() {
     document.getElementById('login-modal').classList.remove('open');
     pendingLoginPage = null;
-    // If no user logged in and not in guest mode, go back to splash
-    if (!currentUser && !isGuestMode) {
-        document.getElementById('app-layout').style.display = 'none';
-        document.getElementById('splash-screen').style.display = '';
-    }
 }
 
-function showPasswordLogin() {
-    document.getElementById('login-step-password').style.display = '';
-    document.getElementById('otp-step-email').style.display = 'none';
-    document.getElementById('otp-step-code').style.display = 'none';
-    document.getElementById('login-password').value = '';
-    pendingOtp = null;
+// --- User Registration Modal ---
+function openRegisterModal() {
+    document.getElementById('register-modal').classList.add('open');
 }
-function showOtpLogin() {
-    document.getElementById('login-step-password').style.display = 'none';
-    document.getElementById('otp-step-email').style.display = '';
-    document.getElementById('otp-step-code').style.display = 'none';
-    // Copy email from password form if entered
-    const em = document.getElementById('login-email').value.trim();
-    if (em) document.getElementById('login-email-otp').value = em;
-    pendingOtp = null;
+function closeRegisterModal() {
+    document.getElementById('register-modal').classList.remove('open');
+}
+
+// --- User Login Modal ---
+function openUserLoginModal() {
+    document.getElementById('user-login-modal').classList.add('open');
+}
+function closeUserLoginModal() {
+    document.getElementById('user-login-modal').classList.remove('open');
 }
 
 // Simple hash for password storage (SHA-256)
@@ -1156,6 +1203,7 @@ async function hashPassword(password) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// --- Staff Login (email + password → Firestore 'users' collection) ---
 async function loginWithPassword() {
     const email = normalizeGmail(document.getElementById('login-email').value.trim().toLowerCase());
     const password = document.getElementById('login-password').value;
@@ -1202,137 +1250,131 @@ async function loginWithPassword() {
     showLoading(false);
 }
 
-function generateOtp() {
-    return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 function normalizeGmail(email) {
     const [local, domain] = email.split('@');
     if (domain === 'gmail.com') return local.replace(/\./g, '') + '@gmail.com';
     return email;
 }
 
-async function sendOtpCode() {
-    const rawEmail = document.getElementById('login-email-otp').value.trim().toLowerCase();
-    if (!rawEmail || !rawEmail.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
-    const email = normalizeGmail(rawEmail);
+// --- User Registration (username + password → Firestore 'participants' collection) ---
+async function registerUser() {
+    const fullName = document.getElementById('register-fullname').value.trim();
+    const username = document.getElementById('register-username').value.trim().toLowerCase();
+    const pass = document.getElementById('register-pass').value;
+    const passConfirm = document.getElementById('register-pass-confirm').value;
 
-    // Check if email is registered in the system
-    try {
-        if (db) {
-            const snap = await db.collection('users').where('email', '==', email).limit(1).get();
-            if (snap.empty) {
-                showToast('כתובת מייל לא רשומה במערכת — פנה למנהל');
-                return;
-            }
-        }
-    } catch(e) { console.warn('Could not check email:', e); }
-
-    const code = generateOtp();
-    pendingOtp = { code, email, expiresAt: Date.now() + 5 * 60 * 1000 }; // 5 min expiry
+    if (!fullName) { showToast('יש להזין שם מלא'); return; }
+    if (!username || username.length < 3) { showToast('שם משתמש חייב להכיל לפחות 3 תווים'); return; }
+    if (!/^[a-z0-9_]+$/.test(username)) { showToast('שם משתמש יכול להכיל רק אותיות באנגלית, מספרים וקו תחתון'); return; }
+    if (!pass || pass.length < 4) { showToast('סיסמה חייבת להכיל לפחות 4 תווים'); return; }
+    if (pass !== passConfirm) { showToast('הסיסמאות אינן תואמות'); return; }
 
     showLoading(true);
     try {
-        let emailSent = false;
-        // Try sending OTP via Google Apps Script proxy → Resend
-        if (OTP_PROXY_URL && OTP_PROXY_URL !== 'APPS_SCRIPT_URL_HERE') {
-            try {
-                const resp = await fetch(OTP_PROXY_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ email: email, otp_code: code })
-                });
-                const result = await resp.json();
-                if (result.success) {
-                    emailSent = true;
-                } else {
-                    console.warn('Proxy returned error:', result.error);
-                }
-            } catch(proxyErr) {
-                console.warn('Proxy failed, using fallback:', proxyErr.message);
-            }
-        }
-
-        // Fallback: store code in Firestore so admin can see it
-        if (!emailSent) {
-            if (db) {
-                await db.collection('otp_codes').doc(email).set({
-                    code, createdAt: new Date(), expiresAt: new Date(pendingOtp.expiresAt)
-                });
-            }
-            console.log('FALLBACK — OTP code:', code, 'for', email);
-        }
-
-        document.getElementById('otp-step-email').style.display = 'none';
-        document.getElementById('otp-step-code').style.display = '';
-        document.getElementById('sent-email-display').textContent = email;
-        showToast(emailSent ? 'קוד אימות נשלח למייל!' : 'קוד אימות נשלח! (בדוק מייל או פנה למנהל)');
-    } catch(e) {
-        console.error('Email OTP error:', e);
-        showToast('שגיאה בשליחת קוד — בדוק חיבור');
-        pendingOtp = null;
-    }
-    showLoading(false);
-}
-
-async function verifyOtpCode() {
-    const code = document.getElementById('login-code').value.trim();
-    if (!code || code.length < 4) { showToast('יש להזין קוד אימות'); return; }
-
-    if (!pendingOtp) { showToast('יש לשלוח קוד חדש'); return; }
-    if (Date.now() > pendingOtp.expiresAt) { showToast('הקוד פג תוקף — שלח קוד חדש'); pendingOtp = null; return; }
-    if (code !== pendingOtp.code) { showToast('קוד שגוי — נסה שנית'); return; }
-
-    const email = pendingOtp.email;
-    showLoading(true);
-    try {
-        // Look up user in Firestore by email
-        const snap = await db.collection('users').where('email', '==', email).limit(1).get();
-        if (snap.empty) {
-            showToast('משתמש לא נמצא במערכת');
+        // Check if username already taken
+        const existing = await db.collection('participants').where('username', '==', username).limit(1).get();
+        if (!existing.empty) {
+            showToast('שם המשתמש כבר תפוס — בחר שם אחר');
             showLoading(false);
             return;
         }
 
-        const userDoc = snap.docs[0];
-        const ud = userDoc.data();
-        currentUser = {
-            id: userDoc.id,
-            name: ud.name || userDoc.id,
-            email: email,
-            role: ud.role || 'lohem',
-            framework: ud.framework || ''
+        const hashedPass = await hashPassword(pass);
+        const docRef = await db.collection('participants').add({
+            fullName: fullName,
+            username: username,
+            passwordHash: hashedPass,
+            createdAt: new Date(),
+            progress: {}
+        });
+
+        // Auto-login after registration
+        currentParticipant = {
+            id: docRef.id,
+            fullName: fullName,
+            username: username
         };
-        localStorage.setItem('ruach-user', JSON.stringify(currentUser));
-        pendingOtp = null;
-        // Clean up OTP from Firestore
-        try { db.collection('otp_codes').doc(email).delete(); } catch(x) {}
-        onLoginSuccess();
+        localStorage.setItem('ruach-participant', JSON.stringify(currentParticipant));
+        closeRegisterModal();
+        onParticipantLogin();
+        showToast('החשבון נוצר בהצלחה! ברוך הבא ' + fullName);
     } catch(e) {
-        console.error('Verify error:', e);
-        showToast('שגיאה באימות');
+        console.error('Register error:', e);
+        showToast('שגיאה ביצירת חשבון — בדוק חיבור');
     }
     showLoading(false);
 }
 
-function resetOtpLogin() {
-    showPasswordLogin();
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-code').value = '';
-    pendingOtp = null;
+// --- User Login (username + password → Firestore 'participants' collection) ---
+async function userLogin() {
+    const username = document.getElementById('user-login-username').value.trim().toLowerCase();
+    const pass = document.getElementById('user-login-pass').value;
+
+    if (!username) { showToast('יש להזין שם משתמש'); return; }
+    if (!pass) { showToast('יש להזין סיסמה'); return; }
+
+    showLoading(true);
+    try {
+        const snap = await db.collection('participants').where('username', '==', username).limit(1).get();
+        if (snap.empty) {
+            showToast('שם משתמש לא נמצא');
+            showLoading(false);
+            return;
+        }
+
+        const doc = snap.docs[0];
+        const data = doc.data();
+        const hashedInput = await hashPassword(pass);
+
+        if (data.passwordHash !== hashedInput) {
+            showToast('סיסמה שגויה');
+            showLoading(false);
+            return;
+        }
+
+        currentParticipant = {
+            id: doc.id,
+            fullName: data.fullName,
+            username: data.username
+        };
+        localStorage.setItem('ruach-participant', JSON.stringify(currentParticipant));
+        closeUserLoginModal();
+        onParticipantLogin();
+        showToast('ברוך הבא ' + data.fullName + '!');
+    } catch(e) {
+        console.error('User login error:', e);
+        showToast('שגיאה בכניסה — בדוק חיבור');
+    }
+    showLoading(false);
+}
+
+// --- Participant login success ---
+function onParticipantLogin() {
+    document.getElementById('sidebar-guest').style.display = 'none';
+    document.getElementById('sidebar-participant-info').style.display = 'flex';
+    document.getElementById('sidebar-participant-name').textContent = currentParticipant.fullName;
+    document.getElementById('sidebar-participant-avatar').textContent = currentParticipant.fullName.charAt(0);
+    document.getElementById('home-greeting').textContent = '— ' + currentParticipant.fullName;
+}
+
+// --- Participant logout ---
+function logoutParticipant() {
+    currentParticipant = null;
+    localStorage.removeItem('ruach-participant');
+    document.getElementById('sidebar-guest').style.display = '';
+    document.getElementById('sidebar-participant-info').style.display = 'none';
+    document.getElementById('home-greeting').textContent = '';
 }
 
 function onLoginSuccess() {
-    isGuestMode = false;
-    document.getElementById('guest-bar').style.display = 'none';
-    // Restore survey nav that might have been hidden in guest mode
-    const surveyNav = document.querySelector('.sidebar-nav a[data-page="surveys"]');
-    if (surveyNav) surveyNav.style.display = '';
-    if (surveyNav && surveyNav.previousElementSibling && surveyNav.previousElementSibling.classList.contains('nav-section'))
-        surveyNav.previousElementSibling.style.display = '';
-    document.querySelectorAll('.tile-surveys').forEach(el => el.style.display = '');
-
     closeLoginModal();
+
+    // If a participant was logged in, log them out (staff takes precedence)
+    if (currentParticipant) {
+        currentParticipant = null;
+        localStorage.removeItem('ruach-participant');
+        document.getElementById('sidebar-participant-info').style.display = 'none';
+    }
 
     // Update sidebar
     document.getElementById('sidebar-guest').style.display = 'none';
@@ -1384,24 +1426,20 @@ function updateUIForRole() {
 
 function logout() {
     currentUser = null;
-    isGuestMode = false;
     localStorage.removeItem('ruach-user');
 
     document.getElementById('sidebar-guest').style.display = '';
     document.getElementById('sidebar-user-info').style.display = 'none';
     document.getElementById('home-greeting').textContent = '';
     document.getElementById('home-framework-badge').style.display = 'none';
-    document.getElementById('guest-bar').style.display = 'none';
 
     // Hide role-based elements
     document.querySelectorAll('.nav-training, .nav-training-section, .tile-training').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-reports, .nav-reports-section, .tile-reports').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-admin, .tile-admin').forEach(el => el.style.display = 'none');
 
-    // Return to splash screen
-    document.getElementById('app-layout').style.display = 'none';
-    document.getElementById('splash-screen').style.display = '';
-    window.location.hash = '';
+    // Stay in the app — just go to home (no splash needed)
+    navigate('home');
 }
 
 // ============================================================
@@ -2325,50 +2363,12 @@ async function waitForFirebase(retries) {
 }
 
 // ============================================================
-// SPLASH SCREEN & GUEST MODE
+// SPLASH SCREEN — single entry point
 // ============================================================
-function splashLogin() {
+function splashEnter() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('app-layout').style.display = '';
-    isGuestMode = false;
-    openLoginModal();
-}
-
-function splashGuest() {
-    document.getElementById('splash-screen').style.display = 'none';
-    document.getElementById('app-layout').style.display = '';
-    isGuestMode = true;
-    applyGuestMode();
     navigate('home');
-}
-
-function applyGuestMode() {
-    document.getElementById('guest-bar').style.display = '';
-    // Hide non-guest sidebar items
-    document.querySelectorAll('.nav-training, .nav-training-section').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.nav-reports, .nav-reports-section').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'none');
-    const surveyNav = document.querySelector('.sidebar-nav a[data-page="surveys"]');
-    if (surveyNav) surveyNav.style.display = 'none';
-    const surveySection = surveyNav ? surveyNav.previousElementSibling : null;
-    if (surveySection && surveySection.classList.contains('nav-section')) surveySection.style.display = 'none';
-    // Hide non-guest home tiles
-    document.querySelectorAll('.tile-training, .tile-reports, .tile-admin, .tile-surveys').forEach(el => el.style.display = 'none');
-    // Sidebar footer: show login button
-    document.getElementById('sidebar-guest').style.display = '';
-    document.getElementById('sidebar-user-info').style.display = 'none';
-}
-
-function exitGuestMode() {
-    isGuestMode = false;
-    document.getElementById('guest-bar').style.display = 'none';
-    // Restore sidebar items to default (non-logged-in) state
-    const surveyNav = document.querySelector('.sidebar-nav a[data-page="surveys"]');
-    if (surveyNav) surveyNav.style.display = '';
-    if (surveyNav && surveyNav.previousElementSibling && surveyNav.previousElementSibling.classList.contains('nav-section'))
-        surveyNav.previousElementSibling.style.display = '';
-    document.querySelectorAll('.tile-surveys').forEach(el => el.style.display = '');
-    openLoginModal();
 }
 
 async function initApp() {
@@ -2380,23 +2380,20 @@ async function initApp() {
         if (!ready) { console.warn('Firebase not loaded'); return; }
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.firestore();
-        // OTP proxy ready (Google Apps Script + Resend)
     } catch(e) { console.error('Init error:', e); }
 }
 
 function tryAutoLogin() {
-    const saved = localStorage.getItem('ruach-user');
-    if (saved) {
+    // Try staff login first
+    const savedStaff = localStorage.getItem('ruach-user');
+    if (savedStaff) {
         try {
-            const parsed = JSON.parse(saved);
-            // Migrate old format {name, isAdmin} to new format {name, email, role, framework}
+            const parsed = JSON.parse(savedStaff);
+            // Migrate old format
             if (parsed.isAdmin !== undefined && !parsed.role) {
                 currentUser = {
-                    id: parsed.name,
-                    name: parsed.name,
-                    email: '',
-                    role: parsed.isAdmin ? 'menahel' : 'lohem',
-                    framework: 'yonatan'
+                    id: parsed.name, name: parsed.name, email: '',
+                    role: parsed.isAdmin ? 'menahel' : 'lohem', framework: 'yonatan'
                 };
                 localStorage.setItem('ruach-user', JSON.stringify(currentUser));
             } else {
@@ -2405,7 +2402,16 @@ function tryAutoLogin() {
             onLoginSuccess();
             const page = window.location.hash.slice(1) || 'home';
             if (PAGE_PERMISSIONS[page] && hasPermission(PAGE_PERMISSIONS[page])) activatePage(page);
+            return; // staff login found, done
         } catch(e) { localStorage.removeItem('ruach-user'); }
+    }
+    // Try participant login
+    const savedParticipant = localStorage.getItem('ruach-participant');
+    if (savedParticipant) {
+        try {
+            currentParticipant = JSON.parse(savedParticipant);
+            onParticipantLogin();
+        } catch(e) { localStorage.removeItem('ruach-participant'); }
     }
 }
 
@@ -2420,13 +2426,13 @@ function showLoading(show) { document.getElementById('loading').style.display = 
 // ============================================================
 initApp().then(() => {
     // Check if user has saved login — skip splash if so
-    const savedUser = localStorage.getItem('ruach-user');
+    const savedUser = localStorage.getItem('ruach-user') || localStorage.getItem('ruach-participant');
     if (savedUser) {
         document.getElementById('splash-screen').style.display = 'none';
         document.getElementById('app-layout').style.display = '';
         setTimeout(tryAutoLogin, 300);
     }
-    // Otherwise: splash screen stays visible, user picks guest or login
+    // Otherwise: splash screen stays visible, user clicks "כניסה לאתר"
 });
 
 if ('serviceWorker' in navigator) {
