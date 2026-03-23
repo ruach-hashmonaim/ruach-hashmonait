@@ -434,11 +434,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="nav-section">בטיחות ברשת</div>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת</a>
 
-        <div class="nav-section nav-training-section" style="display:none;">הכשרה</div>
-        <a onclick="navigate('training-basic')" data-page="training-basic" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> הכשרת יסוד</a>
-        <a onclick="navigate('training-nco')" data-page="training-nco" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> קורס מ״כים</a>
-        <a onclick="navigate('training-officer')" data-page="training-officer" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> קורס קצינים</a>
-
         <div class="nav-section">סקרים</div>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
 
@@ -506,21 +501,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="tile-title">בעקבות הנצח</div>
             <div class="tile-desc">מפה אינטראקטיבית, היסטוריה ומקורות</div>
         </a>
-        <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-basic')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1 14.5l-4-4 1.41-1.41L11 13.67l5.59-5.58L18 9.5l-7 7z"/></svg></div>
-            <div class="tile-title">הכשרת יסוד</div>
-            <div class="tile-desc">תכני רוח מכבי — בסיס</div>
-        </a>
-        <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-nco')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#6D28D9,#8B5CF6);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/><path d="M11 7h2v6h-2zm0 8h2v2h-2z"/></svg></div>
-            <div class="tile-title">קורס מ״כים</div>
-            <div class="tile-desc">תכני רוח מכבי — מ״כים</div>
-        </a>
-        <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-officer')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#5B21B6,#7C3AED);"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7L12 16.4 5.7 21l2.3-7L2 9.4h7.6z"/></svg></div>
-            <div class="tile-title">קורס קצינים</div>
-            <div class="tile-desc">תכני רוח מכבי — קצינים</div>
-        </a>
         <a class="home-tile" onclick="navigate('hebrew')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0891B2,#22D3EE);"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75l11-11.03-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
             <div class="tile-title">לימוד עברית</div>
@@ -577,35 +557,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div id="learning-panel-leaderboard" style="display:none;"></div>
 </div>
 
-<!-- ====== TRAINING BASIC ====== -->
-<div class="page-section" id="page-training-basic">
-    <div class="card">
-        <div class="card-title"><div class="icon">⚔️</div> הכשרת יסוד — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מעקב אחר תכני הכשרת היסוד שהועברו.</p>
-        <div class="training-filter-bar" id="training-basic-filter"></div>
-    </div>
-    <div id="training-basic-modules"></div>
-</div>
-
-<!-- ====== TRAINING NCO ====== -->
-<div class="page-section" id="page-training-nco">
-    <div class="card">
-        <div class="card-title"><div class="icon">🎖️</div> קורס מ״כים — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מעקב אחר תכני קורס מ״כים שהועברו.</p>
-        <div class="training-filter-bar" id="training-nco-filter"></div>
-    </div>
-    <div id="training-nco-modules"></div>
-</div>
-
-<!-- ====== TRAINING OFFICER ====== -->
-<div class="page-section" id="page-training-officer">
-    <div class="card">
-        <div class="card-title"><div class="icon">👨‍✈️</div> קורס קצינים — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מעקב אחר תכני קורס קצינים שהועברו.</p>
-        <div class="training-filter-bar" id="training-officer-filter"></div>
-    </div>
-    <div id="training-officer-modules"></div>
-</div>
 
 <!-- ====== HEBREW — לימוד עברית ====== -->
 <div class="page-section" id="page-hebrew">
@@ -970,9 +921,6 @@ const PAGE_TITLES = {
     'home': 'דף הבית',
     'learning': 'והגית בו — למידה יומית',
     'hebrew': 'לימוד עברית',
-    'training-basic': 'הכשרת יסוד — רוח מכבי',
-    'training-nco': 'קורס מ״כים — רוח מכבי',
-    'training-officer': 'קורס קצינים — רוח מכבי',
     'geography': 'בעקבות הנצח',
     'internet-safety': 'שולטים ברשת',
     'reports': 'מעקב שבועי — צוות חינוכי',
@@ -988,9 +936,6 @@ let currentParticipant = null;
 
 // Pages and their required permission
 const PAGE_PERMISSIONS = {
-    'training-basic': 'view-training',
-    'training-nco': 'view-training',
-    'training-officer': 'view-training',
     'reports': 'weekly-reports',
     'admin': 'admin'
 };
@@ -1339,9 +1284,9 @@ function onLoginSuccess() {
 function updateUIForRole() {
     const lvl = userLevel();
 
-    // Training links (level 2+)
+    // Training links removed — no longer relevant
     document.querySelectorAll('.nav-training, .nav-training-section, .tile-training').forEach(el => {
-        el.style.display = lvl >= 2 ? '' : 'none';
+        el.style.display = 'none';
     });
 
     // Reports (level 4+)
