@@ -391,12 +391,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="modal-close" onclick="closeUserLoginModal()">&times;</button>
         <img class="login-logo" src="icons/icon-192x192.png?v=2" alt="רוח חשמונאית">
         <h2 style="color:var(--primary);margin-bottom:4px;">כניסה לחשבון</h2>
-        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזן את שם המשתמש והסיסמה שלך</p>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזן שם משתמש או כתובת מייל</p>
 
         <div id="user-login-form">
             <div class="form-group" style="text-align:right;">
-                <label>שם משתמש</label>
-                <input type="text" id="user-login-username" placeholder="israel123" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('user-login-pass').focus()">
+                <label>שם משתמש / מייל</label>
+                <input type="text" id="user-login-username" placeholder="israel123 או user@email.com" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('user-login-pass').focus()">
             </div>
             <div class="form-group" style="text-align:right;">
                 <label>סיסמה</label>
@@ -1204,26 +1204,58 @@ async function registerUser() {
     showLoading(false);
 }
 
-// --- User Login (username + password → Firestore 'participants' collection) ---
+// --- Unified Login (username → participants, email → users/staff) ---
 async function userLogin() {
-    const username = document.getElementById('user-login-username').value.trim().toLowerCase();
+    const input = document.getElementById('user-login-username').value.trim().toLowerCase();
     const pass = document.getElementById('user-login-pass').value;
 
-    if (!username) { showToast('יש להזין שם משתמש'); return; }
+    if (!input) { showToast('יש להזין שם משתמש או מייל'); return; }
     if (!pass) { showToast('יש להזין סיסמה'); return; }
 
     showLoading(true);
     try {
-        const snap = await db.collection('participants').where('username', '==', username).limit(1).get();
+        const hashedInput = await hashPassword(pass);
+
+        // If input looks like email → try staff (users) collection first
+        if (input.includes('@')) {
+            const email = normalizeGmail(input);
+            const staffSnap = await db.collection('users').where('email', '==', email).limit(1).get();
+            if (!staffSnap.empty) {
+                const userDoc = staffSnap.docs[0];
+                const ud = userDoc.data();
+                if (ud.passwordHash && ud.passwordHash !== hashedInput) {
+                    showToast('סיסמה שגויה');
+                    showLoading(false);
+                    return;
+                }
+                if (!ud.passwordHash) {
+                    await db.collection('users').doc(userDoc.id).update({ passwordHash: hashedInput });
+                }
+                currentUser = {
+                    id: userDoc.id,
+                    name: ud.name || userDoc.id,
+                    email: email,
+                    role: ud.role || 'lohem',
+                    framework: ud.framework || ''
+                };
+                localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+                closeUserLoginModal();
+                onLoginSuccess();
+                showLoading(false);
+                return;
+            }
+        }
+
+        // Try participants collection (by username)
+        const snap = await db.collection('participants').where('username', '==', input).limit(1).get();
         if (snap.empty) {
-            showToast('שם משתמש לא נמצא');
+            showToast(input.includes('@') ? 'כתובת מייל לא נמצאה' : 'שם משתמש לא נמצא');
             showLoading(false);
             return;
         }
 
         const doc = snap.docs[0];
         const data = doc.data();
-        const hashedInput = await hashPassword(pass);
 
         if (data.passwordHash !== hashedInput) {
             showToast('סיסמה שגויה');
