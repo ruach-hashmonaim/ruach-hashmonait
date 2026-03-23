@@ -1157,7 +1157,7 @@ async function hashPassword(password) {
 }
 
 async function loginWithPassword() {
-    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const email = normalizeGmail(document.getElementById('login-email').value.trim().toLowerCase());
     const password = document.getElementById('login-password').value;
     if (!email || !email.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
     if (!password) { showToast('יש להזין סיסמה'); return; }
@@ -1206,9 +1206,16 @@ function generateOtp() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+function normalizeGmail(email) {
+    const [local, domain] = email.split('@');
+    if (domain === 'gmail.com') return local.replace(/\./g, '') + '@gmail.com';
+    return email;
+}
+
 async function sendOtpCode() {
-    const email = document.getElementById('login-email-otp').value.trim().toLowerCase();
-    if (!email || !email.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
+    const rawEmail = document.getElementById('login-email-otp').value.trim().toLowerCase();
+    if (!rawEmail || !rawEmail.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
+    const email = normalizeGmail(rawEmail);
 
     // Check if email is registered in the system
     try {
