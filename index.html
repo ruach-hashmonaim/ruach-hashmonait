@@ -1112,8 +1112,8 @@ function closeSidebar() {
 let pendingLoginPage = null;
 let pendingOtp = null; // { code, email, expiresAt }
 
-// *** OTP Email Configuration via Google Apps Script + Resend ***
-const OTP_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzxzqaU4vf_HgTeDOCO3Lk4lbTfvznwifJekdeh2nzdHoXY72ibw2H6br4ll842_8Avmg/exec';
+// *** OTP Email Configuration via Google Apps Script + MailApp ***
+const OTP_PROXY_URL = 'https://script.google.com/macros/s/AKfycby5rgsgi6MCByDOuPvWEEvGy2j69Blus_MWMQW3VO4wgFto0DnxiMuQdslaogemZv2i2w/exec';
 
 function openLoginModal(redirectPage) {
     pendingLoginPage = redirectPage || null;
