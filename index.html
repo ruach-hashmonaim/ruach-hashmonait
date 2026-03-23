@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>רוח חשמונאית</title>
-    <meta name="theme-color" content="#1B4332">
+    <meta name="theme-color" content="#0C4A6E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="רוח חשמונאית">
@@ -18,7 +18,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-app-compat.js';document.head.appendChild(s);"></script>
-    <!-- OTP emails sent via Google Apps Script + Resend proxy -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-firestore-compat.js';document.head.appendChild(s);"></script>
     <script>
@@ -26,12 +25,12 @@
     </script>
 <style>
 :root {
-    --primary: #1B4332; --primary-light: #2D6A4F; --primary-lighter: #40916C;
-    --accent: #D4A843; --accent-light: #E8C96A;
-    --bg: #F8F6F0; --card: #FFFFFF; --text: #1A1A2E; --text-secondary: #555; --border: #E0DDD5;
-    --success: #2D6A4F; --warning: #E07C24; --danger: #C0392B;
-    --shadow: 0 2px 12px rgba(0,0,0,0.08); --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
-    --radius: 12px; --radius-sm: 8px;
+    --primary: #0C4A6E; --primary-light: #0E7490; --primary-lighter: #06B6D4;
+    --accent: #F0C040; --accent-light: #FADB5F;
+    --bg: #F0F9FF; --card: #FFFFFF; --text: #0F172A; --text-secondary: #64748B; --border: #E2E8F0;
+    --success: #0D9488; --warning: #F59E0B; --danger: #DC2626;
+    --shadow: 0 2px 12px rgba(12,74,110,0.06); --shadow-lg: 0 8px 30px rgba(12,74,110,0.10);
+    --radius: 14px; --radius-sm: 10px;
     --sidebar-w: 260px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -41,7 +40,7 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .app-layout { display:flex; min-height:100vh; }
 
 /* SIDEBAR */
-.sidebar { width:var(--sidebar-w); background:linear-gradient(180deg,var(--primary) 0%,#0F2B1F 100%); color:#fff; position:fixed; top:0; right:0; bottom:0; z-index:200; display:flex; flex-direction:column; transition:transform 0.3s; }
+.sidebar { width:var(--sidebar-w); background:linear-gradient(180deg,var(--primary) 0%,#082F49 100%); color:#fff; position:fixed; top:0; right:0; bottom:0; z-index:200; display:flex; flex-direction:column; transition:transform 0.3s; }
 .sidebar-brand { padding:24px 20px 16px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.1); }
 .sidebar-logo { width:64px; height:64px; border-radius:12px; object-fit:contain; margin-bottom:8px; }
 .sidebar-brand h2 { font-size:1.1rem; font-weight:700; margin-bottom:2px; }
@@ -64,7 +63,7 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .credit-line { font-size:0.65rem; opacity:0.4; text-align:center; margin-top:10px; }
 
 /* SPLASH SCREEN */
-.splash-screen { position:fixed; inset:0; z-index:1000; background:linear-gradient(135deg,#0F2B1F 0%,var(--primary) 40%,var(--primary-light) 100%); display:flex; align-items:center; justify-content:center; }
+.splash-screen { position:fixed; inset:0; z-index:1000; background:linear-gradient(135deg,#082F49 0%,var(--primary) 40%,var(--primary-light) 100%); display:flex; align-items:center; justify-content:center; }
 .splash-inner { text-align:center; color:#fff; padding:30px; max-width:420px; width:90%; }
 .splash-logo { width:120px; height:120px; border-radius:24px; object-fit:contain; margin:0 auto 20px; display:block; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
 .splash-title { font-size:1.8rem; font-weight:800; margin-bottom:4px; }
@@ -155,12 +154,14 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .code-inputs input { width:48px; height:54px; text-align:center; font-size:1.4rem; font-weight:700; letter-spacing:0; padding:0; }
 
 /* HOME TILES */
-.home-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
-.home-tile { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:20px; text-align:center; cursor:pointer; transition:all 0.2s; text-decoration:none; color:var(--text); }
-.home-tile:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:var(--accent); }
-.home-tile .tile-icon { font-size:2.2rem; margin-bottom:10px; }
-.home-tile .tile-title { font-weight:700; font-size:0.95rem; color:var(--primary); margin-bottom:4px; }
-.home-tile .tile-desc { font-size:0.78rem; color:var(--text-secondary); }
+.home-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:18px; }
+.home-tile { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:28px 20px 22px; text-align:center; cursor:pointer; transition:all 0.3s cubic-bezier(.4,0,.2,1); text-decoration:none; color:var(--text); position:relative; overflow:hidden; }
+.home-tile::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--primary-light),var(--primary-lighter)); opacity:0; transition:opacity 0.3s; }
+.home-tile:hover { transform:translateY(-4px); box-shadow:0 12px 36px rgba(12,74,110,0.12); border-color:var(--primary-lighter); }
+.home-tile:hover::before { opacity:1; }
+.home-tile .tile-icon { width:52px; height:52px; margin:0 auto 14px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.35rem; font-weight:800; color:#fff; letter-spacing:-1px; }
+.home-tile .tile-title { font-weight:700; font-size:1rem; color:var(--primary); margin-bottom:6px; }
+.home-tile .tile-desc { font-size:0.8rem; color:var(--text-secondary); line-height:1.5; }
 
 /* LEARNING */
 .program-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
@@ -314,7 +315,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="splash-title">רוח חשמונאית</div>
         <div class="splash-subtitle">תוכנית הזהות והחוסן · חטיבת החשמונאים</div>
         <div class="splash-buttons">
-            <button class="splash-btn splash-btn-login" onclick="splashEnter()">🏠 כניסה לאתר</button>
+            <button class="splash-btn splash-btn-login" onclick="splashEnter()">כניסה לאתר</button>
         </div>
         <div class="splash-credit">פותח ע״י IAB-Smart AI Solutions</div>
     </div>
@@ -420,37 +421,37 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <small>תוכנית הזהות והחוסן · חטיבת החשמונאים</small>
     </div>
     <nav class="sidebar-nav">
-        <a onclick="navigate('home')" data-page="home"><span class="nav-icon">🏠</span> דף הבית</a>
+        <a onclick="navigate('home')" data-page="home"><span class="nav-icon">&#9678;</span> דף הבית</a>
 
         <div class="nav-section">למידה</div>
-        <a onclick="navigate('learning')" data-page="learning"><span class="nav-icon">📖</span> והגית בו — למידה יומית</a>
-        <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">🔤</span> לימוד עברית</a>
+        <a onclick="navigate('learning')" data-page="learning"><span class="nav-icon">&#9702;</span> והגית בו — למידה יומית</a>
+        <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> לימוד עברית</a>
 
         <div class="nav-section">שטח וגיאוגרפיה</div>
-        <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">🗺️</span> בעקבות הנצח</a>
+        <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> בעקבות הנצח</a>
 
-        <div class="nav-section nav-section-safety">בטיחות ברשת</div>
-        <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">🛡️</span> שולטים ברשת</a>
+        <div class="nav-section">בטיחות ברשת</div>
+        <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת</a>
 
         <div class="nav-section nav-training-section" style="display:none;">הכשרה</div>
-        <a onclick="navigate('training-basic')" data-page="training-basic" class="nav-training" style="display:none;"><span class="nav-icon">⚔️</span> הכשרת יסוד</a>
-        <a onclick="navigate('training-nco')" data-page="training-nco" class="nav-training" style="display:none;"><span class="nav-icon">🎖️</span> קורס מ״כים</a>
-        <a onclick="navigate('training-officer')" data-page="training-officer" class="nav-training" style="display:none;"><span class="nav-icon">👨‍✈️</span> קורס קצינים</a>
+        <a onclick="navigate('training-basic')" data-page="training-basic" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> הכשרת יסוד</a>
+        <a onclick="navigate('training-nco')" data-page="training-nco" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> קורס מ״כים</a>
+        <a onclick="navigate('training-officer')" data-page="training-officer" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> קורס קצינים</a>
 
         <div class="nav-section">סקרים</div>
-        <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">📊</span> סקרים ומשובים</a>
+        <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
 
         <!-- Staff-only sections -->
         <div class="nav-section nav-reports-section" style="display:none;">ניהול (צוות)</div>
-        <a onclick="navigate('reports')" data-page="reports" class="nav-reports" style="display:none;"><span class="nav-icon">📋</span> מעקב שבועי — צוות חינוכי</a>
-        <a onclick="navigate('admin')" data-page="admin" class="nav-admin" style="display:none;"><span class="nav-icon">⚙️</span> ניהול מערכת</a>
+        <a onclick="navigate('reports')" data-page="reports" class="nav-reports" style="display:none;"><span class="nav-icon">&#9702;</span> מעקב שבועי — צוות חינוכי</a>
+        <a onclick="navigate('admin')" data-page="admin" class="nav-admin" style="display:none;"><span class="nav-icon">&#9702;</span> ניהול מערכת</a>
     </nav>
     <div class="sidebar-footer">
         <!-- No user logged in: show account buttons -->
         <div id="sidebar-guest">
-            <button class="btn-secondary btn-sm" style="width:100%;margin-bottom:6px;" onclick="openUserLoginModal()">👤 כניסה לחשבון</button>
+            <button class="btn-secondary btn-sm" style="width:100%;margin-bottom:6px;" onclick="openUserLoginModal()">כניסה לחשבון</button>
             <button class="btn-secondary btn-sm" style="width:100%;margin-bottom:6px;font-size:0.78rem;" onclick="openRegisterModal()">יצירת חשבון חדש</button>
-            <button class="btn-staff-login" onclick="openLoginModal()" style="font-size:0.75rem;opacity:0.7;">🔑 כניסת צוות</button>
+            <button class="btn-staff-login" onclick="openLoginModal()" style="font-size:0.75rem;opacity:0.7;">כניסת צוות</button>
         </div>
         <!-- Participant logged in -->
         <div id="sidebar-participant-info" class="sidebar-user" style="display:none;">
@@ -495,52 +496,52 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
     <div class="home-grid" id="home-grid">
         <a class="home-tile" onclick="navigate('learning')">
-            <div class="tile-icon">📖</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#0E7490,#06B6D4);">&#1492;</div>
             <div class="tile-title">והגית בו</div>
-            <div class="tile-desc">למידה יומית — תוכניות לימוד</div>
+            <div class="tile-desc">למידה יומית — תוכניות לימוד וקביעויות</div>
         </a>
         <a class="home-tile" onclick="navigate('geography')">
-            <div class="tile-icon">🗺️</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#0369A1,#38BDF8);">&#10038;</div>
             <div class="tile-title">בעקבות הנצח</div>
-            <div class="tile-desc">מפה, היסטוריה ומקורות</div>
+            <div class="tile-desc">מפה אינטראקטיבית, היסטוריה ומקורות</div>
         </a>
         <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-basic')">
-            <div class="tile-icon">⚔️</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">I</div>
             <div class="tile-title">הכשרת יסוד</div>
             <div class="tile-desc">תכני רוח מכבי — בסיס</div>
         </a>
         <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-nco')">
-            <div class="tile-icon">🎖️</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">II</div>
             <div class="tile-title">קורס מ״כים</div>
             <div class="tile-desc">תכני רוח מכבי — מ״כים</div>
         </a>
         <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-officer')">
-            <div class="tile-icon">👨‍✈️</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">III</div>
             <div class="tile-title">קורס קצינים</div>
             <div class="tile-desc">תכני רוח מכבי — קצינים</div>
         </a>
         <a class="home-tile" onclick="navigate('hebrew')">
-            <div class="tile-icon">🔤</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#0891B2,#67E8F9);">&#1488;</div>
             <div class="tile-title">לימוד עברית</div>
             <div class="tile-desc">חיזוק השפה העברית — קריאה, כתיבה ודקדוק</div>
         </a>
         <a class="home-tile" onclick="navigate('internet-safety')">
-            <div class="tile-icon">🛡️</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#475569,#94A3B8);">&#9741;</div>
             <div class="tile-title">שולטים ברשת</div>
             <div class="tile-desc">כלים להתמודדות עם אתגרי הרשת</div>
         </a>
         <a class="home-tile tile-surveys" onclick="navigate('surveys')">
-            <div class="tile-icon">📊</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#D97706,#FCD34D);">&#9776;</div>
             <div class="tile-title">סקרים ומשובים</div>
             <div class="tile-desc">מילוי סקרים ותוצאות</div>
         </a>
         <a class="home-tile tile-reports" style="display:none;" onclick="navigate('reports')">
-            <div class="tile-icon">📋</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#059669,#6EE7B7);">&#9998;</div>
             <div class="tile-title">דיווח שבועי</div>
             <div class="tile-desc">מעקב צוות חינוכי</div>
         </a>
         <a class="home-tile tile-admin" style="display:none;" onclick="navigate('admin')">
-            <div class="tile-icon">⚙️</div>
+            <div class="tile-icon" style="background:linear-gradient(135deg,#64748B,#CBD5E1);">&#9881;</div>
             <div class="tile-title">ניהול מערכת</div>
             <div class="tile-desc">משתמשים, הרשאות, תכנים</div>
         </a>
@@ -659,127 +660,13 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
 <!-- ====== INTERNET SAFETY — שולטים ברשת ====== -->
 <div class="page-section" id="page-internet-safety">
-    <div class="card" style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;margin-bottom:20px;">
-        <h2 style="font-size:1.15rem;display:flex;align-items:center;gap:8px;">🛡️ שולטים ברשת</h2>
-        <p style="opacity:0.85;font-size:0.88rem;margin-top:6px;">כלים, מידע ותמיכה להתמודדות עם אתגרי עולם האינטרנט והרשתות החברתיות</p>
+    <div class="card">
+        <div class="card-title">שולטים ברשת</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">כלים, מידע ותמיכה להתמודדות עם אתגרי עולם האינטרנט והרשתות החברתיות</p>
     </div>
-
-    <!-- סינון תוכן -->
-    <div class="safety-category">
-        <div class="safety-category-title">🔒 סינון תוכן והגנה</div>
-        <div class="safety-card">
-            <h4>אפליקציות סינון מומלצות</h4>
-            <p>התקנת אפליקציית סינון היא הצעד הראשון והחשוב ביותר. הנה כמה אפשרויות מובילות:</p>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-                <a class="safety-link" href="https://netspark.com/he/" target="_blank" rel="noopener">NetSpark — סינון מקיף</a>
-                <a class="safety-link" href="https://rimon.net.il/" target="_blank" rel="noopener">רימון — אינטרנט כשר</a>
-                <a class="safety-link" href="https://www.gennet.co.il/" target="_blank" rel="noopener">GenNet — סינון חכם</a>
-            </div>
-            <div class="safety-tip">
-                <b>טיפ:</b> מומלץ להתקין סינון גם על הטלפון הנייד וגם על המחשב. הגדרות הסינון צריכות להיות מוגנות בסיסמה שמישהו אחר מחזיק.
-            </div>
-        </div>
-        <div class="safety-card">
-            <h4>הגדרות בטיחות במכשיר</h4>
-            <p>גם בלי אפליקציה חיצונית, ניתן לשפר את ההגנה:</p>
-            <div class="safety-tip">
-                <b>אייפון:</b> הגדרות → זמן מסך → הגבלות תוכן ופרטיות → הגבל תוכן מבוגרים<br>
-                <b>אנדרואיד:</b> Google Play → הגדרות → משפחה → בקרת הורים<br>
-                <b>גוגל:</b> SafeSearch → הפעלה בהגדרות החיפוש
-            </div>
-        </div>
-    </div>
-
-    <!-- התמודדות עם פורנוגרפיה -->
-    <div class="safety-category">
-        <div class="safety-category-title">💪 התמודדות עם פורנוגרפיה</div>
-        <div class="safety-card">
-            <h4>מה חשוב לדעת</h4>
-            <p>צפייה בפורנוגרפיה היא בעיה נפוצה שמשפיעה על בריאות הנפש, מערכות יחסים ודימוי עצמי. זו לא חולשה — זה אתגר שאפשר להתמודד איתו.</p>
-            <div class="safety-tip">
-                <b>עובדה:</b> מחקרים מראים שצפייה חוזרת בפורנוגרפיה משנה את מבנה המוח באופן דומה להתמכרות לסמים. החדשות הטובות — המוח יכול להחלים כשמפסיקים.
-            </div>
-        </div>
-        <div class="safety-card">
-            <h4>כלים מעשיים להתמודדות</h4>
-            <p>שלבים מוכחים שעוזרים:</p>
-            <div class="safety-tip">
-                <b>1. הסר את הנגישות</b> — התקן סינון, מחק היסטוריה, הרחק את המכשיר מחדר השינה<br>
-                <b>2. זהה טריגרים</b> — שעמום, בדידות, לחץ? הכר את הרגעים שבהם אתה חלש יותר<br>
-                <b>3. מצא חלופות</b> — פעילות גופנית, לימוד, שיחה עם חבר<br>
-                <b>4. אל תישאר לבד</b> — שתף מישהו שאתה סומך עליו (חבר, מדריך, יועץ)
-            </div>
-        </div>
-        <div class="safety-card">
-            <h4>מקורות תורניים</h4>
-            <p>התורה מדברת על שמירת העיניים והקדושה כחלק מרכזי מהחיים. הנה מקורות לחיזוק:</p>
-            <div class="safety-tip">
-                <b>״לא תתורו אחרי לבבכם ואחרי עיניכם״</b> (במדבר טו, לט)<br>
-                <b>מסילת ישרים פרק יא:</b> על הפרישות והריחוק מן העבירה<br>
-                <b>שמירת העיניים:</b> ספר ״גן נעול״ — מדריך מעשי לשמירת הקדושה
-            </div>
-        </div>
-    </div>
-
-    <!-- התמודדות עם אלימות -->
-    <div class="safety-category">
-        <div class="safety-category-title">🚫 התמודדות עם אלימות ברשת</div>
-        <div class="safety-card">
-            <h4>זיהוי אלימות דיגיטלית</h4>
-            <p>אלימות ברשת כוללת: בריונות, איומים, הפצת שמועות, שיתוף תמונות ללא הסכמה, והשפלה ברשתות חברתיות.</p>
-            <div class="safety-tip">
-                <b>אם אתה חווה אלימות ברשת:</b><br>
-                1. אל תגיב — תגובה נותנת כוח לפוגע<br>
-                2. שמור הוכחות — צילומי מסך של הודעות ופוסטים<br>
-                3. חסום ודווח — בכל פלטפורמה יש כפתור דיווח<br>
-                4. ספר למישהו — הורה, מחנך, מפקד
-            </div>
-        </div>
-        <div class="safety-card">
-            <h4>חוק ומשפט</h4>
-            <p>אלימות ברשת היא עבירה פלילית. הפצת תמונות אינטימיות ללא הסכמה, הטרדה מינית, ואיומים — כולם עבירות שעליהן ניתן להגיש תלונה במשטרה.</p>
-        </div>
-    </div>
-
-    <!-- התמכרות לאינטרנט -->
-    <div class="safety-category">
-        <div class="safety-category-title">📵 התמכרות לאינטרנט ורשתות חברתיות</div>
-        <div class="safety-card">
-            <h4>סימנים להתמכרות</h4>
-            <p>כמה סימנים שמעידים שהשימוש במסכים יצא מאיזון:</p>
-            <div class="safety-tip">
-                <b>בדוק את עצמך:</b><br>
-                • אתה מרגיש חרדה כשאין לך גישה לטלפון?<br>
-                • אתה מבלה יותר זמן ברשת ממה שתכננת?<br>
-                • זה פוגע בשינה, בלימודים או ביחסים?<br>
-                • אתה מרגיש ריק או עצוב אחרי גלילה ממושכת?<br>
-                אם ענית ״כן״ על 2 או יותר — כדאי לנקוט פעולה.
-            </div>
-        </div>
-        <div class="safety-card">
-            <h4>כלים מעשיים לצמצום</h4>
-            <div class="safety-tip">
-                <b>הגבל זמן מסך:</b> השתמש ב-Screen Time (אייפון) או Digital Wellbeing (אנדרואיד)<br>
-                <b>גבולות פיזיים:</b> אל תישן עם הטלפון ליד המיטה. קבע ״שעות ללא מסך״<br>
-                <b>חלופות:</b> ספורט, ספרים, שיחות פנים אל פנים, יצירה<br>
-                <b>מודעות:</b> שים לב מתי אתה פותח את הטלפון מתוך הרגל ולא מתוך צורך
-            </div>
-        </div>
-        <div class="safety-card">
-            <h4>אפליקציות שעוזרות</h4>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                <a class="safety-link" href="https://www.forestapp.cc/" target="_blank" rel="noopener">Forest — ריכוז וצמצום</a>
-                <a class="safety-link" href="https://one-sec.app/" target="_blank" rel="noopener">one sec — עצירה לפני פתיחה</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- קו חם -->
-    <div class="safety-hotline">
-        <h4>צריך לדבר עם מישהו?</h4>
-        <p>קו סיוע ער״ן (עזרה ראשונה נפשית): <b style="direction:ltr;display:inline-block;">1201</b><br>
-        קו סיוע לנוער: <b style="direction:ltr;display:inline-block;">*6500</b><br>
-        כל שיחה חסויה לחלוטין.</p>
+    <div class="card" style="text-align:center;padding:40px 20px;">
+        <p style="font-size:1.3rem;margin-bottom:12px;">המודול בבנייה</p>
+        <p style="color:var(--text-secondary);">תכנים בנושא בטיחות ברשת יתווספו בקרוב.</p>
     </div>
 </div>
 
@@ -834,11 +721,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="card-title"><div class="icon">⚙️</div> ניהול מערכת</div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <button class="btn-secondary btn-sm admin-tab active" onclick="showAdminTab('users')">👥 משתמשים</button>
-        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">📋 טבלת משתמשים לפי מסגרת</button>
-        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">📊 סקרים</button>
-        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">⚔️ תכני הכשרה</button>
-        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">📈 דשבורד</button>
+        <button class="btn-secondary btn-sm admin-tab active" onclick="showAdminTab('users')">משתמשי צוות</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('participants-mgmt')">נרשמים ומשתתפים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">טבלת משתמשים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">סקרים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">תכני הכשרה</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
     </div>
 
     <!-- Users management -->
@@ -882,6 +770,16 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 
     <!-- Phone tables per framework -->
+    <!-- Participants management -->
+    <div class="admin-panel" id="admin-participants-mgmt" style="display:none;">
+        <div class="card">
+            <h3 style="margin-bottom:14px;">נרשמים ומשתתפים</h3>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">משתמשים שנרשמו עצמאית דרך האתר ונרשמו לתוכניות לימוד</p>
+            <div id="admin-participants-stats" style="display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap;"></div>
+            <div id="admin-participants-list"></div>
+        </div>
+    </div>
+
     <div class="admin-panel" id="admin-phones" style="display:none;">
         <div class="card">
             <h3 style="margin-bottom:14px;">טבלת משתמשים לפי מסגרת</h3>
@@ -1540,7 +1438,14 @@ function renderCommitmentBoard() {
     const mine = getMyCommitments();
     const mineIds = mine.map(m => m.id);
 
-    let html = '<div class="card"><div class="card-title"><div class="icon">📌</div> תוכניות לימוד זמינות</div>';
+    let html = '';
+    if (!currentParticipant && !currentUser) {
+        html += '<div class="card" style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;margin-bottom:14px;padding:18px;text-align:center;">';
+        html += '<p style="margin-bottom:10px;">כדי להירשם לתוכניות לימוד ולעקוב אחרי ההתקדמות שלך, יש ליצור חשבון</p>';
+        html += '<button class="btn-primary" style="background:var(--accent);color:var(--primary);" onclick="openRegisterModal()">יצירת חשבון</button>';
+        html += '</div>';
+    }
+    html += '<div class="card"><div class="card-title">תוכניות לימוד זמינות</div>';
     LEARNING_PROGRAMS.forEach(p => {
         const joined = mineIds.includes(p.id);
         html += `
@@ -1571,13 +1476,25 @@ function renderCommitmentBoard() {
 }
 
 function addCommitment(programId) {
+    // Require participant login to join commitments
+    if (!currentParticipant && !currentUser) {
+        showToast('יש ליצור חשבון כדי להירשם לקביעויות');
+        openRegisterModal();
+        return;
+    }
     const mine = getMyCommitments();
     if (!mine.find(m => m.id === programId)) {
         mine.push({ id: programId });
         setMyCommitments(mine);
+        // Save to Firestore if participant
+        if (currentParticipant && db) {
+            db.collection('participants').doc(currentParticipant.id).update({
+                commitments: mine, lastUpdated: new Date()
+            }).catch(e => console.warn('Save commitments:', e));
+        }
     }
     renderCommitmentBoard();
-    showToast('נוסף לקביעויות שלך! ✓');
+    showToast('נוסף לקביעויות שלך!');
 }
 
 function removeCommitment(programId) {
@@ -1589,6 +1506,11 @@ function removeCommitment(programId) {
 }
 
 function addCustomCommitment() {
+    if (!currentParticipant && !currentUser) {
+        showToast('יש ליצור חשבון כדי להירשם לקביעויות');
+        openRegisterModal();
+        return;
+    }
     const name = document.getElementById('custom-commitment-name')?.value.trim();
     if (!name) { showToast('נא להזין שם לקביעות'); return; }
     const desc = document.getElementById('custom-commitment-desc')?.value.trim() || '';
@@ -2076,6 +1998,7 @@ function showAdminTab(tab) {
     if (panel) panel.style.display = '';
     event.target.classList.add('active');
     if (tab === 'users') loadAdminUsers();
+    if (tab === 'participants-mgmt') loadAdminParticipants();
     if (tab === 'phones') showFrameworkPhones('yonatan');
     if (tab === 'surveys-mgmt') loadAdminSurveys();
     if (tab === 'training-mgmt') loadAdminTrainingModules();
@@ -2083,6 +2006,71 @@ function showAdminTab(tab) {
 }
 
 function loadAdminPage() { if (!hasPermission('admin')) return; loadAdminUsers(); }
+
+async function loadAdminParticipants() {
+    const statsEl = document.getElementById('admin-participants-stats');
+    const listEl = document.getElementById('admin-participants-list');
+    if (!statsEl || !listEl) return;
+    statsEl.innerHTML = '<p style="color:var(--text-secondary);">טוען...</p>';
+    listEl.innerHTML = '';
+
+    try {
+        const snap = await db.collection('participants').orderBy('createdAt', 'desc').get();
+        const participants = [];
+        snap.forEach(doc => participants.push({ id: doc.id, ...doc.data() }));
+
+        const total = participants.length;
+        const withCommitments = participants.filter(p => p.commitments && p.commitments.length > 0).length;
+
+        // Count commitments by program
+        const programCounts = {};
+        participants.forEach(p => {
+            (p.commitments || []).forEach(c => {
+                const pid = c.id || c;
+                programCounts[pid] = (programCounts[pid] || 0) + 1;
+            });
+        });
+
+        statsEl.innerHTML = `
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;text-align:center;min-width:100px;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--primary);">${total}</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);">נרשמים</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;text-align:center;min-width:100px;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--success);">${withCommitments}</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);">בתוכניות לימוד</div>
+            </div>
+        `;
+
+        // Program breakdown
+        if (Object.keys(programCounts).length > 0) {
+            let progHtml = '<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;flex:1;min-width:200px;">';
+            progHtml += '<div style="font-size:0.85rem;font-weight:700;margin-bottom:8px;color:var(--primary);">תוכניות פופולריות</div>';
+            Object.entries(programCounts).sort((a,b) => b[1]-a[1]).forEach(([pid, count]) => {
+                const prog = (typeof LEARNING_PROGRAMS !== 'undefined') ? LEARNING_PROGRAMS.find(p => p.id === pid) : null;
+                const name = prog ? prog.name : pid;
+                progHtml += `<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;"><span>${name}</span><b>${count}</b></div>`;
+            });
+            progHtml += '</div>';
+            statsEl.innerHTML += progHtml;
+        }
+
+        // List participants
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">';
+        html += '<thead><tr style="background:var(--bg);"><th style="padding:10px;text-align:right;border-bottom:2px solid var(--border);">שם</th><th style="padding:10px;text-align:right;border-bottom:2px solid var(--border);">משתמש</th><th style="padding:10px;text-align:right;border-bottom:2px solid var(--border);">קביעויות</th><th style="padding:10px;text-align:right;border-bottom:2px solid var(--border);">תאריך הרשמה</th></tr></thead><tbody>';
+        participants.forEach(p => {
+            const date = p.createdAt ? new Date(p.createdAt.seconds ? p.createdAt.seconds * 1000 : p.createdAt).toLocaleDateString('he-IL') : '—';
+            const cCount = (p.commitments || []).length;
+            html += `<tr style="border-bottom:1px solid var(--border);"><td style="padding:10px;">${p.fullName || '—'}</td><td style="padding:10px;direction:ltr;">${p.username || '—'}</td><td style="padding:10px;">${cCount > 0 ? cCount + ' תוכניות' : '—'}</td><td style="padding:10px;">${date}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        if (total === 0) html = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">אין נרשמים עדיין</p>';
+        listEl.innerHTML = html;
+    } catch(e) {
+        console.error('Load participants error:', e);
+        statsEl.innerHTML = '<p style="color:var(--danger);">שגיאה בטעינת נתונים</p>';
+    }
+}
 
 async function loadAdminUsers() {
     const container = document.getElementById('admin-users-list');
