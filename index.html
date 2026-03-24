@@ -473,6 +473,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <!-- Staff-only sections -->
         <div class="nav-section nav-reports-section" style="display:none;">ניהול (צוות)</div>
+        <a onclick="navigate('content-mgmt')" data-page="content-mgmt" class="nav-content-mgmt" style="display:none;"><span class="nav-icon">&#9702;</span> ניהול תכנים</a>
         <a onclick="navigate('reports')" data-page="reports" class="nav-reports" style="display:none;"><span class="nav-icon">&#9702;</span> מעקב שבועי — צוות חינוכי</a>
         <a onclick="navigate('admin')" data-page="admin" class="nav-admin" style="display:none;"><span class="nav-icon">&#9702;</span> ניהול מערכת</a>
     </nav>
@@ -612,16 +613,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card">
         <div class="card-title">הכשרת יסוד — רוח מכבי</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">30 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
-        <div class="track-tabs-wrap" id="training-basic-tracks">
-            <button class="track-tab active" data-track="pluga_a" onclick="switchTrainingTrack('basic','pluga_a')">פלוגה א׳</button>
-            <button class="track-tab" data-track="pluga_b" onclick="switchTrainingTrack('basic','pluga_b')">פלוגה ב׳</button>
-            <button class="track-tab" data-track="pluga_c" onclick="switchTrainingTrack('basic','pluga_c')">פלוגה ג׳</button>
-            <button class="track-tab" data-track="pluga_d" onclick="switchTrainingTrack('basic','pluga_d')">פלוגה ד׳</button>
-            <button class="track-tab" data-track="pluga_e" onclick="switchTrainingTrack('basic','pluga_e')">פלוגה ה׳</button>
-            <button class="track-tab" data-track="pluga_f" onclick="switchTrainingTrack('basic','pluga_f')">פלוגה ו׳</button>
-            <button class="track-tab" data-track="pluga_g" onclick="switchTrainingTrack('basic','pluga_g')">פלוגה ז׳</button>
-            <button class="track-tab" data-track="pluga_h" onclick="switchTrainingTrack('basic','pluga_h')">פלוגה ח׳</button>
-        </div>
+        <div class="track-tabs-wrap" id="training-basic-tracks"></div>
         <div class="training-controls" id="training-basic-controls"></div>
     </div>
     <div id="training-basic-content"></div>
@@ -632,16 +624,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card">
         <div class="card-title">קורס מ״כים — רוח מכבי</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">13 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
-        <div class="track-tabs-wrap" id="training-nco-tracks">
-            <button class="track-tab active" data-track="pluga_a" onclick="switchTrainingTrack('nco','pluga_a')">פלוגה א׳</button>
-            <button class="track-tab" data-track="pluga_b" onclick="switchTrainingTrack('nco','pluga_b')">פלוגה ב׳</button>
-            <button class="track-tab" data-track="pluga_c" onclick="switchTrainingTrack('nco','pluga_c')">פלוגה ג׳</button>
-            <button class="track-tab" data-track="pluga_d" onclick="switchTrainingTrack('nco','pluga_d')">פלוגה ד׳</button>
-            <button class="track-tab" data-track="pluga_e" onclick="switchTrainingTrack('nco','pluga_e')">פלוגה ה׳</button>
-            <button class="track-tab" data-track="pluga_f" onclick="switchTrainingTrack('nco','pluga_f')">פלוגה ו׳</button>
-            <button class="track-tab" data-track="pluga_g" onclick="switchTrainingTrack('nco','pluga_g')">פלוגה ז׳</button>
-            <button class="track-tab" data-track="pluga_h" onclick="switchTrainingTrack('nco','pluga_h')">פלוגה ח׳</button>
-        </div>
+        <div class="track-tabs-wrap" id="training-nco-tracks"></div>
         <div class="training-controls" id="training-nco-controls"></div>
     </div>
     <div id="training-nco-content"></div>
@@ -652,7 +635,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card">
         <div class="card-title">קורס קצינים — רוח מכבי</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מסלול שדה (16 שבועות) · מסלול גפן (16 שבועות)</p>
-        <div class="track-tabs-wrap">
+        <div class="track-tabs-wrap" id="training-officer-tracks">
             <button class="track-tab active" data-track="sade" onclick="switchTrainingTrack('officer','sade')">מסלול שדה</button>
             <button class="track-tab" data-track="gefen" onclick="switchTrainingTrack('officer','gefen')">מסלול גפן</button>
         </div>
@@ -770,6 +753,43 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div id="reports-container"></div>
 </div>
 
+<!-- ====== CONTENT MANAGEMENT (for canAddContent users) ====== -->
+<div class="page-section" id="page-content-mgmt">
+    <div class="card">
+        <div class="card-title"><div class="icon">📝</div> ניהול תכני הכשרה</div>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הוספה ומחיקה של תכנים לפי הכשרה, שבוע וחתך</p>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+            <select id="cmgmt-program" onchange="cmgmtProgramChanged()" style="width:140px;">
+                <option value="basic">הכשרת יסוד</option>
+                <option value="nco">קורס מ״כים</option>
+                <option value="officer">קורס קצינים</option>
+            </select>
+            <select id="cmgmt-track" style="width:140px;display:none;" onchange="loadCmgmtContent()">
+                <option value="sade">מסלול שדה</option>
+                <option value="gefen">מסלול גפן</option>
+            </select>
+            <select id="cmgmt-week" onchange="loadCmgmtContent()" style="width:100px;"></select>
+        </div>
+        <div id="cmgmt-list"></div>
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+            <h4 style="margin-bottom:8px;">הוספת תוכן חדש</h4>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <select id="cmgmt-cat" style="width:120px;">
+                    <option value="ruach">רוח מכבי</option>
+                    <option value="chinuch">חינוך</option>
+                    <option value="mediniyut">מדיניות</option>
+                    <option value="rabanut">רבנות</option>
+                </select>
+                <input type="text" id="cmgmt-title" placeholder="שם יחידת הלימוד" style="flex:1;min-width:150px;">
+                <input type="text" id="cmgmt-instructor" placeholder="מעביר" style="width:120px;">
+                <input type="number" id="cmgmt-hours" placeholder="שעות" step="0.5" min="0.5" style="width:70px;">
+                <input type="text" id="cmgmt-url" placeholder="קישור (אופציונלי)" style="width:180px;direction:ltr;text-align:left;">
+                <button class="btn-primary btn-sm" onclick="cmgmtAddLesson()">הוסף</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ====== ADMIN ====== -->
 <div class="page-section" id="page-admin">
     <div class="card">
@@ -780,7 +800,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('participants-mgmt')">נרשמים ומשתתפים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">טבלת משתמשים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">סקרים</button>
-        <!-- training now managed inline via training pages -->
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">ניהול תכנים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
     </div>
 
@@ -892,7 +912,41 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </div>
     </div>
 
-    <!-- Training content is now managed inline via training pages (openAddLessonModal) -->
+    <!-- Training content management -->
+    <div class="admin-panel" id="admin-training-mgmt" style="display:none;">
+        <div class="card">
+            <h3 style="margin-bottom:14px;">ניהול תכני הכשרה</h3>
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+                <select id="admin-train-program" onchange="adminTrainingChanged()" style="width:140px;">
+                    <option value="basic">הכשרת יסוד</option>
+                    <option value="nco">קורס מ״כים</option>
+                    <option value="officer">קורס קצינים</option>
+                </select>
+                <select id="admin-train-track" style="width:140px;display:none;" onchange="adminTrainingChanged()">
+                    <option value="sade">מסלול שדה</option>
+                    <option value="gefen">מסלול גפן</option>
+                </select>
+                <select id="admin-train-week" onchange="loadAdminTrainingContent()" style="width:100px;"></select>
+            </div>
+            <div id="admin-training-list"></div>
+            <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+                <h4 style="margin-bottom:8px;">הוספת תוכן חדש</h4>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <select id="admin-lesson-cat" style="width:120px;">
+                        <option value="ruach">רוח מכבי</option>
+                        <option value="chinuch">חינוך</option>
+                        <option value="mediniyut">מדיניות</option>
+                        <option value="rabanut">רבנות</option>
+                    </select>
+                    <input type="text" id="admin-lesson-title" placeholder="שם יחידת הלימוד" style="flex:1;min-width:150px;">
+                    <input type="text" id="admin-lesson-instructor" placeholder="מעביר" style="width:120px;">
+                    <input type="number" id="admin-lesson-hours" placeholder="שעות" step="0.5" min="0.5" style="width:70px;">
+                    <input type="text" id="admin-lesson-url" placeholder="קישור (אופציונלי)" style="width:180px;direction:ltr;text-align:left;">
+                    <button class="btn-primary btn-sm" onclick="adminAddLesson()">הוסף</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Admin dashboard -->
     <div class="admin-panel" id="admin-dashboard" style="display:none;">
@@ -1061,7 +1115,8 @@ const PAGE_TITLES = {
     'internet-safety': 'שולטים ברשת',
     'reports': 'מעקב שבועי — צוות חינוכי',
     'surveys': 'סקרים ומשובים',
-    'admin': 'ניהול מערכת'
+    'admin': 'ניהול מערכת',
+    'content-mgmt': 'ניהול תכנים'
 };
 
 // Public pages — accessible to everyone without login
@@ -1075,6 +1130,7 @@ const PAGE_PERMISSIONS = {
     'training-basic': 'view-training',
     'training-nco': 'view-training',
     'training-officer': 'view-training',
+    'content-mgmt': 'add-content',
     'reports': 'weekly-reports',
     'admin': 'admin'
 };
@@ -1122,19 +1178,12 @@ function activatePage(page) {
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
+    if (page === 'content-mgmt') cmgmtProgramChanged();
     if (page.startsWith('training-')) {
         const prog = page.replace('training-','');
-        // Auto-select user's platoon if they have one
-        if (currentUser?.pluga && (prog === 'basic' || prog === 'nco')) {
-            const plugaMap = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h'};
-            const userTrack = plugaMap[currentUser.pluga];
-            if (userTrack) {
-                currentTrainingTrack[prog] = userTrack;
-                // Update tab UI
-                document.querySelectorAll(`#page-training-${prog} .track-tab`).forEach(b => {
-                    b.classList.toggle('active', b.dataset.track === userTrack);
-                });
-            }
+        // Build platoon tabs dynamically based on user permissions
+        if (prog === 'basic' || prog === 'nco') {
+            buildPlugaTabs(prog);
         }
         loadTrainingPage(prog);
     }
@@ -1455,6 +1504,11 @@ function updateUIForRole() {
         el.style.display = lvl >= 1 ? '' : 'none';
     });
 
+    // Content management (canAddContent)
+    document.querySelectorAll('.nav-content-mgmt').forEach(el => {
+        el.style.display = canUserAddContent() ? '' : 'none';
+    });
+
     // Reports (level 4+)
     document.querySelectorAll('.nav-reports, .nav-reports-section, .tile-reports').forEach(el => {
         el.style.display = lvl >= 4 ? '' : 'none';
@@ -1477,6 +1531,7 @@ function logout() {
 
     // Hide role-based elements
     document.querySelectorAll('.nav-training, .nav-training-section, .tile-training').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-content-mgmt').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-reports, .nav-reports-section, .tile-reports').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-admin, .tile-admin').forEach(el => el.style.display = 'none');
 
@@ -1823,6 +1878,33 @@ function switchOfficerTrack(track, btn) {
     loadTrainingPage('officer');
 }
 
+const PLUGA_TRACK_MAP = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h'};
+
+function buildPlugaTabs(prog) {
+    const container = document.getElementById(`training-${prog}-tracks`);
+    if (!container) return;
+    const lvl = userLevel();
+    const userPluga = currentUser?.pluga || '';
+
+    if (lvl >= 4 || !userPluga) {
+        // בה"ד/מפח"ט level or no pluga assigned: show all 8 tabs
+        let html = '';
+        const allTracks = ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'];
+        const current = currentTrainingTrack[prog] || 'pluga_a';
+        allTracks.forEach(t => {
+            html += `<button class="track-tab ${t===current?'active':''}" data-track="${t}" onclick="switchTrainingTrack('${prog}','${t}')">${TRAINING_TRACKS[t]}</button>`;
+        });
+        container.innerHTML = html;
+    } else {
+        // Platoon-level user: only show their own platoon (no tabs needed, just a label)
+        const userTrack = PLUGA_TRACK_MAP[userPluga];
+        if (userTrack) {
+            currentTrainingTrack[prog] = userTrack;
+            container.innerHTML = `<span style="font-size:0.88rem;font-weight:600;color:var(--primary);">פלוגה ${userPluga}׳</span>`;
+        }
+    }
+}
+
 function switchTrainingTrack(program, track) {
     currentTrainingTrack[program] = track;
     if (program === 'officer') currentOfficerTrack = track;
@@ -1855,19 +1937,26 @@ async function loadTrainingPage(program) {
     const week = currentTrainingWeek[program] || 1;
     container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">טוען תכנים...</p>';
 
-    const canAdd = canUserAddContent();
-    const canMark = canUserMarkCompletion();
+    // Permission: can this user mark pass/fail for the currently viewed platoon?
+    // Only platoon managers (מ"פ/קמב"ץ) of THIS platoon + בה"ד/מפח"ט level
+    const isPlugaProgram = track && track.startsWith('pluga_');
+    const plugaLetter = isPlugaProgram ? TRAINING_TRACKS[track]?.replace('פלוגה ','').replace('׳','') : null;
+    const userPluga = currentUser?.pluga || '';
+    const lvl = userLevel();
+    const canMark = canUserMarkCompletion() && (
+        lvl >= 4 || // בה"ד / מפח"ט level — can mark any platoon
+        (plugaLetter && userPluga === plugaLetter) // platoon-level user — only their own
+    );
 
     try {
         // For platoon-based programs (basic/nco), content is shared — don't filter by track
         // For officer, content differs by track (sade/gefen) — filter by track
-        const isPlugaProgram = track && track.startsWith('pluga_');
         const contentTrack = isPlugaProgram ? null : track;
         let query = db.collection('training_content').where('program','==',program).where('week','==',week);
         if (contentTrack) query = query.where('track','==',contentTrack);
         const snap = await query.orderBy('order').get();
 
-        // Load completion status — always load for current platoon/track
+        // Load completion status
         let statusQuery = db.collection('training_completion').where('program','==',program).where('week','==',week);
         const statusSnap = await statusQuery.get();
         const statusMap = {};
@@ -1885,14 +1974,10 @@ async function loadTrainingPage(program) {
         const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
         const catBg = { ruach:'rgba(14,116,144,0.08)', rabanut:'rgba(124,58,237,0.08)', mediniyut:'rgba(5,150,105,0.08)', chinuch:'rgba(217,119,6,0.08)' };
 
-        // Determine if this program uses platoon tracks (basic/nco) or other tracks (officer)
-        const isPlugaTrack = track && track.startsWith('pluga_');
-        const plugaLetter = isPlugaTrack ? TRAINING_TRACKS[track]?.replace('פלוגה ','').replace('׳','') : null;
         const trackLabel = track ? (TRAINING_TRACKS[track] || track) : '';
 
-        let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        let html = `<div style="margin-bottom:14px;">
             <h3 style="color:var(--primary);font-size:1.1rem;">שבוע ${week}${trackLabel ? ' — ' + trackLabel : ''}</h3>
-            ${canAdd ? `<button class="btn-primary btn-sm" onclick="openAddLessonModal('${program}',${week},'${track||''}')">+ הוסף תוכן</button>` : ''}
         </div>`;
 
         // 4-column grid
@@ -1909,12 +1994,11 @@ async function loadTrainingPage(program) {
             if (lessons.length === 0) {
                 html += `<div class="training-col-empty">
                     <span style="font-size:0.8rem;color:var(--text-secondary);">אין תוכן</span>
-                    ${canAdd ? `<button class="btn-sm" style="margin-top:6px;font-size:0.72rem;padding:3px 10px;border:1px dashed ${color};background:transparent;color:${color};border-radius:6px;cursor:pointer;" onclick="openAddLessonModalCat('${program}',${week},'${track||''}','${catKey}')">+ הוסף</button>` : ''}
                 </div>`;
             } else {
                 for (const lesson of lessons) {
                     let completionHtml = '';
-                    if (isPlugaTrack && plugaLetter) {
+                    if (isPlugaProgram && plugaLetter) {
                         // For platoon tracks: show single completion toggle for this platoon
                         const key = `${lesson.id}_${plugaLetter}`;
                         const done = statusMap[key];
@@ -1922,7 +2006,7 @@ async function loadTrainingPage(program) {
                         const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${track||''}','${plugaLetter}',${!done})"` : '';
                         const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
                         completionHtml = `<div style="margin-top:6px;">
-                            <span class="completion-badge ${doneClass}" ${clickHandler} ${tooltip}>
+                            <span class="completion-badge ${doneClass}" ${canMark ? 'style="cursor:pointer;"' : ''} ${clickHandler} ${tooltip}>
                                 ${done ? '✓ בוצע' : '○ טרם בוצע'}
                             </span>
                         </div>`;
@@ -1941,18 +2025,12 @@ async function loadTrainingPage(program) {
                     }
 
                     html += `<div class="training-col-card" style="border-right:3px solid ${color};background:${bg};">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                            <div class="training-col-title">${lesson.title}</div>
-                            ${canAdd ? `<button class="btn-danger btn-sm" style="font-size:0.6rem;padding:1px 6px;flex-shrink:0;" onclick="deleteLesson('${lesson.id}','${program}')">✕</button>` : ''}
-                        </div>
+                        <div class="training-col-title">${lesson.title}</div>
                         ${lesson.instructor ? `<div class="training-col-meta">מעביר: ${lesson.instructor}</div>` : ''}
                         ${lesson.hours ? `<div class="training-col-meta">${lesson.hours} שעות</div>` : ''}
                         ${lesson.url ? `<a href="${lesson.url}" target="_blank" class="training-col-link">קישור לתוכן ←</a>` : ''}
                         ${completionHtml}
                     </div>`;
-                }
-                if (canAdd) {
-                    html += `<button class="btn-sm" style="width:100%;margin-top:4px;font-size:0.72rem;padding:4px;border:1px dashed ${color};background:transparent;color:${color};border-radius:6px;cursor:pointer;" onclick="openAddLessonModalCat('${program}',${week},'${track||''}','${catKey}')">+ הוסף תוכן</button>`;
                 }
             }
 
@@ -1964,11 +2042,12 @@ async function loadTrainingPage(program) {
 
         // Mark week buttons that have content
         if (controls) {
+            const contentTrackForWeeks = isPlugaProgram ? null : track;
             const allSnap = await db.collection('training_content').where('program','==',program).get();
             const weeksWithContent = new Set();
             allSnap.forEach(doc => {
                 const d = doc.data();
-                if (!track || d.track === track) weeksWithContent.add(d.week);
+                if (!contentTrackForWeeks || d.track === contentTrackForWeeks) weeksWithContent.add(d.week);
             });
             controls.querySelectorAll('.week-btn').forEach(btn => {
                 const w = parseInt(btn.textContent);
@@ -2003,58 +2082,171 @@ async function togglePlatoonStatus(lessonId, program, week, track, platoon, comp
     } catch(e) { showToast('שגיאה'); console.error(e); }
 }
 
-// --- Add lesson modal ---
-function openAddLessonModal(program, week, track) { openAddLessonModalCat(program, week, track, ''); }
-function openAddLessonModalCat(program, week, track, presetCat) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.id = 'add-lesson-modal';
-    modal.style.display = 'flex';
-    modal.innerHTML = `<div class="modal-box" style="max-width:480px;">
-        <button class="modal-close" onclick="document.getElementById('add-lesson-modal').remove()">&times;</button>
-        <h2 style="color:var(--primary);margin-bottom:12px;">הוספת תוכן — שבוע ${week}</h2>
-        <div class="form-group" style="text-align:right;"><label>חתך</label>
-            <select id="add-lesson-cat">
-                ${Object.entries(TRAINING_CATEGORIES).map(([k,v]) => `<option value="${k}" ${k===presetCat?'selected':''}>${v}</option>`).join('')}
-            </select>
-        </div>
-        <div class="form-group" style="text-align:right;"><label>שם יחידת הלימוד</label><input type="text" id="add-lesson-title"></div>
-        <div class="form-group" style="text-align:right;"><label>מעביר</label><input type="text" id="add-lesson-instructor"></div>
-        <div class="form-group" style="text-align:right;"><label>משך (שעות)</label><input type="number" id="add-lesson-hours" step="0.5" min="0.5"></div>
-        <div class="form-group" style="text-align:right;"><label>קישור ליחידת הלימוד (אופציונלי)</label><input type="text" id="add-lesson-url" placeholder="https://..." style="direction:ltr;text-align:left;"></div>
-        <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="saveLesson('${program}',${week},'${track}')">שמור</button>
-    </div>`;
-    document.body.appendChild(modal);
+// --- Content management page (for canAddContent users) ---
+function cmgmtProgramChanged() {
+    const prog = document.getElementById('cmgmt-program').value;
+    const trackSelect = document.getElementById('cmgmt-track');
+    const weekSelect = document.getElementById('cmgmt-week');
+    trackSelect.style.display = prog === 'officer' ? '' : 'none';
+    const config = TRAINING_CONFIG[prog];
+    let weekHtml = '';
+    for (let w = 1; w <= config.weeks; w++) weekHtml += `<option value="${w}">שבוע ${w}</option>`;
+    weekSelect.innerHTML = weekHtml;
+    loadCmgmtContent();
 }
 
-async function saveLesson(program, week, track) {
-    const title = document.getElementById('add-lesson-title').value.trim();
-    const category = document.getElementById('add-lesson-cat').value;
-    const instructor = document.getElementById('add-lesson-instructor').value.trim();
-    const hours = parseFloat(document.getElementById('add-lesson-hours').value) || 0;
-    const url = document.getElementById('add-lesson-url').value.trim();
+async function loadCmgmtContent() {
+    const container = document.getElementById('cmgmt-list');
+    const prog = document.getElementById('cmgmt-program').value;
+    const track = prog === 'officer' ? document.getElementById('cmgmt-track').value : '';
+    const week = parseInt(document.getElementById('cmgmt-week').value) || 1;
+    container.innerHTML = 'טוען...';
+    try {
+        let query = db.collection('training_content').where('program','==',prog).where('week','==',week);
+        if (track) query = query.where('track','==',track);
+        const snap = await query.orderBy('order').get();
+        if (snap.empty) {
+            container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
+            return;
+        }
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
+        let html = '<table class="admin-table"><thead><tr><th>חתך</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>פעולות</th></tr></thead><tbody>';
+        snap.forEach(doc => {
+            const d = doc.data();
+            const catLabel = TRAINING_CATEGORIES[d.category] || d.category;
+            const color = catColors[d.category] || '#666';
+            html += `<tr>
+                <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
+                <td>${d.title}</td>
+                <td>${d.instructor || '—'}</td>
+                <td>${d.hours || '—'}</td>
+                <td>${d.url ? '<a href="'+d.url+'" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">קישור</a>' : '—'}</td>
+                <td><button class="btn-sm btn-danger" onclick="cmgmtDeleteLesson('${doc.id}')">מחק</button></td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    } catch(e) { container.innerHTML = '<p style="color:var(--danger);">שגיאה: ' + e.message + '</p>'; }
+}
 
+async function cmgmtAddLesson() {
+    const prog = document.getElementById('cmgmt-program').value;
+    const track = prog === 'officer' ? document.getElementById('cmgmt-track').value : '';
+    const week = parseInt(document.getElementById('cmgmt-week').value) || 1;
+    const category = document.getElementById('cmgmt-cat').value;
+    const title = document.getElementById('cmgmt-title').value.trim();
+    const instructor = document.getElementById('cmgmt-instructor').value.trim();
+    const hours = parseFloat(document.getElementById('cmgmt-hours').value) || 0;
+    const url = document.getElementById('cmgmt-url').value.trim();
     if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
-
     try {
         await db.collection('training_content').add({
-            program, week, track: track || '',
+            program: prog, week, track,
             category, title, instructor, hours, url,
             createdBy: currentUser.name, createdAt: new Date(),
             order: Date.now()
         });
-        document.getElementById('add-lesson-modal').remove();
         showToast('תוכן נוסף');
-        loadTrainingPage(program);
-    } catch(e) { showToast('שגיאה: ' + e.message); console.error(e); }
+        document.getElementById('cmgmt-title').value = '';
+        document.getElementById('cmgmt-instructor').value = '';
+        document.getElementById('cmgmt-hours').value = '';
+        document.getElementById('cmgmt-url').value = '';
+        loadCmgmtContent();
+    } catch(e) { showToast('שגיאה: ' + e.message); }
 }
 
-async function deleteLesson(lessonId, program) {
+async function cmgmtDeleteLesson(lessonId) {
     if (!confirm('למחוק תוכן זה?')) return;
     try {
         await db.collection('training_content').doc(lessonId).delete();
         showToast('תוכן נמחק');
-        loadTrainingPage(program);
+        loadCmgmtContent();
+    } catch(e) { showToast('שגיאה'); }
+}
+
+// --- Admin training content management (inside admin panel) ---
+function adminTrainingChanged() {
+    const prog = document.getElementById('admin-train-program').value;
+    const trackSelect = document.getElementById('admin-train-track');
+    const weekSelect = document.getElementById('admin-train-week');
+    // Show track selector only for officer
+    trackSelect.style.display = prog === 'officer' ? '' : 'none';
+    // Build week options
+    const config = TRAINING_CONFIG[prog];
+    let weekHtml = '';
+    for (let w = 1; w <= config.weeks; w++) {
+        weekHtml += `<option value="${w}">שבוע ${w}</option>`;
+    }
+    weekSelect.innerHTML = weekHtml;
+    loadAdminTrainingContent();
+}
+
+async function loadAdminTrainingContent() {
+    const container = document.getElementById('admin-training-list');
+    const prog = document.getElementById('admin-train-program').value;
+    const track = prog === 'officer' ? document.getElementById('admin-train-track').value : '';
+    const week = parseInt(document.getElementById('admin-train-week').value) || 1;
+    container.innerHTML = 'טוען...';
+    try {
+        let query = db.collection('training_content').where('program','==',prog).where('week','==',week);
+        if (track) query = query.where('track','==',track);
+        const snap = await query.orderBy('order').get();
+        if (snap.empty) {
+            container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
+            return;
+        }
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
+        let html = '<table class="admin-table"><thead><tr><th>חתך</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>פעולות</th></tr></thead><tbody>';
+        snap.forEach(doc => {
+            const d = doc.data();
+            const catLabel = TRAINING_CATEGORIES[d.category] || d.category;
+            const color = catColors[d.category] || '#666';
+            html += `<tr>
+                <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
+                <td>${d.title}</td>
+                <td>${d.instructor || '—'}</td>
+                <td>${d.hours || '—'}</td>
+                <td>${d.url ? '<a href="'+d.url+'" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">קישור</a>' : '—'}</td>
+                <td><button class="btn-sm btn-danger" onclick="adminDeleteLesson('${doc.id}')">מחק</button></td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    } catch(e) { container.innerHTML = '<p style="color:var(--danger);">שגיאה: ' + e.message + '</p>'; }
+}
+
+async function adminAddLesson() {
+    const prog = document.getElementById('admin-train-program').value;
+    const track = prog === 'officer' ? document.getElementById('admin-train-track').value : '';
+    const week = parseInt(document.getElementById('admin-train-week').value) || 1;
+    const category = document.getElementById('admin-lesson-cat').value;
+    const title = document.getElementById('admin-lesson-title').value.trim();
+    const instructor = document.getElementById('admin-lesson-instructor').value.trim();
+    const hours = parseFloat(document.getElementById('admin-lesson-hours').value) || 0;
+    const url = document.getElementById('admin-lesson-url').value.trim();
+    if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
+    try {
+        await db.collection('training_content').add({
+            program: prog, week, track,
+            category, title, instructor, hours, url,
+            createdBy: currentUser.name, createdAt: new Date(),
+            order: Date.now()
+        });
+        showToast('תוכן נוסף');
+        document.getElementById('admin-lesson-title').value = '';
+        document.getElementById('admin-lesson-instructor').value = '';
+        document.getElementById('admin-lesson-hours').value = '';
+        document.getElementById('admin-lesson-url').value = '';
+        loadAdminTrainingContent();
+    } catch(e) { showToast('שגיאה: ' + e.message); }
+}
+
+async function adminDeleteLesson(lessonId) {
+    if (!confirm('למחוק תוכן זה?')) return;
+    try {
+        await db.collection('training_content').doc(lessonId).delete();
+        showToast('תוכן נמחק');
+        loadAdminTrainingContent();
     } catch(e) { showToast('שגיאה'); }
 }
 
@@ -2286,7 +2478,7 @@ function showAdminTab(tab) {
     if (tab === 'participants-mgmt') loadAdminParticipants();
     if (tab === 'phones') showFrameworkPhones('yonatan');
     if (tab === 'surveys-mgmt') loadAdminSurveys();
-    // training-mgmt removed — content managed inline via training pages
+    if (tab === 'training-mgmt') { adminTrainingChanged(); }
     if (tab === 'dashboard') loadAdminDashboard();
 }
 
