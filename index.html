@@ -233,6 +233,20 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .lesson-meta { display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; font-size:0.76rem; color:var(--text-secondary); }
 .lesson-meta span { display:inline-flex; align-items:center; gap:3px; }
 .platoon-grid { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+/* Training 4-column grid */
+.training-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; direction:rtl; }
+@media(max-width:900px) { .training-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:520px) { .training-grid { grid-template-columns:1fr; } }
+.training-col { background:#fff; border-radius:var(--radius-sm); border:1px solid var(--border); overflow:hidden; display:flex; flex-direction:column; }
+.training-col-header { padding:8px 12px; font-weight:700; font-size:0.85rem; text-align:center; letter-spacing:0.5px; }
+.training-col-empty { padding:20px 12px; text-align:center; display:flex; flex-direction:column; align-items:center; flex:1; justify-content:center; }
+.training-col-card { padding:10px 12px; border-bottom:1px solid var(--border); }
+.training-col-card:last-of-type { border-bottom:none; }
+.training-col-title { font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:3px; line-height:1.3; }
+.training-col-meta { font-size:0.72rem; color:var(--text-secondary); margin-bottom:2px; }
+.training-col-link { font-size:0.72rem; color:var(--primary-lighter); text-decoration:none; display:inline-block; margin-bottom:4px; }
+.training-col-link:hover { text-decoration:underline; }
+.training-col-platoons { display:flex; gap:3px; flex-wrap:wrap; margin-top:6px; }
 .platoon-chip { padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:600; cursor:pointer; border:1px solid var(--border); background:#fff; transition:all 0.2s; }
 .platoon-chip.done { background:var(--success); color:#fff; border-color:var(--success); }
 .platoon-chip:hover { border-color:var(--primary-lighter); }
@@ -754,18 +768,46 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                     <input type="text" id="new-user-name" placeholder="שם מלא" style="flex:1;min-width:130px;">
                     <input type="email" id="new-user-email" placeholder="user@example.com" style="width:200px;direction:ltr;">
                     <input type="text" id="new-user-password" placeholder="סיסמה" style="width:120px;direction:ltr;">
-                    <select id="new-user-role" style="width:150px;">
-                        <option value="lohem">לוחם</option>
-                        <option value="mefaked_zater">מפקד זוטר</option>
-                        <option value="katzin_bachir">קצין בכיר</option>
-                        <option value="segel">סגל רוח חשמונאית</option>
-                        <option value="menahel">מנהל</option>
+                    <select id="new-user-role" style="width:160px;">
+                        <optgroup label="מפח״ט">
+                            <option value="menahel">מנהל מפח"ט</option>
+                        </optgroup>
+                        <optgroup label="בה״ד">
+                            <option value="magad">מג"ד</option>
+                            <option value="katzin_chinuch">קצין חינוך</option>
+                            <option value="mashak_chinuch">מש"ק חינוך</option>
+                            <option value="ramad_hadraha">רמ"ד הדרכה</option>
+                            <option value="mashak_hadraha">מש"ק הדרכה</option>
+                            <option value="rav">רב הבה"ד</option>
+                            <option value="sgan_rav">סגן רב הבה"ד</option>
+                            <option value="katzin_mediniyut">קצין מדיניות</option>
+                        </optgroup>
+                        <optgroup label="פלוגה">
+                            <option value="mefaked_pluga">מ"פ</option>
+                            <option value="samap">סמ"פ</option>
+                            <option value="kambatz">קמב"ץ</option>
+                            <option value="mem_mem">מ"מ</option>
+                            <option value="samal">סמל</option>
+                            <option value="mach">מ"כ</option>
+                            <option value="lohem">לוחם</option>
+                        </optgroup>
                     </select>
                     <select id="new-user-framework" style="width:140px;">
+                        <option value="maccabim">בה"ד מכבים</option>
                         <option value="yonatan">גדוד יונתן</option>
                         <option value="shimon">גדוד שמעון</option>
-                        <option value="maccabim">בה"ד מכבים</option>
                         <option value="mifhat">מפח"ט</option>
+                    </select>
+                    <select id="new-user-pluga" style="width:100px;">
+                        <option value="">ללא פלוגה</option>
+                        <option value="א">פלוגה א׳</option>
+                        <option value="ב">פלוגה ב׳</option>
+                        <option value="ג">פלוגה ג׳</option>
+                        <option value="ד">פלוגה ד׳</option>
+                        <option value="ה">פלוגה ה׳</option>
+                        <option value="ו">פלוגה ו׳</option>
+                        <option value="ז">פלוגה ז׳</option>
+                        <option value="ח">פלוגה ח׳</option>
                     </select>
                     <button class="btn-primary btn-sm" onclick="addUser()">הוסף</button>
                 </div>
@@ -868,12 +910,32 @@ let currentUser = null;
 // ROLES & PERMISSIONS
 // ============================================================
 const ROLES = {
-    'lohem':          { label:'לוחם',               level:1 },
-    'mefaked_zater':  { label:'מפקד זוטר',          level:2 },
-    'katzin_bachir':  { label:'קצין בכיר',          level:3 },
-    'segel':          { label:'סגל רוח חשמונאית',   level:4 },
-    'menahel':        { label:'מנהל',               level:5 }
+    // מפח"ט level
+    'menahel':          { label:'מנהל מפח"ט',       level:5, canAddContent:true, canMarkCompletion:true },
+    // בה"ד level
+    'magad':            { label:'מג"ד',              level:4, canAddContent:false, canMarkCompletion:true },
+    'katzin_chinuch':   { label:'קצין חינוך',        level:4, canAddContent:true, canMarkCompletion:true },
+    'mashak_chinuch':   { label:'מש"ק חינוך',       level:3, canAddContent:true, canMarkCompletion:true },
+    'ramad_hadraha':    { label:'רמ"ד הדרכה',        level:4, canAddContent:false, canMarkCompletion:true },
+    'mashak_hadraha':   { label:'מש"ק הדרכה',       level:3, canAddContent:false, canMarkCompletion:true },
+    'rav':              { label:'רב הבה"ד',          level:4, canAddContent:false, canMarkCompletion:true },
+    'sgan_rav':         { label:'סגן רב הבה"ד',     level:3, canAddContent:false, canMarkCompletion:true },
+    'katzin_mediniyut': { label:'קצין מדיניות',      level:4, canAddContent:false, canMarkCompletion:true },
+    // פלוגה level
+    'mefaked_pluga':    { label:'מ"פ',               level:3, canAddContent:false, canMarkCompletion:true },
+    'samap':            { label:'סמ"פ',              level:2, canAddContent:false, canMarkCompletion:false },
+    'kambatz':          { label:'קמב"ץ',             level:3, canAddContent:false, canMarkCompletion:true },
+    'mem_mem':          { label:'מ"מ',               level:2, canAddContent:false, canMarkCompletion:false },
+    'samal':            { label:'סמל',               level:1, canAddContent:false, canMarkCompletion:false },
+    'mach':             { label:'מ"כ',               level:1, canAddContent:false, canMarkCompletion:false },
+    'lohem':            { label:'לוחם',              level:0, canAddContent:false, canMarkCompletion:false },
+    // Legacy compat
+    'mefaked_zater':    { label:'מפקד זוטר',         level:2, canAddContent:false, canMarkCompletion:false },
+    'katzin_bachir':    { label:'קצין בכיר',         level:3, canAddContent:false, canMarkCompletion:true },
+    'segel':            { label:'סגל רוח חשמונאית',  level:4, canAddContent:true, canMarkCompletion:true }
 };
+
+const PLUGA_LIST = ['א','ב','ג','ד','ה','ו','ז','ח'];
 
 const FRAMEWORKS = {
     'yonatan':  'גדוד יונתן',
@@ -884,6 +946,8 @@ const FRAMEWORKS = {
 
 function userLevel() { return ROLES[currentUser?.role]?.level || 0; }
 function userRoleLabel() { return ROLES[currentUser?.role]?.label || ''; }
+function canUserAddContent() { return currentUser && (ROLES[currentUser.role]?.canAddContent === true); }
+function canUserMarkCompletion() { return currentUser && (ROLES[currentUser.role]?.canMarkCompletion === true); }
 
 function hasPermission(action) {
     if (!currentUser) return false;
@@ -891,8 +955,9 @@ function hasPermission(action) {
     switch(action) {
         case 'learning':           return true;
         case 'geography':          return true;
-        case 'view-training':      return lvl >= 2;
-        case 'mark-training':      return lvl >= 3;
+        case 'view-training':      return lvl >= 1;
+        case 'mark-training':      return canUserMarkCompletion();
+        case 'add-content':        return canUserAddContent();
         case 'mark-training-all':  return lvl >= 4;
         case 'weekly-reports':     return lvl >= 4;
         case 'view-all-reports':   return lvl >= 5;
@@ -1304,7 +1369,8 @@ function onLoginSuccess() {
     document.getElementById('sidebar-user-info').style.display = 'flex';
     document.getElementById('sidebar-username').textContent = currentUser.name;
     const isSystemAdmin = currentUser.role === 'menahel' && !currentUser.framework;
-    const roleText = isSystemAdmin ? 'מנהל מערכת' : (userRoleLabel() + (currentUser.framework ? ' · ' + getFrameworkLabel(currentUser.framework) : ''));
+    const plugaText = currentUser.pluga ? ` · פלוגה ${currentUser.pluga}׳` : '';
+    const roleText = isSystemAdmin ? 'מנהל מערכת' : (userRoleLabel() + plugaText);
     document.getElementById('sidebar-role').textContent = roleText;
     document.getElementById('sidebar-avatar').textContent = currentUser.name.charAt(0);
     document.getElementById('home-greeting').textContent = '— ' + currentUser.name;
@@ -1331,9 +1397,9 @@ function onLoginSuccess() {
 function updateUIForRole() {
     const lvl = userLevel();
 
-    // Training links (level 2+)
+    // Training links (level 1+ — all users can see training)
     document.querySelectorAll('.nav-training, .nav-training-section, .tile-training').forEach(el => {
-        el.style.display = lvl >= 2 ? '' : 'none';
+        el.style.display = lvl >= 1 ? '' : 'none';
     });
 
     // Reports (level 4+)
@@ -1721,29 +1787,20 @@ async function loadTrainingPage(program) {
     const week = currentTrainingWeek[program] || 1;
     container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">טוען תכנים...</p>';
 
+    const canAdd = canUserAddContent();
+    const canMark = canUserMarkCompletion();
+
     try {
-        // Query: training_content / program + week (+ track for officer)
         let query = db.collection('training_content').where('program','==',program).where('week','==',week);
         if (track) query = query.where('track','==',track);
         const snap = await query.orderBy('order').get();
 
-        // Load completion status for this week
+        // Load completion status
         let statusQuery = db.collection('training_completion').where('program','==',program).where('week','==',week);
         if (track) statusQuery = statusQuery.where('track','==',track);
         const statusSnap = await statusQuery.get();
         const statusMap = {};
         statusSnap.forEach(doc => { const d = doc.data(); statusMap[`${d.lessonId}_${d.platoon}`] = d; });
-
-        const canMark = currentUser && (userLevel() >= 3); // katzin_bachir+ can mark
-
-        if (snap.empty) {
-            container.innerHTML = `<div class="card" style="text-align:center;padding:30px;color:var(--text-secondary);">
-                <p style="font-size:1.1rem;margin-bottom:8px;">שבוע ${week}</p>
-                <p>טרם הוגדרו תכנים לשבוע זה.</p>
-                ${canMark ? `<button class="btn-primary btn-sm" style="margin-top:12px;" onclick="openAddLessonModal('${program}',${week},'${track||''}')">+ הוסף תוכן</button>` : ''}
-            </div>`;
-            return;
-        }
 
         // Group by category
         const byCat = {};
@@ -1751,50 +1808,64 @@ async function loadTrainingPage(program) {
         snap.forEach(doc => {
             const d = { ...doc.data(), id: doc.id };
             if (byCat[d.category]) byCat[d.category].push(d);
-            else { if (!byCat['other']) byCat['other'] = []; byCat['other'].push(d); }
         });
 
-        let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="color:var(--primary);">שבוע ${week}</h3>
-            ${canMark ? `<button class="btn-primary btn-sm" onclick="openAddLessonModal('${program}',${week},'${track||''}')">+ הוסף תוכן</button>` : ''}
+        // Category colors
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
+        const catBg = { ruach:'rgba(14,116,144,0.08)', rabanut:'rgba(124,58,237,0.08)', mediniyut:'rgba(5,150,105,0.08)', chinuch:'rgba(217,119,6,0.08)' };
+
+        let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="color:var(--primary);font-size:1.1rem;">שבוע ${week}</h3>
+            ${canAdd ? `<button class="btn-primary btn-sm" onclick="openAddLessonModal('${program}',${week},'${track||''}')">+ הוסף תוכן</button>` : ''}
         </div>`;
 
+        // 4-column grid
+        html += '<div class="training-grid">';
+
         for (const [catKey, catLabel] of Object.entries(TRAINING_CATEGORIES)) {
-            const lessons = byCat[catKey];
-            if (!lessons || lessons.length === 0) continue;
+            const lessons = byCat[catKey] || [];
+            const color = catColors[catKey] || 'var(--primary)';
+            const bg = catBg[catKey] || 'rgba(0,0,0,0.03)';
 
-            html += `<div class="category-section">
-                <div class="category-header">${catLabel}</div>`;
+            html += `<div class="training-col">
+                <div class="training-col-header" style="background:${color};color:#fff;">${catLabel}</div>`;
 
-            for (const lesson of lessons) {
-                html += `<div class="lesson-card">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                        <div style="flex:1;">
-                            <h4 style="font-size:0.92rem;margin-bottom:2px;">${lesson.title}</h4>
-                            <div class="lesson-meta">
-                                ${lesson.instructor ? `<span>מעביר: ${lesson.instructor}</span>` : ''}
-                                ${lesson.hours ? `<span>${lesson.hours} שעות</span>` : ''}
-                                ${lesson.url ? `<a href="${lesson.url}" target="_blank" style="color:var(--primary-lighter);">קישור לתוכן</a>` : ''}
-                            </div>
-                        </div>
-                        ${canMark ? `<button class="btn-danger btn-sm" style="font-size:0.7rem;padding:2px 8px;" onclick="deleteLesson('${lesson.id}','${program}')">מחק</button>` : ''}
-                    </div>
-                    <div class="platoon-grid">
-                        <span style="font-size:0.72rem;color:var(--text-secondary);margin-left:4px;">פלוגות:</span>
-                        ${PLATOONS.map(p => {
-                            const key = `${lesson.id}_${p}`;
-                            const done = statusMap[key];
-                            const doneClass = done ? 'done' : '';
-                            const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${track||''}','${p}',${!done})"` : '';
-                            const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
-                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳</span>`;
-                        }).join('')}
-                    </div>
+            if (lessons.length === 0) {
+                html += `<div class="training-col-empty">
+                    <span style="font-size:0.8rem;color:var(--text-secondary);">אין תוכן</span>
+                    ${canAdd ? `<button class="btn-sm" style="margin-top:6px;font-size:0.72rem;padding:3px 10px;border:1px dashed ${color};background:transparent;color:${color};border-radius:6px;cursor:pointer;" onclick="openAddLessonModalCat('${program}',${week},'${track||''}','${catKey}')">+ הוסף</button>` : ''}
                 </div>`;
+            } else {
+                for (const lesson of lessons) {
+                    html += `<div class="training-col-card" style="border-right:3px solid ${color};background:${bg};">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <div class="training-col-title">${lesson.title}</div>
+                            ${canAdd ? `<button class="btn-danger btn-sm" style="font-size:0.6rem;padding:1px 6px;flex-shrink:0;" onclick="deleteLesson('${lesson.id}','${program}')">✕</button>` : ''}
+                        </div>
+                        ${lesson.instructor ? `<div class="training-col-meta">מעביר: ${lesson.instructor}</div>` : ''}
+                        ${lesson.hours ? `<div class="training-col-meta">${lesson.hours} שעות</div>` : ''}
+                        ${lesson.url ? `<a href="${lesson.url}" target="_blank" class="training-col-link">קישור לתוכן ←</a>` : ''}
+                        <div class="training-col-platoons">
+                            ${PLATOONS.map(p => {
+                                const key = `${lesson.id}_${p}`;
+                                const done = statusMap[key];
+                                const doneClass = done ? 'done' : '';
+                                const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${track||''}','${p}',${!done})"` : '';
+                                const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
+                                return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳</span>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+                }
+                if (canAdd) {
+                    html += `<button class="btn-sm" style="width:100%;margin-top:4px;font-size:0.72rem;padding:4px;border:1px dashed ${color};background:transparent;color:${color};border-radius:6px;cursor:pointer;" onclick="openAddLessonModalCat('${program}',${week},'${track||''}','${catKey}')">+ הוסף תוכן</button>`;
+                }
             }
+
             html += '</div>';
         }
 
+        html += '</div>';
         container.innerHTML = html;
 
         // Mark week buttons that have content
@@ -1839,7 +1910,8 @@ async function togglePlatoonStatus(lessonId, program, week, track, platoon, comp
 }
 
 // --- Add lesson modal ---
-function openAddLessonModal(program, week, track) {
+function openAddLessonModal(program, week, track) { openAddLessonModalCat(program, week, track, ''); }
+function openAddLessonModalCat(program, week, track, presetCat) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'add-lesson-modal';
@@ -1849,7 +1921,7 @@ function openAddLessonModal(program, week, track) {
         <h2 style="color:var(--primary);margin-bottom:12px;">הוספת תוכן — שבוע ${week}</h2>
         <div class="form-group" style="text-align:right;"><label>חתך</label>
             <select id="add-lesson-cat">
-                ${Object.entries(TRAINING_CATEGORIES).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+                ${Object.entries(TRAINING_CATEGORIES).map(([k,v]) => `<option value="${k}" ${k===presetCat?'selected':''}>${v}</option>`).join('')}
             </select>
         </div>
         <div class="form-group" style="text-align:right;"><label>שם יחידת הלימוד</label><input type="text" id="add-lesson-title"></div>
@@ -2196,7 +2268,7 @@ async function loadAdminUsers() {
     container.innerHTML = 'טוען...';
     try {
         const snap = await db.collection('users').get();
-        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>מייל</th><th>תפקיד</th><th>מסגרת</th><th>פעולות</th></tr></thead><tbody>';
+        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>מייל</th><th>תפקיד</th><th>מסגרת</th><th>פלוגה</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
             html += `<tr>
@@ -2204,6 +2276,7 @@ async function loadAdminUsers() {
                 <td style="direction:ltr;text-align:right;">${d.email || d.phone || '—'}</td>
                 <td>${ROLES[d.role]?.label || d.role || '—'}</td>
                 <td>${getFrameworkLabel(d.framework) || '—'}</td>
+                <td>${d.pluga ? d.pluga + '׳' : '—'}</td>
                 <td>
                     <button class="btn-sm btn-secondary" onclick="editUserRole('${doc.id}')">ערוך</button>
                     <button class="btn-sm btn-danger" onclick="deleteUser('${doc.id}')">מחק</button>
@@ -2221,9 +2294,10 @@ async function addUser() {
     const password = document.getElementById('new-user-password').value.trim();
     const role = document.getElementById('new-user-role').value;
     const framework = document.getElementById('new-user-framework').value;
+    const pluga = document.getElementById('new-user-pluga')?.value || '';
     if (!name || !email || !email.includes('@')) { showToast('יש למלא שם ומייל תקין'); return; }
     try {
-        const userData = { name, email, role, framework, createdAt: new Date() };
+        const userData = { name, email, role, framework, pluga, createdAt: new Date() };
         if (password) {
             userData.passwordHash = await hashPassword(password);
         }
@@ -2265,10 +2339,16 @@ async function editUserRole(docId) {
     const fwIdx = parseInt(fwChosen) - 1;
     const newFw = (fwIdx >= 0 && fwIdx < fwKeys.length) ? fwKeys[fwIdx] : currentData.framework;
 
+    const plugaOptions = ['','א','ב','ג','ד','ה','ו','ז','ח'];
+    const plugaChosen = prompt('פלוגה (נוכחי: ' + (currentData.pluga || 'ללא') + '):\n' + plugaOptions.map((p,i) => `${i}. ${p || 'ללא'}`).join('\n') + '\n\nהזן מספר:');
+    const plugaIdx = parseInt(plugaChosen);
+    const newPluga = (!isNaN(plugaIdx) && plugaIdx >= 0 && plugaIdx < plugaOptions.length) ? plugaOptions[plugaIdx] : (currentData.pluga || '');
+
     try {
         const update = { role: roleKeys[idx] };
         if (newName) update.name = newName;
         if (newFw) update.framework = newFw;
+        update.pluga = newPluga;
         if (newPassword) update.passwordHash = await hashPassword(newPassword);
 
         const emailChanged = newEmail && newEmail.trim().toLowerCase() !== docId;
