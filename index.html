@@ -56,7 +56,7 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .sidebar-user .user-avatar { width:34px; height:34px; border-radius:50%; background:var(--accent); color:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; }
 .sidebar-user .user-info { flex:1; }
 .sidebar-user .user-name { font-size:0.82rem; font-weight:600; }
-.sidebar-user .user-role { font-size:0.7rem; opacity:0.5; }
+.sidebar-user .user-role { font-size:0.68rem; opacity:0.5; line-height:1.3; }
 .sidebar-user .btn-logout { background:none; border:1px solid rgba(255,255,255,0.2); color:#ffcdd2; padding:5px 10px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.72rem; }
 .btn-staff-login { display:flex; align-items:center; gap:8px; width:100%; padding:10px 14px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:rgba(255,255,255,0.8); font-family:inherit; font-size:0.82rem; font-weight:500; cursor:pointer; transition:all 0.2s; }
 .btn-staff-login:hover { background:rgba(255,255,255,0.15); color:#fff; }
@@ -234,6 +234,10 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .lesson-meta span { display:inline-flex; align-items:center; gap:3px; }
 .platoon-grid { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
 /* Training 4-column grid */
+.track-tabs-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.track-tab { padding:6px 14px; border-radius:8px; font-size:0.82rem; font-weight:600; border:1.5px solid var(--border); background:#fff; color:var(--text-secondary); cursor:pointer; transition:all 0.2s; font-family:inherit; }
+.track-tab:hover { border-color:var(--primary-lighter); color:var(--primary); }
+.track-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
 .training-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; direction:rtl; }
 @media(max-width:900px) { .training-grid { grid-template-columns:repeat(2,1fr); } }
 @media(max-width:520px) { .training-grid { grid-template-columns:1fr; } }
@@ -250,6 +254,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .platoon-chip { padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:600; cursor:pointer; border:1px solid var(--border); background:#fff; transition:all 0.2s; }
 .platoon-chip.done { background:var(--success); color:#fff; border-color:var(--success); }
 .platoon-chip:hover { border-color:var(--primary-lighter); }
+.completion-badge { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer; border:1px solid var(--border); background:#fff; transition:all 0.2s; }
+.completion-badge.done { background:var(--success); color:#fff; border-color:var(--success); }
+.completion-badge:hover { border-color:var(--primary-lighter); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
 .framework-badge { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border-radius:12px; font-size:0.78rem; font-weight:600; }
 .fw-yonatan { background:#E3F2FD; color:#1565C0; }
 .fw-shimon { background:#FFF3E0; color:#E65100; }
@@ -605,6 +612,16 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card">
         <div class="card-title">הכשרת יסוד — רוח מכבי</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">30 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
+        <div class="track-tabs-wrap" id="training-basic-tracks">
+            <button class="track-tab active" data-track="pluga_a" onclick="switchTrainingTrack('basic','pluga_a')">פלוגה א׳</button>
+            <button class="track-tab" data-track="pluga_b" onclick="switchTrainingTrack('basic','pluga_b')">פלוגה ב׳</button>
+            <button class="track-tab" data-track="pluga_c" onclick="switchTrainingTrack('basic','pluga_c')">פלוגה ג׳</button>
+            <button class="track-tab" data-track="pluga_d" onclick="switchTrainingTrack('basic','pluga_d')">פלוגה ד׳</button>
+            <button class="track-tab" data-track="pluga_e" onclick="switchTrainingTrack('basic','pluga_e')">פלוגה ה׳</button>
+            <button class="track-tab" data-track="pluga_f" onclick="switchTrainingTrack('basic','pluga_f')">פלוגה ו׳</button>
+            <button class="track-tab" data-track="pluga_g" onclick="switchTrainingTrack('basic','pluga_g')">פלוגה ז׳</button>
+            <button class="track-tab" data-track="pluga_h" onclick="switchTrainingTrack('basic','pluga_h')">פלוגה ח׳</button>
+        </div>
         <div class="training-controls" id="training-basic-controls"></div>
     </div>
     <div id="training-basic-content"></div>
@@ -615,6 +632,16 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card">
         <div class="card-title">קורס מ״כים — רוח מכבי</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">13 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
+        <div class="track-tabs-wrap" id="training-nco-tracks">
+            <button class="track-tab active" data-track="pluga_a" onclick="switchTrainingTrack('nco','pluga_a')">פלוגה א׳</button>
+            <button class="track-tab" data-track="pluga_b" onclick="switchTrainingTrack('nco','pluga_b')">פלוגה ב׳</button>
+            <button class="track-tab" data-track="pluga_c" onclick="switchTrainingTrack('nco','pluga_c')">פלוגה ג׳</button>
+            <button class="track-tab" data-track="pluga_d" onclick="switchTrainingTrack('nco','pluga_d')">פלוגה ד׳</button>
+            <button class="track-tab" data-track="pluga_e" onclick="switchTrainingTrack('nco','pluga_e')">פלוגה ה׳</button>
+            <button class="track-tab" data-track="pluga_f" onclick="switchTrainingTrack('nco','pluga_f')">פלוגה ו׳</button>
+            <button class="track-tab" data-track="pluga_g" onclick="switchTrainingTrack('nco','pluga_g')">פלוגה ז׳</button>
+            <button class="track-tab" data-track="pluga_h" onclick="switchTrainingTrack('nco','pluga_h')">פלוגה ח׳</button>
+        </div>
         <div class="training-controls" id="training-nco-controls"></div>
     </div>
     <div id="training-nco-content"></div>
@@ -625,9 +652,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card">
         <div class="card-title">קורס קצינים — רוח מכבי</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מסלול שדה (16 שבועות) · מסלול גפן (16 שבועות)</p>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <button class="geo-cat-btn active" id="officer-track-sade" onclick="switchOfficerTrack('sade',this)">מסלול שדה</button>
-            <button class="geo-cat-btn" id="officer-track-gefen" onclick="switchOfficerTrack('gefen',this)">מסלול גפן</button>
+        <div class="track-tabs-wrap">
+            <button class="track-tab active" data-track="sade" onclick="switchTrainingTrack('officer','sade')">מסלול שדה</button>
+            <button class="track-tab" data-track="gefen" onclick="switchTrainingTrack('officer','gefen')">מסלול גפן</button>
         </div>
         <div class="training-controls" id="training-officer-controls"></div>
     </div>
@@ -1095,7 +1122,22 @@ function activatePage(page) {
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
-    if (page.startsWith('training-')) loadTrainingPage(page.replace('training-',''));
+    if (page.startsWith('training-')) {
+        const prog = page.replace('training-','');
+        // Auto-select user's platoon if they have one
+        if (currentUser?.pluga && (prog === 'basic' || prog === 'nco')) {
+            const plugaMap = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h'};
+            const userTrack = plugaMap[currentUser.pluga];
+            if (userTrack) {
+                currentTrainingTrack[prog] = userTrack;
+                // Update tab UI
+                document.querySelectorAll(`#page-training-${prog} .track-tab`).forEach(b => {
+                    b.classList.toggle('active', b.dataset.track === userTrack);
+                });
+            }
+        }
+        loadTrainingPage(prog);
+    }
 }
 
 window.addEventListener('hashchange', () => {
@@ -1369,8 +1411,19 @@ function onLoginSuccess() {
     document.getElementById('sidebar-user-info').style.display = 'flex';
     document.getElementById('sidebar-username').textContent = currentUser.name;
     const isSystemAdmin = currentUser.role === 'menahel' && !currentUser.framework;
-    const plugaText = currentUser.pluga ? ` · פלוגה ${currentUser.pluga}׳` : '';
-    const roleText = isSystemAdmin ? 'מנהל מערכת' : (userRoleLabel() + plugaText);
+    const roleLabel = userRoleLabel();
+    const fwLabel = getFrameworkLabel(currentUser.framework);
+    let roleText;
+    if (isSystemAdmin) {
+        roleText = 'מנהל מערכת';
+    } else if (currentUser.pluga) {
+        // Show: בה"ד מכבים / פלוגה א׳ / מ"פ
+        roleText = (fwLabel ? fwLabel + ' / ' : '') + 'פלוגה ' + currentUser.pluga + '׳ / ' + roleLabel;
+    } else if (fwLabel) {
+        roleText = fwLabel + ' / ' + roleLabel;
+    } else {
+        roleText = roleLabel;
+    }
     document.getElementById('sidebar-role').textContent = roleText;
     document.getElementById('sidebar-avatar').textContent = currentUser.name.charAt(0);
     document.getElementById('home-greeting').textContent = '— ' + currentUser.name;
@@ -1742,11 +1795,15 @@ const TRAINING_PROGRAMS_MAP = { 'basic':'הכשרת יסוד', 'nco':'קורס �
 // TRAINING SYSTEM — weeks, categories, platoons
 // ============================================================
 const TRAINING_CONFIG = {
-    'basic':   { label: 'הכשרת יסוד', weeks: 30, tracks: null },
-    'nco':     { label: 'קורס מ״כים', weeks: 13, tracks: null },
+    'basic':   { label: 'הכשרת יסוד', weeks: 30, tracks: ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'] },
+    'nco':     { label: 'קורס מ״כים', weeks: 13, tracks: ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'] },
     'officer': { label: 'קורס קצינים', weeks: 16, tracks: ['sade','gefen'] }
 };
-const TRAINING_TRACKS = { 'sade': 'מסלול שדה', 'gefen': 'מסלול גפן' };
+const TRAINING_TRACKS = {
+    'sade': 'מסלול שדה', 'gefen': 'מסלול גפן',
+    'pluga_a': 'פלוגה א׳', 'pluga_b': 'פלוגה ב׳', 'pluga_c': 'פלוגה ג׳', 'pluga_d': 'פלוגה ד׳',
+    'pluga_e': 'פלוגה ה׳', 'pluga_f': 'פלוגה ו׳', 'pluga_g': 'פלוגה ז׳', 'pluga_h': 'פלוגה ח׳'
+};
 const TRAINING_CATEGORIES = {
     'ruach':    'רוח מכבי',
     'chinuch':  'חינוך',
@@ -1755,13 +1812,24 @@ const TRAINING_CATEGORIES = {
 };
 const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
 let currentOfficerTrack = 'sade';
+let currentTrainingTrack = { 'basic':'pluga_a', 'nco':'pluga_a', 'officer':'sade' };
 let currentTrainingWeek = {};
 
 function switchOfficerTrack(track, btn) {
     currentOfficerTrack = track;
+    currentTrainingTrack['officer'] = track;
     document.querySelectorAll('#page-training-officer .geo-cat-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
     loadTrainingPage('officer');
+}
+
+function switchTrainingTrack(program, track) {
+    currentTrainingTrack[program] = track;
+    if (program === 'officer') currentOfficerTrack = track;
+    document.querySelectorAll(`#page-training-${program} .track-tab`).forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`#page-training-${program} .track-tab[data-track="${track}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    loadTrainingPage(program);
 }
 
 async function loadTrainingPage(program) {
@@ -1771,7 +1839,7 @@ async function loadTrainingPage(program) {
 
     const config = TRAINING_CONFIG[program];
     const totalWeeks = config.weeks;
-    const track = config.tracks ? currentOfficerTrack : null;
+    const track = config.tracks ? currentTrainingTrack[program] : null;
 
     // Build week navigation
     if (controls) {
@@ -1791,13 +1859,16 @@ async function loadTrainingPage(program) {
     const canMark = canUserMarkCompletion();
 
     try {
+        // For platoon-based programs (basic/nco), content is shared — don't filter by track
+        // For officer, content differs by track (sade/gefen) — filter by track
+        const isPlugaProgram = track && track.startsWith('pluga_');
+        const contentTrack = isPlugaProgram ? null : track;
         let query = db.collection('training_content').where('program','==',program).where('week','==',week);
-        if (track) query = query.where('track','==',track);
+        if (contentTrack) query = query.where('track','==',contentTrack);
         const snap = await query.orderBy('order').get();
 
-        // Load completion status
+        // Load completion status — always load for current platoon/track
         let statusQuery = db.collection('training_completion').where('program','==',program).where('week','==',week);
-        if (track) statusQuery = statusQuery.where('track','==',track);
         const statusSnap = await statusQuery.get();
         const statusMap = {};
         statusSnap.forEach(doc => { const d = doc.data(); statusMap[`${d.lessonId}_${d.platoon}`] = d; });
@@ -1814,8 +1885,13 @@ async function loadTrainingPage(program) {
         const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
         const catBg = { ruach:'rgba(14,116,144,0.08)', rabanut:'rgba(124,58,237,0.08)', mediniyut:'rgba(5,150,105,0.08)', chinuch:'rgba(217,119,6,0.08)' };
 
+        // Determine if this program uses platoon tracks (basic/nco) or other tracks (officer)
+        const isPlugaTrack = track && track.startsWith('pluga_');
+        const plugaLetter = isPlugaTrack ? TRAINING_TRACKS[track]?.replace('פלוגה ','').replace('׳','') : null;
+        const trackLabel = track ? (TRAINING_TRACKS[track] || track) : '';
+
         let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <h3 style="color:var(--primary);font-size:1.1rem;">שבוע ${week}</h3>
+            <h3 style="color:var(--primary);font-size:1.1rem;">שבוע ${week}${trackLabel ? ' — ' + trackLabel : ''}</h3>
             ${canAdd ? `<button class="btn-primary btn-sm" onclick="openAddLessonModal('${program}',${week},'${track||''}')">+ הוסף תוכן</button>` : ''}
         </div>`;
 
@@ -1837,15 +1913,22 @@ async function loadTrainingPage(program) {
                 </div>`;
             } else {
                 for (const lesson of lessons) {
-                    html += `<div class="training-col-card" style="border-right:3px solid ${color};background:${bg};">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                            <div class="training-col-title">${lesson.title}</div>
-                            ${canAdd ? `<button class="btn-danger btn-sm" style="font-size:0.6rem;padding:1px 6px;flex-shrink:0;" onclick="deleteLesson('${lesson.id}','${program}')">✕</button>` : ''}
-                        </div>
-                        ${lesson.instructor ? `<div class="training-col-meta">מעביר: ${lesson.instructor}</div>` : ''}
-                        ${lesson.hours ? `<div class="training-col-meta">${lesson.hours} שעות</div>` : ''}
-                        ${lesson.url ? `<a href="${lesson.url}" target="_blank" class="training-col-link">קישור לתוכן ←</a>` : ''}
-                        <div class="training-col-platoons">
+                    let completionHtml = '';
+                    if (isPlugaTrack && plugaLetter) {
+                        // For platoon tracks: show single completion toggle for this platoon
+                        const key = `${lesson.id}_${plugaLetter}`;
+                        const done = statusMap[key];
+                        const doneClass = done ? 'done' : '';
+                        const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${track||''}','${plugaLetter}',${!done})"` : '';
+                        const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
+                        completionHtml = `<div style="margin-top:6px;">
+                            <span class="completion-badge ${doneClass}" ${clickHandler} ${tooltip}>
+                                ${done ? '✓ בוצע' : '○ טרם בוצע'}
+                            </span>
+                        </div>`;
+                    } else {
+                        // For officer/other: show all platoon chips
+                        completionHtml = `<div class="training-col-platoons">
                             ${PLATOONS.map(p => {
                                 const key = `${lesson.id}_${p}`;
                                 const done = statusMap[key];
@@ -1854,7 +1937,18 @@ async function loadTrainingPage(program) {
                                 const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
                                 return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳</span>`;
                             }).join('')}
+                        </div>`;
+                    }
+
+                    html += `<div class="training-col-card" style="border-right:3px solid ${color};background:${bg};">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <div class="training-col-title">${lesson.title}</div>
+                            ${canAdd ? `<button class="btn-danger btn-sm" style="font-size:0.6rem;padding:1px 6px;flex-shrink:0;" onclick="deleteLesson('${lesson.id}','${program}')">✕</button>` : ''}
                         </div>
+                        ${lesson.instructor ? `<div class="training-col-meta">מעביר: ${lesson.instructor}</div>` : ''}
+                        ${lesson.hours ? `<div class="training-col-meta">${lesson.hours} שעות</div>` : ''}
+                        ${lesson.url ? `<a href="${lesson.url}" target="_blank" class="training-col-link">קישור לתוכן ←</a>` : ''}
+                        ${completionHtml}
                     </div>`;
                 }
                 if (canAdd) {
@@ -2268,15 +2362,23 @@ async function loadAdminUsers() {
     container.innerHTML = 'טוען...';
     try {
         const snap = await db.collection('users').get();
-        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>מייל</th><th>תפקיד</th><th>מסגרת</th><th>פלוגה</th><th>פעולות</th></tr></thead><tbody>';
+        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>מייל</th><th>היררכיה</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
+            const rl = ROLES[d.role]?.label || d.role || '—';
+            const fw = getFrameworkLabel(d.framework);
+            let hierarchy = '';
+            if (d.pluga) {
+                hierarchy = (fw ? fw + ' / ' : '') + 'פלוגה ' + d.pluga + '׳ / ' + rl;
+            } else if (fw) {
+                hierarchy = fw + ' / ' + rl;
+            } else {
+                hierarchy = rl;
+            }
             html += `<tr>
                 <td>${d.name || doc.id}</td>
                 <td style="direction:ltr;text-align:right;">${d.email || d.phone || '—'}</td>
-                <td>${ROLES[d.role]?.label || d.role || '—'}</td>
-                <td>${getFrameworkLabel(d.framework) || '—'}</td>
-                <td>${d.pluga ? d.pluga + '׳' : '—'}</td>
+                <td>${hierarchy}</td>
                 <td>
                     <button class="btn-sm btn-secondary" onclick="editUserRole('${doc.id}')">ערוך</button>
                     <button class="btn-sm btn-danger" onclick="deleteUser('${doc.id}')">מחק</button>
