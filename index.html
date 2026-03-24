@@ -595,7 +595,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('home')" data-page="home"><span class="nav-icon">&#9678;</span> דף הבית</a>
 
         <a onclick="navigate('learning')" data-page="learning"><span class="nav-icon">&#9702;</span> והגית בו — למידה יומית</a>
-        <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> לימוד עברית</a>
+        <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> Hebrew Learning</a>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> בעקבות הנצח</a>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת</a>
         <a onclick="navigate('training-basic')" data-page="training-basic" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> הכשרת יסוד</a>
@@ -685,7 +685,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </a>
         <a class="home-tile" onclick="navigate('hebrew')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0891B2,#22D3EE);"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75l11-11.03-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
-            <div class="tile-title">לימוד עברית</div>
+            <div class="tile-title">Hebrew Learning</div>
             <div class="tile-desc">חיזוק השפה העברית — קריאה, כתיבה ודקדוק</div>
         </a>
         <a class="home-tile" onclick="navigate('internet-safety')">
@@ -777,11 +777,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div id="training-officer-content"></div>
 </div>
 
-<!-- ====== HEBREW — לימוד עברית ====== -->
+<!-- ====== HEBREW — Hebrew Learning ====== -->
 <div class="page-section" id="page-hebrew">
     <div class="card">
-        <div class="card-title">לימוד עברית</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">מודול למידה אינטראקטיבי לשליטה בעברית מודרנית. אתה כבר יודע אותיות וניקוד מלימודי תורה - כאן נחזק מילים, קריאה בלי ניקוד ואנגלית צבאית.</p>
+        <div class="card-title">Hebrew Learning</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">Interactive learning module to master modern Hebrew. You already know letters and niqqud from Torah studies — here we'll strengthen vocabulary, reading without vowels, and military Hebrew.</p>
     </div>
 
     <!-- Level Selection Screen -->
@@ -789,32 +789,32 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="hebrew-level-card" onclick="selectHebrewLevel('alef')" data-level="alef">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#0E7490,#22D3EE);">א</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה א׳ — מתחילים</div>
-                <div class="hebrew-level-desc">מילים בסיסיות, מונחים צבאיים, חיי היום-יום</div>
+                <div class="hebrew-level-name">Level Alef — Beginners</div>
+                <div class="hebrew-level-desc">Basic words, military terms, daily life</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-alef"></div>
             </div>
         </div>
         <div class="hebrew-level-card" onclick="selectHebrewLevel('bet')" data-level="bet">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">ב</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה ב׳ — בסיסי</div>
-                <div class="hebrew-level-desc">פעלים בהווה, שיחות בבסיס, קריאה קצרה</div>
+                <div class="hebrew-level-name">Level Bet — Basic</div>
+                <div class="hebrew-level-desc">Present tense verbs, base conversations, short reading</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-bet"></div>
             </div>
         </div>
         <div class="hebrew-level-card" onclick="selectHebrewLevel('gimel')" data-level="gimel">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#059669,#34D399);">ג</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה ג׳ — בינוני</div>
-                <div class="hebrew-level-desc">עבר ועתיד, הבנת הנקרא, טקסטים</div>
+                <div class="hebrew-level-name">Level Gimel — Intermediate</div>
+                <div class="hebrew-level-desc">Past & future tense, reading comprehension, texts</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-gimel"></div>
             </div>
         </div>
         <div class="hebrew-level-card" onclick="selectHebrewLevel('dalet')" data-level="dalet">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#D97706,#FBBF24);">ד</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה ד׳ — מתקדם</div>
-                <div class="hebrew-level-desc">כתיבה מתקדמת, עברית ספרותית, ניתוח</div>
+                <div class="hebrew-level-name">Level Dalet — Advanced</div>
+                <div class="hebrew-level-desc">Advanced writing, literary Hebrew, analysis</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-dalet"></div>
             </div>
         </div>
@@ -825,7 +825,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="card" style="margin-bottom:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
                 <div>
-                    <button class="btn btn-secondary" onclick="backToHebrewLevels()" style="font-size:0.82rem;padding:6px 14px;">← חזרה</button>
+                    <button class="btn btn-secondary" onclick="backToHebrewLevels()" style="font-size:0.82rem;padding:6px 14px;">← Back</button>
                     <span id="hebrew-level-title" style="font-weight:700;font-size:1rem;margin-right:12px;color:var(--primary);"></span>
                 </div>
             </div>
@@ -837,7 +837,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div id="hebrew-unit-screen" style="display:none;">
         <div class="card" style="margin-bottom:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-                <button class="btn btn-secondary" onclick="backToHebrewUnits()" style="font-size:0.82rem;padding:6px 14px;">← חזרה</button>
+                <button class="btn btn-secondary" onclick="backToHebrewUnits()" style="font-size:0.82rem;padding:6px 14px;">← Back</button>
                 <span id="hebrew-unit-screen-title" style="font-weight:700;font-size:1rem;margin-right:12px;color:var(--primary);"></span>
             </div>
         </div>
@@ -849,9 +849,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <!-- Section Tabs -->
         <div class="hebrew-unit-tabs">
-            <button class="hebrew-unit-tab active" data-section="learn" onclick="switchHebrewSection('learn')">📚 לימוד</button>
-            <button class="hebrew-unit-tab" data-section="practice" onclick="switchHebrewSection('practice')">✍️ תרגול</button>
-            <button class="hebrew-unit-tab" data-section="quiz" onclick="switchHebrewSection('quiz')">✔️ מבחן</button>
+            <button class="hebrew-unit-tab active" data-section="learn" onclick="switchHebrewSection('learn')">📚 Learn</button>
+            <button class="hebrew-unit-tab" data-section="practice" onclick="switchHebrewSection('practice')">✍️ Practice</button>
+            <button class="hebrew-unit-tab" data-section="quiz" onclick="switchHebrewSection('quiz')">✔️ Quiz</button>
         </div>
 
         <!-- Learn Section -->
@@ -859,9 +859,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="hebrew-flashcard-progress" id="hebrew-flashcard-progress"></div>
             <div class="hebrew-flashcard-container" id="hebrew-flashcard-container"></div>
             <div class="hebrew-flashcard-nav">
-                <button class="hebrew-flashcard-btn" id="hebrew-card-prev" onclick="hebrewPrevCard()">← הקודמת</button>
-                <button class="hebrew-flashcard-btn" id="hebrew-card-flip" onclick="hebrewFlipCard()">הפוך כרטיס</button>
-                <button class="hebrew-flashcard-btn" id="hebrew-card-next" onclick="hebrewNextCard()">הבאה →</button>
+                <button class="hebrew-flashcard-btn" id="hebrew-card-prev" onclick="hebrewPrevCard()">← Previous</button>
+                <button class="hebrew-flashcard-btn" id="hebrew-card-flip" onclick="hebrewFlipCard()">Flip Card</button>
+                <button class="hebrew-flashcard-btn" id="hebrew-card-next" onclick="hebrewNextCard()">Next →</button>
             </div>
         </div>
 
@@ -879,7 +879,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- Manager Dashboard (visible only to managers) -->
     <div id="hebrew-dashboard" style="display:none;margin-top:16px;">
         <div class="card">
-            <div class="card-title" style="font-size:1rem;">📊 לוח מעקב — התקדמות לומדים</div>
+            <div class="card-title" style="font-size:1rem;">📊 Progress Dashboard — Student Tracking</div>
             <div id="hebrew-dashboard-content"></div>
         </div>
     </div>
@@ -1337,7 +1337,7 @@ function setLocalReminders(data) { localStorage.setItem('ruach-reminders', JSON.
 const PAGE_TITLES = {
     'home': 'דף הבית',
     'learning': 'והגית בו — למידה יומית',
-    'hebrew': 'לימוד עברית',
+    'hebrew': 'Hebrew Learning',
     'training-basic': 'הכשרת יסוד — רוח מכבי',
     'training-nco': 'קורס מ״כים — רוח מכבי',
     'training-officer': 'קורס קצינים — רוח מכבי',
@@ -2316,12 +2316,12 @@ async function loadTrainingPage(program) {
 
 const HEBREW_CURRICULUM = {
     alef: {
-        label: 'רמה א׳ — מתחילים',
+        label: 'Level Alef — Beginners',
         units: [
             {
                 id: 'unit1',
-                title: 'מילים שימושיות בלי ניקוד',
-                description: '15 מילים בסיסיות בעברית מודרנית ללא ניקוד',
+                title: 'Useful Words Without Niqqud',
+                description: '15 basic words in modern Hebrew without vowel marks',
                 icon: '📝',
                 cards: [
                     { word: 'שלום', meaning: 'Hello / Peace', example: 'שלום, איך אתה?' },
@@ -2348,17 +2348,17 @@ const HEBREW_CURRICULUM = {
                     { hebrew: 'לא', english: 'No' }
                 ],
                 quiz: [
-                    { question: 'מה המשמעות של "שלום"?', options: ['Hello', 'Goodbye', 'Thank you', 'Water'], correct: 0 },
-                    { question: 'מה המשמעות של "תודה"?', options: ['Water', 'Thank you', 'Yes', 'No'], correct: 1 },
-                    { question: 'מה המשמעות של "מים"?', options: ['Food', 'Water', 'Money', 'Time'], correct: 1 },
-                    { question: 'מה המשמעות של "כסף"?', options: ['Money', 'Place', 'Way', 'Shop'], correct: 0 },
-                    { question: 'מה המשמעות של "אוטובוס"?', options: ['Car', 'Bus', 'Phone', 'Doctor'], correct: 1 }
+                    { question: 'What does "שלום" mean?', options: ['Hello', 'Goodbye', 'Thank you', 'Water'], correct: 0 },
+                    { question: 'What does "תודה" mean?', options: ['Water', 'Thank you', 'Yes', 'No'], correct: 1 },
+                    { question: 'What does "מים" mean?', options: ['Food', 'Water', 'Money', 'Time'], correct: 1 },
+                    { question: 'What does "כסף" mean?', options: ['Money', 'Place', 'Way', 'Shop'], correct: 0 },
+                    { question: 'What does "אוטובוס" mean?', options: ['Car', 'Bus', 'Phone', 'Doctor'], correct: 1 }
                 ]
             },
             {
                 id: 'unit2',
-                title: 'מונחים צבאיים',
-                description: '15 מילים צבאיות חשובות',
+                title: 'Military Terms',
+                description: '15 important military words',
                 icon: '🪖',
                 cards: [
                     { word: 'בסיס', meaning: 'Base', example: 'הבסיס שלנו בנגב' },
@@ -2390,17 +2390,17 @@ const HEBREW_CURRICULUM = {
                     { sentence: 'יש לנו _______ קשה היום', answer: 'אימון', options: ['אימון', 'חופשה', 'שמירה'] }
                 ],
                 quiz: [
-                    { question: 'מה המשמעות של "בסיס"?', options: ['Base', 'Soldier', 'Weapon', 'Training'], correct: 0 },
-                    { question: 'מה המשמעות של "אימון"?', options: ['Guard', 'Training', 'Leave', 'Base'], correct: 1 },
-                    { question: 'מה המשמעות של "חופשה"?', options: ['War', 'Leave', 'Guard', 'Duty'], correct: 1 },
-                    { question: 'מה המשמעות של "פקודה"?', options: ['Question', 'Answer', 'Order', 'Weapon'], correct: 2 },
-                    { question: 'מה המשמעות של "חובש"?', options: ['Guard', 'Medic', 'Officer', 'Sergeant'], correct: 1 }
+                    { question: 'What does "בסיס" mean?', options: ['Base', 'Soldier', 'Weapon', 'Training'], correct: 0 },
+                    { question: 'What does "אימון" mean?', options: ['Guard', 'Training', 'Leave', 'Base'], correct: 1 },
+                    { question: 'What does "חופשה" mean?', options: ['War', 'Leave', 'Guard', 'Duty'], correct: 1 },
+                    { question: 'What does "פקודה" mean?', options: ['Question', 'Answer', 'Order', 'Weapon'], correct: 2 },
+                    { question: 'What does "חובש" mean?', options: ['Guard', 'Medic', 'Officer', 'Sergeant'], correct: 1 }
                 ]
             },
             {
                 id: 'unit3',
-                title: 'חיי היומיום',
-                description: '15 מילים בנושא חיי היום-יום',
+                title: 'Daily Life',
+                description: '15 words about daily life',
                 icon: '☀️',
                 cards: [
                     { word: 'בוקר', meaning: 'Morning', example: 'בוקר טוב' },
@@ -2427,17 +2427,17 @@ const HEBREW_CURRICULUM = {
                     { hebrew: 'עכשיו', english: 'Now' }
                 ],
                 quiz: [
-                    { question: 'מה המשמעות של "בוקר"?', options: ['Evening', 'Morning', 'Now', 'Today'], correct: 1 },
-                    { question: 'מה המשמעות של "מחר"?', options: ['Yesterday', 'Today', 'Tomorrow', 'Now'], correct: 2 },
-                    { question: 'מה המשמעות של "בית"?', options: ['Home', 'Shop', 'Hospital', 'School'], correct: 0 },
-                    { question: 'מה המשמעות של "שעון"?', options: ['Phone', 'Clock', 'Calendar', 'Day'], correct: 1 },
-                    { question: 'מה המשמעות של "קניות"?', options: ['Cooking', 'Shopping', 'Cleaning', 'Walking'], correct: 1 }
+                    { question: 'What does "בוקר" mean?', options: ['Evening', 'Morning', 'Now', 'Today'], correct: 1 },
+                    { question: 'What does "מחר" mean?', options: ['Yesterday', 'Today', 'Tomorrow', 'Now'], correct: 2 },
+                    { question: 'What does "בית" mean?', options: ['Home', 'Shop', 'Hospital', 'School'], correct: 0 },
+                    { question: 'What does "שעון" mean?', options: ['Phone', 'Clock', 'Calendar', 'Day'], correct: 1 },
+                    { question: 'What does "קניות" mean?', options: ['Cooking', 'Shopping', 'Cleaning', 'Walking'], correct: 1 }
                 ]
             },
             {
                 id: 'unit4',
-                title: 'שיחה בסיסית',
-                description: '12 משפטים בשיחה יומיומית',
+                title: 'Basic Conversation',
+                description: '12 everyday conversation phrases',
                 icon: '💬',
                 cards: [
                     { word: 'מה שלומך?', meaning: 'How are you?', example: 'מה שלומך היום?' },
@@ -2461,17 +2461,17 @@ const HEBREW_CURRICULUM = {
                     { hebrew: 'בסדר', english: 'OK' }
                 ],
                 quiz: [
-                    { question: 'איזה משפט הוא "Where are you from?"?', options: ['מה שלומך?', 'מאיפה אתה?', 'איפה הבסיס?', 'כמה זה עולה?'], correct: 1 },
-                    { question: 'איזה משפט הוא "I need"?', options: ['אני רוצה', 'אני צריך', 'אפשר', 'סליחה'], correct: 1 },
-                    { question: 'איזה משפט הוא "OK"?', options: ['נכון', 'בסדר', 'רגע', 'סליחה'], correct: 1 },
-                    { question: 'איזה משפט הוא "When?"?', options: ['איפה?', 'מה?', 'מתי?', 'מי?'], correct: 2 },
-                    { question: 'איזה משפט הוא "Wait a moment"?', options: ['רגע', 'עכשיו', 'אח"כ', 'בקרוב'], correct: 0 }
+                    { question: 'Which phrase means "Where are you from?"?', options: ['מה שלומך?', 'מאיפה אתה?', 'איפה הבסיס?', 'כמה זה עולה?'], correct: 1 },
+                    { question: 'Which phrase means "I need"?', options: ['אני רוצה', 'אני צריך', 'אפשר', 'סליחה'], correct: 1 },
+                    { question: 'Which phrase means "OK"?', options: ['נכון', 'בסדר', 'רגע', 'סליחה'], correct: 1 },
+                    { question: 'Which phrase means "When?"?', options: ['איפה?', 'מה?', 'מתי?', 'מי?'], correct: 2 },
+                    { question: 'Which phrase means "Wait a moment"?', options: ['רגע', 'עכשיו', 'אח"כ', 'בקרוב'], correct: 0 }
                 ]
             },
             {
                 id: 'unit5',
-                title: 'קריאת משפטים',
-                description: 'תרגול קריאה של משפטים בלי ניקוד',
+                title: 'Reading Sentences',
+                description: 'Practice reading sentences without niqqud',
                 icon: '📖',
                 cards: [
                     { word: 'אני חייל בבסיס', meaning: 'I am a soldier at the base', example: 'אני חייל בבסיס הצפוני' },
@@ -2484,40 +2484,40 @@ const HEBREW_CURRICULUM = {
                     { word: 'תודה רבה על העזרה', meaning: 'Thank you very much for the help', example: 'תודה רבה על העזרה' }
                 ],
                 quiz: [
-                    { question: 'איזה משפט מתחיל ב"אני חייל"?', options: ['אני חייל בבסיס', 'אני רופא', 'אני מנהל', 'אני קצין'], correct: 0 },
-                    { question: 'מה המשמעות של "בוקר טוב, איך אתה?"?', options: ['Good night', 'Good morning, how are you?', 'Good evening', 'Good day'], correct: 1 },
-                    { question: 'מה המשמעות של "מחר יום חופשה"?', options: ['Today is free', 'Tomorrow is a day off', 'Yesterday was free', 'Now is free'], correct: 1 },
-                    { question: 'במשפט "החדר בקומה השנייה", איפה החדר?', options: ['First floor', 'Second floor', 'Third floor', 'Ground floor'], correct: 1 },
-                    { question: 'מה משמעות "תודה רבה על העזרה"?', options: ['No thank you', 'Thank you very much for the help', 'Thank you a little', 'You are welcome'], correct: 1 }
+                    { question: 'Which sentence starts with "אני חייל"?', options: ['אני חייל בבסיס', 'אני רופא', 'אני מנהל', 'אני קצין'], correct: 0 },
+                    { question: 'What does "בוקר טוב, איך אתה?" mean?', options: ['Good night', 'Good morning, how are you?', 'Good evening', 'Good day'], correct: 1 },
+                    { question: 'What does "מחר יום חופשה" mean?', options: ['Today is free', 'Tomorrow is a day off', 'Yesterday was free', 'Now is free'], correct: 1 },
+                    { question: 'In the sentence "החדר בקומה השנייה", where is the room?', options: ['First floor', 'Second floor', 'Third floor', 'Ground floor'], correct: 1 },
+                    { question: 'What does "תודה רבה על העזרה" mean?', options: ['No thank you', 'Thank you very much for the help', 'Thank you a little', 'You are welcome'], correct: 1 }
                 ]
             },
             {
                 id: 'unit6',
-                title: 'מבחן רמה א׳',
-                description: 'מבחן סיכום עם 10 שאלות מכל הנושאים',
+                title: 'Level Alef Test',
+                description: 'Summary test with 10 questions from all topics',
                 icon: '🏆',
                 quiz: [
-                    { question: 'מה המשמעות של "שלום"?', options: ['Water', 'Hello', 'Money', 'Food'], correct: 1 },
-                    { question: 'מה המשמעות של "בסיס"?', options: ['Soldier', 'Base', 'Training', 'Weapon'], correct: 1 },
-                    { question: 'מה המשמעות של "בוקר"?', options: ['Evening', 'Morning', 'Night', 'Day'], correct: 1 },
-                    { question: 'מה המשמעות של "מחר"?', options: ['Today', 'Yesterday', 'Tomorrow', 'Now'], correct: 2 },
-                    { question: 'מה המשמעות של "אימון"?', options: ['Guard', 'Training', 'Leave', 'Rest'], correct: 1 },
-                    { question: 'איזה משפט הוא "I need water"?', options: ['אני רוצה מים', 'אני צריך מים', 'אני שותה מים', 'מים טובים'], correct: 1 },
-                    { question: 'מה המשמעות של "חופשה"?', options: ['War', 'Leave', 'Work', 'Training'], correct: 1 },
-                    { question: 'מה המשמעות של "פקודה"?', options: ['Question', 'Order', 'Answer', 'Suggestion'], correct: 1 },
-                    { question: 'מה המשמעות של "בית"?', options: ['School', 'Hospital', 'Home', 'Shop'], correct: 2 },
-                    { question: 'מה המשמעות של "בסדר"?', options: ['Bad', 'OK', 'Great', 'Terrible'], correct: 1 }
+                    { question: 'What does "שלום" mean?', options: ['Water', 'Hello', 'Money', 'Food'], correct: 1 },
+                    { question: 'What does "בסיס" mean?', options: ['Soldier', 'Base', 'Training', 'Weapon'], correct: 1 },
+                    { question: 'What does "בוקר" mean?', options: ['Evening', 'Morning', 'Night', 'Day'], correct: 1 },
+                    { question: 'What does "מחר" mean?', options: ['Today', 'Yesterday', 'Tomorrow', 'Now'], correct: 2 },
+                    { question: 'What does "אימון" mean?', options: ['Guard', 'Training', 'Leave', 'Rest'], correct: 1 },
+                    { question: 'Which phrase means "I need water"?', options: ['אני רוצה מים', 'אני צריך מים', 'אני שותה מים', 'מים טובים'], correct: 1 },
+                    { question: 'What does "חופשה" mean?', options: ['War', 'Leave', 'Work', 'Training'], correct: 1 },
+                    { question: 'What does "פקודה" mean?', options: ['Question', 'Order', 'Answer', 'Suggestion'], correct: 1 },
+                    { question: 'What does "בית" mean?', options: ['School', 'Hospital', 'Home', 'Shop'], correct: 2 },
+                    { question: 'What does "בסדר" mean?', options: ['Bad', 'OK', 'Great', 'Terrible'], correct: 1 }
                 ]
             }
         ]
     },
     bet: {
-        label: 'רמה ב׳ — בסיסי',
+        label: 'Level Bet — Basic',
         units: [
             {
                 id: 'unit1',
-                title: 'פעלים בהווה',
-                description: '12 פעלים נפוצים בזמן הווה',
+                title: 'Present Tense Verbs',
+                description: '12 common present tense verbs',
                 icon: '⚡',
                 cards: [
                     { word: 'אני עומד', meaning: 'I am standing', example: 'אני עומד בשמירה' },
@@ -2541,17 +2541,17 @@ const HEBREW_CURRICULUM = {
                     { hebrew: 'אני רואה', english: 'I see' }
                 ],
                 quiz: [
-                    { question: 'איזה פעל זה "I am standing"?', options: ['אני יושב', 'אני עומד', 'אני הולך', 'אני בא'], correct: 1 },
-                    { question: 'איזה פעל זה "I am working"?', options: ['אני עובד', 'אני חושב', 'אני שומע', 'אני רואה'], correct: 0 },
-                    { question: 'איזה פעל זה "I see"?', options: ['אני שומע', 'אני רואה', 'אני חושב', 'אני אוהב'], correct: 1 },
-                    { question: 'איזה פעל זה "I am eating"?', options: ['אני שותה', 'אני אוכל', 'אני משקה', 'אני טועם'], correct: 1 },
-                    { question: 'איזה פעל זה "I love"?', options: ['אני אוהב', 'אני אוכל', 'אני אומר', 'אני אודה'], correct: 0 }
+                    { question: 'Which verb means "I am standing"?', options: ['אני יושב', 'אני עומד', 'אני הולך', 'אני בא'], correct: 1 },
+                    { question: 'Which verb means "I am working"?', options: ['אני עובד', 'אני חושב', 'אני שומע', 'אני רואה'], correct: 0 },
+                    { question: 'Which verb means "I see"?', options: ['אני שומע', 'אני רואה', 'אני חושב', 'אני אוהב'], correct: 1 },
+                    { question: 'Which verb means "I am eating"?', options: ['אני שותה', 'אני אוכל', 'אני משקה', 'אני טועם'], correct: 1 },
+                    { question: 'Which verb means "I love"?', options: ['אני אוהב', 'אני אוכל', 'אני אומר', 'אני אודה'], correct: 0 }
                 ]
             },
             {
                 id: 'unit2',
-                title: 'שיחות בבסיס',
-                description: '10 דיאלוגים נפוצים בבסיס',
+                title: 'Base Conversations',
+                description: '10 common dialogues at the army base',
                 icon: '💭',
                 cards: [
                     { word: 'מה שלומך?', meaning: 'How are you?', example: 'שלום, מה שלומך?' },
@@ -2573,17 +2573,17 @@ const HEBREW_CURRICULUM = {
                     { hebrew: 'אין לי כוחות', english: 'I am exhausted' }
                 ],
                 quiz: [
-                    { question: 'איזה משפט זה "How are you?"?', options: ['מה זה?', 'מה שלומך?', 'איך אתה?', 'יש לך?'], correct: 1 },
-                    { question: 'איזה משפט זה "What time is it?"?', options: ['מה השעה?', 'איזו שעה?', 'הזמן?', 'כמה זה?'], correct: 0 },
-                    { question: 'איזה משפט זה "The commander is here"?', options: ['המפקד בא', 'המפקד הוא פה', 'המפקד שם', 'המפקד בדרך'], correct: 1 },
-                    { question: 'איזה משפט זה "I am exhausted"?', options: ['אני עייף', 'אני חלש', 'אין לי כוחות', 'אני חלה'], correct: 2 },
-                    { question: 'איזה משפט זה "Lets go"?', options: ['בואו', 'בואו נלך', 'הלכנו', 'תלך'], correct: 1 }
+                    { question: 'Which phrase is "How are you?"?', options: ['מה זה?', 'מה שלומך?', 'איך אתה?', 'יש לך?'], correct: 1 },
+                    { question: 'Which phrase is "What time is it?"?', options: ['מה השעה?', 'איזו שעה?', 'הזמן?', 'כמה זה?'], correct: 0 },
+                    { question: 'Which phrase is "The commander is here"?', options: ['המפקד בא', 'המפקד הוא פה', 'המפקד שם', 'המפקד בדרך'], correct: 1 },
+                    { question: 'Which phrase is "I am exhausted"?', options: ['אני עייף', 'אני חלש', 'אין לי כוחות', 'אני חלה'], correct: 2 },
+                    { question: 'Which phrase is "Lets go"?', options: ['בואו', 'בואו נלך', 'הלכנו', 'תלך'], correct: 1 }
                 ]
             },
             {
                 id: 'unit3',
-                title: 'קריאת טקסט קצר',
-                description: 'קריאה והבנה של טקסט קצר בעברית',
+                title: 'Reading Short Text',
+                description: 'Reading and understanding short Hebrew text',
                 icon: '📰',
                 cards: [
                     { word: 'הבוקר הלכתי לאימון', meaning: 'This morning I went to training', example: 'הבוקר הלכתי לאימון קשה' },
@@ -2594,40 +2594,40 @@ const HEBREW_CURRICULUM = {
                     { word: 'מחר יום חופשה חשוב', meaning: 'Tomorrow is an important free day', example: 'מחר יום חופשה, אני שמח מאד' }
                 ],
                 quiz: [
-                    { question: 'באיזה משפט יש מילה "בוקר"?', options: ['הבוקר הלכתי לאימון', 'בערב יש לנו שמירה', 'מחר יום חופשה', 'בסיס הצפון'], correct: 0 },
-                    { question: 'מה עשה המפקד?', options: ['הלך', 'אכל', 'נתן פקודה חדשה', 'ישן'], correct: 2 },
-                    { question: 'מתי יש שמירה?', options: ['בבוקר', 'בערב', 'בצהריים', 'בלילה'], correct: 1 },
-                    { question: 'מה אומר המספר על הצבא?', options: ['שהוא קשה', 'שהוא טוב', 'שהוא אוהב אותו', 'שהוא רע'], correct: 2 },
-                    { question: 'מחר מה יש?', options: ['אימון', 'שמירה', 'יום חופשה', 'טיול'], correct: 2 }
+                    { question: 'Which sentence contains the word "בוקר"?', options: ['הבוקר הלכתי לאימון', 'בערב יש לנו שמירה', 'מחר יום חופשה', 'בסיס הצפון'], correct: 0 },
+                    { question: 'What did the commander do?', options: ['הלך', 'אכל', 'נתן פקודה חדשה', 'ישן'], correct: 2 },
+                    { question: 'When is guard duty?', options: ['בבוקר', 'בערב', 'בצהריים', 'בלילה'], correct: 1 },
+                    { question: 'What does the narrator say about the army?', options: ['שהוא קשה', 'שהוא טוב', 'שהוא אוהב אותו', 'שהוא רע'], correct: 2 },
+                    { question: 'What is happening tomorrow?', options: ['אימון', 'שמירה', 'יום חופשה', 'טיול'], correct: 2 }
                 ]
             },
             {
                 id: 'unit4',
-                title: 'מבחן רמה ב׳',
-                description: 'מבחן סיכום רמה ב׳ — 10 שאלות מעורבות',
+                title: 'Level Bet Test',
+                description: 'Level Bet summary test — 10 mixed questions',
                 icon: '🏆',
                 quiz: [
-                    { question: 'איזה פעל זה "I am going"?', options: ['אני יושב', 'אני הולך', 'אני בא', 'אני עומד'], correct: 1 },
-                    { question: 'איזה משפט זה "What time is it?"?', options: ['מי זה?', 'מה זה?', 'מה השעה?', 'איפה?'], correct: 2 },
-                    { question: 'מה המשמעות של "בואו נלך"?', options: ['Goodbye', 'Lets go', 'Go away', 'Welcome'], correct: 1 },
-                    { question: 'איזה פעל זה "I see"?', options: ['אני שומע', 'אני רואה', 'אני אוכל', 'אני שותה'], correct: 1 },
-                    { question: 'מה המשמעות של "אין לי כוחות"?', options: ['No strength', 'I have power', 'I am strong', 'I am powerful'], correct: 0 },
-                    { question: 'איזה משפט זה "The commander gave an order"?', options: ['המפקד בא', 'המפקד הוא פה', 'המפקד נתן פקודה', 'המפקד שם'], correct: 2 },
-                    { question: 'מה המשמעות של "כל טוב?"?', options: ['Good night', 'Everything bad', 'Everything okay', 'Good morning'], correct: 2 },
-                    { question: 'איזה פעל זה "I am thinking"?', options: ['אני חושב', 'אני אומר', 'אני שומע', 'אני רואה'], correct: 0 },
-                    { question: 'מה המשמעות של "מחר"?', options: ['Today', 'Yesterday', 'Tomorrow', 'Now'], correct: 2 },
-                    { question: 'איזה משפט זה "I love the army"?', options: ['אני רואה את הצבא', 'אני אוהב את הצבא', 'אני עובד בצבא', 'אני בצבא'], correct: 1 }
+                    { question: 'Which verb means "I am going"?', options: ['אני יושב', 'אני הולך', 'אני בא', 'אני עומד'], correct: 1 },
+                    { question: 'Which phrase is "What time is it?"?', options: ['מי זה?', 'מה זה?', 'מה השעה?', 'איפה?'], correct: 2 },
+                    { question: 'What does "בואו נלך" mean?', options: ['Goodbye', 'Lets go', 'Go away', 'Welcome'], correct: 1 },
+                    { question: 'Which verb means "I see"?', options: ['אני שומע', 'אני רואה', 'אני אוכל', 'אני שותה'], correct: 1 },
+                    { question: 'What does "אין לי כוחות" mean?', options: ['No strength', 'I have power', 'I am strong', 'I am powerful'], correct: 0 },
+                    { question: 'Which phrase is "The commander gave an order"?', options: ['המפקד בא', 'המפקד הוא פה', 'המפקד נתן פקודה', 'המפקד שם'], correct: 2 },
+                    { question: 'What does "כל טוב?" mean?', options: ['Good night', 'Everything bad', 'Everything okay', 'Good morning'], correct: 2 },
+                    { question: 'Which verb means "I am thinking"?', options: ['אני חושב', 'אני אומר', 'אני שומע', 'אני רואה'], correct: 0 },
+                    { question: 'What does "מחר" mean?', options: ['Today', 'Yesterday', 'Tomorrow', 'Now'], correct: 2 },
+                    { question: 'Which phrase is "I love the army"?', options: ['אני רואה את הצבא', 'אני אוהב את הצבא', 'אני עובד בצבא', 'אני בצבא'], correct: 1 }
                 ]
             }
         ]
     },
     gimel: {
-        label: 'רמה ג׳ — בינוני',
+        label: 'Level Gimel — Intermediate',
         units: [
             {
                 id: 'unit1',
-                title: 'עבר ועתיד',
-                description: '10 מילים בעבר ובעתיד',
+                title: 'Past & Future Tense',
+                description: '10 words in past and future tense',
                 icon: '⏰',
                 cards: [
                     { word: 'הלכתי', meaning: 'I went (past)', example: 'אתמול הלכתי לבסיס' },
@@ -2649,17 +2649,17 @@ const HEBREW_CURRICULUM = {
                     { hebrew: 'ראיתי', english: 'I saw' }
                 ],
                 quiz: [
-                    { question: 'איזה מילה זו עבר של "ללכת"?', options: ['אלך', 'הלכתי', 'הולך', 'הולכים'], correct: 1 },
-                    { question: 'איזה מילה זו עתיד של "ללכת"?', options: ['הלכתי', 'אלך', 'הלכו', 'הולכים'], correct: 1 },
-                    { question: 'איזה מילה זו עבר של "לאכול"?', options: ['אוכל', 'אכלתי', 'אוכל', 'אכלו'], correct: 1 },
-                    { question: 'איזה מילה זו עתיד של "לשמוע"?', options: ['שמעתי', 'אשמע', 'שומע', 'שמעו'], correct: 1 },
-                    { question: 'איזה מילה זו עבר של "לראות"?', options: ['אראה', 'ראיתי', 'רואה', 'ראו'], correct: 1 }
+                    { question: 'Which word is the past tense of "ללכת"?', options: ['אלך', 'הלכתי', 'הולך', 'הולכים'], correct: 1 },
+                    { question: 'Which word is the future tense of "ללכת"?', options: ['הלכתי', 'אלך', 'הלכו', 'הולכים'], correct: 1 },
+                    { question: 'Which word is the past tense of "לאכול"?', options: ['אוכל', 'אכלתי', 'אוכל', 'אכלו'], correct: 1 },
+                    { question: 'Which word is the future tense of "לשמוע"?', options: ['שמעתי', 'אשמע', 'שומע', 'שמעו'], correct: 1 },
+                    { question: 'Which word is the past tense of "לראות"?', options: ['אראה', 'ראיתי', 'רואה', 'ראו'], correct: 1 }
                 ]
             },
             {
                 id: 'unit2',
-                title: 'הבנת הנקרא',
-                description: 'קריאה והבנה של טקסט ארוך יותר',
+                title: 'Reading Comprehension',
+                description: 'Reading and understanding longer text',
                 icon: '📚',
                 cards: [
                     { word: 'צה״ל', meaning: 'IDF (Israeli Defense Forces)', example: 'אני משרת בצה״ל שנה וחצי' },
@@ -2670,40 +2670,40 @@ const HEBREW_CURRICULUM = {
                     { word: 'ארץ', meaning: 'Land / Country', example: 'אנחנו שומרים על הארץ' }
                 ],
                 quiz: [
-                    { question: 'מה המשמעות של "צה״ל"?', options: ['IDF', 'Police', 'Fire dept', 'Hospital'], correct: 0 },
-                    { question: 'מה המשמעות של "לוחם"?', options: ['Worker', 'Fighter', 'Teacher', 'Doctor'], correct: 1 },
-                    { question: 'מה המשמעות של "קרב"?', options: ['Peace', 'Battle', 'Day', 'Night'], correct: 1 },
-                    { question: 'מה המשמעות של "צבאי"?', options: ['Civil', 'Military', 'Private', 'Public'], correct: 1 },
-                    { question: 'מה המשמעות של "ארץ"?', options: ['Heaven', 'People', 'Country', 'Water'], correct: 2 }
+                    { question: 'What does "צה״ל" mean?', options: ['IDF', 'Police', 'Fire dept', 'Hospital'], correct: 0 },
+                    { question: 'What does "לוחם" mean?', options: ['Worker', 'Fighter', 'Teacher', 'Doctor'], correct: 1 },
+                    { question: 'What does "קרב" mean?', options: ['Peace', 'Battle', 'Day', 'Night'], correct: 1 },
+                    { question: 'What does "צבאי" mean?', options: ['Civil', 'Military', 'Private', 'Public'], correct: 1 },
+                    { question: 'What does "ארץ" mean?', options: ['Heaven', 'People', 'Country', 'Water'], correct: 2 }
                 ]
             },
             {
                 id: 'unit3',
-                title: 'מבחן רמה ג׳',
-                description: 'מבחן סיכום רמה ג׳ — 10 שאלות',
+                title: 'Level Gimel Test',
+                description: 'Level Gimel summary test — 10 questions',
                 icon: '🏆',
                 quiz: [
-                    { question: 'איזה מילה זו עבר של "ללכת"?', options: ['אלך', 'הלכתי', 'הולך', 'נלך'], correct: 1 },
-                    { question: 'איזה מילה זו עתיד של "לאכול"?', options: ['אכלתי', 'אוכל', 'אכלים', 'נאכול'], correct: 1 },
-                    { question: 'מה המשמעות של "צה״ל"?', options: ['Army', 'IDF', 'Navy', 'Police'], correct: 1 },
-                    { question: 'איזה מילה זו עבר של "לשמוע"?', options: ['שמעתי', 'אשמע', 'שומע', 'ישמע'], correct: 0 },
-                    { question: 'מה המשמעות של "לוחם"?', options: ['Teacher', 'Fighter', 'Worker', 'Guard'], correct: 1 },
-                    { question: 'איזה מילה זו עתיד של "לראות"?', options: ['ראיתי', 'אראה', 'רואה', 'יראה'], correct: 1 },
-                    { question: 'מה המשמעות של "קרב"?', options: ['Peace', 'War', 'Battle', 'Day'], correct: 2 },
-                    { question: 'איזה מילה זו עבר של "לעבוד"?', options: ['אעבוד', 'עבדתי', 'עובד', 'יעבוד'], correct: 1 },
-                    { question: 'מה המשמעות של "צבאי"?', options: ['Civil', 'Military', 'Private', 'Special'], correct: 1 },
-                    { question: 'איזה מילה זו עתיד של "לעבוד"?', options: ['עבדתי', 'אעבוד', 'עובד', 'יעבדו'], correct: 1 }
+                    { question: 'Which word is the past tense of "ללכת"?', options: ['אלך', 'הלכתי', 'הולך', 'נלך'], correct: 1 },
+                    { question: 'Which word is the future tense of "לאכול"?', options: ['אכלתי', 'אוכל', 'אכלים', 'נאכול'], correct: 1 },
+                    { question: 'What does "צה״ל" mean?', options: ['Army', 'IDF', 'Navy', 'Police'], correct: 1 },
+                    { question: 'Which word is the past tense of "לשמוע"?', options: ['שמעתי', 'אשמע', 'שומע', 'ישמע'], correct: 0 },
+                    { question: 'What does "לוחם" mean?', options: ['Teacher', 'Fighter', 'Worker', 'Guard'], correct: 1 },
+                    { question: 'Which word is the future tense of "לראות"?', options: ['ראיתי', 'אראה', 'רואה', 'יראה'], correct: 1 },
+                    { question: 'What does "קרב" mean?', options: ['Peace', 'War', 'Battle', 'Day'], correct: 2 },
+                    { question: 'Which word is the past tense of "לעבוד"?', options: ['אעבוד', 'עבדתי', 'עובד', 'יעבוד'], correct: 1 },
+                    { question: 'What does "צבאי" mean?', options: ['Civil', 'Military', 'Private', 'Special'], correct: 1 },
+                    { question: 'Which word is the future tense of "לעבוד"?', options: ['עבדתי', 'אעבוד', 'עובד', 'יעבדו'], correct: 1 }
                 ]
             }
         ]
     },
     dalet: {
-        label: 'רמה ד׳ — מתקדם',
+        label: 'Level Dalet — Advanced',
         units: [
             {
                 id: 'unit1',
-                title: 'כתיבה מתקדמת',
-                description: 'כתיבה של טקסטים מתקדמים',
+                title: 'Advanced Writing',
+                description: 'Writing advanced texts',
                 icon: '✍️',
                 cards: [
                     { word: 'ספרות', meaning: 'Literature', example: 'אני אוהב ספרות עברית' },
@@ -2721,29 +2721,29 @@ const HEBREW_CURRICULUM = {
                     { hebrew: 'מטרה', english: 'Goal' }
                 ],
                 quiz: [
-                    { question: 'מה המשמעות של "ספרות"?', options: ['Numbers', 'Literature', 'Counting', 'Math'], correct: 1 },
-                    { question: 'מה המשמעות של "פילוסופיה"?', options: ['Physics', 'Philosophy', 'Biology', 'Chemistry'], correct: 1 },
-                    { question: 'מה המשמעות של "היסטוריה"?', options: ['Present', 'Future', 'History', 'Geography'], correct: 2 },
-                    { question: 'מה המשמעות של "ערכים"?', options: ['Money', 'Values', 'Prices', 'Coins'], correct: 1 },
-                    { question: 'מה המשמעות של "מטרה"?', options: ['Joke', 'Goal', 'Gift', 'Target'], correct: 1 }
+                    { question: 'What does "ספרות" mean?', options: ['Numbers', 'Literature', 'Counting', 'Math'], correct: 1 },
+                    { question: 'What does "פילוסופיה" mean?', options: ['Physics', 'Philosophy', 'Biology', 'Chemistry'], correct: 1 },
+                    { question: 'What does "היסטוריה" mean?', options: ['Present', 'Future', 'History', 'Geography'], correct: 2 },
+                    { question: 'What does "ערכים" mean?', options: ['Money', 'Values', 'Prices', 'Coins'], correct: 1 },
+                    { question: 'What does "מטרה" mean?', options: ['Joke', 'Goal', 'Gift', 'Target'], correct: 1 }
                 ]
             },
             {
                 id: 'unit2',
-                title: 'מבחן מסכם רמה ד׳',
-                description: 'מבחן סיכום מלא — 10 שאלות',
+                title: 'Level Dalet Final Test',
+                description: 'Comprehensive summary test — 10 questions',
                 icon: '🏆',
                 quiz: [
-                    { question: 'מה המשמעות של "ספרות"?', options: ['Numbers', 'Literature', 'Letters', 'Books'], correct: 1 },
-                    { question: 'מה המשמעות של "פילוסופיה"?', options: ['Love of wisdom', 'History', 'Science', 'Art'], correct: 0 },
-                    { question: 'מה המשמעות של "היסטוריה"?', options: ['Geography', 'History', 'Stories', 'Events'], correct: 1 },
-                    { question: 'מה המשמעות של "ערכים"?', options: ['Principles', 'Values', 'Morals', 'Ethics'], correct: 1 },
-                    { question: 'מה המשמעות של "מטרה"?', options: ['Aim', 'Goal', 'Objective', 'Target'], correct: 1 },
-                    { question: 'מה המשמעות של "מסקנה"?', options: ['Start', 'Conclusion', 'End', 'Summary'], correct: 1 },
-                    { question: 'איזה מילה קשורה לצבא?', options: ['ספרות', 'פילוסופיה', 'ערכים', 'היסטוריה'], correct: 2 },
-                    { question: 'איזה מילה קשורה ללימוד?', options: ['מטרה', 'היסטוריה', 'ערכים', 'מסקנה'], correct: 1 },
-                    { question: 'איזה מילה זו שם עצם מופשט?', options: ['מטרה', 'ספר', 'אדם', 'בית'], correct: 0 },
-                    { question: 'איזה מילה אנחנו משתמשים בעברית לאחרי דיון?', options: ['תחילה', 'עתה', 'מסקנה', 'שאלה'], correct: 2 }
+                    { question: 'What does "ספרות" mean?', options: ['Numbers', 'Literature', 'Letters', 'Books'], correct: 1 },
+                    { question: 'What does "פילוסופיה" mean?', options: ['Love of wisdom', 'History', 'Science', 'Art'], correct: 0 },
+                    { question: 'What does "היסטוריה" mean?', options: ['Geography', 'History', 'Stories', 'Events'], correct: 1 },
+                    { question: 'What does "ערכים" mean?', options: ['Principles', 'Values', 'Morals', 'Ethics'], correct: 1 },
+                    { question: 'What does "מטרה" mean?', options: ['Aim', 'Goal', 'Objective', 'Target'], correct: 1 },
+                    { question: 'What does "מסקנה" mean?', options: ['Start', 'Conclusion', 'End', 'Summary'], correct: 1 },
+                    { question: 'Which word is related to the army?', options: ['ספרות', 'פילוסופיה', 'ערכים', 'היסטוריה'], correct: 2 },
+                    { question: 'Which word is related to studying?', options: ['מטרה', 'היסטוריה', 'ערכים', 'מסקנה'], correct: 1 },
+                    { question: 'Which word is an abstract noun?', options: ['מטרה', 'ספר', 'אדם', 'בית'], correct: 0 },
+                    { question: 'Which Hebrew word do we use after a discussion?', options: ['תחילה', 'עתה', 'מסקנה', 'שאלה'], correct: 2 }
                 ]
             }
         ]
@@ -2945,7 +2945,7 @@ function loadHebrewCards() {
     const cards = unit.cards || [];
 
     if (cards.length === 0) {
-        document.getElementById('hebrew-flashcard-container').innerHTML = '<p style="text-align:center;padding:40px;">אין כרטיסיות בחידה זו</p>';
+        document.getElementById('hebrew-flashcard-container').innerHTML = '<p style="text-align:center;padding:40px;">No flashcards in this unit</p>';
         return;
     }
 
@@ -2959,7 +2959,7 @@ function displayHebrewCard(cards) {
         <div class="hebrew-flashcard" id="hebrew-flashcard" onclick="hebrewFlipCard()">
             <div class="hebrew-flashcard-front">
                 <div class="hebrew-flashcard-word">${card.word}</div>
-                <div class="hebrew-flashcard-hint">לחץ כדי להפוך</div>
+                <div class="hebrew-flashcard-hint">Click to flip</div>
             </div>
             <div class="hebrew-flashcard-back">
                 <div class="hebrew-flashcard-meaning">${card.meaning}</div>
@@ -3014,8 +3014,8 @@ async function loadHebrewPractice() {
     let html = '';
 
     if (unit.matching && unit.matching.length > 0) {
-        html += '<div style="margin-bottom:20px;"><h3 style="margin-bottom:12px;">משחק התאמה</h3>';
-        html += `<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">לחץ על משמעות העברית בעמודה השמאלית והתאם למילה בעברית:</p>`;
+        html += '<div style="margin-bottom:20px;"><h3 style="margin-bottom:12px;">Matching Game</h3>';
+        html += `<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">Click on the English meaning in the left column and match it to the Hebrew word:</p>`;
 
         const meanings = unit.matching.map(m => m.english).sort(() => Math.random() - 0.5);
         const hebrewWords = unit.matching.map(m => m.hebrew);
@@ -3037,7 +3037,7 @@ async function loadHebrewPractice() {
     }
 
     if (unit.fillin && unit.fillin.length > 0) {
-        html += '<div style="margin-bottom:20px;"><h3 style="margin-bottom:12px;">השלם את החסר</h3>';
+        html += '<div style="margin-bottom:20px;"><h3 style="margin-bottom:12px;">Fill in the Blank</h3>';
         for (const exercise of unit.fillin) {
             const options = exercise.options.sort(() => Math.random() - 0.5);
             html += `<div class="hebrew-fillin-exercise">
@@ -3051,7 +3051,7 @@ async function loadHebrewPractice() {
         html += '</div>';
     }
 
-    document.getElementById('hebrew-practice-content').innerHTML = html || '<p style="text-align:center;padding:20px;">אין תרגולים בחידה זו</p>';
+    document.getElementById('hebrew-practice-content').innerHTML = html || '<p style="text-align:center;padding:20px;">No practice exercises in this unit</p>';
 }
 
 let matchingSelected = { word: null, meaning: null };
@@ -3093,7 +3093,7 @@ function submitFillinAnswer(correct, selected, btn) {
 
     const exercise = btn.closest('.hebrew-fillin-exercise');
     const feedbackHtml = `<div class="hebrew-fillin-feedback ${isCorrect ? 'correct' : 'incorrect'}">
-        ${isCorrect ? 'נכון! ✓' : `לא נכון. התשובה הנכונה: ${correct}`}
+        ${isCorrect ? 'Correct! ✓' : `Incorrect. The correct answer: ${correct}`}
     </div>`;
 
     let feedback = exercise.querySelector('.hebrew-fillin-feedback');
@@ -3110,7 +3110,7 @@ async function loadHebrewQuiz() {
     const quiz = unit.quiz || [];
 
     if (quiz.length === 0) {
-        document.getElementById('hebrew-quiz-content').innerHTML = '<p style="text-align:center;padding:20px;">אין מבחן בחידה זו</p>';
+        document.getElementById('hebrew-quiz-content').innerHTML = '<p style="text-align:center;padding:20px;">No quiz in this unit</p>';
         return;
     }
 
@@ -3126,7 +3126,7 @@ async function loadHebrewQuiz() {
         html += `</div></div>`;
     }
 
-    html += `<button class="btn btn-primary" onclick="submitHebrewQuiz()" style="width:100%;margin-top:20px;">שלח תשובות</button>`;
+    html += `<button class="btn btn-primary" onclick="submitHebrewQuiz()" style="width:100%;margin-top:20px;">Submit Answers</button>`;
     document.getElementById('hebrew-quiz-content').innerHTML = html;
     hebrewQuizAnswers = new Array(quiz.length).fill(null);
 }
@@ -3156,12 +3156,12 @@ async function submitHebrewQuiz() {
 
     let html = `<div class="hebrew-quiz-score">
         <div class="hebrew-quiz-score-value">${score}/${quiz.length}</div>
-        <div class="hebrew-quiz-score-label">${percentage}% נכון</div>
+        <div class="hebrew-quiz-score-label">${percentage}% Correct</div>
     </div>`;
 
     html += `<div style="text-align:center;margin-bottom:20px;">
         <p style="font-size:1.1rem;font-weight:600;color:${passed ? 'var(--success)' : 'var(--danger)'};">
-            ${passed ? 'כל הכבוד! עברת את המבחן ✓' : 'קיווה על עצמך, נסה שוב'}
+            ${passed ? 'Great job! You passed the test ✓' : 'Keep trying, you can do it!'}
         </p>
     </div>`;
 
@@ -3191,7 +3191,7 @@ async function submitHebrewQuiz() {
 async function loadHebrewDashboard() {
     const container = document.getElementById('hebrew-dashboard-content');
     if (!container) return;
-    container.innerHTML = '<p style="text-align:center;padding:10px;color:var(--text-secondary);font-size:0.85rem;">טוען נתונים...</p>';
+    container.innerHTML = '<p style="text-align:center;padding:10px;color:var(--text-secondary);font-size:0.85rem;">Loading data...</p>';
 
     try {
         const progressSnap = await db.collection('hebrew_progress').where('section','==','quiz').get();
@@ -3210,13 +3210,13 @@ async function loadHebrewDashboard() {
         }
 
         if (Object.keys(byUser).length === 0) {
-            container.innerHTML = '<p style="text-align:center;padding:15px;color:var(--text-secondary);font-size:0.85rem;">אין נתוני התקדמות עדיין</p>';
+            container.innerHTML = '<p style="text-align:center;padding:15px;color:var(--text-secondary);font-size:0.85rem;">No progress data yet</p>';
             return;
         }
 
         let html = '<div class="hebrew-dashboard-row hebrew-dashboard-header">';
-        html += '<div>שם הלומד</div>';
-        html += '<div>רמה א׳</div><div>רמה ב׳</div><div>רמה ג׳</div><div>רמה ד׳</div>';
+        html += '<div>Student Name</div>';
+        html += '<div>Level א</div><div>Level ב</div><div>Level ג</div><div>Level ד</div>';
         html += '</div>';
 
         for (const [userId, data] of Object.entries(byUser)) {
