@@ -635,10 +635,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="card">
         <div class="card-title">קורס קצינים — רוח מכבי</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מסלול שדה (16 שבועות) · מסלול גפן (16 שבועות)</p>
-        <div class="track-tabs-wrap" id="training-officer-tracks">
-            <button class="track-tab active" data-track="sade" onclick="switchTrainingTrack('officer','sade')">מסלול שדה</button>
-            <button class="track-tab" data-track="gefen" onclick="switchTrainingTrack('officer','gefen')">מסלול גפן</button>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button class="track-tab active" id="officer-track-sade" data-track="sade" onclick="switchOfficerTrackTab('sade')">מסלול שדה</button>
+            <button class="track-tab" id="officer-track-gefen" data-track="gefen" onclick="switchOfficerTrackTab('gefen')">מסלול גפן</button>
         </div>
+        <div class="track-tabs-wrap" id="training-officer-tracks"></div>
         <div class="training-controls" id="training-officer-controls"></div>
     </div>
     <div id="training-officer-content"></div>
@@ -1182,9 +1183,8 @@ function activatePage(page) {
     if (page.startsWith('training-')) {
         const prog = page.replace('training-','');
         // Build platoon tabs dynamically based on user permissions
-        if (prog === 'basic' || prog === 'nco') {
-            buildPlugaTabs(prog);
-        }
+        const tc = TRAINING_CONFIG[prog];
+        if (tc && tc.hasPlugas) buildPlugaTabs(prog);
         loadTrainingPage(prog);
     }
 }
@@ -1850,9 +1850,9 @@ const TRAINING_PROGRAMS_MAP = { 'basic':'הכשרת יסוד', 'nco':'קורס �
 // TRAINING SYSTEM — weeks, categories, platoons
 // ============================================================
 const TRAINING_CONFIG = {
-    'basic':   { label: 'הכשרת יסוד', weeks: 30, tracks: ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'] },
-    'nco':     { label: 'קורס מ״כים', weeks: 13, tracks: ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'] },
-    'officer': { label: 'קורס קצינים', weeks: 16, tracks: ['sade','gefen'] }
+    'basic':   { label: 'הכשרת יסוד', weeks: 30, tracks: null, hasPlugas: true },
+    'nco':     { label: 'קורס מ״כים', weeks: 13, tracks: null, hasPlugas: true },
+    'officer': { label: 'קורס קצינים', weeks: 16, tracks: ['sade','gefen'], hasPlugas: true }
 };
 const TRAINING_TRACKS = {
     'sade': 'מסלול שדה', 'gefen': 'מסלול גפן',
@@ -1867,14 +1867,15 @@ const TRAINING_CATEGORIES = {
 };
 const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
 let currentOfficerTrack = 'sade';
-let currentTrainingTrack = { 'basic':'pluga_a', 'nco':'pluga_a', 'officer':'sade' };
+let currentOfficerPluga = 'pluga_a'; // separate platoon state for officer course
+let currentTrainingTrack = { 'basic':'pluga_a', 'nco':'pluga_a', 'officer':'pluga_a' };
 let currentTrainingWeek = {};
 
-function switchOfficerTrack(track, btn) {
+function switchOfficerTrackTab(track) {
     currentOfficerTrack = track;
-    currentTrainingTrack['officer'] = track;
-    document.querySelectorAll('#page-training-officer .geo-cat-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    // Update the שדה/גפן buttons
+    document.getElementById('officer-track-sade').classList.toggle('active', track === 'sade');
+    document.getElementById('officer-track-gefen').classList.toggle('active', track === 'gefen');
     loadTrainingPage('officer');
 }
 
@@ -1886,30 +1887,45 @@ function buildPlugaTabs(prog) {
     const lvl = userLevel();
     const userPluga = currentUser?.pluga || '';
 
+    // For officer course, platoon state is stored separately in currentOfficerPluga
+    const getCurrentPluga = () => prog === 'officer' ? currentOfficerPluga : currentTrainingTrack[prog];
+    const setCurrentPluga = (t) => { if (prog === 'officer') { currentOfficerPluga = t; } else { currentTrainingTrack[prog] = t; } };
+
     if (lvl >= 4 || !userPluga) {
         // בה"ד/מפח"ט level or no pluga assigned: show all 8 tabs
         let html = '';
         const allTracks = ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'];
-        const current = currentTrainingTrack[prog] || 'pluga_a';
+        const current = getCurrentPluga() || 'pluga_a';
         allTracks.forEach(t => {
-            html += `<button class="track-tab ${t===current?'active':''}" data-track="${t}" onclick="switchTrainingTrack('${prog}','${t}')">${TRAINING_TRACKS[t]}</button>`;
+            const onclick = prog === 'officer'
+                ? `switchOfficerPluga('${t}')`
+                : `switchTrainingTrack('${prog}','${t}')`;
+            html += `<button class="track-tab ${t===current?'active':''}" data-track="${t}" onclick="${onclick}">${TRAINING_TRACKS[t]}</button>`;
         });
         container.innerHTML = html;
     } else {
         // Platoon-level user: only show their own platoon (no tabs needed, just a label)
         const userTrack = PLUGA_TRACK_MAP[userPluga];
         if (userTrack) {
-            currentTrainingTrack[prog] = userTrack;
+            setCurrentPluga(userTrack);
             container.innerHTML = `<span style="font-size:0.88rem;font-weight:600;color:var(--primary);">פלוגה ${userPluga}׳</span>`;
         }
     }
 }
 
+function switchOfficerPluga(track) {
+    currentOfficerPluga = track;
+    // Update platoon tab active states
+    document.querySelectorAll('#training-officer-tracks .track-tab').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`#training-officer-tracks .track-tab[data-track="${track}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    loadTrainingPage('officer');
+}
+
 function switchTrainingTrack(program, track) {
     currentTrainingTrack[program] = track;
-    if (program === 'officer') currentOfficerTrack = track;
-    document.querySelectorAll(`#page-training-${program} .track-tab`).forEach(b => b.classList.remove('active'));
-    const activeBtn = document.querySelector(`#page-training-${program} .track-tab[data-track="${track}"]`);
+    document.querySelectorAll(`#training-${program}-tracks .track-tab`).forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`#training-${program}-tracks .track-tab[data-track="${track}"]`);
     if (activeBtn) activeBtn.classList.add('active');
     loadTrainingPage(program);
 }
@@ -1921,7 +1937,10 @@ async function loadTrainingPage(program) {
 
     const config = TRAINING_CONFIG[program];
     const totalWeeks = config.weeks;
-    const track = config.tracks ? currentTrainingTrack[program] : null;
+    // For officer: content track = sade/gefen, platoon track = pluga for completion
+    // For basic/nco: no content track, platoon track = pluga for completion
+    const track = config.tracks ? currentOfficerTrack : null;
+    const plugaTrack = config.hasPlugas ? (program === 'officer' ? currentOfficerPluga : currentTrainingTrack[program]) : null;
 
     // Build week navigation
     if (controls) {
@@ -1939,8 +1958,8 @@ async function loadTrainingPage(program) {
 
     // Permission: can this user mark pass/fail for the currently viewed platoon?
     // Only platoon managers (מ"פ/קמב"ץ) of THIS platoon + בה"ד/מפח"ט level
-    const isPlugaProgram = track && track.startsWith('pluga_');
-    const plugaLetter = isPlugaProgram ? TRAINING_TRACKS[track]?.replace('פלוגה ','').replace('׳','') : null;
+    const hasPluga = plugaTrack && plugaTrack.startsWith('pluga_');
+    const plugaLetter = hasPluga ? TRAINING_TRACKS[plugaTrack]?.replace('פלוגה ','').replace('׳','') : null;
     const userPluga = currentUser?.pluga || '';
     const lvl = userLevel();
     const canMark = canUserMarkCompletion() && (
@@ -1949,11 +1968,9 @@ async function loadTrainingPage(program) {
     );
 
     try {
-        // For platoon-based programs (basic/nco), content is shared — don't filter by track
-        // For officer, content differs by track (sade/gefen) — filter by track
-        const contentTrack = isPlugaProgram ? null : track;
+        // Content query: filter by content track (sade/gefen for officer), not by platoon
         let query = db.collection('training_content').where('program','==',program).where('week','==',week);
-        if (contentTrack) query = query.where('track','==',contentTrack);
+        if (track) query = query.where('track','==',track);
         const snap = await query.orderBy('order').get();
 
         // Load completion status
@@ -1975,9 +1992,11 @@ async function loadTrainingPage(program) {
         const catBg = { ruach:'rgba(14,116,144,0.08)', rabanut:'rgba(124,58,237,0.08)', mediniyut:'rgba(5,150,105,0.08)', chinuch:'rgba(217,119,6,0.08)' };
 
         const trackLabel = track ? (TRAINING_TRACKS[track] || track) : '';
+        const plugaLabel = hasPluga ? (TRAINING_TRACKS[plugaTrack] || '') : '';
+        const headerParts = [trackLabel, plugaLabel].filter(Boolean).join(' — ');
 
         let html = `<div style="margin-bottom:14px;">
-            <h3 style="color:var(--primary);font-size:1.1rem;">שבוע ${week}${trackLabel ? ' — ' + trackLabel : ''}</h3>
+            <h3 style="color:var(--primary);font-size:1.1rem;">שבוע ${week}${headerParts ? ' — ' + headerParts : ''}</h3>
         </div>`;
 
         // 4-column grid
@@ -1998,12 +2017,12 @@ async function loadTrainingPage(program) {
             } else {
                 for (const lesson of lessons) {
                     let completionHtml = '';
-                    if (isPlugaProgram && plugaLetter) {
-                        // For platoon tracks: show single completion toggle for this platoon
+                    if (hasPluga && plugaLetter) {
+                        // Show single completion toggle for the selected platoon
                         const key = `${lesson.id}_${plugaLetter}`;
                         const done = statusMap[key];
                         const doneClass = done ? 'done' : '';
-                        const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${track||''}','${plugaLetter}',${!done})"` : '';
+                        const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}',${!done})"` : '';
                         const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
                         completionHtml = `<div style="margin-top:6px;">
                             <span class="completion-badge ${doneClass}" ${canMark ? 'style="cursor:pointer;"' : ''} ${clickHandler} ${tooltip}>
@@ -2011,13 +2030,13 @@ async function loadTrainingPage(program) {
                             </span>
                         </div>`;
                     } else {
-                        // For officer/other: show all platoon chips
+                        // No platoon selected: show all platoon chips
                         completionHtml = `<div class="training-col-platoons">
                             ${PLATOONS.map(p => {
                                 const key = `${lesson.id}_${p}`;
                                 const done = statusMap[key];
                                 const doneClass = done ? 'done' : '';
-                                const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${track||''}','${p}',${!done})"` : '';
+                                const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${plugaTrack||''}','${p}',${!done})"` : '';
                                 const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
                                 return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳</span>`;
                             }).join('')}
@@ -2042,7 +2061,7 @@ async function loadTrainingPage(program) {
 
         // Mark week buttons that have content
         if (controls) {
-            const contentTrackForWeeks = isPlugaProgram ? null : track;
+            const contentTrackForWeeks = track; // sade/gefen for officer, null for basic/nco
             const allSnap = await db.collection('training_content').where('program','==',program).get();
             const weeksWithContent = new Set();
             allSnap.forEach(doc => {
