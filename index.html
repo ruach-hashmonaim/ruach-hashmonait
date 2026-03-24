@@ -219,6 +219,23 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .module-status.done { background:#EBF5EE; color:var(--success); }
 .module-status.locked { background:#F0F0F0; color:#999; }
 .training-filter-bar { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center; }
+.training-controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.training-controls select { padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border); font-size:0.82rem; }
+.week-nav { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px; }
+.week-btn { padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:#fff; cursor:pointer; font-size:0.78rem; font-weight:600; transition:all 0.2s; }
+.week-btn:hover { border-color:var(--primary-lighter); background:var(--bg); }
+.week-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.week-btn.has-content { border-color:var(--primary-lighter); }
+.category-section { margin-bottom:16px; }
+.category-header { font-size:0.88rem; font-weight:700; color:var(--primary); margin-bottom:8px; padding:8px 14px; background:linear-gradient(90deg, rgba(14,116,144,0.08), transparent); border-radius:var(--radius-sm); border-right:3px solid var(--primary-lighter); }
+.lesson-card { background:#fff; border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; margin-bottom:8px; transition:all 0.2s; }
+.lesson-card:hover { box-shadow:var(--shadow); }
+.lesson-meta { display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; font-size:0.76rem; color:var(--text-secondary); }
+.lesson-meta span { display:inline-flex; align-items:center; gap:3px; }
+.platoon-grid { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+.platoon-chip { padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:600; cursor:pointer; border:1px solid var(--border); background:#fff; transition:all 0.2s; }
+.platoon-chip.done { background:var(--success); color:#fff; border-color:var(--success); }
+.platoon-chip:hover { border-color:var(--primary-lighter); }
 .framework-badge { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border-radius:12px; font-size:0.78rem; font-weight:600; }
 .fw-yonatan { background:#E3F2FD; color:#1565C0; }
 .fw-shimon { background:#FFF3E0; color:#E65100; }
@@ -569,34 +586,38 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 
-<!-- ====== TRAINING BASIC ====== -->
+<!-- ====== TRAINING BASIC (30 weeks) ====== -->
 <div class="page-section" id="page-training-basic">
     <div class="card">
-        <div class="card-title"><div class="icon">⚔️</div> הכשרת יסוד — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מעקב אחר תכני הכשרת היסוד שהועברו.</p>
-        <div class="training-filter-bar" id="training-basic-filter"></div>
+        <div class="card-title">הכשרת יסוד — רוח מכבי</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">30 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
+        <div class="training-controls" id="training-basic-controls"></div>
     </div>
-    <div id="training-basic-modules"></div>
+    <div id="training-basic-content"></div>
 </div>
 
-<!-- ====== TRAINING NCO ====== -->
+<!-- ====== TRAINING NCO (13 weeks) ====== -->
 <div class="page-section" id="page-training-nco">
     <div class="card">
-        <div class="card-title"><div class="icon">🎖️</div> קורס מ״כים — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מעקב אחר תכני קורס מ״כים שהועברו.</p>
-        <div class="training-filter-bar" id="training-nco-filter"></div>
+        <div class="card-title">קורס מ״כים — רוח מכבי</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">13 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
+        <div class="training-controls" id="training-nco-controls"></div>
     </div>
-    <div id="training-nco-modules"></div>
+    <div id="training-nco-content"></div>
 </div>
 
-<!-- ====== TRAINING OFFICER ====== -->
+<!-- ====== TRAINING OFFICER (שדה 16w + גפן 16w) ====== -->
 <div class="page-section" id="page-training-officer">
     <div class="card">
-        <div class="card-title"><div class="icon">👨‍✈️</div> קורס קצינים — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מעקב אחר תכני קורס קצינים שהועברו.</p>
-        <div class="training-filter-bar" id="training-officer-filter"></div>
+        <div class="card-title">קורס קצינים — רוח מכבי</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מסלול שדה (16 שבועות) · מסלול גפן (16 שבועות)</p>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="geo-cat-btn active" id="officer-track-sade" onclick="switchOfficerTrack('sade',this)">מסלול שדה</button>
+            <button class="geo-cat-btn" id="officer-track-gefen" onclick="switchOfficerTrack('gefen',this)">מסלול גפן</button>
+        </div>
+        <div class="training-controls" id="training-officer-controls"></div>
     </div>
-    <div id="training-officer-modules"></div>
+    <div id="training-officer-content"></div>
 </div>
 
 <!-- ====== HEBREW — לימוד עברית ====== -->
@@ -718,7 +739,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('participants-mgmt')">נרשמים ומשתתפים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">טבלת משתמשים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">סקרים</button>
-        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">תכני הכשרה</button>
+        <!-- training now managed inline via training pages -->
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
     </div>
 
@@ -802,28 +823,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </div>
     </div>
 
-    <!-- Training content management -->
-    <div class="admin-panel" id="admin-training-mgmt" style="display:none;">
-        <div class="card">
-            <h3 style="margin-bottom:14px;">ניהול תכני הכשרה</h3>
-            <div style="margin-bottom:12px;">
-                <label>בחר תוכנית:</label>
-                <select id="admin-training-program" onchange="loadAdminTrainingModules()" style="margin-top:4px;">
-                    <option value="basic">הכשרת יסוד</option>
-                    <option value="nco">קורס מ״כים</option>
-                    <option value="officer">קורס קצינים</option>
-                </select>
-            </div>
-            <div id="admin-training-list"></div>
-            <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
-                <h4 style="margin-bottom:8px;">הוספת מודול חדש</h4>
-                <div class="form-group"><label>שם המודול</label><input type="text" id="new-module-title"></div>
-                <div class="form-group"><label>תיאור</label><textarea id="new-module-desc" rows="2"></textarea></div>
-                <div class="form-group"><label>קישור לתוכן (אופציונלי)</label><input type="text" id="new-module-url"></div>
-                <button class="btn-primary btn-sm" onclick="addTrainingModule()">הוסף מודול</button>
-            </div>
-        </div>
-    </div>
+    <!-- Training content is now managed inline via training pages (openAddLessonModal) -->
 
     <!-- Admin dashboard -->
     <div class="admin-panel" id="admin-dashboard" style="display:none;">
@@ -1672,118 +1672,224 @@ function toggleDayLearning(programId, dateKey, el) {
 // ============================================================
 const TRAINING_PROGRAMS_MAP = { 'basic':'הכשרת יסוד', 'nco':'קורס מ״כים', 'officer':'קורס קצינים' };
 
+// ============================================================
+// TRAINING SYSTEM — weeks, categories, platoons
+// ============================================================
+const TRAINING_CONFIG = {
+    'basic':   { label: 'הכשרת יסוד', weeks: 30, tracks: null },
+    'nco':     { label: 'קורס מ״כים', weeks: 13, tracks: null },
+    'officer': { label: 'קורס קצינים', weeks: 16, tracks: ['sade','gefen'] }
+};
+const TRAINING_TRACKS = { 'sade': 'מסלול שדה', 'gefen': 'מסלול גפן' };
+const TRAINING_CATEGORIES = {
+    'ruach':    'רוח מכבי',
+    'chinuch':  'חינוך',
+    'mediniyut':'מדיניות',
+    'rabanut':  'רבנות'
+};
+const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
+let currentOfficerTrack = 'sade';
+let currentTrainingWeek = {};
+
+function switchOfficerTrack(track, btn) {
+    currentOfficerTrack = track;
+    document.querySelectorAll('#page-training-officer .geo-cat-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    loadTrainingPage('officer');
+}
+
 async function loadTrainingPage(program) {
-    const modulesContainer = document.getElementById(`training-${program}-modules`);
-    const filterContainer = document.getElementById(`training-${program}-filter`);
-    if (!modulesContainer) return;
+    const container = document.getElementById(`training-${program}-content`);
+    const controls = document.getElementById(`training-${program}-controls`);
+    if (!container) return;
 
-    // Training is only relevant to בה"ד מכבים — no framework filter needed
-    let frameworks = ['maccabim'];
+    const config = TRAINING_CONFIG[program];
+    const totalWeeks = config.weeks;
+    const track = config.tracks ? currentOfficerTrack : null;
 
-    if (filterContainer) {
-        filterContainer.innerHTML = `<span class="framework-badge ${getFrameworkClass('maccabim')}">${getFrameworkLabel('maccabim')}</span>`;
+    // Build week navigation
+    if (controls) {
+        let weekHtml = '<div class="week-nav">';
+        for (let w = 1; w <= totalWeeks; w++) {
+            const isActive = (currentTrainingWeek[program] || 1) === w;
+            weekHtml += `<button class="week-btn ${isActive ? 'active' : ''}" onclick="selectTrainingWeek('${program}',${w})">${w}</button>`;
+        }
+        weekHtml += '</div>';
+        controls.innerHTML = weekHtml;
     }
 
-    // Load modules from Firebase
-    const activeFramework = 'maccabim';
-    await renderTrainingModules(program, activeFramework, modulesContainer);
-}
-
-async function filterTrainingFramework(program, framework, btn) {
-    if (btn) {
-        const parent = btn.parentElement;
-        parent.querySelectorAll('.geo-cat-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-    const container = document.getElementById(`training-${program}-modules`);
-    await renderTrainingModules(program, framework, container);
-}
-
-async function renderTrainingModules(program, framework, container) {
-    if (!container || !db) { container.innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--text-secondary);">אין חיבור לשרת</div>'; return; }
-
-    container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">טוען מודולים...</p>';
+    const week = currentTrainingWeek[program] || 1;
+    container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">טוען תכנים...</p>';
 
     try {
-        const snap = await db.collection('training_modules').where('program','==',program).orderBy('order').get();
+        // Query: training_content / program + week (+ track for officer)
+        let query = db.collection('training_content').where('program','==',program).where('week','==',week);
+        if (track) query = query.where('track','==',track);
+        const snap = await query.orderBy('order').get();
+
+        // Load completion status for this week
+        let statusQuery = db.collection('training_completion').where('program','==',program).where('week','==',week);
+        if (track) statusQuery = statusQuery.where('track','==',track);
+        const statusSnap = await statusQuery.get();
+        const statusMap = {};
+        statusSnap.forEach(doc => { const d = doc.data(); statusMap[`${d.lessonId}_${d.platoon}`] = d; });
+
+        const canMark = currentUser && (userLevel() >= 3); // katzin_bachir+ can mark
+
         if (snap.empty) {
-            container.innerHTML = '<div class="card" style="text-align:center;padding:30px;color:var(--text-secondary);"><div style="font-size:2.5rem;margin-bottom:10px;">📋</div><p>עדיין לא הוגדרו מודולים לתוכנית זו.</p></div>';
+            container.innerHTML = `<div class="card" style="text-align:center;padding:30px;color:var(--text-secondary);">
+                <p style="font-size:1.1rem;margin-bottom:8px;">שבוע ${week}</p>
+                <p>טרם הוגדרו תכנים לשבוע זה.</p>
+                ${canMark ? `<button class="btn-primary btn-sm" style="margin-top:12px;" onclick="openAddLessonModal('${program}',${week},'${track||''}')">+ הוסף תוכן</button>` : ''}
+            </div>`;
             return;
         }
 
-        // Load completion status
-        const statusSnap = framework !== 'all'
-            ? await db.collection('training_status').where('program','==',program).where('framework','==',framework).get()
-            : await db.collection('training_status').where('program','==',program).get();
-
-        const statusMap = {};
-        statusSnap.forEach(doc => {
-            const d = doc.data();
-            const key = `${d.framework}_${d.moduleId}`;
-            statusMap[key] = d;
+        // Group by category
+        const byCat = {};
+        Object.keys(TRAINING_CATEGORIES).forEach(c => byCat[c] = []);
+        snap.forEach(doc => {
+            const d = { ...doc.data(), id: doc.id };
+            if (byCat[d.category]) byCat[d.category].push(d);
+            else { if (!byCat['other']) byCat['other'] = []; byCat['other'].push(d); }
         });
 
-        const canMark = hasPermission('mark-training') &&
-            (hasPermission('mark-training-all') || framework === currentUser?.framework);
+        let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="color:var(--primary);">שבוע ${week}</h3>
+            ${canMark ? `<button class="btn-primary btn-sm" onclick="openAddLessonModal('${program}',${week},'${track||''}')">+ הוסף תוכן</button>` : ''}
+        </div>`;
 
-        const fwList = framework === 'all' ? Object.keys(FRAMEWORKS) : [framework];
-        let html = '';
+        for (const [catKey, catLabel] of Object.entries(TRAINING_CATEGORIES)) {
+            const lessons = byCat[catKey];
+            if (!lessons || lessons.length === 0) continue;
 
-        for (const fw of fwList) {
-            if (framework === 'all') {
-                html += `<h3 style="margin:16px 0 8px;color:var(--primary);"><span class="framework-badge ${getFrameworkClass(fw)}">${getFrameworkLabel(fw)}</span></h3>`;
-            }
-            snap.forEach(doc => {
-                const m = doc.data();
-                const statusKey = `${fw}_${doc.id}`;
-                const status = statusMap[statusKey];
-                const isDone = status?.completed;
+            html += `<div class="category-section">
+                <div class="category-header">${catLabel}</div>`;
 
-                html += `<div class="training-module">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <h4>${m.title}</h4>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span class="module-status ${isDone ? 'done' : 'pending'}">${isDone ? '✅ בוצע' : '⏳ טרם בוצע'}</span>
-                            ${canMark ? `<button class="btn-sm ${isDone ? 'btn-danger' : 'btn-primary'}" onclick="toggleTrainingStatus('${doc.id}','${program}','${fw}',${!isDone})">${isDone ? 'בטל' : 'סמן בוצע'}</button>` : ''}
+            for (const lesson of lessons) {
+                html += `<div class="lesson-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div style="flex:1;">
+                            <h4 style="font-size:0.92rem;margin-bottom:2px;">${lesson.title}</h4>
+                            <div class="lesson-meta">
+                                ${lesson.instructor ? `<span>מעביר: ${lesson.instructor}</span>` : ''}
+                                ${lesson.hours ? `<span>${lesson.hours} שעות</span>` : ''}
+                                ${lesson.url ? `<a href="${lesson.url}" target="_blank" style="color:var(--primary-lighter);">קישור לתוכן</a>` : ''}
+                            </div>
                         </div>
+                        ${canMark ? `<button class="btn-danger btn-sm" style="font-size:0.7rem;padding:2px 8px;" onclick="deleteLesson('${lesson.id}','${program}')">מחק</button>` : ''}
                     </div>
-                    ${m.description ? `<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">${m.description}</p>` : ''}
-                    ${isDone ? `<p style="font-size:0.72rem;color:var(--text-secondary);margin-top:6px;">סומן ע"י ${status.completedBy || '—'} · ${status.completedAt ? new Date(status.completedAt.toDate()).toLocaleDateString('he-IL') : ''}</p>` : ''}
+                    <div class="platoon-grid">
+                        <span style="font-size:0.72rem;color:var(--text-secondary);margin-left:4px;">פלוגות:</span>
+                        ${PLATOONS.map(p => {
+                            const key = `${lesson.id}_${p}`;
+                            const done = statusMap[key];
+                            const doneClass = done ? 'done' : '';
+                            const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${track||''}','${p}',${!done})"` : '';
+                            const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
+                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳</span>`;
+                        }).join('')}
+                    </div>
                 </div>`;
+            }
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+
+        // Mark week buttons that have content
+        if (controls) {
+            const allSnap = await db.collection('training_content').where('program','==',program).get();
+            const weeksWithContent = new Set();
+            allSnap.forEach(doc => {
+                const d = doc.data();
+                if (!track || d.track === track) weeksWithContent.add(d.week);
+            });
+            controls.querySelectorAll('.week-btn').forEach(btn => {
+                const w = parseInt(btn.textContent);
+                if (weeksWithContent.has(w)) btn.classList.add('has-content');
             });
         }
 
-        container.innerHTML = html || '<p style="text-align:center;color:var(--text-secondary);">אין מודולים</p>';
     } catch(e) {
         console.error('Training load error:', e);
-        container.innerHTML = '<div class="card">שגיאה בטעינת מודולים</div>';
+        container.innerHTML = '<div class="card" style="padding:20px;color:var(--danger);">שגיאה בטעינת תכנים: ' + e.message + '</div>';
     }
 }
 
-async function toggleTrainingStatus(moduleId, program, framework, completed) {
+function selectTrainingWeek(program, week) {
+    currentTrainingWeek[program] = week;
+    loadTrainingPage(program);
+}
+
+async function togglePlatoonStatus(lessonId, program, week, track, platoon, completed) {
     if (!db || !currentUser) return;
-    const docId = `${framework}_${program}_${moduleId}`;
+    const docId = `${program}_${week}_${track||'none'}_${lessonId}_${platoon}`;
     try {
         if (completed) {
-            await db.collection('training_status').doc(docId).set({
-                moduleId, program, framework,
-                completed: true,
-                completedBy: currentUser.name,
-                completedAt: new Date()
+            await db.collection('training_completion').doc(docId).set({
+                lessonId, program, week, track: track || '', platoon,
+                completed: true, markedBy: currentUser.name, markedAt: new Date()
             });
         } else {
-            await db.collection('training_status').doc(docId).delete();
+            await db.collection('training_completion').doc(docId).delete();
         }
-        showToast(completed ? 'סומן בוצע' : 'סימון בוטל');
-        // Refresh
-        const container = document.getElementById(`training-${program}-modules`);
-        const activeBtn = document.querySelector(`#training-${program}-filter .geo-cat-btn.active`);
-        const activeFw = activeBtn?.onclick?.toString().match(/'([^']+)'/)?.[1] || framework;
-        await renderTrainingModules(program, activeFw, container);
-    } catch(e) {
-        showToast('שגיאה');
-        console.error(e);
-    }
+        loadTrainingPage(program);
+    } catch(e) { showToast('שגיאה'); console.error(e); }
+}
+
+// --- Add lesson modal ---
+function openAddLessonModal(program, week, track) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'add-lesson-modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `<div class="modal-box" style="max-width:480px;">
+        <button class="modal-close" onclick="document.getElementById('add-lesson-modal').remove()">&times;</button>
+        <h2 style="color:var(--primary);margin-bottom:12px;">הוספת תוכן — שבוע ${week}</h2>
+        <div class="form-group" style="text-align:right;"><label>חתך</label>
+            <select id="add-lesson-cat">
+                ${Object.entries(TRAINING_CATEGORIES).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+            </select>
+        </div>
+        <div class="form-group" style="text-align:right;"><label>שם יחידת הלימוד</label><input type="text" id="add-lesson-title"></div>
+        <div class="form-group" style="text-align:right;"><label>מעביר</label><input type="text" id="add-lesson-instructor"></div>
+        <div class="form-group" style="text-align:right;"><label>משך (שעות)</label><input type="number" id="add-lesson-hours" step="0.5" min="0.5"></div>
+        <div class="form-group" style="text-align:right;"><label>קישור ליחידת הלימוד (אופציונלי)</label><input type="text" id="add-lesson-url" placeholder="https://..." style="direction:ltr;text-align:left;"></div>
+        <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="saveLesson('${program}',${week},'${track}')">שמור</button>
+    </div>`;
+    document.body.appendChild(modal);
+}
+
+async function saveLesson(program, week, track) {
+    const title = document.getElementById('add-lesson-title').value.trim();
+    const category = document.getElementById('add-lesson-cat').value;
+    const instructor = document.getElementById('add-lesson-instructor').value.trim();
+    const hours = parseFloat(document.getElementById('add-lesson-hours').value) || 0;
+    const url = document.getElementById('add-lesson-url').value.trim();
+
+    if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
+
+    try {
+        await db.collection('training_content').add({
+            program, week, track: track || '',
+            category, title, instructor, hours, url,
+            createdBy: currentUser.name, createdAt: new Date(),
+            order: Date.now()
+        });
+        document.getElementById('add-lesson-modal').remove();
+        showToast('תוכן נוסף');
+        loadTrainingPage(program);
+    } catch(e) { showToast('שגיאה: ' + e.message); console.error(e); }
+}
+
+async function deleteLesson(lessonId, program) {
+    if (!confirm('למחוק תוכן זה?')) return;
+    try {
+        await db.collection('training_content').doc(lessonId).delete();
+        showToast('תוכן נמחק');
+        loadTrainingPage(program);
+    } catch(e) { showToast('שגיאה'); }
 }
 
 // ============================================================
@@ -2014,7 +2120,7 @@ function showAdminTab(tab) {
     if (tab === 'participants-mgmt') loadAdminParticipants();
     if (tab === 'phones') showFrameworkPhones('yonatan');
     if (tab === 'surveys-mgmt') loadAdminSurveys();
-    if (tab === 'training-mgmt') loadAdminTrainingModules();
+    // training-mgmt removed — content managed inline via training pages
     if (tab === 'dashboard') loadAdminDashboard();
 }
 
@@ -2292,16 +2398,7 @@ async function loadAdminSurveys(){
 }
 async function deleteSurvey(id){if(!confirm('למחוק?'))return;await db.collection('surveys').doc(id).delete();showToast('סקר נמחק');loadAdminSurveys();}
 
-async function addTrainingModule() {
-    const program=document.getElementById('admin-training-program').value,title=document.getElementById('new-module-title').value.trim(),desc=document.getElementById('new-module-desc').value.trim(),url=document.getElementById('new-module-url').value.trim();
-    if(!title){showToast('יש למלא שם מודול');return;}
-    try{await db.collection('training_modules').add({program,title,description:desc,url,createdAt:new Date(),order:Date.now()});showToast('מודול נוסף');document.getElementById('new-module-title').value='';document.getElementById('new-module-desc').value='';document.getElementById('new-module-url').value='';loadAdminTrainingModules();}catch(e){showToast('שגיאה');}
-}
-async function loadAdminTrainingModules() {
-    const program=document.getElementById('admin-training-program')?.value||'basic';const container=document.getElementById('admin-training-list');if(!container)return;
-    try{const snap=await db.collection('training_modules').where('program','==',program).orderBy('order').get();if(snap.empty){container.innerHTML='<p style="color:var(--text-secondary);">אין מודולים עדיין</p>';return;}container.innerHTML='';snap.forEach(doc=>{const m=doc.data();container.innerHTML+=`<div class="training-module"><div style="display:flex;justify-content:space-between;align-items:center;"><h4>${m.title}</h4><button class="btn-danger btn-sm" onclick="deleteModule('${doc.id}')">מחק</button></div>${m.description?`<p style="font-size:0.82rem;color:var(--text-secondary);">${m.description}</p>`:''}</div>`;});}catch(e){container.innerHTML='שגיאה';}
-}
-async function deleteModule(id){if(!confirm('למחוק?'))return;await db.collection('training_modules').doc(id).delete();loadAdminTrainingModules();}
+// Old addTrainingModule/loadAdminTrainingModules/deleteModule removed — training content now managed inline via openAddLessonModal/saveLesson/deleteLesson
 
 async function loadAdminDashboard() {
     const c = document.getElementById('admin-dashboard-content');
