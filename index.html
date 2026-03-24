@@ -2969,7 +2969,7 @@ function displayHebrewCard(cards) {
     `;
 
     document.getElementById('hebrew-flashcard-container').innerHTML = html;
-    document.getElementById('hebrew-flashcard-progress').textContent = `כרטיס ${currentHebrewCardIndex + 1} מתוך ${cards.length}`;
+    document.getElementById('hebrew-flashcard-progress').textContent = `Card ${currentHebrewCardIndex + 1} of ${cards.length}`;
 
     document.getElementById('hebrew-card-prev').disabled = currentHebrewCardIndex === 0;
     document.getElementById('hebrew-card-next').disabled = currentHebrewCardIndex === cards.length - 1;
