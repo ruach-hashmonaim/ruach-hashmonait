@@ -343,6 +343,30 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     .home-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
     .program-grid { grid-template-columns:1fr; }
 }
+
+/* Hebrew Learning Module */
+.hebrew-levels-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-bottom:16px; }
+.hebrew-level-card { display:flex; align-items:center; gap:16px; padding:18px 20px; background:#fff; border-radius:14px; border:1.5px solid var(--border); cursor:pointer; transition:all 0.25s; }
+.hebrew-level-card:hover { border-color:var(--primary-lighter); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.08); }
+.hebrew-level-letter { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:800; color:#fff; flex-shrink:0; }
+.hebrew-level-info { flex:1; min-width:0; }
+.hebrew-level-name { font-size:0.95rem; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+.hebrew-level-desc { font-size:0.78rem; color:var(--text-secondary); line-height:1.4; }
+.hebrew-level-progress { margin-top:6px; font-size:0.75rem; color:var(--primary); font-weight:600; }
+.hebrew-lesson-card { background:#fff; border:1.5px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:10px; transition:all 0.2s; }
+.hebrew-lesson-card:hover { border-color:var(--primary-lighter); }
+.hebrew-lesson-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.hebrew-lesson-title { font-size:0.92rem; font-weight:600; color:var(--text-primary); }
+.hebrew-lesson-unit { font-size:0.75rem; color:var(--text-secondary); background:var(--bg-secondary); padding:2px 8px; border-radius:6px; }
+.hebrew-lesson-desc { font-size:0.8rem; color:var(--text-secondary); margin-top:6px; line-height:1.4; }
+.hebrew-lesson-actions { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.hebrew-btn-open { display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border-radius:8px; font-size:0.78rem; font-weight:600; background:var(--primary); color:#fff; border:none; cursor:pointer; text-decoration:none; font-family:inherit; transition:opacity 0.2s; }
+.hebrew-btn-open:hover { opacity:0.85; }
+.hebrew-progress-bar { height:6px; background:var(--bg-secondary); border-radius:3px; overflow:hidden; flex:1; }
+.hebrew-progress-fill { height:100%; background:var(--success); border-radius:3px; transition:width 0.3s; }
+.hebrew-dashboard-row { display:grid; grid-template-columns:1fr auto auto auto auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:0.82rem; }
+.hebrew-dashboard-row:last-child { border-bottom:none; }
+.hebrew-dashboard-header { font-weight:700; color:var(--text-secondary); font-size:0.75rem; }
 </style>
 </head>
 <body>
@@ -648,13 +672,95 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- ====== HEBREW — לימוד עברית ====== -->
 <div class="page-section" id="page-hebrew">
     <div class="card">
-        <div class="card-title"><div class="icon">🔤</div> לימוד עברית</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">חיזוק השפה העברית — קריאה, כתיבה, דקדוק ואוצר מילים. הצטרף לתוכנית לימוד והתקדם בקצב שלך.</p>
+        <div class="card-title">לימוד עברית</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">חיזוק השפה העברית — בחר רמה והתחל ללמוד. החומרים מבוססים על חוברות האולפנית של צה"ל.</p>
     </div>
-    <div class="card" style="text-align:center;padding:40px 20px;">
-        <p style="font-size:1.3rem;margin-bottom:12px;">🚧 המודול בבנייה</p>
-        <p style="color:var(--text-secondary);">תכני לימוד עברית יתווספו בקרוב — שיעורים, תרגולים, ומבחנים.</p>
-        <p style="color:var(--text-secondary);margin-top:8px;">בקרוב: הרשמה לתוכניות לימוד עברית ומעקב התקדמות אישי.</p>
+
+    <!-- Level Selection Cards -->
+    <div id="hebrew-level-cards" class="hebrew-levels-grid">
+        <div class="hebrew-level-card" onclick="selectHebrewLevel('alef')" data-level="alef">
+            <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#0E7490,#22D3EE);">א</div>
+            <div class="hebrew-level-info">
+                <div class="hebrew-level-name">רמה א׳ — מתחילים</div>
+                <div class="hebrew-level-desc">אותיות, מילים בסיסיות, משפטים ראשונים</div>
+                <div class="hebrew-level-progress" id="hebrew-progress-alef"></div>
+            </div>
+        </div>
+        <div class="hebrew-level-card" onclick="selectHebrewLevel('bet')" data-level="bet">
+            <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">ב</div>
+            <div class="hebrew-level-info">
+                <div class="hebrew-level-name">רמה ב׳ — בסיסי</div>
+                <div class="hebrew-level-desc">קריאה, הבנת הנקרא, שיחה יומיומית</div>
+                <div class="hebrew-level-progress" id="hebrew-progress-bet"></div>
+            </div>
+        </div>
+        <div class="hebrew-level-card" onclick="selectHebrewLevel('gimel')" data-level="gimel">
+            <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#059669,#34D399);">ג</div>
+            <div class="hebrew-level-info">
+                <div class="hebrew-level-name">רמה ג׳ — בינוני</div>
+                <div class="hebrew-level-desc">דקדוק, כתיבה, טקסטים מורכבים</div>
+                <div class="hebrew-level-progress" id="hebrew-progress-gimel"></div>
+            </div>
+        </div>
+        <div class="hebrew-level-card" onclick="selectHebrewLevel('dalet')" data-level="dalet">
+            <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#D97706,#FBBF24);">ד</div>
+            <div class="hebrew-level-info">
+                <div class="hebrew-level-name">רמה ד׳ — מתקדם</div>
+                <div class="hebrew-level-desc">עברית ספרותית, כתיבה מתקדמת, ניתוח טקסטים</div>
+                <div class="hebrew-level-progress" id="hebrew-progress-dalet"></div>
+            </div>
+        </div>
+        <div class="hebrew-level-card" onclick="selectHebrewLevel('pratni')" data-level="pratni">
+            <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#DC2626,#F87171);">⊕</div>
+            <div class="hebrew-level-info">
+                <div class="hebrew-level-name">למידה עצמאית</div>
+                <div class="hebrew-level-desc">חומרים נוספים ללמידה פרטנית ועצמאית</div>
+                <div class="hebrew-level-progress" id="hebrew-progress-pratni"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Content (hidden until level selected) -->
+    <div id="hebrew-level-content" style="display:none;">
+        <div class="card" style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <button class="btn btn-secondary" onclick="backToHebrewLevels()" style="font-size:0.82rem;padding:6px 14px;">→ חזרה לרמות</button>
+                    <span id="hebrew-current-level-title" style="font-weight:700;font-size:1rem;margin-right:12px;color:var(--primary);"></span>
+                </div>
+                <div id="hebrew-mgmt-btn" style="display:none;">
+                    <button class="btn btn-primary" onclick="openHebrewLessonForm()" style="font-size:0.82rem;padding:6px 14px;">+ הוסף שיעור</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add lesson form (hidden) -->
+        <div id="hebrew-add-form" class="card" style="display:none;margin-bottom:16px;">
+            <div class="card-title" style="font-size:0.95rem;">הוספת שיעור חדש</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                <input id="heb-lesson-title" class="input" placeholder="כותרת השיעור" />
+                <input id="heb-lesson-unit" class="input" placeholder="יחידה (למשל: יחידה 1)" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                <input id="heb-lesson-url" class="input" placeholder="קישור לחומר (Google Drive)" />
+                <input id="heb-lesson-order" class="input" type="number" placeholder="סדר (1, 2, 3...)" />
+            </div>
+            <textarea id="heb-lesson-desc" class="input" placeholder="תיאור קצר (אופציונלי)" style="min-height:60px;margin-bottom:10px;"></textarea>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary" onclick="saveHebrewLesson()" style="font-size:0.82rem;">שמור</button>
+                <button class="btn btn-secondary" onclick="closeHebrewLessonForm()" style="font-size:0.82rem;">ביטול</button>
+            </div>
+        </div>
+
+        <div id="hebrew-lessons-list"></div>
+    </div>
+
+    <!-- Manager Dashboard (visible only to מש"ק עברית + קצין חינוך) -->
+    <div id="hebrew-dashboard" style="display:none;margin-top:16px;">
+        <div class="card">
+            <div class="card-title" style="font-size:1rem;">לוח מעקב — התקדמות לומדים</div>
+            <div id="hebrew-dashboard-content"></div>
+        </div>
     </div>
 </div>
 
@@ -824,6 +930,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                             <option value="magad">מג"ד</option>
                             <option value="katzin_chinuch">קצין חינוך</option>
                             <option value="mashak_chinuch">מש"ק חינוך</option>
+                            <option value="mashak_ivrit">מש"ק עברית</option>
                             <option value="ramad_hadraha">רמ"ד הדרכה</option>
                             <option value="mashak_hadraha">מש"ק הדרכה</option>
                             <option value="rav">רב הבה"ד</option>
@@ -998,6 +1105,7 @@ const ROLES = {
     'magad':            { label:'מג"ד',              level:4, canAddContent:false, canMarkCompletion:true },
     'katzin_chinuch':   { label:'קצין חינוך',        level:4, canAddContent:true, canMarkCompletion:true },
     'mashak_chinuch':   { label:'מש"ק חינוך',       level:3, canAddContent:true, canMarkCompletion:true },
+    'mashak_ivrit':     { label:'מש"ק עברית',       level:3, canAddContent:true, canMarkCompletion:true, canManageHebrew:true },
     'ramad_hadraha':    { label:'רמ"ד הדרכה',        level:4, canAddContent:false, canMarkCompletion:true },
     'mashak_hadraha':   { label:'מש"ק הדרכה',       level:3, canAddContent:false, canMarkCompletion:true },
     'rav':              { label:'רב הבה"ד',          level:4, canAddContent:false, canMarkCompletion:true },
@@ -1175,6 +1283,7 @@ function activatePage(page) {
     document.getElementById('page-breadcrumb').textContent = 'רוח חשמונאית' + (page !== 'home' ? ' / ' + (PAGE_TITLES[page] || '') : '');
 
     if (page === 'learning') loadLearningPrograms();
+    if (page === 'hebrew') loadHebrewPage();
     if (page === 'geography') initGeoMap();
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
@@ -2077,6 +2186,300 @@ async function loadTrainingPage(program) {
     } catch(e) {
         console.error('Training load error:', e);
         container.innerHTML = '<div class="card" style="padding:20px;color:var(--danger);">שגיאה בטעינת תכנים: ' + e.message + '</div>';
+    }
+}
+
+// ============================================================
+// HEBREW LEARNING MODULE
+// ============================================================
+const HEBREW_LEVELS = {
+    'alef':   { label:'רמה א׳', sublabel:'מתחילים', driveFolderId:'1-9VlTjpSzK5_XUqBOCHCmxymUjl89Mnq' },
+    'bet':    { label:'רמה ב׳', sublabel:'בסיסי', driveFolderId:'1-EupHT20ZOPXPqm9t8LM-h75AevbtLhS' },
+    'gimel':  { label:'רמה ג׳', sublabel:'בינוני', driveFolderId:'1-PvqVFIfNhj0OACtvJlPmEA8AYXslvWL' },
+    'dalet':  { label:'רמה ד׳', sublabel:'מתקדם', driveFolderId:'1-TRhS6PJBJYGJUnD0v9F03zDJJtCqDtZ' },
+    'pratni': { label:'למידה עצמאית', sublabel:'פרטני', driveFolderId:'1-3y2JmONYBCR2oRvnVAHBnGI0fqIbCzJ' }
+};
+
+let currentHebrewLevel = null;
+
+function canManageHebrew() {
+    if (!currentUser) return false;
+    const role = ROLES[currentUser.role];
+    if (!role) return false;
+    // מש"ק עברית, קצין חינוך, מש"ק חינוך, מנהל מפח"ט, or segel
+    return role.canManageHebrew || currentUser.role === 'katzin_chinuch' || currentUser.role === 'mashak_chinuch' || currentUser.role === 'menahel' || currentUser.role === 'segel';
+}
+
+function canTrackHebrew() {
+    if (!currentUser) return false;
+    const role = ROLES[currentUser.role];
+    if (!role) return false;
+    return canManageHebrew() || currentUser.role === 'katzin_chinuch';
+}
+
+async function loadHebrewPage() {
+    // Show level cards, hide content
+    document.getElementById('hebrew-level-cards').style.display = '';
+    document.getElementById('hebrew-level-content').style.display = 'none';
+
+    // Show dashboard for managers
+    const dashEl = document.getElementById('hebrew-dashboard');
+    if (dashEl) {
+        if (canTrackHebrew()) {
+            dashEl.style.display = '';
+            loadHebrewDashboard();
+        } else {
+            dashEl.style.display = 'none';
+        }
+    }
+
+    // Load progress for each level
+    if (currentUser) {
+        for (const level of Object.keys(HEBREW_LEVELS)) {
+            await updateHebrewLevelProgress(level);
+        }
+    }
+}
+
+async function updateHebrewLevelProgress(level) {
+    const el = document.getElementById(`hebrew-progress-${level}`);
+    if (!el || !currentUser) { if(el) el.innerHTML = ''; return; }
+
+    try {
+        const lessonsSnap = await db.collection('hebrew_lessons').where('level','==',level).get();
+        const total = lessonsSnap.size;
+        if (total === 0) { el.innerHTML = '<span style="color:var(--text-secondary);font-weight:400;">טרם נוספו שיעורים</span>'; return; }
+
+        const progressSnap = await db.collection('hebrew_progress')
+            .where('userId','==',currentUser.id)
+            .where('level','==',level)
+            .where('completed','==',true).get();
+        const done = progressSnap.size;
+        const pct = Math.round((done / total) * 100);
+
+        el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">
+            <div class="hebrew-progress-bar"><div class="hebrew-progress-fill" style="width:${pct}%"></div></div>
+            <span>${done}/${total} שיעורים</span>
+        </div>`;
+    } catch(e) {
+        el.innerHTML = '';
+    }
+}
+
+async function selectHebrewLevel(level) {
+    currentHebrewLevel = level;
+    const config = HEBREW_LEVELS[level];
+
+    document.getElementById('hebrew-level-cards').style.display = 'none';
+    document.getElementById('hebrew-level-content').style.display = '';
+    document.getElementById('hebrew-current-level-title').textContent = config.label + ' — ' + config.sublabel;
+
+    // Show management button for authorized users
+    const mgmtBtn = document.getElementById('hebrew-mgmt-btn');
+    if (mgmtBtn) mgmtBtn.style.display = canManageHebrew() ? '' : 'none';
+
+    // Hide dashboard when viewing level
+    const dashEl = document.getElementById('hebrew-dashboard');
+    if (dashEl) dashEl.style.display = 'none';
+
+    await loadHebrewLessons(level);
+}
+
+function backToHebrewLevels() {
+    currentHebrewLevel = null;
+    document.getElementById('hebrew-level-cards').style.display = '';
+    document.getElementById('hebrew-level-content').style.display = 'none';
+    closeHebrewLessonForm();
+    loadHebrewPage();
+}
+
+async function loadHebrewLessons(level) {
+    const container = document.getElementById('hebrew-lessons-list');
+    container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">טוען שיעורים...</p>';
+
+    try {
+        const snap = await db.collection('hebrew_lessons').where('level','==',level).orderBy('order').get();
+
+        // Load user progress
+        let progressMap = {};
+        if (currentUser) {
+            const progSnap = await db.collection('hebrew_progress')
+                .where('userId','==',currentUser.id)
+                .where('level','==',level).get();
+            progSnap.forEach(doc => { const d = doc.data(); progressMap[d.lessonId] = d; });
+        }
+
+        if (snap.empty) {
+            const config = HEBREW_LEVELS[level];
+            const driveLink = `https://drive.google.com/drive/folders/${config.driveFolderId}`;
+            container.innerHTML = `<div class="card" style="text-align:center;padding:30px;">
+                <p style="font-size:0.95rem;margin-bottom:12px;">טרם נוספו שיעורים לרמה זו</p>
+                <a href="${driveLink}" target="_blank" class="hebrew-btn-open" style="display:inline-flex;">📁 פתח תיקיית חומרים בדרייב</a>
+                ${canManageHebrew() ? '<p style="margin-top:12px;font-size:0.8rem;color:var(--text-secondary);">לחצ/י על "הוסף שיעור" כדי להוסיף תכנים</p>' : ''}
+            </div>`;
+            return;
+        }
+
+        let html = '';
+        snap.forEach(doc => {
+            const lesson = { ...doc.data(), id: doc.id };
+            const prog = progressMap[lesson.id];
+            const isDone = prog && prog.completed;
+            const doneClass = isDone ? 'done' : '';
+
+            html += `<div class="hebrew-lesson-card" style="${isDone ? 'border-right:3px solid var(--success);' : ''}">
+                <div class="hebrew-lesson-header">
+                    <div>
+                        ${lesson.unit ? `<span class="hebrew-lesson-unit">${lesson.unit}</span> ` : ''}
+                        <span class="hebrew-lesson-title">${lesson.title}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        ${isDone ? '<span style="color:var(--success);font-size:0.8rem;font-weight:600;">✓ הושלם</span>' : ''}
+                        ${canManageHebrew() ? `<button onclick="deleteHebrewLesson('${lesson.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:0.8rem;padding:4px;">🗑</button>` : ''}
+                    </div>
+                </div>
+                ${lesson.description ? `<div class="hebrew-lesson-desc">${lesson.description}</div>` : ''}
+                <div class="hebrew-lesson-actions">
+                    ${lesson.url ? `<a href="${lesson.url}" target="_blank" class="hebrew-btn-open">📄 פתח חומר</a>` : ''}
+                    ${currentUser ? `<button class="completion-badge ${doneClass}" style="cursor:pointer;" onclick="toggleHebrewProgress('${lesson.id}','${level}',${!isDone})">
+                        ${isDone ? '✓ הושלם' : '○ סמן כהושלם'}
+                    </button>` : ''}
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    } catch(e) {
+        console.error('Hebrew lessons load error:', e);
+        container.innerHTML = `<div class="card" style="padding:20px;color:var(--danger);">שגיאה בטעינת שיעורים: ${e.message}</div>`;
+    }
+}
+
+async function toggleHebrewProgress(lessonId, level, completed) {
+    if (!currentUser) return;
+
+    try {
+        const docId = `${currentUser.id}_${lessonId}`;
+        await db.collection('hebrew_progress').doc(docId).set({
+            userId: currentUser.id,
+            lessonId: lessonId,
+            level: level,
+            completed: completed,
+            completedAt: completed ? firebase.firestore.FieldValue.serverTimestamp() : null,
+            userName: currentUser.name || ''
+        }, { merge: true });
+
+        showToast(completed ? 'שיעור סומן כהושלם' : 'סימון הוסר');
+        await loadHebrewLessons(level);
+    } catch(e) {
+        showToast('שגיאה: ' + e.message);
+    }
+}
+
+function openHebrewLessonForm() {
+    document.getElementById('hebrew-add-form').style.display = '';
+    document.getElementById('heb-lesson-title').value = '';
+    document.getElementById('heb-lesson-unit').value = '';
+    document.getElementById('heb-lesson-url').value = '';
+    document.getElementById('heb-lesson-order').value = '';
+    document.getElementById('heb-lesson-desc').value = '';
+}
+
+function closeHebrewLessonForm() {
+    const form = document.getElementById('hebrew-add-form');
+    if (form) form.style.display = 'none';
+}
+
+async function saveHebrewLesson() {
+    if (!canManageHebrew()) { showToast('אין הרשאה'); return; }
+
+    const title = document.getElementById('heb-lesson-title').value.trim();
+    const unit = document.getElementById('heb-lesson-unit').value.trim();
+    const url = document.getElementById('heb-lesson-url').value.trim();
+    const order = parseInt(document.getElementById('heb-lesson-order').value) || 1;
+    const description = document.getElementById('heb-lesson-desc').value.trim();
+
+    if (!title) { showToast('נא להזין כותרת'); return; }
+
+    try {
+        await db.collection('hebrew_lessons').add({
+            level: currentHebrewLevel,
+            title, unit, url, order, description,
+            createdBy: currentUser.name || currentUser.id,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('שיעור נוסף בהצלחה');
+        closeHebrewLessonForm();
+        await loadHebrewLessons(currentHebrewLevel);
+    } catch(e) {
+        showToast('שגיאה: ' + e.message);
+    }
+}
+
+async function deleteHebrewLesson(lessonId) {
+    if (!canManageHebrew()) return;
+    if (!confirm('למחוק שיעור זה?')) return;
+
+    try {
+        await db.collection('hebrew_lessons').doc(lessonId).delete();
+        showToast('שיעור נמחק');
+        await loadHebrewLessons(currentHebrewLevel);
+    } catch(e) {
+        showToast('שגיאה: ' + e.message);
+    }
+}
+
+async function loadHebrewDashboard() {
+    const container = document.getElementById('hebrew-dashboard-content');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align:center;padding:10px;color:var(--text-secondary);font-size:0.85rem;">טוען נתונים...</p>';
+
+    try {
+        // Get all learners who have any hebrew progress
+        const progressSnap = await db.collection('hebrew_progress').where('completed','==',true).get();
+
+        // Group by user
+        const byUser = {};
+        progressSnap.forEach(doc => {
+            const d = doc.data();
+            if (!byUser[d.userId]) byUser[d.userId] = { name: d.userName || d.userId, levels: {} };
+            if (!byUser[d.userId].levels[d.level]) byUser[d.userId].levels[d.level] = 0;
+            byUser[d.userId].levels[d.level]++;
+        });
+
+        // Get total lessons per level
+        const levelTotals = {};
+        for (const lvl of Object.keys(HEBREW_LEVELS)) {
+            const snap = await db.collection('hebrew_lessons').where('level','==',lvl).get();
+            levelTotals[lvl] = snap.size;
+        }
+
+        if (Object.keys(byUser).length === 0) {
+            container.innerHTML = '<p style="text-align:center;padding:15px;color:var(--text-secondary);font-size:0.85rem;">אין נתוני התקדמות עדיין</p>';
+            return;
+        }
+
+        let html = '<div class="hebrew-dashboard-row hebrew-dashboard-header">';
+        html += '<div>שם הלומד</div>';
+        html += '<div>רמה א׳</div><div>רמה ב׳</div><div>רמה ג׳</div><div>רמה ד׳</div>';
+        html += '</div>';
+
+        for (const [userId, data] of Object.entries(byUser)) {
+            html += '<div class="hebrew-dashboard-row">';
+            html += `<div style="font-weight:600;">${data.name}</div>`;
+            for (const lvl of ['alef','bet','gimel','dalet']) {
+                const done = data.levels[lvl] || 0;
+                const total = levelTotals[lvl] || 0;
+                const pct = total > 0 ? Math.round((done/total)*100) : 0;
+                const color = pct >= 100 ? 'var(--success)' : pct > 0 ? 'var(--primary)' : 'var(--text-secondary)';
+                html += `<div style="color:${color};font-weight:${pct>0?'600':'400'};">${total>0 ? done+'/'+total : '—'}</div>`;
+            }
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = `<p style="color:var(--danger);font-size:0.85rem;">שגיאה: ${e.message}</p>`;
     }
 }
 
