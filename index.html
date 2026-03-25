@@ -23,6 +23,59 @@
     <script>
     (function(){var s=document.createElement('script');s.src='https://unpkg.com/@hebcal/core@5.4.11/dist/bundle.min.js';s.onerror=function(){};document.head.appendChild(s);})();
     </script>
+    <script>
+    // === SECURITY: Anti-copy, Anti-inspect, Anti-devtools ===
+    (function(){
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', function(e){ e.preventDefault(); return false; });
+        // Disable text selection via CSS
+        document.addEventListener('DOMContentLoaded', function(){
+            document.body.style.webkitUserSelect='none';
+            document.body.style.mozUserSelect='none';
+            document.body.style.msUserSelect='none';
+            document.body.style.userSelect='none';
+            // Allow selection in input/textarea fields
+            var style=document.createElement('style');
+            style.textContent='input,textarea,select{-webkit-user-select:text!important;user-select:text!important;}';
+            document.head.appendChild(style);
+        });
+        // Block keyboard shortcuts for DevTools and View Source
+        document.addEventListener('keydown', function(e){
+            // F12
+            if(e.key==='F12'){e.preventDefault();return false;}
+            // Ctrl+Shift+I / Cmd+Opt+I (DevTools)
+            if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==='I'||e.key==='i')){e.preventDefault();return false;}
+            // Ctrl+Shift+J / Cmd+Opt+J (Console)
+            if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==='J'||e.key==='j')){e.preventDefault();return false;}
+            // Ctrl+Shift+C (Inspect Element)
+            if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==='C'||e.key==='c')){e.preventDefault();return false;}
+            // Ctrl+U / Cmd+U (View Source)
+            if((e.ctrlKey||e.metaKey)&&(e.key==='U'||e.key==='u')){e.preventDefault();return false;}
+            // Ctrl+S / Cmd+S (Save Page)
+            if((e.ctrlKey||e.metaKey)&&(e.key==='S'||e.key==='s')){e.preventDefault();return false;}
+            // Ctrl+A / Cmd+A (Select All) - outside inputs
+            if((e.ctrlKey||e.metaKey)&&(e.key==='A'||e.key==='a')&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();return false;}
+            // Ctrl+C / Cmd+C (Copy) - outside inputs
+            if((e.ctrlKey||e.metaKey)&&(e.key==='C'||e.key==='c')&&!e.shiftKey&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();return false;}
+        });
+        // Disable drag
+        document.addEventListener('dragstart', function(e){ e.preventDefault(); return false; });
+        // DevTools detection - redirect if opened
+        var _dt=false;
+        setInterval(function(){
+            var t1=performance.now();
+            debugger;
+            var t2=performance.now();
+            if(t2-t1>100&&!_dt){
+                _dt=true;
+                document.body.innerHTML='<div style="text-align:center;padding:50px;font-family:Heebo,sans-serif;direction:rtl"><h1 style="color:#c00">גישה לא מורשית</h1><p>כלי פיתוח זוהו. הגישה נחסמה.</p></div>';
+            }
+        },2000);
+        // Console warning
+        console.log('%c⚠️ אזהרה! ⚠️','color:red;font-size:30px;font-weight:bold');
+        console.log('%cזוהי מערכת צבאית מאובטחת. כל ניסיון גישה לא מורשה מתועד ויטופל בהתאם.','color:red;font-size:16px');
+    })();
+    </script>
 <style>
 :root {
     --primary: #0C4A6E; --primary-light: #0E7490; --primary-lighter: #06B6D4;
@@ -1480,8 +1533,36 @@ async function hashPassword(password) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// --- Login Rate Limiting ---
+let _failedLogins = 0;
+let _lockoutUntil = 0;
+
+// --- Session Validation ---
+function validateSession() {
+    const stored = localStorage.getItem('ruach-user');
+    if (!stored) return null;
+    try {
+        const user = JSON.parse(stored);
+        if (user.sessionExpiry && Date.now() > user.sessionExpiry) {
+            localStorage.removeItem('ruach-user');
+            showToast('הסשן פג תוקף — יש להתחבר מחדש');
+            return null;
+        }
+        return user;
+    } catch(e) {
+        localStorage.removeItem('ruach-user');
+        return null;
+    }
+}
+
 // --- Staff Login (email + password → Firestore 'users' collection) ---
 async function loginWithPassword() {
+    // Rate limiting check
+    if (Date.now() < _lockoutUntil) {
+        const secs = Math.ceil((_lockoutUntil - Date.now()) / 1000);
+        showToast(`נסיונות כניסה רבים מדי. נסה שוב בעוד ${secs} שניות`);
+        return;
+    }
     const email = normalizeGmail(document.getElementById('login-email').value.trim().toLowerCase());
     const password = document.getElementById('login-password').value;
     if (!email || !email.includes('@')) { showToast('יש להזין כתובת מייל תקינה'); return; }
@@ -1501,7 +1582,13 @@ async function loginWithPassword() {
         const hashedInput = await hashPassword(password);
 
         if (ud.passwordHash && ud.passwordHash !== hashedInput) {
-            showToast('סיסמה שגויה');
+            _failedLogins++;
+            if (_failedLogins >= 5) {
+                _lockoutUntil = Date.now() + (60 * 1000); // 1 minute lockout
+                showToast('נסיונות כניסה רבים מדי. נחסם לדקה');
+            } else {
+                showToast('סיסמה שגויה');
+            }
             showLoading(false);
             return;
         }
@@ -1516,12 +1603,14 @@ async function loginWithPassword() {
             name: ud.name || userDoc.id,
             email: email,
             role: ud.role || 'lohem',
-            framework: ud.framework || ''
+            framework: ud.framework || '',
+            loginTime: Date.now(),
+            sessionExpiry: Date.now() + (12 * 60 * 60 * 1000) // 12 hour session
         };
         localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+        _failedLogins = 0; // Reset failed login counter
         onLoginSuccess();
     } catch(e) {
-        console.error('Login error:', e);
         showToast('שגיאה בכניסה — בדוק חיבור');
     }
     showLoading(false);
@@ -4038,6 +4127,12 @@ function tryAutoLogin() {
     if (savedStaff) {
         try {
             const parsed = JSON.parse(savedStaff);
+            // Check session expiry
+            if (parsed.sessionExpiry && Date.now() > parsed.sessionExpiry) {
+                localStorage.removeItem('ruach-user');
+                showToast('הסשן פג תוקף — יש להתחבר מחדש');
+                return;
+            }
             // Migrate old format
             if (parsed.isAdmin !== undefined && !parsed.role) {
                 currentUser = {
