@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>רוח חשמונאית</title>
+    <title>מצפן</title>
     <meta name="theme-color" content="#0C4A6E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="רוח חשמונאית">
+    <meta name="apple-mobile-web-app-title" content="מצפן">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
     <link rel="manifest" href="manifest.json">
@@ -535,8 +535,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- ========== SPLASH SCREEN ========== -->
 <div class="splash-screen" id="splash-screen">
     <div class="splash-inner">
-        <img class="splash-logo" src="icons/icon-192x192.png?v=2" alt="רוח חשמונאית">
-        <div class="splash-title">רוח חשמונאית</div>
+        <img class="splash-logo" src="icons/icon-192x192.png?v=2" alt="מצפן">
+        <div class="splash-title">מצפן</div>
         <div class="splash-subtitle">רוח · חוסן · חינוך<br><span style="font-size:0.85em;opacity:0.85;">חטיבת החשמונאים</span></div>
         <div class="splash-buttons">
             <button class="splash-btn splash-btn-login" onclick="splashEnter()">כניסה לאתר</button>
@@ -549,7 +549,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <div class="modal-overlay" id="login-modal">
     <div class="modal-box">
         <button class="modal-close" onclick="closeLoginModal()">&times;</button>
-        <img class="login-logo" src="icons/icon-192x192.png?v=2" alt="רוח חשמונאית">
+        <img class="login-logo" src="icons/icon-192x192.png?v=2" alt="מצפן">
         <h2 style="color:var(--primary);margin-bottom:4px;">כניסת צוות</h2>
         <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">כניסה לאזור הניהול וההכשרה</p>
 
@@ -577,7 +577,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <div class="modal-overlay" id="register-modal">
     <div class="modal-box">
         <button class="modal-close" onclick="closeRegisterModal()">&times;</button>
-        <img class="login-logo" src="icons/icon-192x192.png?v=2" alt="רוח חשמונאית">
+        <img class="login-logo" src="icons/icon-192x192.png?v=2" alt="מצפן">
         <h2 style="color:var(--primary);margin-bottom:4px;">יצירת חשבון</h2>
         <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הירשם כדי לעקוב אחרי ההתקדמות שלך ולהצטרף לתוכניות</p>
 
@@ -612,7 +612,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <div class="modal-overlay" id="user-login-modal">
     <div class="modal-box">
         <button class="modal-close" onclick="closeUserLoginModal()">&times;</button>
-        <img class="login-logo" src="icons/icon-192x192.png?v=2" alt="רוח חשמונאית">
+        <img class="login-logo" src="icons/icon-192x192.png?v=2" alt="מצפן">
         <h2 style="color:var(--primary);margin-bottom:4px;">כניסה לחשבון</h2>
         <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;">הזן שם משתמש או כתובת מייל</p>
 
@@ -641,7 +641,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <img class="sidebar-logo" src="icons/icon-192x192.png?v=2" alt="לוגו">
-        <h2>רוח חשמונאית</h2>
+        <h2>מצפן</h2>
         <small>רוח · חוסן · חינוך<br>חטיבת החשמונאים</small>
     </div>
     <nav class="sidebar-nav">
@@ -651,9 +651,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> Hebrew Learning</a>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> בעקבות הנצח</a>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת</a>
-        <a onclick="navigate('training-basic')" data-page="training-basic" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> הכשרת יסוד</a>
-        <a onclick="navigate('training-nco')" data-page="training-nco" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> קורס מ״כים</a>
-        <a onclick="navigate('training-officer')" data-page="training-officer" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> קורס קצינים</a>
+        <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי</a>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
 
         <!-- Staff-only sections -->
@@ -697,7 +695,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <header class="main-header">
         <div>
             <h1 id="page-title">דף הבית</h1>
-            <div class="breadcrumb" id="page-breadcrumb">רוח חשמונאית</div>
+            <div class="breadcrumb" id="page-breadcrumb">מצפן</div>
         </div>
     </header>
 
@@ -721,20 +719,10 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="tile-title">בעקבות הנצח</div>
             <div class="tile-desc">מפה אינטראקטיבית, היסטוריה ומקורות</div>
         </a>
-        <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-basic')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1 14.5l-4-4 1.41-1.41L11 13.67l5.59-5.58L18 9.5l-7 7z"/></svg></div>
-            <div class="tile-title">הכשרת יסוד</div>
-            <div class="tile-desc">תכני רוח מכבי — בסיס</div>
-        </a>
-        <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-nco')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#6D28D9,#8B5CF6);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/><path d="M11 7h2v6h-2zm0 8h2v2h-2z"/></svg></div>
-            <div class="tile-title">קורס מ״כים</div>
-            <div class="tile-desc">תכני רוח מכבי — מ״כים</div>
-        </a>
-        <a class="home-tile tile-training" style="display:none;" onclick="navigate('training-officer')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#5B21B6,#7C3AED);"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7L12 16.4 5.7 21l2.3-7L2 9.4h7.6z"/></svg></div>
-            <div class="tile-title">קורס קצינים</div>
-            <div class="tile-desc">תכני רוח מכבי — קצינים</div>
+        <a class="home-tile tile-training" style="display:none;" onclick="navigate('training')">
+            <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
+            <div class="tile-title">רוח מכבי</div>
+            <div class="tile-desc">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</div>
         </a>
         <a class="home-tile" onclick="navigate('hebrew')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0891B2,#22D3EE);"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75l11-11.03-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
@@ -793,41 +781,26 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 
-<!-- ====== TRAINING BASIC (30 weeks) ====== -->
-<div class="page-section" id="page-training-basic">
+<!-- ====== TRAINING — רוח מכבי (unified) ====== -->
+<div class="page-section" id="page-training">
     <div class="card">
-        <div class="card-title">הכשרת יסוד — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">30 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
-        <div class="track-tabs-wrap" id="training-basic-tracks"></div>
-        <div class="training-controls" id="training-basic-controls"></div>
-    </div>
-    <div id="training-basic-content"></div>
-</div>
-
-<!-- ====== TRAINING NCO (13 weeks) ====== -->
-<div class="page-section" id="page-training-nco">
-    <div class="card">
-        <div class="card-title">קורס מ״כים — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">13 שבועות · חתכי רוח מכבי, חינוך, מדיניות, רבנות</p>
-        <div class="track-tabs-wrap" id="training-nco-tracks"></div>
-        <div class="training-controls" id="training-nco-controls"></div>
-    </div>
-    <div id="training-nco-content"></div>
-</div>
-
-<!-- ====== TRAINING OFFICER (שדה 16w + גפן 16w) ====== -->
-<div class="page-section" id="page-training-officer">
-    <div class="card">
-        <div class="card-title">קורס קצינים — רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">מסלול שדה (16 שבועות) · מסלול גפן (16 שבועות)</p>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <button class="track-tab active" id="officer-track-sade" data-track="sade" onclick="switchOfficerTrackTab('sade')">מסלול שדה</button>
-            <button class="track-tab" id="officer-track-gefen" data-track="gefen" onclick="switchOfficerTrackTab('gefen')">מסלול גפן</button>
+        <div class="card-title">רוח מכבי</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</p>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <button class="track-tab active" id="training-prog-basic" onclick="switchTrainingProgram('basic')">הכשרת יסוד</button>
+            <button class="track-tab" id="training-prog-nco" onclick="switchTrainingProgram('nco')">קורס מ״כים</button>
+            <button class="track-tab" id="training-prog-officer" onclick="switchTrainingProgram('officer')">קורס קצינים</button>
         </div>
-        <div class="track-tabs-wrap" id="training-officer-tracks"></div>
-        <div class="training-controls" id="training-officer-controls"></div>
+        <div id="training-officer-subtracks" style="display:none;margin-bottom:8px;">
+            <div style="display:flex;gap:8px;">
+                <button class="track-tab active" id="officer-track-sade" data-track="sade" onclick="switchOfficerTrackTab('sade')">מסלול שדה</button>
+                <button class="track-tab" id="officer-track-gefen" data-track="gefen" onclick="switchOfficerTrackTab('gefen')">מסלול גפן</button>
+            </div>
+        </div>
+        <div class="track-tabs-wrap" id="training-tracks"></div>
+        <div class="training-controls" id="training-controls"></div>
     </div>
-    <div id="training-officer-content"></div>
+    <div id="training-content"></div>
 </div>
 
 <!-- ====== HEBREW — Hebrew Learning ====== -->
@@ -1055,7 +1028,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
             <h4 style="margin-bottom:8px;">הוספת תוכן חדש</h4>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <select id="cmgmt-cat" style="width:120px;">
+                <select id="cmgmt-cat" title="אחריות על התוכן" style="width:120px;">
                     <option value="ruach">רוח מכבי</option>
                     <option value="chinuch">חינוך</option>
                     <option value="mediniyut">מדיניות</option>
@@ -1214,7 +1187,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
                 <h4 style="margin-bottom:8px;">הוספת תוכן חדש</h4>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <select id="admin-lesson-cat" style="width:120px;">
+                    <select id="admin-lesson-cat" title="אחריות על התוכן" style="width:120px;">
                         <option value="ruach">רוח מכבי</option>
                         <option value="chinuch">חינוך</option>
                         <option value="mediniyut">מדיניות</option>
@@ -1239,7 +1212,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div><!-- /page-content -->
 
     <footer class="app-footer">
-        רוח חשמונאית — רוח · חוסן · חינוך — חטיבת החשמונאים ·
+        מצפן — רוח · חוסן · חינוך — חטיבת החשמונאים ·
         פותח ע״י <a href="#">IAB-Smart AI Solutions</a>
     </footer>
 
@@ -1296,7 +1269,7 @@ const ROLES = {
     // Legacy compat
     'mefaked_zater':    { label:'מפקד זוטר',         level:2, canAddContent:false, canMarkCompletion:false },
     'katzin_bachir':    { label:'קצין בכיר',         level:3, canAddContent:false, canMarkCompletion:true },
-    'segel':            { label:'סגל רוח חשמונאית',  level:4, canAddContent:true, canMarkCompletion:true }
+    'segel':            { label:'סגל מצפן',  level:4, canAddContent:true, canMarkCompletion:true }
 };
 
 const PLUGA_LIST = ['א','ב','ג','ד','ה','ו','ז','ח'];
@@ -1372,7 +1345,7 @@ const MILESTONES = [
     { id:'rambam-complete', name:'סיום משנה תורה', desc:'סיום כל 14 ספרי הרמב"ם', icon:'👑', prize:'נסיעה לקבר הרמב"ם בטבריה + ארוחת חגיגה', prizeIcon:'✈️' },
     { id:'tanach-complete', name:'סיום תנ״ך', desc:'סיום כל 24 ספרי התנ"ך', icon:'🏛️', prize:'תנ"ך מפואר בכריכת עור', prizeIcon:'📜' },
     { id:'daf-yomi-cycle', name:'סיום ש״ס בבלי', desc:'סיום מחזור דף יומי שלם', icon:'💎', prize:'מסיבת סיום + מדליית הוקרה מהמח"ט', prizeIcon:'🎖️' },
-    { id:'30-day-streak', name:'רצף 30 יום', desc:'30 ימי למידה רצופים בלי הפסקה', icon:'🔥', prize:'כובע/חולצת רוח חשמונאית', prizeIcon:'👕' },
+    { id:'30-day-streak', name:'רצף 30 יום', desc:'30 ימי למידה רצופים בלי הפסקה', icon:'🔥', prize:'כובע/חולצת מצפן', prizeIcon:'👕' },
     { id:'100-day-streak', name:'רצף 100 יום', desc:'100 ימי למידה רצופים', icon:'⚡', prize:'שעון יד + תעודת הצטיינות', prizeIcon:'⌚' }
 ];
 
@@ -1391,9 +1364,7 @@ const PAGE_TITLES = {
     'home': 'דף הבית',
     'learning': 'והגית בו — למידה יומית',
     'hebrew': 'Hebrew Learning',
-    'training-basic': 'הכשרת יסוד — רוח מכבי',
-    'training-nco': 'קורס מ״כים — רוח מכבי',
-    'training-officer': 'קורס קצינים — רוח מכבי',
+    'training': 'רוח מכבי',
     'geography': 'בעקבות הנצח',
     'internet-safety': 'שולטים ברשת',
     'reports': 'מעקב שבועי — צוות חינוכי',
@@ -1410,9 +1381,7 @@ let currentParticipant = null;
 
 // Pages and their required permission
 const PAGE_PERMISSIONS = {
-    'training-basic': 'view-training',
-    'training-nco': 'view-training',
-    'training-officer': 'view-training',
+    'training': 'view-training',
     'content-mgmt': 'add-content',
     'reports': 'weekly-reports',
     'admin': 'admin'
@@ -1442,7 +1411,7 @@ function activatePage(page) {
         const navLink = document.querySelector('.sidebar-nav a[data-page="surveys"]');
         if (navLink) navLink.classList.add('active');
         document.getElementById('page-title').textContent = 'סקרים ומשובים';
-        document.getElementById('page-breadcrumb').textContent = 'רוח חשמונאית / סקרים ומשובים';
+        document.getElementById('page-breadcrumb').textContent = 'מצפן / סקרים ומשובים';
         loadSurveys().then(() => openSurveyById(surveyId));
         return;
     }
@@ -1454,7 +1423,7 @@ function activatePage(page) {
     const navLink = document.querySelector(`.sidebar-nav a[data-page="${page}"]`);
     if (navLink) navLink.classList.add('active');
     document.getElementById('page-title').textContent = PAGE_TITLES[page] || '';
-    document.getElementById('page-breadcrumb').textContent = 'רוח חשמונאית' + (page !== 'home' ? ' / ' + (PAGE_TITLES[page] || '') : '');
+    document.getElementById('page-breadcrumb').textContent = 'מצפן' + (page !== 'home' ? ' / ' + (PAGE_TITLES[page] || '') : '');
 
     if (page === 'learning') loadLearningPrograms();
     if (page === 'hebrew') loadHebrewPage();
@@ -1463,8 +1432,8 @@ function activatePage(page) {
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
     if (page === 'content-mgmt') cmgmtProgramChanged();
-    if (page.startsWith('training-')) {
-        const prog = page.replace('training-','');
+    if (page === 'training') {
+        const prog = currentTrainingProgram || 'basic';
         // Build platoon tabs dynamically based on user permissions
         const tc = TRAINING_CONFIG[prog];
         if (tc && tc.hasPlugas) buildPlugaTabs(prog);
@@ -2178,17 +2147,27 @@ const TRAINING_TRACKS = {
     'pluga_a': 'פלוגה א׳', 'pluga_b': 'פלוגה ב׳', 'pluga_c': 'פלוגה ג׳', 'pluga_d': 'פלוגה ד׳',
     'pluga_e': 'פלוגה ה׳', 'pluga_f': 'פלוגה ו׳', 'pluga_g': 'פלוגה ז׳', 'pluga_h': 'פלוגה ח׳'
 };
-const TRAINING_CATEGORIES = {
-    'ruach':    'רוח מכבי',
+const CONTENT_RESPONSIBILITY = {
+    'ruach':    'רוח חשמונאית',
     'chinuch':  'חינוך',
     'mediniyut':'מדיניות',
     'rabanut':  'רבנות'
 };
 const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
+let currentTrainingProgram = 'basic';
 let currentOfficerTrack = 'sade';
 let currentOfficerPluga = 'pluga_a'; // separate platoon state for officer course
 let currentTrainingTrack = { 'basic':'pluga_a', 'nco':'pluga_a', 'officer':'pluga_a' };
 let currentTrainingWeek = {};
+
+function switchTrainingProgram(prog) {
+    currentTrainingProgram = prog;
+    document.getElementById('training-prog-basic').classList.toggle('active', prog === 'basic');
+    document.getElementById('training-prog-nco').classList.toggle('active', prog === 'nco');
+    document.getElementById('training-prog-officer').classList.toggle('active', prog === 'officer');
+    document.getElementById('training-officer-subtracks').style.display = prog === 'officer' ? '' : 'none';
+    loadTrainingPage(prog);
+}
 
 function switchOfficerTrackTab(track) {
     currentOfficerTrack = track;
@@ -2201,7 +2180,7 @@ function switchOfficerTrackTab(track) {
 const PLUGA_TRACK_MAP = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h'};
 
 function buildPlugaTabs(prog) {
-    const container = document.getElementById(`training-${prog}-tracks`);
+    const container = document.getElementById('training-tracks');
     if (!container) return;
     const lvl = userLevel();
     const userPluga = currentUser?.pluga || '';
@@ -2235,23 +2214,23 @@ function buildPlugaTabs(prog) {
 function switchOfficerPluga(track) {
     currentOfficerPluga = track;
     // Update platoon tab active states
-    document.querySelectorAll('#training-officer-tracks .track-tab').forEach(b => b.classList.remove('active'));
-    const activeBtn = document.querySelector(`#training-officer-tracks .track-tab[data-track="${track}"]`);
+    document.querySelectorAll('#training-tracks .track-tab').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`#training-tracks .track-tab[data-track="${track}"]`);
     if (activeBtn) activeBtn.classList.add('active');
     loadTrainingPage('officer');
 }
 
 function switchTrainingTrack(program, track) {
     currentTrainingTrack[program] = track;
-    document.querySelectorAll(`#training-${program}-tracks .track-tab`).forEach(b => b.classList.remove('active'));
-    const activeBtn = document.querySelector(`#training-${program}-tracks .track-tab[data-track="${track}"]`);
+    document.querySelectorAll(`#training-tracks .track-tab`).forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`#training-tracks .track-tab[data-track="${track}"]`);
     if (activeBtn) activeBtn.classList.add('active');
     loadTrainingPage(program);
 }
 
 async function loadTrainingPage(program) {
-    const container = document.getElementById(`training-${program}-content`);
-    const controls = document.getElementById(`training-${program}-controls`);
+    const container = document.getElementById('training-content');
+    const controls = document.getElementById('training-controls');
     if (!container) return;
 
     const config = TRAINING_CONFIG[program];
@@ -2300,7 +2279,7 @@ async function loadTrainingPage(program) {
 
         // Group by category
         const byCat = {};
-        Object.keys(TRAINING_CATEGORIES).forEach(c => byCat[c] = []);
+        Object.keys(CONTENT_RESPONSIBILITY).forEach(c => byCat[c] = []);
         snap.forEach(doc => {
             const d = { ...doc.data(), id: doc.id };
             if (byCat[d.category]) byCat[d.category].push(d);
@@ -2321,7 +2300,7 @@ async function loadTrainingPage(program) {
         // 4-column grid
         html += '<div class="training-grid">';
 
-        for (const [catKey, catLabel] of Object.entries(TRAINING_CATEGORIES)) {
+        for (const [catKey, catLabel] of Object.entries(CONTENT_RESPONSIBILITY)) {
             const lessons = byCat[catKey] || [];
             const color = catColors[catKey] || 'var(--primary)';
             const bg = catBg[catKey] || 'rgba(0,0,0,0.03)';
@@ -3379,7 +3358,7 @@ async function loadCmgmtContent() {
         let html = '<table class="admin-table"><thead><tr><th>חתך</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
-            const catLabel = TRAINING_CATEGORIES[d.category] || d.category;
+            const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
             const color = catColors[d.category] || '#666';
             html += `<tr>
                 <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
@@ -3465,7 +3444,7 @@ async function loadAdminTrainingContent() {
         let html = '<table class="admin-table"><thead><tr><th>חתך</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
-            const catLabel = TRAINING_CATEGORIES[d.category] || d.category;
+            const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
             const color = catColors[d.category] || '#666';
             html += `<tr>
                 <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
