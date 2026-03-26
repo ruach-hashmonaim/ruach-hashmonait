@@ -159,6 +159,36 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 /* Space panels */
 .cw-space { display:none; }
 .cw-space.active { display:block; animation:cwFadeIn 0.4s ease; }
+
+/* ===== Gamification — Progress & Badges ===== */
+.cw-progress-bar-wrap { background:rgba(255,255,255,0.06); border-radius:12px; padding:14px 18px; margin-bottom:18px; border:1px solid var(--cw-border); }
+.cw-progress-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.cw-progress-header .cw-streak { font-size:0.82rem; color:var(--cw-accent); font-weight:700; }
+.cw-progress-header .cw-total-time { font-size:0.78rem; color:var(--cw-text2); }
+.cw-progress-track { background:rgba(255,255,255,0.08); border-radius:8px; height:10px; overflow:hidden; position:relative; }
+.cw-progress-fill { height:100%; background:linear-gradient(90deg, var(--cw-soft), var(--cw-accent)); border-radius:8px; transition:width 0.6s ease; min-width:2%; }
+.cw-progress-next { font-size:0.72rem; color:var(--cw-text2); margin-top:6px; text-align:left; direction:rtl; }
+
+.cw-badges-wrap { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; justify-content:center; }
+.cw-badge { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid var(--cw-border); min-width:64px; transition:all 0.3s; }
+.cw-badge.earned { background:rgba(201,160,108,0.12); border-color:var(--cw-accent); box-shadow:0 0 12px rgba(201,160,108,0.2); }
+.cw-badge.locked { opacity:0.35; filter:grayscale(1); }
+.cw-badge .badge-icon { font-size:1.5rem; }
+.cw-badge .badge-label { font-size:0.62rem; color:var(--cw-text2); text-align:center; white-space:nowrap; }
+.cw-badge.earned .badge-label { color:var(--cw-accent); font-weight:600; }
+
+.cw-celebration { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; background:var(--cw-card); border:2px solid var(--cw-accent); border-radius:20px; padding:30px 40px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:cwCelebPop 0.5s ease; }
+@keyframes cwCelebPop { 0%{transform:translate(-50%,-50%) scale(0.3);opacity:0} 60%{transform:translate(-50%,-50%) scale(1.05)} 100%{transform:translate(-50%,-50%) scale(1);opacity:1} }
+.cw-celebration .celeb-icon { font-size:3rem; margin-bottom:10px; }
+.cw-celebration .celeb-title { font-size:1.1rem; color:var(--cw-accent); font-weight:700; margin-bottom:6px; }
+.cw-celebration .celeb-desc { font-size:0.82rem; color:var(--cw-text2); margin-bottom:14px; line-height:1.6; }
+.cw-celebration .celeb-close { background:var(--cw-accent); color:#1a1030; border:none; border-radius:8px; padding:8px 24px; font-weight:700; cursor:pointer; font-size:0.85rem; }
+.cw-confetti { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+
+.cw-session-timer { display:flex; align-items:center; gap:6px; font-size:0.75rem; color:var(--cw-text2); margin-bottom:12px; justify-content:center; }
+.cw-session-timer .timer-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; animation:cwPulse 2s infinite; }
+@keyframes cwPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
 @keyframes cwFadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 /* Cards */
 .cw-card { background:var(--cw-card); border:1px solid var(--cw-border); border-radius:var(--cw-radius); padding:22px; margin-bottom:16px; transition:all 0.2s; }
@@ -1207,6 +1237,24 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="cw-anon-badge">🌿 מרחב אנונימי — בלי זיהוי, בלי שמירת מידע</div>
     </div>
 
+    <!-- Gamification: Session Timer + Progress + Badges -->
+    <div class="cw-session-timer" id="cw-session-timer">
+        <span class="timer-dot"></span>
+        <span id="cw-live-timer">00:00</span>
+        <span>בסשן הנוכחי</span>
+    </div>
+    <div class="cw-progress-bar-wrap" id="cw-progress-wrap">
+        <div class="cw-progress-header">
+            <span class="cw-streak" id="cw-streak-display">🔥 רצף: 0 ימים</span>
+            <span class="cw-total-time" id="cw-total-time">סה"כ: 0 דקות</span>
+        </div>
+        <div class="cw-progress-track">
+            <div class="cw-progress-fill" id="cw-progress-fill" style="width:2%"></div>
+        </div>
+        <div class="cw-progress-next" id="cw-progress-next"></div>
+    </div>
+    <div class="cw-badges-wrap" id="cw-badges-wrap"></div>
+
     <!-- 4 Doors -->
     <div class="cw-doors">
         <div class="cw-door active" onclick="cwOpenSpace('videos')">
@@ -1758,6 +1806,12 @@ function navigate(page) {
 }
 
 function activatePage(page) {
+    // Stop CW tracking when leaving internet-safety
+    if (typeof cwStopTracking === 'function' && typeof cwTrackingActive !== 'undefined' && cwTrackingActive) {
+        const goingTo = page.startsWith('survey/') ? 'surveys' : page;
+        if (goingTo !== 'internet-safety') cwStopTracking();
+    }
+
     // Handle deep links: #survey/DOCID
     if (page.startsWith('survey/')) {
         const surveyId = page.split('/')[1];
@@ -1790,7 +1844,16 @@ function activatePage(page) {
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
     if (page === 'content-mgmt') cmgmtProgramChanged();
-    if (page === 'internet-safety') cwInitModule();
+    if (page === 'internet-safety') {
+        // Require login for this module
+        if (!currentUser) {
+            showToast('כדי להיכנס למרחב הפנימי צריך להתחבר קודם 🔑');
+            openUserLoginModal('internet-safety');
+            return;
+        }
+        cwInitModule();
+        cwStartTracking();
+    }
     if (page === 'training') {
         const prog = currentTrainingProgram || 'basic';
         // Build platoon tabs dynamically based on user permissions
@@ -11859,6 +11922,364 @@ function cwCloseVideo() {
     if (player) { player.innerHTML = ''; player.style.display = 'none'; }
     if (list) list.style.display = 'grid';
 }
+
+// ===== שולטים ברשת — Gamification System =====
+
+// --- Milestones Definition ---
+const CW_MILESTONES = {
+    hours: [
+        { id:'h1', hours:1,    icon:'🌱', label:'ניצן',     desc:'שעה ראשונה במרחב — ההתחלה!' },
+        { id:'h2', hours:3,    icon:'🌿', label:'צומח',     desc:'3 שעות של עבודה פנימית' },
+        { id:'h5', hours:5,    icon:'🌳', label:'מתחזק',    desc:'5 שעות — אתה בונה שריר פנימי' },
+        { id:'h10', hours:10,  icon:'⭐', label:'כוכב',     desc:'10 שעות! השקעה אמיתית' },
+        { id:'h15', hours:15,  icon:'🏆', label:'אלוף',     desc:'15 שעות בחודש — פרס פיזי מגיע לך!' },
+        { id:'h25', hours:25,  icon:'💎', label:'יהלום',    desc:'25 שעות — אתה מופת לאחרים' },
+        { id:'h50', hours:50,  icon:'👑', label:'כתר',      desc:'50 שעות — מלך על עצמו' }
+    ],
+    streaks: [
+        { id:'s3',  days:3,  icon:'🔥', label:'3 ימים',    desc:'3 ימים ברצף — מומנטום!' },
+        { id:'s7',  days:7,  icon:'🔥', label:'שבוע שלם',  desc:'שבוע שלם! הרגל נבנה' },
+        { id:'s14', days:14, icon:'💪', label:'שבועיים',    desc:'14 ימים — החוזק הפנימי גדל' },
+        { id:'s21', days:21, icon:'🌟', label:'21 יום',     desc:'21 יום — הרגל חדש נוצר!' },
+        { id:'s30', days:30, icon:'🏅', label:'חודש!',     desc:'חודש שלם ברצף — פרס מיוחד!' }
+    ]
+};
+
+// --- Tracking State ---
+let cwTrackingActive = false;
+let cwSessionStart = null;
+let cwSessionSeconds = 0;
+let cwTickInterval = null;
+let cwSaveInterval = null;
+let cwUserData = null; // { totalMinutes, currentStreak, longestStreak, badges, lastVisitDate, monthlyMinutes }
+
+// --- Start Tracking ---
+async function cwStartTracking() {
+    if (cwTrackingActive) return;
+    cwTrackingActive = true;
+    cwSessionStart = Date.now();
+    cwSessionSeconds = 0;
+
+    // Load user data from Firestore
+    await cwLoadUserData();
+
+    // Update streak
+    cwUpdateStreak();
+
+    // Render UI
+    cwRenderProgress();
+    cwRenderBadges();
+
+    // Start tick (update every second for live timer)
+    cwTickInterval = setInterval(() => {
+        if (document.hidden) return; // Don't count hidden time
+        cwSessionSeconds++;
+        cwUpdateLiveTimer();
+        // Every 60 seconds, save to Firestore
+        if (cwSessionSeconds % 60 === 0) {
+            cwSaveProgress();
+        }
+    }, 1000);
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', cwVisibilityHandler);
+
+    // Save on page unload
+    window.addEventListener('beforeunload', cwSaveOnExit);
+}
+
+function cwStopTracking() {
+    cwTrackingActive = false;
+    if (cwTickInterval) clearInterval(cwTickInterval);
+    if (cwSaveInterval) clearInterval(cwSaveInterval);
+    cwTickInterval = null;
+    cwSaveInterval = null;
+    cwSaveProgress();
+    document.removeEventListener('visibilitychange', cwVisibilityHandler);
+    window.removeEventListener('beforeunload', cwSaveOnExit);
+}
+
+function cwVisibilityHandler() {
+    // Pause counting when tab is hidden (but keep interval to resume)
+}
+
+function cwSaveOnExit() {
+    cwSaveProgress();
+}
+
+// --- Firestore Load/Save ---
+async function cwLoadUserData() {
+    if (!db || !currentUser) return;
+    try {
+        const userId = currentUser.odot || currentUser.name || 'anon';
+        const docRef = db.collection('cw_progress').doc(userId);
+        const snap = await docRef.get();
+        if (snap.exists) {
+            cwUserData = snap.data();
+        } else {
+            cwUserData = {
+                totalMinutes: 0,
+                currentStreak: 0,
+                longestStreak: 0,
+                badges: [],
+                lastVisitDate: '',
+                monthlyMinutes: {},
+                userName: currentUser.name || ''
+            };
+            await docRef.set(cwUserData);
+        }
+    } catch(e) {
+        console.warn('CW: Failed to load progress', e);
+        cwUserData = { totalMinutes:0, currentStreak:0, longestStreak:0, badges:[], lastVisitDate:'', monthlyMinutes:{} };
+    }
+}
+
+async function cwSaveProgress() {
+    if (!db || !currentUser || !cwUserData) return;
+    try {
+        const userId = currentUser.odot || currentUser.name || 'anon';
+        const sessionMinutes = Math.floor(cwSessionSeconds / 60);
+        const today = new Date().toISOString().split('T')[0];
+        const monthKey = today.substring(0, 7); // YYYY-MM
+
+        // Update totals
+        cwUserData.totalMinutes = (cwUserData.totalMinutes || 0) + sessionMinutes;
+        if (!cwUserData.monthlyMinutes) cwUserData.monthlyMinutes = {};
+        cwUserData.monthlyMinutes[monthKey] = (cwUserData.monthlyMinutes[monthKey] || 0) + sessionMinutes;
+        cwUserData.lastVisitDate = today;
+        cwUserData.userName = currentUser.name || '';
+
+        // Reset session seconds (already counted)
+        cwSessionSeconds = cwSessionSeconds % 60;
+
+        // Check for new badges
+        cwCheckMilestones();
+
+        await db.collection('cw_progress').doc(userId).set(cwUserData, { merge: true });
+
+        // Update UI
+        cwRenderProgress();
+        cwRenderBadges();
+    } catch(e) {
+        console.warn('CW: Failed to save progress', e);
+    }
+}
+
+// --- Streak Logic ---
+function cwUpdateStreak() {
+    if (!cwUserData) return;
+    const today = new Date().toISOString().split('T')[0];
+    const lastVisit = cwUserData.lastVisitDate || '';
+
+    if (lastVisit === today) {
+        // Already visited today, streak stays
+        return;
+    }
+
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (lastVisit === yesterday) {
+        // Consecutive day!
+        cwUserData.currentStreak = (cwUserData.currentStreak || 0) + 1;
+    } else if (lastVisit === '') {
+        // First ever visit
+        cwUserData.currentStreak = 1;
+    } else {
+        // Streak broken
+        cwUserData.currentStreak = 1;
+    }
+
+    if (cwUserData.currentStreak > (cwUserData.longestStreak || 0)) {
+        cwUserData.longestStreak = cwUserData.currentStreak;
+    }
+
+    cwUserData.lastVisitDate = today;
+}
+
+// --- Milestone Checking ---
+function cwCheckMilestones() {
+    if (!cwUserData) return;
+    const totalHours = (cwUserData.totalMinutes || 0) / 60;
+    const streak = cwUserData.currentStreak || 0;
+    const earned = new Set(cwUserData.badges || []);
+    let newBadge = null;
+
+    // Check hour milestones
+    for (const m of CW_MILESTONES.hours) {
+        if (totalHours >= m.hours && !earned.has(m.id)) {
+            earned.add(m.id);
+            newBadge = m;
+        }
+    }
+
+    // Check streak milestones
+    for (const m of CW_MILESTONES.streaks) {
+        if (streak >= m.days && !earned.has(m.id)) {
+            earned.add(m.id);
+            newBadge = m;
+        }
+    }
+
+    cwUserData.badges = Array.from(earned);
+
+    // Celebrate newest badge
+    if (newBadge) {
+        setTimeout(() => cwCelebrate(newBadge), 600);
+    }
+}
+
+// --- Render Progress Bar ---
+function cwRenderProgress() {
+    if (!cwUserData) return;
+    const totalMin = cwUserData.totalMinutes || 0;
+    const totalHours = totalMin / 60;
+    const streak = cwUserData.currentStreak || 0;
+
+    // Update streak display
+    const streakEl = document.getElementById('cw-streak-display');
+    if (streakEl) streakEl.textContent = '🔥 רצף: ' + streak + ' ימים';
+
+    // Update total time
+    const timeEl = document.getElementById('cw-total-time');
+    if (timeEl) {
+        if (totalMin < 60) {
+            timeEl.textContent = 'סה"כ: ' + totalMin + ' דקות';
+        } else {
+            const h = Math.floor(totalHours);
+            const m = totalMin % 60;
+            timeEl.textContent = 'סה"כ: ' + h + ' שעות' + (m > 0 ? ' ו-' + m + ' דקות' : '');
+        }
+    }
+
+    // Find next milestone
+    const nextHourMilestone = CW_MILESTONES.hours.find(m => totalHours < m.hours);
+    const progressFill = document.getElementById('cw-progress-fill');
+    const progressNext = document.getElementById('cw-progress-next');
+
+    if (nextHourMilestone && progressFill) {
+        const prevHours = CW_MILESTONES.hours[CW_MILESTONES.hours.indexOf(nextHourMilestone) - 1]?.hours || 0;
+        const pct = Math.min(100, ((totalHours - prevHours) / (nextHourMilestone.hours - prevHours)) * 100);
+        progressFill.style.width = Math.max(2, pct) + '%';
+    } else if (progressFill) {
+        progressFill.style.width = '100%';
+    }
+
+    if (nextHourMilestone && progressNext) {
+        const remaining = Math.ceil((nextHourMilestone.hours * 60) - totalMin);
+        if (remaining > 60) {
+            progressNext.textContent = nextHourMilestone.icon + ' ' + nextHourMilestone.label + ' — עוד ' + Math.ceil(remaining/60) + ' שעות';
+        } else {
+            progressNext.textContent = nextHourMilestone.icon + ' ' + nextHourMilestone.label + ' — עוד ' + remaining + ' דקות!';
+        }
+    } else if (progressNext) {
+        progressNext.textContent = '👑 השלמת את כל אבני הדרך!';
+    }
+}
+
+// --- Render Badges ---
+function cwRenderBadges() {
+    const wrap = document.getElementById('cw-badges-wrap');
+    if (!wrap || !cwUserData) return;
+    const earned = new Set(cwUserData.badges || []);
+
+    const allMilestones = [
+        ...CW_MILESTONES.hours.map(m => ({ ...m, type:'hours' })),
+        ...CW_MILESTONES.streaks.map(m => ({ ...m, type:'streak' }))
+    ];
+
+    wrap.innerHTML = allMilestones.map(m => {
+        const isEarned = earned.has(m.id);
+        return '<div class="cw-badge ' + (isEarned ? 'earned' : 'locked') + '" title="' + m.desc + '">' +
+            '<span class="badge-icon">' + (isEarned ? m.icon : '🔒') + '</span>' +
+            '<span class="badge-label">' + m.label + '</span>' +
+        '</div>';
+    }).join('');
+}
+
+// --- Live Timer ---
+function cwUpdateLiveTimer() {
+    const el = document.getElementById('cw-live-timer');
+    if (!el) return;
+    const mins = Math.floor(cwSessionSeconds / 60);
+    const secs = cwSessionSeconds % 60;
+    el.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+}
+
+// --- Celebration Popup ---
+function cwCelebrate(milestone) {
+    // Remove existing celebration if any
+    const existing = document.querySelector('.cw-celebration');
+    if (existing) existing.remove();
+
+    const isPhysicalPrize = milestone.id === 'h15' || milestone.id === 'h25' || milestone.id === 'h50' || milestone.id === 's30';
+
+    const div = document.createElement('div');
+    div.className = 'cw-celebration';
+    div.innerHTML = '<div class="celeb-icon">' + milestone.icon + '</div>' +
+        '<div class="celeb-title">כל הכבוד! 🎉</div>' +
+        '<div class="celeb-desc">' + milestone.desc +
+        (isPhysicalPrize ? '<br><strong style="color:var(--cw-accent);">🎁 מגיע לך פרס! פנה למפקד/מחנך</strong>' : '') +
+        '</div>' +
+        '<button class="celeb-close" onclick="this.parentElement.remove()">💪 להמשיך</button>';
+
+    document.body.appendChild(div);
+
+    // Launch confetti
+    cwLaunchConfetti();
+
+    // Auto-close after 6 seconds
+    setTimeout(() => { if (div.parentElement) div.remove(); }, 6000);
+}
+
+// --- Confetti Effect ---
+function cwLaunchConfetti() {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'cw-confetti';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#c9a06c','#8b7ec8','#4ade80','#f59e0b','#ec4899','#60a5fa'];
+    const particles = [];
+    for (let i = 0; i < 80; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            w: Math.random() * 8 + 4,
+            h: Math.random() * 6 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            speed: Math.random() * 3 + 2,
+            angle: Math.random() * Math.PI * 2,
+            spin: (Math.random() - 0.5) * 0.1
+        });
+    }
+
+    let frame = 0;
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        particles.forEach(p => {
+            p.y += p.speed;
+            p.x += Math.sin(p.angle) * 0.5;
+            p.angle += p.spin;
+            if (p.y < canvas.height + 20) alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            ctx.restore();
+        });
+        frame++;
+        if (alive && frame < 180) {
+            requestAnimationFrame(draw);
+        } else {
+            canvas.remove();
+        }
+    }
+    draw();
+}
+
 
 // ===============================
 // SPACE 2: THIEVES — גנבי הדעת
