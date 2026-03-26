@@ -11757,31 +11757,52 @@ function cwInitModule() {
 const CW_VIDEOS = [
     {
         id: 'v1',
-        cat: 'השראה',
-        title: 'סרטון העצמה #1',
-        desc: 'כאן יתווסף סרטון השראה וחיזוק',
-        youtube: '' // YouTube ID placeholder
+        cat: 'כוח פנימי',
+        title: 'איך להתמודד עם חוסר אנרגיה?',
+        desc: 'כשהכוחות נגמרים — איך מתמלאים מחדש',
+        youtube: 'n1jHH0x7zMY'
     },
     {
         id: 'v2',
-        cat: 'פרספקטיבה',
-        title: 'סרטון העצמה #2',
-        desc: 'כאן יתווסף סרטון על חוסן פנימי',
-        youtube: ''
+        cat: 'ביטחון',
+        title: 'זרוק על השם!!',
+        desc: 'הרב יגאל כהן — חיזוק אמיתי לרגעים קשים',
+        youtube: 'Udqf8gFPByw'
     },
     {
         id: 'v3',
-        cat: 'כוח',
-        title: 'סרטון העצמה #3',
-        desc: 'כאן יתווסף סרטון על גבורה אישית',
-        youtube: ''
+        cat: 'שמחה',
+        title: 'איך אני יכול לשמוח כשהלב לא נותן?',
+        desc: 'הרב שניאור אשכנזי — על שמחה אמיתית גם בתוך קושי',
+        youtube: 'TAj7OKuVXHY'
     },
     {
         id: 'v4',
-        cat: 'תקווה',
-        title: 'סרטון העצמה #4',
-        desc: 'כאן יתווסף סרטון על תקווה וצמיחה',
-        youtube: ''
+        cat: 'ביטחון',
+        title: 'בטחון בה\'',
+        desc: 'הרב שניאור אשכנזי — לסמוך על התהליך',
+        youtube: 'bs1JeSEWrGg'
+    },
+    {
+        id: 'v5',
+        cat: 'פרספקטיבה',
+        title: 'למה אלוקים מאתגר אותנו?',
+        desc: 'הרב שניאור אשכנזי — הרבי מדבר אֵלַי',
+        youtube: 'omFwqyVy3iU'
+    },
+    {
+        id: 'v6',
+        cat: 'חיזוק',
+        title: 'רגע של חיזוק',
+        desc: 'קליפ קצר — תזכורת שאתה לא לבד',
+        youtube: 'iHgK07Jw_3E'
+    },
+    {
+        id: 'v7',
+        cat: 'תשובה',
+        title: 'תשוב לה\' מיד — תוריד מעצמך את הכובד',
+        desc: 'נפלת? קום. בלי לשקוע באשמה',
+        youtube: 'qMfD6DGhNeE'
     }
 ];
 
@@ -11790,7 +11811,7 @@ function cwBuildVideos() {
     if (!container) return;
     container.innerHTML = CW_VIDEOS.map(v =>
         `<div class="cw-video-card" onclick="cwPlayVideo('${v.id}')">
-            <div class="cw-video-thumb">
+            <div class="cw-video-thumb" ${v.youtube ? `style="background:url('https://img.youtube.com/vi/${v.youtube}/hqdefault.jpg') center/cover no-repeat;"` : ''}>
                 <div class="play-btn">▶</div>
             </div>
             <div class="cw-video-info">
