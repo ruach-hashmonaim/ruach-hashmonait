@@ -1234,7 +1234,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="cw-header">
         <h1>מרחב פנימי</h1>
         <div class="cw-subtitle">מקום שקט להבין, להרגיש, ולבחור מחדש</div>
-        <div class="cw-anon-badge">🌿 מרחב אנונימי — בלי זיהוי, בלי שמירת מידע</div>
+        <div class="cw-anon-badge">🌿 המרחב שלך — הזמן שלך כאן נספר, התוכן נשאר פרטי</div>
     </div>
 
     <!-- Gamification: Session Timer + Progress + Badges -->
@@ -11956,6 +11956,13 @@ let cwUserData = null; // { totalMinutes, currentStreak, longestStreak, badges, 
 // --- Start Tracking ---
 async function cwStartTracking() {
     if (cwTrackingActive) return;
+    // Ensure Firebase is initialized
+    if (!db) {
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.firestore();
+        } catch(e) { console.warn('cwStartTracking: Firebase init failed', e); }
+    }
     cwTrackingActive = true;
     cwSessionStart = Date.now();
     cwSessionSeconds = 0;
