@@ -910,7 +910,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('learning')" data-page="learning"><span class="nav-icon">&#9702;</span> והגית בו — למידה יומית</a>
         <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> לימוד עברית</a>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> בעקבות הנצח</a>
-        <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת</a>
+        <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת הפנימית</a>
         <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי</a>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
 
@@ -991,7 +991,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </a>
         <a class="home-tile" onclick="navigate('internet-safety')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#475569,#64748B);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
-            <div class="tile-title">שולטים ברשת</div>
+            <div class="tile-title">שולטים ברשת הפנימית</div>
             <div class="tile-desc">כלים להתמודדות עם אתגרי הרשת</div>
         </a>
         <a class="home-tile tile-surveys" onclick="navigate('surveys')">
@@ -1224,7 +1224,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 </div>
 
-<!-- ====== שולטים ברשת — מרחב פנימי v2 ====== -->
+<!-- ====== שולטים ברשת הפנימית — מרחב פנימי v2 ====== -->
 <div class="page-section" id="page-internet-safety">
 <div class="cw-wrap">
     <!-- Quick Exit -->
@@ -1799,7 +1799,7 @@ const PAGE_TITLES = {
     'hebrew': 'לימוד עברית',
     'training': 'רוח מכבי',
     'geography': 'בעקבות הנצח',
-    'internet-safety': 'שולטים ברשת',
+    'internet-safety': 'שולטים ברשת הפנימית',
     'reports': 'מעקב שבועי — צוות חינוכי',
     'surveys': 'סקרים ומשובים',
     'admin': 'ניהול מערכת',
@@ -12208,7 +12208,7 @@ if ('serviceWorker' in navigator) {
 
 
 // =================================================================
-// ===== שולטים ברשת — מרחב פנימי v2 =====
+// ===== שולטים ברשת הפנימית — מרחב פנימי v2 =====
 // =================================================================
 
 // --- Quick Exit ---
@@ -12337,7 +12337,7 @@ function cwCloseVideo() {
     if (list) list.style.display = 'grid';
 }
 
-// ===== שולטים ברשת — Gamification System =====
+// ===== שולטים ברשת הפנימית — Gamification System =====
 
 // --- Milestones Definition ---
 const CW_MILESTONES = {
