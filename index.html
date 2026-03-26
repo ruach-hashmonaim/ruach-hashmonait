@@ -20,6 +20,7 @@
         onerror="var s=document.createElement('script');s.src='firebase/firebase-app-compat.js';document.head.appendChild(s);"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-firestore-compat.js';document.head.appendChild(s);"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script>
     (function(){var s=document.createElement('script');s.src='https://unpkg.com/@hebcal/core@5.4.11/dist/bundle.min.js';s.onerror=function(){};document.head.appendChild(s);})();
     </script>
@@ -651,7 +652,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> Hebrew Learning</a>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> בעקבות הנצח</a>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת</a>
-        <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי</a>
+        <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח חשמונאית</a>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
 
         <!-- Staff-only sections -->
@@ -721,7 +722,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </a>
         <a class="home-tile tile-training" style="display:none;" onclick="navigate('training')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
-            <div class="tile-title">רוח מכבי</div>
+            <div class="tile-title">רוח חשמונאית</div>
             <div class="tile-desc">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</div>
         </a>
         <a class="home-tile" onclick="navigate('hebrew')">
@@ -781,10 +782,10 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 
-<!-- ====== TRAINING — רוח מכבי (unified) ====== -->
+<!-- ====== TRAINING — רוח חשמונאית (unified) ====== -->
 <div class="page-section" id="page-training">
     <div class="card">
-        <div class="card-title">רוח מכבי</div>
+        <div class="card-title">רוח חשמונאית</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</p>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <button class="track-tab active" id="training-prog-basic" onclick="switchTrainingProgram('basic')">הכשרת יסוד</button>
@@ -1029,16 +1030,21 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <h4 style="margin-bottom:8px;">הוספת תוכן חדש</h4>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <select id="cmgmt-cat" title="אחריות על התוכן" style="width:120px;">
-                    <option value="ruach">רוח מכבי</option>
+                    <option value="ruach">רוח חשמונאית</option>
                     <option value="chinuch">חינוך</option>
-                    <option value="mediniyut">מדיניות</option>
                     <option value="rabanut">רבנות</option>
+                    <option value="mediniyut">מדיניות</option>
+                    <option value="other">אחר</option>
                 </select>
                 <input type="text" id="cmgmt-title" placeholder="שם יחידת הלימוד" style="flex:1;min-width:150px;">
                 <input type="text" id="cmgmt-instructor" placeholder="מעביר" style="width:120px;">
                 <input type="number" id="cmgmt-hours" placeholder="שעות" step="0.5" min="0.5" style="width:70px;">
-                <input type="text" id="cmgmt-url" placeholder="קישור (אופציונלי)" style="width:180px;direction:ltr;text-align:left;">
-                <button class="btn-primary btn-sm" onclick="cmgmtAddLesson()">הוסף</button>
+                <input type="text" id="cmgmt-url" placeholder="קישור / YouTube (אופציונלי)" style="width:180px;direction:ltr;text-align:left;">
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+                <label style="font-size:0.85rem;font-weight:600;">📎 קובץ:</label>
+                <input type="file" id="cmgmt-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+                <button class="btn-primary btn-sm" onclick="cmgmtAddLesson()">הוסף תוכן</button>
             </div>
         </div>
     </div>
@@ -1070,8 +1076,21 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                     <input type="email" id="new-user-email" placeholder="user@example.com" style="width:200px;direction:ltr;">
                     <input type="text" id="new-user-password" placeholder="סיסמה" style="width:120px;direction:ltr;">
                     <select id="new-user-role" style="width:160px;">
-                        <optgroup label="מפח״ט">
+                        <option value="">-- בחר תפקיד --</option>
+                        <optgroup label="מנהל מערכת">
+                            <option value="admin_system">מנהל מערכת</option>
+                        </optgroup>
+                        <optgroup label="מפח״ט / חטיבה">
                             <option value="menahel">מנהל מפח"ט</option>
+                            <option value="mhat">מח"ט</option>
+                            <option value="raan_mediniyut">רע"ן מדיניות</option>
+                            <option value="rav_hativa">רב חטיבה</option>
+                            <option value="katzin_chinuch_hativa">קצין חינוך חטיבה</option>
+                        </optgroup>
+                        <optgroup label="רוח חשמונאית">
+                            <option value="ruach_menahel">מנהל</option>
+                            <option value="ruach_manheh">מנחה</option>
+                            <option value="ruach_ram">ר"מ פלוגתי</option>
                         </optgroup>
                         <optgroup label="בה״ד">
                             <option value="magad">מג"ד</option>
@@ -1084,6 +1103,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                             <option value="sgan_rav">סגן רב הבה"ד</option>
                             <option value="katzin_mediniyut">קצין מדיניות</option>
                         </optgroup>
+                        <optgroup label="גדוד יונתן">
+                            <option value="magad_yonatan">מג"ד יונתן</option>
+                            <option value="sgan_magad_yonatan">סגן מג"ד יונתן</option>
+                            <option value="mefaked_pluga_yonatan">מ"פ יונתן</option>
+                        </optgroup>
                         <optgroup label="פלוגה">
                             <option value="mefaked_pluga">מ"פ</option>
                             <option value="samap">סמ"פ</option>
@@ -1095,10 +1119,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                         </optgroup>
                     </select>
                     <select id="new-user-framework" style="width:140px;">
+                        <option value="">-- בחר מסגרת --</option>
                         <option value="maccabim">בה"ד מכבים</option>
                         <option value="yonatan">גדוד יונתן</option>
                         <option value="shimon">גדוד שמעון</option>
                         <option value="mifhat">מפח"ט</option>
+                        <option value="ruach">רוח חשמונאית</option>
                     </select>
                     <select id="new-user-pluga" style="width:100px;">
                         <option value="">ללא פלוגה</option>
@@ -1188,16 +1214,21 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <h4 style="margin-bottom:8px;">הוספת תוכן חדש</h4>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <select id="admin-lesson-cat" title="אחריות על התוכן" style="width:120px;">
-                        <option value="ruach">רוח מכבי</option>
+                        <option value="ruach">רוח חשמונאית</option>
                         <option value="chinuch">חינוך</option>
-                        <option value="mediniyut">מדיניות</option>
                         <option value="rabanut">רבנות</option>
+                        <option value="mediniyut">מדיניות</option>
+                        <option value="other">אחר</option>
                     </select>
                     <input type="text" id="admin-lesson-title" placeholder="שם יחידת הלימוד" style="flex:1;min-width:150px;">
                     <input type="text" id="admin-lesson-instructor" placeholder="מעביר" style="width:120px;">
                     <input type="number" id="admin-lesson-hours" placeholder="שעות" step="0.5" min="0.5" style="width:70px;">
-                    <input type="text" id="admin-lesson-url" placeholder="קישור (אופציונלי)" style="width:180px;direction:ltr;text-align:left;">
-                    <button class="btn-primary btn-sm" onclick="adminAddLesson()">הוסף</button>
+                    <input type="text" id="admin-lesson-url" placeholder="קישור / YouTube (אופציונלי)" style="width:180px;direction:ltr;text-align:left;">
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+                    <label style="font-size:0.85rem;font-weight:600;">📎 קובץ:</label>
+                    <input type="file" id="admin-lesson-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+                    <button class="btn-primary btn-sm" onclick="adminAddLesson()">הוסף תוכן</button>
                 </div>
             </div>
         </div>
@@ -1239,6 +1270,7 @@ const FIREBASE_CONFIG = {
 
 const PROXY_URL = 'https://api.ruach-hashmonaim.org';
 let db = null;
+let storage = null;
 // auth removed — using Email OTP instead of Firebase Phone Auth
 let currentUser = null;
 
@@ -1246,8 +1278,14 @@ let currentUser = null;
 // ROLES & PERMISSIONS
 // ============================================================
 const ROLES = {
+    // מנהל מערכת
+    'admin_system':     { label:'מנהל מערכת',        level:6, canAddContent:true, canMarkCompletion:true },
     // מפח"ט level
     'menahel':          { label:'מנהל מפח"ט',       level:5, canAddContent:true, canMarkCompletion:true },
+    'mhat':             { label:'מח"ט',              level:5, canAddContent:false, canMarkCompletion:true },
+    'raan_mediniyut':   { label:'רע"ן מדיניות',      level:5, canAddContent:true, canMarkCompletion:true },
+    'rav_hativa':       { label:'רב חטיבה',          level:5, canAddContent:false, canMarkCompletion:true },
+    'katzin_chinuch_hativa': { label:'קצין חינוך חטיבה', level:5, canAddContent:true, canMarkCompletion:true },
     // בה"ד level
     'magad':            { label:'מג"ד',              level:4, canAddContent:false, canMarkCompletion:true },
     'katzin_chinuch':   { label:'קצין חינוך',        level:4, canAddContent:true, canMarkCompletion:true },
@@ -1258,6 +1296,14 @@ const ROLES = {
     'rav':              { label:'רב הבה"ד',          level:4, canAddContent:false, canMarkCompletion:true },
     'sgan_rav':         { label:'סגן רב הבה"ד',     level:3, canAddContent:false, canMarkCompletion:true },
     'katzin_mediniyut': { label:'קצין מדיניות',      level:4, canAddContent:false, canMarkCompletion:true },
+    // רוח חשמונאית
+    'ruach_menahel':    { label:'מנהל רוח חשמונאית', level:5, canAddContent:true, canMarkCompletion:true },
+    'ruach_manheh':     { label:'מנחה רוח חשמונאית', level:4, canAddContent:true, canMarkCompletion:true },
+    'ruach_ram':        { label:'ר"מ פלוגתי',        level:3, canAddContent:true, canMarkCompletion:true },
+    // גדוד יונתן
+    'magad_yonatan':    { label:'מג"ד יונתן',        level:4, canAddContent:false, canMarkCompletion:true },
+    'sgan_magad_yonatan':{ label:'סגן מג"ד יונתן',   level:3, canAddContent:false, canMarkCompletion:true },
+    'mefaked_pluga_yonatan':{ label:'מ"פ יונתן',     level:3, canAddContent:false, canMarkCompletion:true },
     // פלוגה level
     'mefaked_pluga':    { label:'מ"פ',               level:3, canAddContent:false, canMarkCompletion:true },
     'samap':            { label:'סמ"פ',              level:2, canAddContent:false, canMarkCompletion:false },
@@ -1278,7 +1324,8 @@ const FRAMEWORKS = {
     'yonatan':  'גדוד יונתן',
     'shimon':   'גדוד שמעון',
     'maccabim': 'בה"ד מכבים',
-    'mifhat':   'מפח"ט'
+    'mifhat':   'מפח"ט',
+    'ruach':    'רוח חשמונאית'
 };
 
 function userLevel() { return ROLES[currentUser?.role]?.level || 0; }
@@ -1364,7 +1411,7 @@ const PAGE_TITLES = {
     'home': 'דף הבית',
     'learning': 'והגית בו — למידה יומית',
     'hebrew': 'Hebrew Learning',
-    'training': 'רוח מכבי',
+    'training': 'רוח חשמונאית',
     'geography': 'בעקבות הנצח',
     'internet-safety': 'שולטים ברשת',
     'reports': 'מעקב שבועי — צוות חינוכי',
@@ -2150,8 +2197,9 @@ const TRAINING_TRACKS = {
 const CONTENT_RESPONSIBILITY = {
     'ruach':    'רוח חשמונאית',
     'chinuch':  'חינוך',
+    'rabanut':  'רבנות',
     'mediniyut':'מדיניות',
-    'rabanut':  'רבנות'
+    'other':    'אחר'
 };
 const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
 let currentTrainingProgram = 'basic';
@@ -2275,7 +2323,7 @@ async function loadTrainingPage(program) {
         let statusQuery = db.collection('training_completion').where('program','==',program).where('week','==',week);
         const statusSnap = await statusQuery.get();
         const statusMap = {};
-        statusSnap.forEach(doc => { const d = doc.data(); statusMap[`${d.lessonId}_${d.platoon}`] = d; });
+        statusSnap.forEach(doc => { const d = doc.data(); statusMap[`${d.lessonId}_${d.platoon}`] = { ...d, _docId: doc.id }; });
 
         // Collect all lessons as flat list (up to 3 per week)
         const lessons = [];
@@ -2284,7 +2332,7 @@ async function loadTrainingPage(program) {
         });
 
         // Category colors for responsibility badges
-        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
 
         const trackLabel = track ? (TRAINING_TRACKS[track] || track) : '';
         const plugaLabel = hasPluga ? (TRAINING_TRACKS[plugaTrack] || '') : '';
@@ -2305,28 +2353,36 @@ async function loadTrainingPage(program) {
                 const catLabel = CONTENT_RESPONSIBILITY[lesson.category] || lesson.category || '';
                 const color = catColors[lesson.category] || '#666';
 
-                // Completion HTML
+                // תכנון מול ביצוע - Completion HTML
                 let completionHtml = '';
                 if (hasPluga && plugaLetter) {
                     const key = `${lesson.id}_${plugaLetter}`;
-                    const done = statusMap[key];
+                    const rec = statusMap[key] || {};
+                    const done = rec.completed;
                     const doneClass = done ? 'done' : '';
                     const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}',${!done})"` : '';
-                    const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
-                    completionHtml = `<span class="completion-badge ${doneClass}" ${canMark ? 'style="cursor:pointer;"' : ''} ${clickHandler} ${tooltip}>
-                        ${done ? '✓ בוצע' : '○ טרם בוצע'}
-                    </span>`;
+                    const tooltip = done ? `title="סומן ע״י ${rec.markedBy||'—'}"` : '';
+                    completionHtml = `<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                        <span class="completion-badge ${doneClass}" ${canMark ? 'style="cursor:pointer;"' : ''} ${clickHandler} ${tooltip}>
+                            ${done ? '✓ בוצע' : '○ לא בוצע'}
+                        </span>
+                        ${rec.notes ? `<div style="font-size:0.78rem;color:var(--text-secondary);max-width:200px;text-align:left;">💬 ${rec.notes}</div>` : ''}
+                        ${rec.fileUrl ? `<a href="${rec.fileUrl}" target="_blank" style="font-size:0.78rem;color:var(--primary-lighter);">📄 קובץ מצורף</a>` : ''}
+                        ${canMark ? `<button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionDetails('${lesson.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}')">📝 פרטי ביצוע</button>` : ''}
+                    </div>`;
                 } else {
                     completionHtml = `<div class="training-col-platoons" style="margin-top:8px;">
                         ${PLATOONS.map(p => {
                             const key = `${lesson.id}_${p}`;
-                            const done = statusMap[key];
+                            const rec = statusMap[key] || {};
+                            const done = rec.completed;
                             const doneClass = done ? 'done' : '';
                             const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${plugaTrack||''}','${p}',${!done})"` : '';
-                            const tooltip = done ? `title="סומן ע״י ${done.markedBy||'—'}"` : '';
-                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳</span>`;
+                            const tooltip = done ? `title="${rec.markedBy||'—'}${rec.notes ? ' | ' + rec.notes : ''}"` : '';
+                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳${rec.fileUrl ? '📎' : ''}</span>`;
                         }).join('')}
-                    </div>`;
+                    </div>
+                    ${canMark && lvl >= 4 ? `<div style="margin-top:4px;text-align:left;"><button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionOverview('${lesson.id}','${program}',${week},'${plugaTrack||''}')">📋 סקירת ביצוע</button></div>` : ''}`;
                 }
 
                 html += `<div class="card" style="border-right:4px solid ${color};padding:16px;">
@@ -2343,7 +2399,8 @@ async function loadTrainingPage(program) {
                             ${completionHtml}
                         </div>
                     </div>
-                    ${lesson.url ? `<a href="${lesson.url}" target="_blank" style="display:inline-block;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;">📎 קישור לתוכן ←</a>` : ''}
+                    ${lesson.fileUrl ? `<a href="${lesson.fileUrl}" target="_blank" style="display:inline-block;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;">📄 ${lesson.fileName || 'קובץ מצורף'} ←</a>` : ''}
+                    ${lesson.url ? renderContentLink(lesson.url) : ''}
                 </div>`;
             }
             html += '</div>';
@@ -3305,6 +3362,130 @@ function selectTrainingWeek(program, week) {
     loadTrainingPage(program);
 }
 
+// --- Link preview helper ---
+function renderContentLink(url) {
+    if (!url) return '';
+    // YouTube embed preview
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) {
+        return `<div style="margin-top:10px;">
+            <a href="${url}" target="_blank" style="font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;">🎬 סרטון YouTube ←</a>
+            <div style="margin-top:6px;border-radius:8px;overflow:hidden;max-width:320px;">
+                <iframe width="320" height="180" src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen style="border-radius:8px;"></iframe>
+            </div>
+        </div>`;
+    }
+    // Google Drive preview
+    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+        return `<a href="${url}" target="_blank" style="display:inline-block;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;">📁 Google Drive ←</a>`;
+    }
+    // Generic link
+    return `<a href="${url}" target="_blank" style="display:inline-block;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;">📎 קישור לתוכן ←</a>`;
+}
+
+// --- תכנון מול ביצוע: Execution details modal ---
+function openExecutionDetails(lessonId, program, week, track, platoon) {
+    const docId = `${program}_${week}_${track||'none'}_${lessonId}_${platoon}`;
+    // Load current data
+    db.collection('training_completion').doc(docId).get().then(doc => {
+        const data = doc.exists ? doc.data() : {};
+        const modal = document.createElement('div');
+        modal.id = 'exec-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:420px;width:90%;direction:rtl;max-height:80vh;overflow-y:auto;">
+            <h3 style="margin-bottom:14px;color:var(--primary);">📋 תכנון מול ביצוע — פלוגה ${platoon}׳</h3>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div>
+                    <label style="font-weight:600;font-size:0.9rem;">סטטוס:</label>
+                    <div style="display:flex;gap:8px;margin-top:4px;">
+                        <button id="exec-done-btn" class="btn-sm ${data.completed ? 'btn-primary' : 'btn-secondary'}" onclick="this.classList.add('btn-primary');this.classList.remove('btn-secondary');document.getElementById('exec-notdone-btn').classList.remove('btn-primary');document.getElementById('exec-notdone-btn').classList.add('btn-secondary');">✓ בוצע</button>
+                        <button id="exec-notdone-btn" class="btn-sm ${!data.completed ? 'btn-primary' : 'btn-secondary'}" onclick="this.classList.add('btn-primary');this.classList.remove('btn-secondary');document.getElementById('exec-done-btn').classList.remove('btn-primary');document.getElementById('exec-done-btn').classList.add('btn-secondary');">✗ לא בוצע</button>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:0.9rem;">הערות:</label>
+                    <textarea id="exec-notes" rows="3" style="width:100%;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px;font-family:inherit;resize:vertical;">${data.notes || ''}</textarea>
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:0.9rem;">העלאת קובץ (תוכן שהועבר):</label>
+                    <input type="file" id="exec-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="margin-top:4px;font-size:0.85rem;">
+                    ${data.fileUrl ? `<div style="margin-top:4px;"><a href="${data.fileUrl}" target="_blank" style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ קיים: ${data.fileName || 'הורד'}</a></div>` : ''}
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-start;margin-top:8px;">
+                    <button class="btn-primary btn-sm" onclick="saveExecutionDetails('${docId}','${lessonId}','${program}',${week},'${track}','${platoon}')">שמור</button>
+                    <button class="btn-secondary btn-sm" onclick="document.getElementById('exec-modal').remove()">ביטול</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    });
+}
+
+async function saveExecutionDetails(docId, lessonId, program, week, track, platoon) {
+    const completed = document.getElementById('exec-done-btn').classList.contains('btn-primary');
+    const notes = document.getElementById('exec-notes').value.trim();
+    const fileInput = document.getElementById('exec-file');
+
+    try {
+        const updateData = {
+            lessonId, program, week: parseInt(week), track: track || '', platoon,
+            completed, notes,
+            markedBy: currentUser.name, markedAt: new Date()
+        };
+
+        // Upload file if selected
+        if (fileInput.files.length > 0 && storage) {
+            const file = fileInput.files[0];
+            const path = `completion_files/${docId}_${Date.now()}_${file.name}`;
+            const ref = storage.ref(path);
+            showToast('מעלה קובץ...');
+            const snap = await ref.put(file);
+            updateData.fileUrl = await snap.ref.getDownloadURL();
+            updateData.fileName = file.name;
+        }
+
+        await db.collection('training_completion').doc(docId).set(updateData, { merge: true });
+        document.getElementById('exec-modal').remove();
+        showToast(completed ? '✓ סומן כבוצע' : 'עודכן');
+        loadTrainingPage(program);
+    } catch(e) { showToast('שגיאה: ' + (e.message || '')); console.error(e); }
+}
+
+function openExecutionOverview(lessonId, program, week, track) {
+    // Show overview of all platoons for this lesson
+    const prefix = `${program}_${week}_${track||'none'}_${lessonId}_`;
+    db.collection('training_completion').where('lessonId','==',lessonId).where('program','==',program).where('week','==',parseInt(week)).get().then(snap => {
+        const data = {};
+        snap.forEach(doc => { const d = doc.data(); data[d.platoon] = d; });
+        const modal = document.createElement('div');
+        modal.id = 'exec-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+        let rows = PLATOONS.map(p => {
+            const d = data[p] || {};
+            const statusIcon = d.completed ? '✓' : '✗';
+            const statusColor = d.completed ? '#059669' : '#DC2626';
+            return `<tr>
+                <td style="font-weight:600;">פלוגה ${p}׳</td>
+                <td style="color:${statusColor};font-weight:700;">${statusIcon} ${d.completed ? 'בוצע' : 'לא בוצע'}</td>
+                <td style="font-size:0.82rem;">${d.notes || '—'}</td>
+                <td>${d.fileUrl ? `<a href="${d.fileUrl}" target="_blank" style="font-size:0.8rem;">📄 ${d.fileName || 'קובץ'}</a>` : '—'}</td>
+                <td style="font-size:0.78rem;color:var(--text-secondary);">${d.markedBy || '—'}</td>
+            </tr>`;
+        }).join('');
+        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:600px;width:95%;direction:rtl;max-height:80vh;overflow-y:auto;">
+            <h3 style="margin-bottom:14px;color:var(--primary);">📋 סקירת ביצוע — כל הפלוגות</h3>
+            <table class="admin-table" style="font-size:0.85rem;">
+                <thead><tr><th>פלוגה</th><th>סטטוס</th><th>הערות</th><th>קובץ</th><th>סומן ע״י</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div style="margin-top:14px;text-align:center;"><button class="btn-secondary btn-sm" onclick="document.getElementById('exec-modal').remove()">סגור</button></div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    });
+}
+
 async function togglePlatoonStatus(lessonId, program, week, track, platoon, completed) {
     if (!db || !currentUser) return;
     const docId = `${program}_${week}_${track||'none'}_${lessonId}_${platoon}`;
@@ -3313,9 +3494,13 @@ async function togglePlatoonStatus(lessonId, program, week, track, platoon, comp
             await db.collection('training_completion').doc(docId).set({
                 lessonId, program, week, track: track || '', platoon,
                 completed: true, markedBy: currentUser.name, markedAt: new Date()
-            });
+            }, { merge: true });
         } else {
-            await db.collection('training_completion').doc(docId).delete();
+            // Don't delete — just mark as not completed, preserving notes/files
+            await db.collection('training_completion').doc(docId).set({
+                lessonId, program, week, track: track || '', platoon,
+                completed: false, markedBy: currentUser.name, markedAt: new Date()
+            }, { merge: true });
         }
         loadTrainingPage(program);
     } catch(e) { showToast('שגיאה'); console.error(e); }
@@ -3348,18 +3533,21 @@ async function loadCmgmtContent() {
             container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
             return;
         }
-        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
-        let html = '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>פעולות</th></tr></thead><tbody>';
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
+        let html = '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור / קובץ</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
             const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
             const color = catColors[d.category] || '#666';
+            let linkHtml = '—';
+            if (d.fileUrl) linkHtml = `<a href="${d.fileUrl}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName || 'קובץ'}</a>`;
+            if (d.url) linkHtml += (d.fileUrl ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
             html += `<tr>
                 <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
                 <td>${d.title}</td>
                 <td>${d.instructor || '—'}</td>
                 <td>${d.hours || '—'}</td>
-                <td>${d.url ? '<a href="'+d.url+'" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">קישור</a>' : '—'}</td>
+                <td>${linkHtml}</td>
                 <td><button class="btn-sm btn-danger" onclick="cmgmtDeleteLesson('${doc.id}')">מחק</button></td>
             </tr>`;
         });
@@ -3377,19 +3565,32 @@ async function cmgmtAddLesson() {
     const instructor = document.getElementById('cmgmt-instructor').value.trim();
     const hours = parseFloat(document.getElementById('cmgmt-hours').value) || 0;
     const url = document.getElementById('cmgmt-url').value.trim();
+    const fileInput = document.getElementById('cmgmt-file');
     if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
     try {
-        await db.collection('training_content').add({
+        const docData = {
             program: prog, week, track,
             category, title, instructor, hours, url,
             createdBy: currentUser.name, createdAt: new Date(),
             order: Date.now()
-        });
+        };
+        // Upload file if selected
+        if (fileInput && fileInput.files.length > 0 && storage) {
+            const file = fileInput.files[0];
+            const path = `content_files/${prog}_${week}_${Date.now()}_${file.name}`;
+            showToast('מעלה קובץ...');
+            const ref = storage.ref(path);
+            const snap = await ref.put(file);
+            docData.fileUrl = await snap.ref.getDownloadURL();
+            docData.fileName = file.name;
+        }
+        await db.collection('training_content').add(docData);
         showToast('תוכן נוסף');
         document.getElementById('cmgmt-title').value = '';
         document.getElementById('cmgmt-instructor').value = '';
         document.getElementById('cmgmt-hours').value = '';
         document.getElementById('cmgmt-url').value = '';
+        if (fileInput) fileInput.value = '';
         loadCmgmtContent();
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
@@ -3434,18 +3635,21 @@ async function loadAdminTrainingContent() {
             container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
             return;
         }
-        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706' };
-        let html = '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>פעולות</th></tr></thead><tbody>';
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
+        let html = '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור / קובץ</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
             const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
             const color = catColors[d.category] || '#666';
+            let linkHtml = '—';
+            if (d.fileUrl) linkHtml = `<a href="${d.fileUrl}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName || 'קובץ'}</a>`;
+            if (d.url) linkHtml += (d.fileUrl ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
             html += `<tr>
                 <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
                 <td>${d.title}</td>
                 <td>${d.instructor || '—'}</td>
                 <td>${d.hours || '—'}</td>
-                <td>${d.url ? '<a href="'+d.url+'" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">קישור</a>' : '—'}</td>
+                <td>${linkHtml}</td>
                 <td><button class="btn-sm btn-danger" onclick="adminDeleteLesson('${doc.id}')">מחק</button></td>
             </tr>`;
         });
@@ -3463,19 +3667,31 @@ async function adminAddLesson() {
     const instructor = document.getElementById('admin-lesson-instructor').value.trim();
     const hours = parseFloat(document.getElementById('admin-lesson-hours').value) || 0;
     const url = document.getElementById('admin-lesson-url').value.trim();
+    const fileInput = document.getElementById('admin-lesson-file');
     if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
     try {
-        await db.collection('training_content').add({
+        const docData = {
             program: prog, week, track,
             category, title, instructor, hours, url,
             createdBy: currentUser.name, createdAt: new Date(),
             order: Date.now()
-        });
+        };
+        if (fileInput && fileInput.files.length > 0 && storage) {
+            const file = fileInput.files[0];
+            const path = `content_files/${prog}_${week}_${Date.now()}_${file.name}`;
+            showToast('מעלה קובץ...');
+            const ref = storage.ref(path);
+            const snap = await ref.put(file);
+            docData.fileUrl = await snap.ref.getDownloadURL();
+            docData.fileName = file.name;
+        }
+        await db.collection('training_content').add(docData);
         showToast('תוכן נוסף');
         document.getElementById('admin-lesson-title').value = '';
         document.getElementById('admin-lesson-instructor').value = '';
         document.getElementById('admin-lesson-hours').value = '';
         document.getElementById('admin-lesson-url').value = '';
+        if (fileInput) fileInput.value = '';
         loadAdminTrainingContent();
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
@@ -3828,7 +4044,10 @@ async function addUser() {
     const role = document.getElementById('new-user-role').value;
     const framework = document.getElementById('new-user-framework').value;
     const pluga = document.getElementById('new-user-pluga')?.value || '';
-    if (!name || !email || !email.includes('@')) { showToast('יש למלא שם ומייל תקין'); return; }
+    if (!name) { showToast('יש למלא שם'); return; }
+    if (!email || !email.includes('@')) { showToast('יש למלא מייל תקין'); return; }
+    if (!role) { showToast('יש לבחור תפקיד'); return; }
+    if (!framework) { showToast('יש לבחור מסגרת'); return; }
     try {
         const userData = { name, email, role, framework, pluga, createdAt: new Date() };
         if (password) {
@@ -3839,8 +4058,10 @@ async function addUser() {
         document.getElementById('new-user-name').value = '';
         document.getElementById('new-user-email').value = '';
         document.getElementById('new-user-password').value = '';
+        document.getElementById('new-user-role').value = '';
+        document.getElementById('new-user-framework').value = '';
         loadAdminUsers();
-    } catch(e) { showToast('שגיאה בהוספת משתמש'); console.error(e); }
+    } catch(e) { showToast('שגיאה: ' + (e.message || 'בעיה בהוספת משתמש')); console.error('addUser error:', e); }
 }
 
 async function editUserRole(docId) {
@@ -4091,6 +4312,7 @@ async function initApp() {
         if (!ready) { console.warn('Firebase not loaded'); return; }
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.firestore();
+        if (firebase.storage) storage = firebase.storage();
     } catch(e) { console.error('Init error:', e); }
 }
 
