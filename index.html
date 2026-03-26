@@ -134,17 +134,17 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .guest-bar { background:linear-gradient(135deg,var(--accent),var(--accent-light)); color:var(--primary); padding:8px 20px; text-align:center; font-size:0.82rem; font-weight:600; display:none; position:fixed; top:0; left:0; right:0; z-index:400; margin-right:var(--sidebar-w); }
 .guest-bar a { color:var(--primary); text-decoration:underline; cursor:pointer; font-weight:700; margin-right:8px; }
 
-/* ===== שולטים ברשת — לוחמת תודעה ===== */
-/* Dark military theme */
-#page-internet-safety { --cw-bg: #0a0f1a; --cw-card: #131b2e; --cw-card2: #1a2540; --cw-border: #2a3654; --cw-gold: #c9a227; --cw-gold-dim: rgba(201,162,39,0.15); --cw-text: #e2e8f0; --cw-text2: #8899aa; --cw-blue: #3b82f6; --cw-green: #22c55e; --cw-red: #ef4444; --cw-radius: 12px; }
+/* ===== שולטים ברשת — מרחב פנימי ===== */
+/* Warm calming inner-space theme */
+#page-internet-safety { --cw-bg: #141220; --cw-card: #1c1930; --cw-card2: #221f38; --cw-border: #332f4a; --cw-gold: #d4a574; --cw-gold-dim: rgba(212,165,116,0.12); --cw-text: #e8e4f0; --cw-text2: #9992aa; --cw-blue: #7c8cf0; --cw-green: #5ec9a0; --cw-red: #ef6b6b; --cw-radius: 14px; }
 #page-internet-safety { background:var(--cw-bg); margin:-20px -24px; padding:0; min-height:calc(100vh - 60px); }
 .cw-wrap { max-width:800px; margin:0 auto; padding:24px 20px 60px; }
 /* Quick exit */
-.cw-exit-btn { position:fixed; bottom:20px; left:20px; z-index:999; background:var(--cw-red); color:#fff; border:none; border-radius:50%; width:48px; height:48px; font-size:1.4rem; cursor:pointer; box-shadow:0 4px 20px rgba(239,68,68,0.4); transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
-.cw-exit-btn:hover { transform:scale(1.1); box-shadow:0 6px 30px rgba(239,68,68,0.6); }
+.cw-exit-btn { position:fixed; bottom:20px; left:20px; z-index:999; background:rgba(120,110,140,0.7); color:#fff; border:none; border-radius:50%; width:44px; height:44px; font-size:1.2rem; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,0.3); transition:all 0.2s; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); }
+.cw-exit-btn:hover { transform:scale(1.1); box-shadow:0 6px 24px rgba(0,0,0,0.4); background:rgba(140,130,160,0.85); }
 /* Header */
 .cw-header { text-align:center; padding:32px 0 24px; border-bottom:1px solid var(--cw-border); margin-bottom:28px; }
-.cw-header h1 { font-size:1.6rem; color:var(--cw-gold); font-weight:800; letter-spacing:1px; margin-bottom:6px; }
+.cw-header h1 { font-size:1.5rem; color:var(--cw-gold); font-weight:600; letter-spacing:0; margin-bottom:8px; }
 .cw-header .cw-subtitle { font-size:0.88rem; color:var(--cw-text2); line-height:1.7; }
 .cw-anon-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); color:var(--cw-green); padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600; margin-top:10px; }
 /* Module navigation */
@@ -1213,40 +1213,40 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
     <!-- Header -->
     <div class="cw-header">
-        <h1>לוחמת תודעה</h1>
-        <div class="cw-subtitle">לשלוט במרחב הפנימי — מתקן אימונים תודעתי</div>
-        <div class="cw-anon-badge">🛡️ מרחב אנונימי ומוגן — אין זיהוי, אין שמירת מידע</div>
+        <h1>מרחב פנימי</h1>
+        <div class="cw-subtitle">רגע של שקט — מקום להבין, לנשום, ולגדול מבפנים</div>
+        <div class="cw-anon-badge">🌿 מרחב אנונימי ושקט — בלי זיהוי, בלי שמירת מידע</div>
     </div>
 
     <!-- Module Navigation -->
     <div class="cw-nav">
         <div class="cw-nav-btn active" onclick="cwSwitchModule('osint')">
-            <span class="cw-nav-icon">🔍</span>
-            <span class="cw-nav-label">מודיעין גלוי</span>
-            <span class="cw-nav-sub">חקירת התעשייה</span>
+            <span class="cw-nav-icon">💡</span>
+            <span class="cw-nav-label">להבין את המנגנון</span>
+            <span class="cw-nav-sub">ידע זה חופש</span>
         </div>
         <div class="cw-nav-btn" onclick="cwSwitchModule('reflect')">
             <span class="cw-nav-icon">🪞</span>
-            <span class="cw-nav-label">הערכת מצב</span>
-            <span class="cw-nav-sub">רפלקציה חופשית</span>
+            <span class="cw-nav-label">מה עובר עליי</span>
+            <span class="cw-nav-sub">רפלקציה אישית</span>
         </div>
         <div class="cw-nav-btn" onclick="cwSwitchModule('scenario')">
-            <span class="cw-nav-icon">🎯</span>
-            <span class="cw-nav-label">סימולטור שטח</span>
-            <span class="cw-nav-sub">תרחישי החלטות</span>
+            <span class="cw-nav-icon">🔀</span>
+            <span class="cw-nav-label">רגעי בחירה</span>
+            <span class="cw-nav-sub">תרגול מצבים</span>
         </div>
         <div class="cw-nav-btn" onclick="cwSwitchModule('toolkit')">
-            <span class="cw-nav-icon">🧰</span>
-            <span class="cw-nav-label">פק״ל כיסים</span>
-            <span class="cw-nav-sub">כלים לנפש</span>
+            <span class="cw-nav-icon">🧘</span>
+            <span class="cw-nav-label">ארגז כלים</span>
+            <span class="cw-nav-sub">כלים מעשיים</span>
         </div>
     </div>
 
     <!-- ===== MODULE 1: OSINT ===== -->
     <div class="cw-module active" id="cw-mod-osint">
         <div class="cw-card">
-            <div class="cw-card-title">🔍 תיק חקירה: מודיעין גלוי</div>
-            <div class="cw-card-text">אתה עומד לחקור את אחת המכונות הרווחיות בעולם — <strong>תעשיית הקשב</strong>. המשימה: לגלות איך הרשתות והפלטפורמות מהנדסות את התודעה שלך, ולמה אתה לא "חלש" — אתה מתמודד מול מערכת שתוכננה לנצח.</div>
+            <div class="cw-card-title">💡 בוא נבין: איך זה באמת עובד</div>
+            <div class="cw-card-text">מה באמת קורה כשאתה גולל, צופה, נשאר עוד רגע? בוא נגלה ביחד איך הרשתות והפלטפורמות עובדות — ולמה זה לא עניין של חוזק או חולשה, אלא של מערכת שתוכננה בדיוק בשביל זה.</div>
         </div>
         <div id="cw-osint-steps"></div>
     </div>
@@ -1254,7 +1254,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- ===== MODULE 2: REFLECTION ===== -->
     <div class="cw-module" id="cw-mod-reflect">
         <div class="cw-card">
-            <div class="cw-card-title">🪞 הערכת מצב חופשית</div>
+            <div class="cw-card-title">🪞 מה עובר עליי עכשיו</div>
             <div class="cw-card-text">מרחב בטוח לבדוק מה קורה בפנים. <strong>שום דבר לא נשמר</strong> — לא בשרת, לא במכשיר. ברגע שתצא מהעמוד, הכל נמחק. המטרה: לתת שם לתחושה, בלי שיפוט.</div>
         </div>
         <div class="cw-zero-data">🔒 Zero-Data: אף מילה שתכתוב כאן לא נשמרת בשום מקום</div>
@@ -1269,7 +1269,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="cw-zero-data">🔒 הטקסט הזה קיים רק על המסך שלך — ברגע שתצא הוא נעלם</div>
         </div>
         <div style="text-align:center;margin:16px 0;">
-            <button class="cw-btn cw-btn-blue" onclick="cwShowMirror()">הראה לי מראה</button>
+            <button class="cw-btn cw-btn-blue" onclick="cwShowMirror()">הראה לי</button>
         </div>
         <div id="cw-mirror-area"></div>
     </div>
@@ -1277,8 +1277,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- ===== MODULE 3: SCENARIOS ===== -->
     <div class="cw-module" id="cw-mod-scenario">
         <div class="cw-card">
-            <div class="cw-card-title">🎯 סימולטור החלטות בשטח</div>
-            <div class="cw-card-text">תרחישים כתובים בגוף שני. כל בחירה פותחת ענף אחר. אין תשובה "נכונה" — יש <strong>הבנה עמוקה</strong> של מה שמניע אותך.</div>
+            <div class="cw-card-title">🔀 רגעי בחירה — מה היית עושה?</div>
+            <div class="cw-card-text">תרחישים שקורים בחיים. כל בחירה פותחת כיוון אחר. אין תשובה "נכונה" — יש <strong>הבנה עמוקה יותר</strong> של מה שמניע אותך.</div>
         </div>
         <div id="cw-scenario-area">
             <div class="cw-scenario-select" id="cw-scenario-list"></div>
@@ -1288,8 +1288,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- ===== MODULE 4: TOOLKIT ===== -->
     <div class="cw-module" id="cw-mod-toolkit">
         <div class="cw-card">
-            <div class="cw-card-title">🧰 פק״ל כיסים לנפש</div>
-            <div class="cw-card-text">כלים מעשיים שאפשר להפעיל <strong>ברגע אמת</strong>. נשימה קרבית, השהיית תגובה, עוגנים לחזרה לנוכחות.</div>
+            <div class="cw-card-title">🧘 ארגז כלים לרגע</div>
+            <div class="cw-card-text">כלים פשוטים שאפשר להשתמש בהם <strong>עכשיו</strong>. נשימה עמוקה, השהיית תגובה, עוגנים לנוכחות.</div>
         </div>
         <div id="cw-toolkit-items"></div>
     </div>
@@ -11773,10 +11773,10 @@ function cwInitModule() {
 // ===============================
 const CW_OSINT_DATA = [
     {
-        title: 'נקודת ציון 1: מודל עסקי — אתה המוצר',
+        title: 'שלב 1: מודל עסקי — אתה המוצר',
         content: `<div class="cw-card-text">כשמשהו בחינם באינטרנט — <strong>אתה המוצר</strong>. רשתות חברתיות ופלטפורמות תוכן לא מוכרות לך שירות. הן מוכרות את <strong>הקשב שלך</strong> למפרסמים.<br><br>המודל העסקי פשוט: ככל שאתה גולל יותר, צופה יותר, נשאר יותר — הם מרוויחים יותר. הכל מתוכנן כך שתהיה <strong>מכור לגלילה</strong>.</div>
         <div class="cw-osint-quiz">
-            <div class="quiz-q">שאלת חקירה: מה המוצר האמיתי של רשת חברתית חינמית?</div>
+            <div class="quiz-q">שאלה לחשיבה: מה המוצר האמיתי של רשת חברתית חינמית?</div>
             <button class="cw-osint-opt" onclick="cwOsintAnswer(this,0,true)">הקשב שלך — הזמן והנתונים שלך נמכרים למפרסמים</button>
             <button class="cw-osint-opt" onclick="cwOsintAnswer(this,0,false)">הפוסטים שאתה מעלה</button>
             <button class="cw-osint-opt" onclick="cwOsintAnswer(this,0,false)">חיבור בין אנשים</button>
@@ -11785,7 +11785,7 @@ const CW_OSINT_DATA = [
         feedback: 'נכון. כל גלילה, כל לייק, כל שנייה שאתה שוהה — מתורגמת לנתון שנמכר. זו לא קונספירציה, זו עובדה עסקית.'
     },
     {
-        title: 'נקודת ציון 2: לולאת הדופמין — ההנדסה של ההרגל',
+        title: 'שלב 2: לולאת הדופמין — איך נוצר ההרגל',
         content: `<div class="cw-card-text">האלגוריתם לומד מה גורם לך <strong>לעצור ולהסתכל</strong>. הוא מנתח מה גרם לך ללחוץ, כמה זמן הסתכלת, מתי חזרת. ואז הוא מגיש לך עוד ועוד מאותו הדבר — כמו מכונת מזל שמחלקת ניצחון קטן כל כמה גלילות.<br><br><strong>לולאת הדופמין</strong>: ציפייה → גירוי → סיפוק קצר → ריקנות → חיפוש שוב. הגוף שלך מגיב כמו לכל התמכרות — לא כי אתה חלש, אלא כי המערכת <strong>תוכננה בדיוק לזה</strong>.</div>
         <div class="cw-osint-quiz">
             <div class="quiz-q">למה הגלילה ברשת דומה להתמכרות?</div>
@@ -11797,7 +11797,7 @@ const CW_OSINT_DATA = [
         feedback: 'בדיוק. אתה לא מתמודד עם עצמך — אתה מתמודד מול צוותים של מהנדסים, פסיכולוגים ומדעני נתונים שמטרתם לגרום לך להישאר. וזה דורש כבוד, לא בושה.'
     },
     {
-        title: 'נקודת ציון 3: אשליית האינטימיות',
+        title: 'שלב 3: אשליית האינטימיות',
         content: `<div class="cw-card-text">תעשיית הפורנוגרפיה בנויה על אשליה: שמה שאתה רואה הוא <strong>קשר אמיתי</strong>. אבל מאחורי הקלעים יש:<br><br>• <strong>תסריטים מבוימים</strong> — כלום לא ספונטני<br>• <strong>ניצול כלכלי</strong> — אנשים במצוקה שנדחפו לתעשייה<br>• <strong>אלגוריתם שמחמיר</strong> — התוכן הולך ונעשה קיצוני יותר כי הגוף מתרגל ודורש "מינון" גבוה יותר<br><br>כמו מים מלוחים: <strong>מרווה לרגע, מייבשת מבפנים עוד יותר</strong>.</div>
         <div class="cw-osint-quiz">
             <div class="quiz-q">למה הצריכה של פורנוגרפיה נוטה להחמיר עם הזמן?</div>
@@ -11809,7 +11809,7 @@ const CW_OSINT_DATA = [
         feedback: 'זה בדיוק מנגנון הסבילות (Tolerance). המוח מפתח עמידות לגירוי ודורש רמה גבוהה יותר כדי להגיע לאותה תחושה. זו לא בחירה — זו ביולוגיה.'
     },
     {
-        title: 'נקודת ציון 4: הפער בין הדימוי למציאות',
+        title: 'שלב 4: הפער בין הדימוי למציאות',
         content: `<div class="cw-card-text">פורנוגרפיה מייצרת דימוי מעוות של:<br><br>• <strong>גוף</strong> — ציפיות לא ריאליסטיות שגורמות לתחושת חוסר<br>• <strong>מגע</strong> — מגע מכני בלי חיבור רגשי<br>• <strong>כוח</strong> — שליטה במקום שותפות<br>• <strong>אינטימיות</strong> — עירום בלי פגיעות, תשוקה בלי אחריות<br><br>התוצאה: כשמגיע הרגע האמיתי — עם בן זוג אמיתי — מרגישים <strong>ניתוק</strong>. לא כי אין אהבה, אלא כי המוח הורגל לגירוי מלאכותי שלא דורש <strong>אומץ רגשי</strong>.</div>
         <div class="cw-osint-quiz">
             <div class="quiz-q">מה ההשפעה המרכזית של צריכת פורנוגרפיה על קשר זוגי אמיתי?</div>
@@ -11821,8 +11821,8 @@ const CW_OSINT_DATA = [
         feedback: 'אינטימיות אמיתית לא נמדדת בעוצמת העירום — אלא בעומק ההיפתחות. פורנוגרפיה מלמדת את ההפך: עירום בלי נשמה, מגע בלי אמון.'
     },
     {
-        title: 'נקודת ציון 5: סיכום חקירה — אתה לא חלש, אתה לוחם',
-        content: `<div class="cw-card-text">מה גילית בחקירה הזו:<br><br>• אתה <strong>לא חלש</strong> — אתה מתמודד מול מכונה מהונדסת בידי צוותים של מומחים<br>• ה<strong>כמיהה</strong> שלך לקשר, למגע, לקרבה — היא <strong>אמיתית וקדושה</strong><br>• הבעיה היא לא הצורך — הבעיה היא ש<strong>מישהו מרוויח</strong> מלנצל את הצורך הזה<br>• <strong>כעס בריא</strong> על המניפולציה הוא כלי. להפוך מקורבן למורד.<br><br>עכשיו אתה יודע איך התעשייה עובדת. אתה יכול <strong>לבחור אחרת</strong> — לא מתוך בושה, אלא מתוך כבוד עצמי.</div>`,
+        title: 'שלב 5: סיכום — אתה לא חלש, אתה אמיץ',
+        content: `<div class="cw-card-text">מה גילית בחקירה הזו:<br><br>• אתה <strong>לא חלש</strong> — אתה מתמודד מול מכונה מהונדסת בידי צוותים של מומחים<br>• ה<strong>כמיהה</strong> שלך לקשר, למגע, לקרבה — היא <strong>אמיתית וקדושה</strong><br>• הבעיה היא לא הצורך — הבעיה היא ש<strong>מישהו מרוויח</strong> מלנצל את הצורך הזה<br>• <strong>כעס בריא</strong> על המניפולציה הוא אנרגיה חיובית — אפשר לכוון אותו לשינוי.<br><br>עכשיו שאתה מבין איך זה עובד — אתה יכול <strong>לבחור אחרת</strong>. לא מתוך בושה, אלא מתוך הבנה וכבוד עצמי.</div>`,
         feedback: ''
     }
 ];
@@ -11886,7 +11886,7 @@ function cwOsintAnswer(btn, stepIdx, isCorrect) {
             }
         }, 1500);
     } else if (fbEl) {
-        fbEl.innerHTML = '<div class="cw-osint-feedback info">לא בדיוק. קרא שוב את הטקסט ונסה להבין מה המנגנון שמאחורי זה.</div>';
+        fbEl.innerHTML = '<div class="cw-osint-feedback info">לא בדיוק — בוא ננסה שוב. קרא עוד פעם ונסה לחשוב מה המנגנון שמאחורי זה.</div>';
         setTimeout(() => {
             parent.dataset.answered = '';
             parent.querySelectorAll('.cw-osint-opt').forEach(b => {
@@ -11920,7 +11920,7 @@ const CW_MIRROR_RESPONSES = {
     },
     overload: {
         title: 'עומס — הגוף מחפש מילוט',
-        text: 'כשהגוף והנפש תחת עומס — ואתה נמצא בסביבה קרבית שדורשת ממך כל הזמן — הם מחפשים דרך מהירה לברוח. זה טבעי. הבעיה היא לא שאתה מחפש הקלה, אלא שהמכונות שמהנדסות תוכן מכוונות בדיוק לרגע הזה — הרגע שבו אתה עמוס, עייף, פגיע. עכשיו קח נשימה ושאל את עצמך: מה אני באמת צריך? אולי שקט. אולי שינה. אולי שיחה עם מישהו.'
+        text: 'כשהגוף והנפש תחת עומס — כשהחיים דורשים ממך כל הזמן — הם מחפשים דרך מהירה לברוח. זה טבעי. הבעיה היא לא שאתה מחפש הקלה, אלא שהמכונות שמהנדסות תוכן מכוונות בדיוק לרגע הזה — הרגע שבו אתה עמוס, עייף, פגיע. עכשיו קח נשימה ושאל את עצמך: מה אני באמת צריך? אולי שקט. אולי שינה. אולי שיחה עם מישהו.'
     },
     anger: {
         title: 'כעס — אנרגיה שאפשר לכוון',
@@ -11940,7 +11940,7 @@ const CW_MIRROR_RESPONSES = {
     },
     numbness: {
         title: 'חוסר תחושה — מנגנון הגנה בעבודת שעות נוספות',
-        text: 'חוסר תחושה הוא לא עדות לקור — הוא עדות לכך שהרגשת יותר מדי. הגוף והנפש מגנים עליך כשיש עומס שלא ניתן לעבד. בסביבה קרבית, זה קורה הרבה. הבעיה מתחילה כשהחוסר תחושה הופך לברירת מחדל, ואז אתה מחפש גירוי קיצוני כדי "להרגיש משהו". חזור לגוף בעדינות — הנח את היד על הלב, נשום לאט. ההרגשה תחזור בזמנה.'
+        text: 'חוסר תחושה הוא לא עדות לקור — הוא עדות לכך שהרגשת יותר מדי. הגוף והנפש מגנים עליך כשיש עומס שלא ניתן לעבד. כשהחיים לוחצים, זה קורה הרבה. הבעיה מתחילה כשהחוסר תחושה הופך לברירת מחדל, ואז אתה מחפש גירוי קיצוני כדי "להרגיש משהו". חזור לגוף בעדינות — הנח את היד על הלב, נשום לאט. ההרגשה תחזור בזמנה.'
     },
     pain: {
         title: 'כאב — עדות לכך שאתה חי',
@@ -12042,14 +12042,14 @@ const CW_SCENARIOS = [
 זו הנקודה שבה קיצור הדרך מפסיק לעבוד — כי זיהית את הצורך האמיתי.`,
                 choices: [
                     { text: 'שולח הודעה למישהו קרוב. כותב: "היי, צריך לדבר."', next: 6, type: 'connect' },
-                    { text: 'פותח את מודול "פק"ל כיסים" ומתחיל נשימה קרבית.', next: 8, type: 'tools' }
+                    { text: 'פותח את ארגז הכלים ומתחיל תרגיל נשימה.', next: 8, type: 'tools' }
                 ]
             },
             { // 4 — spiral
                 text: `שעה עברה. אולי יותר. המסך כבר כבה פעם אחת ואתה הדלקת אותו מחדש. עכשיו ההרגשה: ריקנות, עם שכבה של בושה מעל.
 
 הגוף מרגיש כבד. הראש מלא ערפל. מחר חוזרים לפלוגה, ותצטרך לשים מסכה ולהתנהג כאילו הכל בסדר.`,
-                analysis: { title: 'הערכת מצב', text: `זו לולאת הדופמין הקלאסית: ציפייה → גירוי → סיפוק רגעי → ריקנות → בושה → חיפוש הקלה → גירוי חדש.
+                analysis: { title: 'רגע של הבנה', text: `זו לולאת הדופמין הקלאסית: ציפייה → גירוי → סיפוק רגעי → ריקנות → בושה → חיפוש הקלה → גירוי חדש.
 
 שים לב שהבחירה הראשונה הייתה "סתם קצת" — ו"סתם קצת" הפכה לשעה. זה לא כי אתה חלש. זה כי המכונה הזו מתוכננת בדיוק לזה.
 
@@ -12059,7 +12059,7 @@ const CW_SCENARIOS = [
                 text: `סגרת. הטלפון על השולחן. הלב עדיין דופק מהר.
 
 יש תחושת תסכול — "כמעט נפלתי" — אבל גם משהו אחר: גאווה שקטה. עצרת באמצע. לא היית מושלם, אבל היית אמיץ.`,
-                analysis: { title: 'הערכת מצב', text: `רגע העצירה הזה — באמצע, כשהגוף כבר בלולאה — הוא אחד הדברים הקשים ביותר. רוב האנשים לא מסוגלים לעשות את זה.
+                analysis: { title: 'רגע של הבנה', text: `רגע העצירה הזה — באמצע, כשהגוף כבר בלולאה — הוא אחד הדברים הקשים ביותר. רוב האנשים לא מסוגלים לעשות את זה.
 
 מה שעזר לך? ההכרה שמה שקורה הוא לא בחירה חופשית אלא דפוס אוטומטי. ברגע שהתודעה "נדלקת" — יש סיכוי לעצור.
 
@@ -12069,7 +12069,7 @@ const CW_SCENARIOS = [
                 text: `הוא ענה. בהתחלה סתם שטויות — "מה קורה, אחי" — אבל אחרי כמה דקות הצלחת להגיד: "אחי, אני לא בכיף. הבית ריק ואני לא יודע מה לעשות עם עצמי."
 
 הוא אמר: "אני מכיר. גם לי ככה כל סוף שבוע." ופתאום הבדידות קצת התרככה. לא נעלמה — אבל אתה לא לבד איתה.`,
-                analysis: { title: 'הערכת מצב', text: `מה שעשית עכשיו הוא בדיוק ההפך מקיצור הדרך: במקום לחפש נגיעה מלאכותית דרך מסך, בחרת בקשר אמיתי — גם אם הוא לא מושלם, גם אם הוא "רק" שיחת טלפון.
+                analysis: { title: 'רגע של הבנה', text: `מה שעשית עכשיו הוא בדיוק ההפך מקיצור הדרך: במקום לחפש נגיעה מלאכותית דרך מסך, בחרת בקשר אמיתי — גם אם הוא לא מושלם, גם אם הוא "רק" שיחת טלפון.
 
 הפגיעות שנדרשה להגיד "אני לא בכיף" — היא בדיוק הסוג של אומץ שיבנה אותך לקשרים עמוקים בעתיד. זו הדרך הארוכה. והיא שווה.` }
             },
@@ -12077,15 +12077,15 @@ const CW_SCENARIOS = [
                 text: `ההליכה נמשכת. אתה מתחיל לשים לב לדברים שבדרך כלל מתעלם מהם: הקול של החתול בחצר, האור הכתום של פנס הרחוב, הקור הנעים שנכנס מתחת לחולצה.
 
 משהו מתחיל להירגע. הבדידות עדיין שם, אבל היא לא מפחידה. היא פשוט — שם.`,
-                analysis: { title: 'הערכת מצב', text: `מה שעשית עכשיו נקרא "נוכחות בגוף" (Grounding). במקום לברוח מהתחושה — הלכת לתוכה, עם הגוף. ההליכה, האוויר, החושים — הכל הביא אותך חזרה לכאן ועכשיו.
+                analysis: { title: 'רגע של הבנה', text: `מה שעשית עכשיו נקרא "נוכחות בגוף" (Grounding). במקום לברוח מהתחושה — הלכת לתוכה, עם הגוף. ההליכה, האוויר, החושים — הכל הביא אותך חזרה לכאן ועכשיו.
 
 זה אחד הכלים הכי חזקים: כשהגוף מחפש גירוי — תן לו גירוי אמיתי. לא מסך, אלא רוח, אור, תנועה.` }
             },
             { // 8 — tools
-                text: `פתחת את מודול הכלים. התחלת נשימה קרבית: שאיפה ל-4, עצירה ל-4, נשיפה ל-6.
+                text: `פתחת את ארגז הכלים. התחלת נשימה עמוקה: שאיפה ל-4, עצירה ל-4, נשיפה ל-6.
 
 אחרי 3 סבבים הגוף התחיל להירגע. הדופק ירד. ההיסחפות שהרגשת לפני רגע — היא עדיין שם, אבל כמו גל שנשבר ולא הציף.`,
-                analysis: { title: 'הערכת מצב', text: `הנשימה הקרבית אינה פותרת את הבדידות — אבל היא נותנת לך 30 שניות של שליטה בגוף. ו-30 שניות זה לפעמים כל מה שצריך כדי לא ליפול ללולאה.
+                analysis: { title: 'רגע של הבנה', text: `הנשימה העמוקה לא פותרת את הבדידות — אבל היא נותנת לך 30 שניות של שליטה בגוף. ו-30 שניות זה לפעמים כל מה שצריך כדי לא ליפול ללולאה.
 
 הכלי הזה עובד כי הוא פיזיולוגי — הוא לא דורש "כוח רצון" או "מוטיבציה". הוא פשוט מאפס את מערכת העצבים. שמור אותו קרוב.` }
             }
@@ -12120,15 +12120,15 @@ const CW_SCENARIOS = [
                 text: `שקט. הגוף מתלונן — "משעמם, קר, עייף." אבל אתה נשאר.
 
 אחרי כמה דקות מתחילים לעלות מחשבות שבדרך כלל אתה בורח מהם: על הבית, על אבא, על מה שיהיה אחרי הצבא. מפחיד, אבל גם — אמיתי.`,
-                analysis: { title: 'הערכת מצב', text: `מה שעשית עכשיו הוא הדבר הכי נדיר בעולם שלנו: בחרת בשקט. בעולם שבו כל רגע ריק ממולא מיידית בגירוי — היכולת לשבת עם השקט היא כוח-על.
+                analysis: { title: 'רגע של הבנה', text: `מה שעשית עכשיו הוא הדבר הכי נדיר בעולם שלנו: בחרת בשקט. בעולם שבו כל רגע ריק ממולא מיידית בגירוי — היכולת לשבת עם השקט היא כוח-על.
 
-המחשבות שעלו? הן תמיד שם. הגלילה רק מכסה אותן. ברגע שהורדת את הכיסוי — יכולת לראות מה באמת קורה בפנים. זו הערכת מצב אמיתית.` }
+המחשבות שעלו? הן תמיד שם. הגלילה רק מכסה אותן. ברגע שהורדת את הכיסוי — יכולת לראות מה באמת קורה בפנים. זו התבוננות פנימית אמיתית.` }
             },
             { // 3 — intentional
                 text: `פתחת את הטלפון עם כוונה: שמת מוזיקה, או שלחת הודעה למישהו. השימוש ממוקד, עם גבול.
 
 כשהאלגוריתם ניסה למשוך אותך לגלילה — סגרת את האפליקציה וחזרת למוזיקה.`,
-                analysis: { title: 'הערכת מצב', text: `שימוש מכוון (Intentional Use) הוא אחד הכלים הכי אפקטיביים. ההבדל בין "אני פותח כדי..." ל"סתם פותח" — הוא ההבדל בין שליטה להיסחפות.
+                analysis: { title: 'רגע של הבנה', text: `שימוש מכוון (Intentional Use) הוא אחד הכלים הכי אפקטיביים. ההבדל בין "אני פותח כדי..." ל"סתם פותח" — הוא ההבדל בין שליטה להיסחפות.
 
 הטכניקה: לפני שאתה פותח טלפון, אמור לעצמך במשפט אחד למה אתה פותח אותו. "אני פותח כדי לשמוע שיר." ברגע שהמטרה הושלמה — סוגר.` }
             },
@@ -12136,7 +12136,7 @@ const CW_SCENARIOS = [
                 text: `השמירה נגמרה. הטלפון חם. הגוף עייף מסיבה אחרת מאשר חוסר שינה. בבוקר, תזכור את הלילה הזה — ותרגיש שהיית יכול אחרת.
 
 אבל הרגע הזה — שבו אתה קורא את המילים האלה — הוא הרגע שבו אתה כבר עושה אחרת.`,
-                analysis: { title: 'הערכת מצב', text: `הלילה הזה עבר. לא ניתן להחזיר אותו. אבל מה שכן ניתן — לבנות תכנית להפעם הבאה.
+                analysis: { title: 'רגע של הבנה', text: `הלילה הזה עבר. לא ניתן להחזיר אותו. אבל מה שכן ניתן — לבנות תכנית להפעם הבאה.
 
 השמירה הבאה: מכין מראש פודקאסט או ספר. משאיר את הטלפון במצב מטוס. מחליט מראש: "הלילה הזה שלי, לא של האלגוריתם."
 
@@ -12146,11 +12146,11 @@ const CW_SCENARIOS = [
                 text: `עצרת. נשמת. שאלת את עצמך: "מה אני עושה לעצמי?"
 
 הטלפון נכנס לכיס. הידיים רועדות קצת. הלב דופק. אבל אתה בחרת.`,
-                analysis: { title: 'הערכת מצב', text: `העצירה באמצע — אחרי שכבר התחלת — היא הרגע הכי חזק של כל הסימולציה הזו. רוב האנשים לא עוצרים שם.
+                analysis: { title: 'רגע של הבנה', text: `העצירה באמצע — אחרי שכבר התחלת — היא הרגע הכי חזק של כל הסימולציה הזו. רוב האנשים לא עוצרים שם.
 
 מה שעזר: שאלה פשוטה שמדליקה את התודעה. "מה אני עושה לעצמי?" היא לא שאלה של ביקורת — היא שאלה של דאגה. כאילו חבר טוב שואל אותך.
 
-שמור את השאלה הזו כנשק חם. היא עובדת.` }
+שמור את השאלה הזו קרוב אליך. היא עובדת.` }
             }
         ]
     }
@@ -12188,7 +12188,7 @@ function cwRenderStep() {
     const progress = Math.round(((cwCurrentStep + 1) / totalSteps) * 100);
 
     let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <button class="cw-btn cw-btn-outline" onclick="cwBackToScenarios()">← חזרה לתרחישים</button>
+        <button class="cw-btn cw-btn-outline" onclick="cwBackToScenarios()">← חזרה למצבים</button>
         <span style="font-size:0.75rem;color:var(--cw-text2);">${cwCurrentScenario.title}</span>
     </div>
     <div class="cw-progress-bar"><div class="cw-progress-fill" style="width:${progress}%"></div></div>`;
@@ -12209,7 +12209,7 @@ function cwRenderStep() {
             <div class="analysis-text" style="white-space:pre-line;">${step.analysis.text}</div>
         </div>
         <div style="text-align:center;margin-top:16px;">
-            <button class="cw-btn cw-btn-gold" onclick="cwBackToScenarios()">חזרה לתרחישים</button>
+            <button class="cw-btn cw-btn-gold" onclick="cwBackToScenarios()">חזרה למצבים</button>
         </div>`;
     }
 
@@ -12239,8 +12239,8 @@ const CW_TOOLS = [
     {
         id: 'breathe',
         icon: '🌬️',
-        name: 'נשימה קרבית',
-        desc: 'תרגיל נשימה 4-4-6 להרגעת מערכת העצבים',
+        name: 'נשימה עמוקה',
+        desc: 'תרגיל 4-4-6 שמרגיע את הגוף והראש',
         body: `<div style="text-align:center;">
             <div class="cw-breath-circle" id="cw-breath-display">התחל</div>
             <div style="margin-top:14px;">
@@ -12299,7 +12299,7 @@ const CW_TOOLS = [
 ];
 
 const CW_STRENGTH_TEXTS = [
-    { title: 'כשאתה מרגיש שאתה נופל', text: 'אתה לא נופל — אתה עומד על קצה. יש הבדל. נפילה זה כשאין בחירה. אתה עדיין כאן, עדיין קורא את זה, עדיין שואל שאלות. זה לא נפילה — זה קרב. ובקרב, גם לוחמים גדולים מקבלים מכות. זה לא אומר שהם הפסידו.' },
+    { title: 'כשאתה מרגיש שאתה נופל', text: 'אתה לא נופל — אתה עומד על קצה. יש הבדל. נפילה זה כשאין בחירה. אתה עדיין כאן, עדיין קורא את זה, עדיין שואל שאלות. זה לא נפילה — זה מאבק. וכל מי שנמצא במאבק — לפעמים נופל ולפעמים קם. זה לא אומר שהפסדת.' },
     { title: 'כשהבושה אוכלת', text: 'הבושה אומרת: "אם היו יודעים מה עובר עליך, היו מתבזים." זה שקר. כי כמעט כל אחד פוגש את זה. ההבדל בין מי ש"מסתדר" למי ש"לא" — הוא לא בטוהר, אלא בנכונות להודות. וההודאה שלך — גם אם היא רק בינך לבין עצמך — היא הצעד הכי אמיץ שיש.' },
     { title: 'כשהגוף דורש', text: 'הגוף שלך לא אויב. הוא בעל ברית ששומר עליך. כשהוא דורש — הוא מנסה להגיד לך משהו. אולי הוא עייף. אולי הוא בודד. אולי הוא צריך מגע אמיתי. תקשיב לו בכבוד — ותן לו תשובה אמיתית, לא תחליף.' },
     { title: 'כשאתה חושב שאתה לבד בזה', text: 'אתה לא. סטטיסטית, רוב הגברים בגילך מתמודדים עם בדיוק אותו הדבר. אף אחד לא מדבר על זה — אבל כולם יודעים. הבדידות של ההתמודדות הזו היא חלק מהמלכודת. שבירת השתיקה — גם אם רק בפנים — היא שבירת הכלא.' }
