@@ -529,6 +529,149 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     .hebrew-fillin-options { flex-direction:column; }
     .hebrew-ordering-words { margin-top:12px; }
 }
+
+/* Hebrew unit card English subtitle */
+.hebrew-unit-card-title-en {
+    font-size: 0.78rem;
+    color: var(--primary-light);
+    font-weight: 500;
+    margin-top: 2px;
+    direction: ltr;
+    text-align: center;
+}
+/* Management dashboard enhanced styles */
+.hebrew-mgmt-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.hebrew-mgmt-stat-card {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #fff;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+}
+.hebrew-mgmt-stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.hebrew-mgmt-stat-label {
+    font-size: 0.78rem;
+    opacity: 0.85;
+    margin-top: 4px;
+}
+.hebrew-mgmt-search {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+.hebrew-mgmt-search input {
+    flex: 1;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.88rem;
+}
+.hebrew-mgmt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.hebrew-mgmt-table th {
+    background: var(--bg);
+    font-weight: 600;
+    padding: 10px 8px;
+    text-align: right;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+.hebrew-mgmt-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+.hebrew-mgmt-table tr:hover {
+    background: rgba(14,116,144,0.04);
+}
+.hebrew-mgmt-table tr.clickable {
+    cursor: pointer;
+}
+.hebrew-mgmt-progress-mini {
+    display: inline-block;
+    width: 60px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+.hebrew-mgmt-progress-mini-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+.hebrew-mgmt-detail-panel {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-top: 16px;
+}
+.hebrew-mgmt-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+.hebrew-mgmt-unit-item {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+}
+.hebrew-mgmt-unit-item .status-icons {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+.hebrew-mgmt-unit-item .status-icon {
+    font-size: 0.78rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--border);
+}
+.hebrew-mgmt-unit-item .status-icon.done {
+    background: #D1FAE5;
+    color: #065F46;
+}
+.hebrew-mgmt-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.hebrew-mgmt-badge.active { background: #D1FAE5; color: #065F46; }
+.hebrew-mgmt-badge.inactive { background: #FEE2E2; color: #991B1B; }
+.hebrew-mgmt-badge.partial { background: #FEF3C7; color: #92400E; }
+.hebrew-mgmt-export-btn {
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: inherit;
+}
+.hebrew-mgmt-export-btn:hover {
+    background: var(--primary-light);
+}
 </style>
 </head>
 <body>
@@ -728,7 +871,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a class="home-tile" onclick="navigate('hebrew')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0891B2,#22D3EE);"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75l11-11.03-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
             <div class="tile-title">Hebrew Learning</div>
-            <div class="tile-desc">לימוד עברית מקיף — 36 יחידות, 4 רמות, מותאם לחייל החרדי</div>
+            <div class="tile-desc">Comprehensive Hebrew learning — 36 units, 4 levels, adapted for Haredi soldiers</div>
         </a>
         <a class="home-tile" onclick="navigate('internet-safety')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#475569,#64748B);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
@@ -807,8 +950,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- ====== HEBREW — Hebrew Learning ====== -->
 <div class="page-section" id="page-hebrew">
     <div class="card">
-        <div class="card-title">לימוד עברית</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">מודול לימוד אינטראקטיבי לחיזוק השפה העברית. את האותיות והניקוד אתה כבר מכיר מלימוד התורה והגמרא — כאן נחזק אוצר מילים, קריאה ללא ניקוד ועברית צבאית. "וְלָמַדְתָּ אֹתָם אֶת בְּנֵיךָ"</p>
+        <div class="card-title">Hebrew Learning — לימוד עברית</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">Interactive Hebrew learning module. You already know the letters and vowels from Torah and Gemara study — here we'll strengthen vocabulary, reading without vowels, and military Hebrew. "וְלָמַדְתָּ אֹתָם אֶת בְּנֵיךָ"</p>
     </div>
 
     <!-- Level Selection Screen -->
@@ -816,32 +959,32 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="hebrew-level-card" onclick="selectHebrewLevel('alef')" data-level="alef">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#0E7490,#22D3EE);">א</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה א׳ — מתחילים</div>
-                <div class="hebrew-level-desc">אותיות, מילים בסיסיות, מונחים צבאיים, חיי יומיום | 12 יחידות</div>
+                <div class="hebrew-level-name">Level Alef א׳ — Beginners</div>
+                <div class="hebrew-level-desc">Letters, basic words, military terms, daily life | 12 units</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-alef"></div>
             </div>
         </div>
         <div class="hebrew-level-card" onclick="selectHebrewLevel('bet')" data-level="bet">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">ב</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה ב׳ — בסיסי</div>
-                <div class="hebrew-level-desc">פעלים בהווה, שיחות, כיוונים, רגשות, מועדים | 10 יחידות</div>
+                <div class="hebrew-level-name">Level Bet ב׳ — Basic</div>
+                <div class="hebrew-level-desc">Present tense verbs, conversations, directions, emotions | 10 units</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-bet"></div>
             </div>
         </div>
         <div class="hebrew-level-card" onclick="selectHebrewLevel('gimel')" data-level="gimel">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#059669,#34D399);">ג</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה ג׳ — בינוני</div>
-                <div class="hebrew-level-desc">עבר ועתיד, בניינים, ערכים, כתיבה רשמית, בית המדרש | 8 יחידות</div>
+                <div class="hebrew-level-name">Level Gimel ג׳ — Intermediate</div>
+                <div class="hebrew-level-desc">Past & future tense, verb patterns, values, formal writing | 8 units</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-gimel"></div>
             </div>
         </div>
         <div class="hebrew-level-card" onclick="selectHebrewLevel('dalet')" data-level="dalet">
             <div class="hebrew-level-letter" style="background:linear-gradient(135deg,#D97706,#FBBF24);">ד</div>
             <div class="hebrew-level-info">
-                <div class="hebrew-level-name">רמה ד׳ — מתקדם</div>
-                <div class="hebrew-level-desc">שפת צבא, דיון וויכוח, ספרות, מבית המדרש לשדה הקרב | 6 יחידות</div>
+                <div class="hebrew-level-name">Level Dalet ד׳ — Advanced</div>
+                <div class="hebrew-level-desc">Military language, debates, literature, from Beit Midrash to the battlefield | 6 units</div>
                 <div class="hebrew-level-progress" id="hebrew-progress-dalet"></div>
             </div>
         </div>
@@ -876,9 +1019,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <!-- Section Tabs -->
         <div class="hebrew-unit-tabs">
-            <button class="hebrew-unit-tab active" data-section="learn" onclick="switchHebrewSection('learn')">📚 לימוד</button>
-            <button class="hebrew-unit-tab" data-section="practice" onclick="switchHebrewSection('practice')">✍️ תרגול</button>
-            <button class="hebrew-unit-tab" data-section="quiz" onclick="switchHebrewSection('quiz')">✔️ מבחן</button>
+            <button class="hebrew-unit-tab active" data-section="learn" onclick="switchHebrewSection('learn')">📚 Learn</button>
+            <button class="hebrew-unit-tab" data-section="practice" onclick="switchHebrewSection('practice')">✍️ Practice</button>
+            <button class="hebrew-unit-tab" data-section="quiz" onclick="switchHebrewSection('quiz')">✔️ Quiz</button>
         </div>
 
         <!-- Learn Section -->
@@ -886,9 +1029,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="hebrew-flashcard-progress" id="hebrew-flashcard-progress"></div>
             <div class="hebrew-flashcard-container" id="hebrew-flashcard-container"></div>
             <div class="hebrew-flashcard-nav">
-                <button class="hebrew-flashcard-btn" id="hebrew-card-prev" onclick="hebrewPrevCard()">→ הקודם</button>
-                <button class="hebrew-flashcard-btn" id="hebrew-card-flip" onclick="hebrewFlipCard()">הפוך כרטיס</button>
-                <button class="hebrew-flashcard-btn" id="hebrew-card-next" onclick="hebrewNextCard()">הבא ←</button>
+                <button class="hebrew-flashcard-btn" id="hebrew-card-prev" onclick="hebrewPrevCard()">← Previous</button>
+                <button class="hebrew-flashcard-btn" id="hebrew-card-flip" onclick="hebrewFlipCard()">Flip Card</button>
+                <button class="hebrew-flashcard-btn" id="hebrew-card-next" onclick="hebrewNextCard()">Next →</button>
             </div>
         </div>
 
@@ -906,8 +1049,22 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- Manager Dashboard (visible only to managers) -->
     <div id="hebrew-dashboard" style="display:none;margin-top:16px;">
         <div class="card">
-            <div class="card-title" style="font-size:1rem;">📊 Progress Dashboard — Student Tracking</div>
+            <div class="card-title" style="font-size:1.05rem;">📊 לוח מעקב התקדמות חיילים — לימוד עברית</div>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">מעקב שוטף אחר כל חייל: סטטוס יחידות, ציוני מבחנים, פעילות אחרונה</p>
+            <div id="hebrew-mgmt-stats-container"></div>
+            <div class="hebrew-mgmt-search">
+                <input type="text" id="hebrew-mgmt-search" placeholder="חיפוש חייל לפי שם..." oninput="filterHebrewDashboard()">
+                <select id="hebrew-mgmt-level-filter" onchange="filterHebrewDashboard()" style="padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:0.85rem;">
+                    <option value="all">כל הרמות</option>
+                    <option value="alef">רמה א׳</option>
+                    <option value="bet">רמה ב׳</option>
+                    <option value="gimel">רמה ג׳</option>
+                    <option value="dalet">רמה ד׳</option>
+                </select>
+                <button class="hebrew-mgmt-export-btn" onclick="exportHebrewDashboard()">📥 ייצוא CSV</button>
+            </div>
             <div id="hebrew-dashboard-content"></div>
+            <div id="hebrew-mgmt-detail-panel"></div>
         </div>
     </div>
 </div>
@@ -2441,6 +2598,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit1",
                 "title": "האותיות שלנו",
                 "description": "היסוד של השפה העברית - האותיות וההשמעות שלהן",
+                "titleEn": "Our Letters",
+                "descriptionEn": "The foundation of Hebrew — letters and their sounds",
                 "icon": "🔤",
                 "cards": [
                     {
@@ -2644,6 +2803,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit2",
                 "title": "מילים בסיסיות",
                 "description": "המילים היומיומיות החשובות ביותר בשפה העברית",
+                "titleEn": "Basic Words",
+                "descriptionEn": "Essential everyday Hebrew words",
                 "icon": "💬",
                 "cards": [
                     {
@@ -2876,6 +3037,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit3",
                 "title": "מספרים",
                 "description": "מספרים מ-1 עד 20 ושימוש בהם בחיי היום יום",
+                "titleEn": "Numbers",
+                "descriptionEn": "Counting and numbers in Hebrew",
                 "icon": "🔢",
                 "cards": [
                     {
@@ -3089,6 +3252,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit4",
                 "title": "מילים צבאיות",
                 "description": "מילים חשובות בשפת הצבא הישראלי - כל חייל צריך לדעת אלה",
+                "titleEn": "Military Words",
+                "descriptionEn": "Essential military vocabulary every soldier needs",
                 "icon": "🪖",
                 "cards": [
                     {
@@ -3311,6 +3476,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit5",
                 "title": "חיי יומיום",
                 "description": "מילים שנשתמש בהן כל יום בבית וברחוב",
+                "titleEn": "Daily Life",
+                "descriptionEn": "Words and phrases for daily activities",
                 "icon": "☀️",
                 "cards": [
                     {
@@ -3533,6 +3700,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit6",
                 "title": "שיחה בסיסית",
                 "description": "משפטים בסיסיים לשיחה יומית עם חברים וקצינים",
+                "titleEn": "Basic Conversation",
+                "descriptionEn": "Simple dialogue and greetings",
                 "icon": "🗣️",
                 "cards": [
                     {
@@ -3745,6 +3914,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit7",
                 "title": "גוף ובריאות",
                 "description": "חלקי גוף וביטויים בריאותיים - חשוב לדעת בשעת צורך",
+                "titleEn": "Body & Health",
+                "descriptionEn": "Body parts and health-related terms",
                 "icon": "🏥",
                 "cards": [
                     {
@@ -3958,6 +4129,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit8",
                 "title": "אוכל ושתייה",
                 "description": "מילים על אוכל ומשקאות שחייל צריך לדעת",
+                "titleEn": "Food & Drinks",
+                "descriptionEn": "Common food and drink vocabulary",
                 "icon": "🍽️",
                 "cards": [
                     {
@@ -4170,6 +4343,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit9",
                 "title": "מילות שאלה",
                 "description": "מילים חשובות לשאילת שאלות בעברית",
+                "titleEn": "Question Words",
+                "descriptionEn": "Who, what, where, when, why, how",
                 "icon": "❓",
                 "cards": [
                     {
@@ -4373,6 +4548,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit10",
                 "title": "קריאת משפטים",
                 "description": "תרגול קריאה של משפטים שלמים בעברית ללא ניקוד",
+                "titleEn": "Reading Sentences",
+                "descriptionEn": "Practice reading simple Hebrew sentences",
                 "icon": "📖",
                 "cards": [
                     {
@@ -4585,6 +4762,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit11",
                 "title": "בבסיס הצבאי",
                 "description": "מילים שימושיות בחיי בסיס - מקומות וחפצים שאתה מפגש כל יום",
+                "titleEn": "On the Military Base",
+                "descriptionEn": "Words and phrases for life on base",
                 "icon": "🏢",
                 "cards": [
                     {
@@ -4807,6 +4986,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit12",
                 "title": "מבחן רמה א",
                 "description": "בחן את הידע שלך בכל הנושאים של רמה א",
+                "titleEn": "Level Alef Test",
+                "descriptionEn": "Comprehensive test for Level Alef",
                 "icon": "✅",
                 "quiz": [
                     {
@@ -4970,6 +5151,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit1",
                 "title": "פעלים בהווה",
                 "description": "פעלים נפוצים בזמן הווה - איך מתארים מה קורה עכשיו",
+                "titleEn": "Present Tense Verbs",
+                "descriptionEn": "Common verbs in present tense",
                 "icon": "💪",
                 "cards": [
                     {
@@ -5192,6 +5375,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit2",
                 "title": "בניין פָּעַל",
                 "description": "הבניין הראשון של פעלים - איך פעלים משתנים לפי מי עושה",
+                "titleEn": "Pa'al Verb Pattern",
+                "descriptionEn": "The most common Hebrew verb pattern",
                 "icon": "🔧",
                 "cards": [
                     {
@@ -5395,6 +5580,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit3",
                 "title": "שיחות בבסיס",
                 "description": "דיאלוגים מעשיים שאתה משתמש בהם כל יום בבסיס",
+                "titleEn": "Conversations on Base",
+                "descriptionEn": "Practical dialogues for military life",
                 "icon": "💬",
                 "cards": [
                     {
@@ -5588,6 +5775,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit4",
                 "title": "כיוונים ומקומות",
                 "description": "ניווט, כיוונים ומקומות חשובים",
+                "titleEn": "Directions & Places",
+                "descriptionEn": "Navigating and describing locations",
                 "icon": "🧭",
                 "cards": [
                     {
@@ -5790,7 +5979,9 @@ const HEBREW_CURRICULUM = {
             {
                 "id": "unit5",
                 "title": "רגשות ותחושות",
-                "description": "לבטא רגשות ותחושות — \"עבדו את ה׳ בשמחה\"",
+                "description": "לבטא רגשות ותחושות — \",
+                "titleEn": "Emotions & Feelings",
+                "descriptionEn": "Expressing feelings and emotions"עבדו את ה׳ בשמחה\"",
                 "icon": "😊",
                 "cards": [
                     {
@@ -5985,6 +6176,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit6",
                 "title": "קריאת טקסט קצר",
                 "description": "קריאה והבנה של טקסטים קצרים",
+                "titleEn": "Reading Short Texts",
+                "descriptionEn": "Reading comprehension of short passages",
                 "icon": "📰",
                 "cards": [
                     {
@@ -6117,6 +6310,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit7",
                 "title": "מכתב וסיפור",
                 "description": "כתיבת מכתב קצר והבנת סיפור",
+                "titleEn": "Letters & Stories",
+                "descriptionEn": "Reading and writing simple texts",
                 "icon": "✉️",
                 "cards": [
                     {
@@ -6310,7 +6505,9 @@ const HEBREW_CURRICULUM = {
             {
                 "id": "unit8",
                 "title": "זמנים ותאריכים",
-                "description": "ימים, חודשים עבריים ומועדים — \"והיו לך לאותות ולמועדים\"",
+                "description": "ימים, חודשים עבריים ומועדים — \",
+                "titleEn": "Times & Dates",
+                "descriptionEn": "Days, months, times, and scheduling"והיו לך לאותות ולמועדים\"",
                 "icon": "📅",
                 "cards": [
                     {
@@ -6500,6 +6697,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit9",
                 "title": "קניות ושירותים",
                 "description": "מילים לקניות, בנק, דואר ושירותים",
+                "titleEn": "Shopping & Services",
+                "descriptionEn": "Vocabulary for shops and services",
                 "icon": "🛒",
                 "cards": [
                     {
@@ -6684,6 +6883,10 @@ const HEBREW_CURRICULUM = {
                 "id": "unit10",
                 "title": "מבחן רמה ב",
                 "description": "מבחן מסכם — 15 שאלות מכל הנושאים",
+                "titleEn": "Level Gimel Test",
+                "descriptionEn": "Comprehensive test for Level Gimel",
+                "titleEn": "Level Bet Test",
+                "descriptionEn": "Comprehensive test for Level Bet",
                 "icon": "🏆",
                 "quiz": [
                     {
@@ -6847,6 +7050,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit1",
                 "title": "עבר ועתיד",
                 "description": "פעלים בעבר ובעתיד - איך מדברים על מה שעשינו ומה נעשה",
+                "titleEn": "Past & Future Tense",
+                "descriptionEn": "Verb conjugation in past and future",
                 "icon": "⏰",
                 "cards": [
                     {
@@ -7040,6 +7245,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit2",
                 "title": "חיבור לבית המדרש",
                 "description": "יחידה מיוחדת לחיילים חרדים - איך עברית של הצבא קשורה לעברית של התורה",
+                "titleEn": "Beit Midrash Connection",
+                "descriptionEn": "Hebrew through the lens of Torah study",
                 "icon": "📚",
                 "cards": [
                     {
@@ -7233,6 +7440,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit3",
                 "title": "הבנת הנקרא",
                 "description": "קריאה של טקסטים ארוכים יותר עם הבנה",
+                "titleEn": "Reading Comprehension",
+                "descriptionEn": "Understanding written Hebrew texts",
                 "icon": "📄",
                 "cards": [
                     {
@@ -7599,7 +7808,9 @@ const HEBREW_CURRICULUM = {
             {
                 "id": "unit5",
                 "title": "בניינים נוספים",
-                "description": "הכרת בניינים: פיעל, הפעיל — \"כמו דקדוק הגמרא\"",
+                "description": "הכרת בניינים: פיעל, הפעיל — \",
+                "titleEn": "More Verb Patterns",
+                "descriptionEn": "Pi'el, Hif'il, and other verb forms"כמו דקדוק הגמרא\"",
                 "icon": "🔨",
                 "cards": [
                     {
@@ -7784,6 +7995,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit6",
                 "title": "כתיבת מכתב רשמי",
                 "description": "כתיבה רשמית — מכתבים, בקשות ודיווחים",
+                "titleEn": "Formal Letter Writing",
+                "descriptionEn": "How to write official letters in Hebrew",
                 "icon": "📋",
                 "cards": [
                     {
@@ -7949,6 +8162,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit7",
                 "title": "חדשות ומאמרים",
                 "description": "קריאת חדשות ומאמרים בעברית",
+                "titleEn": "News & Articles",
+                "descriptionEn": "Reading and understanding media texts",
                 "icon": "📰",
                 "cards": [
                     {
@@ -8286,7 +8501,9 @@ const HEBREW_CURRICULUM = {
             {
                 "id": "unit1",
                 "title": "כתיבה מתקדמת",
-                "description": "מילים מתקדמות לכתיבה בעברית - אם אתה צריך לכתוב מכתב או דו\"ח",
+                "description": "מילים מתקדמות לכתיבה בעברית - אם אתה צריך לכתוב מכתב או דו\",
+                "titleEn": "Advanced Writing",
+                "descriptionEn": "Composing complex texts in Hebrew"ח",
                 "icon": "✍️",
                 "cards": [
                     {
@@ -8461,6 +8678,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit2",
                 "title": "מהבית מדרש לשדה הקרב",
                 "description": "יחידה מיוחדת לחיילים חרדים - איך מחשבת של בית מדרש דומה לחשיבה של צבא",
+                "titleEn": "From Beit Midrash to the Battlefield",
+                "descriptionEn": "Connecting Torah wisdom to military mission",
                 "icon": "⚔️",
                 "cards": [
                     {
@@ -8635,6 +8854,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit3",
                 "title": "שפת הצבא",
                 "description": "ביטויים צבאיים מתקדמים — פקודות, דיווחים ותדריכים",
+                "titleEn": "Military Language",
+                "descriptionEn": "Advanced military terminology and jargon",
                 "icon": "🎖️",
                 "cards": [
                     {
@@ -8818,7 +9039,9 @@ const HEBREW_CURRICULUM = {
             {
                 "id": "unit4",
                 "title": "דיון וויכוח",
-                "description": "שפת טיעון, דיון ויכוח — \"כמחלוקת לשם שמים\"",
+                "description": "שפת טיעון, דיון ויכוח — \",
+                "titleEn": "Discussion & Debate",
+                "descriptionEn": "Arguing and debating in Hebrew"כמחלוקת לשם שמים\"",
                 "icon": "💡",
                 "cards": [
                     {
@@ -9017,6 +9240,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit5",
                 "title": "עברית ספרותית",
                 "description": "ביטויים ספרותיים, שירה ולשון גבוהה",
+                "titleEn": "Literary Hebrew",
+                "descriptionEn": "Poetry, literature, and elevated language",
                 "icon": "📜",
                 "cards": [
                     {
@@ -9201,6 +9426,8 @@ const HEBREW_CURRICULUM = {
                 "id": "unit6",
                 "title": "מבחן מסכם",
                 "description": "מבחן מסכם מקיף — 20 שאלות מכל הרמות",
+                "titleEn": "Final Comprehensive Test",
+                "descriptionEn": "Complete assessment of all levels",
                 "icon": "🏆",
                 "quiz": [
                     {
@@ -9427,7 +9654,7 @@ function canTrackHebrew() {
     if (!currentUser) return false;
     const role = ROLES[currentUser.role];
     if (!role) return false;
-    return canManageHebrew() || currentUser.role === 'katzin_chinuch';
+    return canManageHebrew() || currentUser.role === 'katzin_chinuch' || currentUser.role === 'katzin_chinuch_hativa';
 }
 
 async function loadHebrewPage() {
@@ -9557,7 +9784,8 @@ async function loadHebrewUnits() {
         html += `<div class="hebrew-unit-card" onclick="selectHebrewUnit('${unit.id}')">
             <div class="hebrew-unit-card-icon">${unit.icon}</div>
             <div class="hebrew-unit-card-title">${unit.title}</div>
-            <div class="hebrew-unit-card-desc">${unit.description}</div>
+            <div class="hebrew-unit-card-title-en">${unit.titleEn || ''}</div>
+            <div class="hebrew-unit-card-desc">${unit.descriptionEn || unit.description}</div>
             ${statusHtml}
         </div>`;
     }
@@ -9576,9 +9804,9 @@ function selectHebrewUnit(unitId) {
     const levelConfig = HEBREW_CURRICULUM[currentHebrewLevel];
     const unit = levelConfig.units.find(u => u.id === unitId);
 
-    document.getElementById('hebrew-unit-screen-title').textContent = unit.title;
+    document.getElementById('hebrew-unit-screen-title').textContent = (unit.titleEn ? unit.titleEn + ' — ' : '') + unit.title;
     document.getElementById('hebrew-unit-main-title').textContent = unit.title;
-    document.getElementById('hebrew-unit-main-desc').textContent = unit.description;
+    document.getElementById('hebrew-unit-main-desc').textContent = (unit.descriptionEn ? unit.descriptionEn : unit.description);
 
     loadHebrewCards();
     loadHebrewPractice();
@@ -9604,7 +9832,7 @@ function loadHebrewCards() {
     const cards = unit.cards || [];
 
     if (cards.length === 0) {
-        document.getElementById('hebrew-flashcard-container').innerHTML = '<p style="text-align:center;padding:40px;">אין כרטיסיות ביחידה זו</p>';
+        document.getElementById('hebrew-flashcard-container').innerHTML = '<p style="text-align:center;padding:40px;">No flashcards in this unit</p>';
         return;
     }
 
@@ -9618,7 +9846,7 @@ function displayHebrewCard(cards) {
         <div class="hebrew-flashcard" id="hebrew-flashcard" onclick="hebrewFlipCard()">
             <div class="hebrew-flashcard-front">
                 <div class="hebrew-flashcard-word">${card.word}</div>
-                <div class="hebrew-flashcard-hint">לחץ להפוך</div>
+                <div class="hebrew-flashcard-hint">Click to flip</div>
             </div>
             <div class="hebrew-flashcard-back">
                 <div class="hebrew-flashcard-meaning">${card.meaning}</div>
@@ -9628,7 +9856,7 @@ function displayHebrewCard(cards) {
     `;
 
     document.getElementById('hebrew-flashcard-container').innerHTML = html;
-    document.getElementById('hebrew-flashcard-progress').textContent = `כרטיס ${currentHebrewCardIndex + 1} מתוך ${cards.length}`;
+    document.getElementById('hebrew-flashcard-progress').textContent = `Card ${currentHebrewCardIndex + 1} of ${cards.length}`;
 
     document.getElementById('hebrew-card-prev').disabled = currentHebrewCardIndex === 0;
     document.getElementById('hebrew-card-next').disabled = currentHebrewCardIndex === cards.length - 1;
@@ -9651,6 +9879,18 @@ function hebrewNextCard() {
         const card = document.getElementById('hebrew-flashcard');
         if (card) card.classList.remove('flipped');
         displayHebrewCard(cards);
+
+        // Save learn progress when reaching last card
+        if (currentHebrewCardIndex === cards.length - 1 && currentUser) {
+            db.collection('hebrew_progress').doc(currentUser.id + '_' + currentHebrewUnit + '_learn').set({
+                userId: currentUser.id,
+                unitId: currentHebrewUnit,
+                level: currentHebrewLevel,
+                section: 'learn',
+                completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                userName: currentUser.name || ''
+            }, { merge: true }).catch(e => console.error('Error saving learn progress:', e));
+        }
     }
 }
 
@@ -9710,7 +9950,7 @@ async function loadHebrewPractice() {
         html += '</div>';
     }
 
-    document.getElementById('hebrew-practice-content').innerHTML = html || '<p style="text-align:center;padding:20px;">אין תרגילי תרגול ביחידה זו</p>';
+    document.getElementById('hebrew-practice-content').innerHTML = html || '<p style="text-align:center;padding:20px;">No practice exercises in this unit</p>';
 }
 
 let matchingSelected = { word: null, meaning: null };
@@ -9740,6 +9980,20 @@ function checkMatching() {
                 e.classList.remove('selected');
                 e.classList.add('matched');
             });
+
+            // Check if all matched
+            const allItems = document.querySelectorAll('.hebrew-matching-column:first-child .hebrew-matching-item');
+            const matchedItems = document.querySelectorAll('.hebrew-matching-column:first-child .hebrew-matching-item.matched');
+            if (allItems.length > 0 && allItems.length === matchedItems.length && currentUser) {
+                db.collection('hebrew_progress').doc(currentUser.id + '_' + currentHebrewUnit + '_practice').set({
+                    userId: currentUser.id,
+                    unitId: currentHebrewUnit,
+                    level: currentHebrewLevel,
+                    section: 'practice',
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    userName: currentUser.name || ''
+                }, { merge: true }).catch(e => console.error('Error saving practice progress:', e));
+            }
         }
         matchingSelected = { word: null, meaning: null };
     }
@@ -9752,7 +10006,7 @@ function submitFillinAnswer(correct, selected, btn) {
 
     const exercise = btn.closest('.hebrew-fillin-exercise');
     const feedbackHtml = `<div class="hebrew-fillin-feedback ${isCorrect ? 'correct' : 'incorrect'}">
-        ${isCorrect ? '✓ נכון!' : `✗ לא נכון. התשובה הנכונה: ${correct}`}
+        ${isCorrect ? '✓ Correct!' : `✗ Incorrect. The correct answer is: ${correct}`}
     </div>`;
 
     let feedback = exercise.querySelector('.hebrew-fillin-feedback');
@@ -9769,7 +10023,7 @@ async function loadHebrewQuiz() {
     const quiz = unit.quiz || [];
 
     if (quiz.length === 0) {
-        document.getElementById('hebrew-quiz-content').innerHTML = '<p style="text-align:center;padding:20px;">אין מבחן ביחידה זו</p>';
+        document.getElementById('hebrew-quiz-content').innerHTML = '<p style="text-align:center;padding:20px;">No quiz in this unit</p>';
         return;
     }
 
@@ -9820,7 +10074,7 @@ async function submitHebrewQuiz() {
 
     html += `<div style="text-align:center;margin-bottom:20px;">
         <p style="font-size:1.1rem;font-weight:600;color:${passed ? 'var(--success)' : 'var(--danger)'};">
-            ${passed ? '✓ כל הכבוד! עברת את המבחן' : 'המשך לתרגל, אתה יכול!'}
+            ${passed ? '✓ Excellent! You passed the quiz!' : 'Keep practicing, you can do it!'}
         </p>
     </div>`;
 
@@ -9847,54 +10101,286 @@ async function submitHebrewQuiz() {
     document.getElementById('hebrew-quiz-content').innerHTML = html;
 }
 
+let hebrewDashboardData = {};
+
 async function loadHebrewDashboard() {
     const container = document.getElementById('hebrew-dashboard-content');
+    const statsContainer = document.getElementById('hebrew-mgmt-stats-container');
+    const detailPanel = document.getElementById('hebrew-mgmt-detail-panel');
     if (!container) return;
     container.innerHTML = '<p style="text-align:center;padding:10px;color:var(--text-secondary);font-size:0.85rem;">טוען נתונים...</p>';
+    if (statsContainer) statsContainer.innerHTML = '';
+    if (detailPanel) detailPanel.innerHTML = '';
 
     try {
-        const progressSnap = await db.collection('hebrew_progress').where('section','==','quiz').get();
+        // Fetch ALL progress data (learn, practice, quiz)
+        const progressSnap = await db.collection('hebrew_progress').get();
 
         const byUser = {};
+        let totalQuizPassed = 0;
+        let totalQuizzes = 0;
+        let totalScoreSum = 0;
+
         progressSnap.forEach(doc => {
             const d = doc.data();
-            if (!byUser[d.userId]) byUser[d.userId] = { name: d.userName || d.userId, levels: {} };
-            if (!byUser[d.userId].levels[d.level]) byUser[d.userId].levels[d.level] = 0;
-            byUser[d.userId].levels[d.level]++;
+            if (!byUser[d.userId]) {
+                byUser[d.userId] = {
+                    name: d.userName || d.userId,
+                    id: d.userId,
+                    levels: {},
+                    sections: {},
+                    scores: {},
+                    lastActivity: null
+                };
+            }
+            const user = byUser[d.userId];
+
+            // Track sections completed per unit
+            const key = d.level + '_' + d.unitId;
+            if (!user.sections[key]) user.sections[key] = {};
+            if (d.section) user.sections[key][d.section] = true;
+
+            // Track level completion (quiz only)
+            if (d.section === 'quiz') {
+                if (!user.levels[d.level]) user.levels[d.level] = 0;
+                user.levels[d.level]++;
+                totalQuizzes++;
+                if (d.percentage >= 70) totalQuizPassed++;
+                if (d.percentage) totalScoreSum += d.percentage;
+                user.scores[key] = d.percentage;
+            }
+
+            // Track last activity
+            if (d.completedAt) {
+                const ts = d.completedAt.toDate ? d.completedAt.toDate() : new Date(d.completedAt);
+                if (!user.lastActivity || ts > user.lastActivity) {
+                    user.lastActivity = ts;
+                }
+            }
         });
+
+        hebrewDashboardData = byUser;
 
         const levelTotals = {};
         for (const level of Object.keys(HEBREW_CURRICULUM)) {
             levelTotals[level] = HEBREW_CURRICULUM[level].units.length;
         }
+        const totalUnits = Object.values(levelTotals).reduce((a,b) => a+b, 0);
 
-        if (Object.keys(byUser).length === 0) {
+        // Stats cards
+        const totalSoldiers = Object.keys(byUser).length;
+        const avgScore = totalQuizzes > 0 ? Math.round(totalScoreSum / totalQuizzes) : 0;
+
+        // Count active soldiers (activity in last 7 days)
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        let activeSoldiers = 0;
+        for (const user of Object.values(byUser)) {
+            if (user.lastActivity && user.lastActivity > weekAgo) activeSoldiers++;
+        }
+
+        if (statsContainer) {
+            statsContainer.innerHTML = `<div class="hebrew-mgmt-stats">
+                <div class="hebrew-mgmt-stat-card">
+                    <div class="hebrew-mgmt-stat-value">${totalSoldiers}</div>
+                    <div class="hebrew-mgmt-stat-label">חיילים לומדים</div>
+                </div>
+                <div class="hebrew-mgmt-stat-card" style="background:linear-gradient(135deg,#059669,#34D399);">
+                    <div class="hebrew-mgmt-stat-value">${activeSoldiers}</div>
+                    <div class="hebrew-mgmt-stat-label">פעילים השבוע</div>
+                </div>
+                <div class="hebrew-mgmt-stat-card" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);">
+                    <div class="hebrew-mgmt-stat-value">${avgScore}%</div>
+                    <div class="hebrew-mgmt-stat-label">ציון ממוצע</div>
+                </div>
+                <div class="hebrew-mgmt-stat-card" style="background:linear-gradient(135deg,#D97706,#FBBF24);">
+                    <div class="hebrew-mgmt-stat-value">${totalQuizPassed}/${totalQuizzes}</div>
+                    <div class="hebrew-mgmt-stat-label">מבחנים עברו</div>
+                </div>
+            </div>`;
+        }
+
+        if (totalSoldiers === 0) {
             container.innerHTML = '<p style="text-align:center;padding:15px;color:var(--text-secondary);font-size:0.85rem;">אין נתוני התקדמות עדיין</p>';
             return;
         }
 
-        let html = '<div class="hebrew-dashboard-row hebrew-dashboard-header">';
-        html += '<div>שם</div>';
-        html += '<div>רמה א</div><div>רמה ב</div><div>רמה ג</div><div>רמה ד</div>';
-        html += '</div>';
+        renderHebrewDashboardTable(byUser, levelTotals);
+    } catch(e) {
+        container.innerHTML = `<p style="color:var(--danger);font-size:0.85rem;">שגיאה בטעינת נתונים: ${e.message}</p>`;
+    }
+}
 
-        for (const [userId, data] of Object.entries(byUser)) {
-            html += '<div class="hebrew-dashboard-row">';
-            html += `<div style="font-weight:600;">${data.name}</div>`;
-            for (const lvl of ['alef','bet','gimel','dalet']) {
-                const done = data.levels[lvl] || 0;
-                const total = levelTotals[lvl] || 0;
-                const pct = total > 0 ? Math.round((done/total)*100) : 0;
-                const color = pct >= 100 ? 'var(--success)' : pct > 0 ? 'var(--primary)' : 'var(--text-secondary)';
-                html += `<div style="color:${color};font-weight:${pct>0?'600':'400'};">${total>0 ? done+'/'+total : '—'}</div>`;
-            }
-            html += '</div>';
+function renderHebrewDashboardTable(byUser, levelTotals) {
+    const container = document.getElementById('hebrew-dashboard-content');
+    const searchVal = (document.getElementById('hebrew-mgmt-search')?.value || '').toLowerCase();
+    const levelFilter = document.getElementById('hebrew-mgmt-level-filter')?.value || 'all';
+
+    let html = '<table class="hebrew-mgmt-table"><thead><tr>';
+    html += '<th>שם החייל</th>';
+    html += '<th>רמה א׳</th><th>רמה ב׳</th><th>רמה ג׳</th><th>רמה ד׳</th>';
+    html += '<th>ציון ממוצע</th>';
+    html += '<th>פעילות אחרונה</th>';
+    html += '<th>סטטוס</th>';
+    html += '</tr></thead><tbody>';
+
+    const sorted = Object.entries(byUser).sort((a, b) => {
+        // Sort by last activity, most recent first
+        const aTime = a[1].lastActivity ? a[1].lastActivity.getTime() : 0;
+        const bTime = b[1].lastActivity ? b[1].lastActivity.getTime() : 0;
+        return bTime - aTime;
+    });
+
+    let visibleCount = 0;
+    for (const [userId, data] of sorted) {
+        // Search filter
+        if (searchVal && !data.name.toLowerCase().includes(searchVal) && !userId.toLowerCase().includes(searchVal)) continue;
+
+        // Level filter: only show users who have progress in selected level
+        if (levelFilter !== 'all' && !(data.levels[levelFilter] > 0)) continue;
+
+        visibleCount++;
+
+        // Calculate total progress
+        let totalDone = 0, totalAll = 0;
+        for (const lvl of ['alef','bet','gimel','dalet']) {
+            totalDone += data.levels[lvl] || 0;
+            totalAll += levelTotals[lvl] || 0;
+        }
+        const overallPct = totalAll > 0 ? Math.round((totalDone / totalAll) * 100) : 0;
+
+        // Average quiz score
+        const scores = Object.values(data.scores);
+        const avgScore = scores.length > 0 ? Math.round(scores.reduce((a,b) => a+b, 0) / scores.length) : 0;
+
+        // Last activity
+        let lastStr = '—';
+        if (data.lastActivity) {
+            const d = data.lastActivity;
+            const now = new Date();
+            const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+            if (diffDays === 0) lastStr = 'היום';
+            else if (diffDays === 1) lastStr = 'אתמול';
+            else if (diffDays < 7) lastStr = 'לפני ' + diffDays + ' ימים';
+            else lastStr = d.toLocaleDateString('he-IL');
         }
 
-        container.innerHTML = html;
-    } catch(e) {
-        container.innerHTML = `<p style="color:var(--danger);font-size:0.85rem;">שגיאה: ${e.message}</p>`;
+        // Status badge
+        let statusBadge = '';
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        if (overallPct >= 100) {
+            statusBadge = '<span class="hebrew-mgmt-badge active">סיים הכל ✓</span>';
+        } else if (data.lastActivity && data.lastActivity > weekAgo) {
+            statusBadge = '<span class="hebrew-mgmt-badge active">פעיל</span>';
+        } else if (totalDone > 0) {
+            statusBadge = '<span class="hebrew-mgmt-badge partial">לא פעיל</span>';
+        } else {
+            statusBadge = '<span class="hebrew-mgmt-badge inactive">טרם התחיל</span>';
+        }
+
+        html += `<tr class="clickable" onclick="showHebrewSoldierDetail('${userId}')">`;
+        html += `<td style="font-weight:600;">${data.name}</td>`;
+
+        for (const lvl of ['alef','bet','gimel','dalet']) {
+            const done = data.levels[lvl] || 0;
+            const total = levelTotals[lvl] || 0;
+            const pct = total > 0 ? Math.round((done/total)*100) : 0;
+            const fillColor = pct >= 100 ? 'var(--success)' : pct > 0 ? 'var(--primary-lighter)' : 'var(--border)';
+            html += `<td>${done}/${total} <span class="hebrew-mgmt-progress-mini"><span class="hebrew-mgmt-progress-mini-fill" style="width:${pct}%;background:${fillColor};"></span></span></td>`;
+        }
+
+        html += `<td style="font-weight:600;color:${avgScore >= 70 ? 'var(--success)' : avgScore > 0 ? 'var(--warning)' : 'var(--text-secondary)'}">${scores.length > 0 ? avgScore + '%' : '—'}</td>`;
+        html += `<td>${lastStr}</td>`;
+        html += `<td>${statusBadge}</td>`;
+        html += '</tr>';
     }
+
+    html += '</tbody></table>';
+
+    if (visibleCount === 0) {
+        html = '<p style="text-align:center;padding:15px;color:var(--text-secondary);font-size:0.85rem;">לא נמצאו תוצאות</p>';
+    }
+
+    container.innerHTML = html;
+}
+
+function filterHebrewDashboard() {
+    const levelTotals = {};
+    for (const level of Object.keys(HEBREW_CURRICULUM)) {
+        levelTotals[level] = HEBREW_CURRICULUM[level].units.length;
+    }
+    renderHebrewDashboardTable(hebrewDashboardData, levelTotals);
+}
+
+function showHebrewSoldierDetail(userId) {
+    const panel = document.getElementById('hebrew-mgmt-detail-panel');
+    if (!panel) return;
+
+    const userData = hebrewDashboardData[userId];
+    if (!userData) { panel.innerHTML = ''; return; }
+
+    let html = `<div class="hebrew-mgmt-detail-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="font-size:1rem;font-weight:700;color:var(--primary);">📋 פירוט — ${userData.name}</h3>
+            <button class="btn btn-secondary" onclick="document.getElementById('hebrew-mgmt-detail-panel').innerHTML=''" style="font-size:0.78rem;padding:4px 12px;">✕ סגור</button>
+        </div>`;
+
+    for (const lvl of ['alef','bet','gimel','dalet']) {
+        const levelConfig = HEBREW_CURRICULUM[lvl];
+        const levelLabel = lvl === 'alef' ? 'רמה א׳' : lvl === 'bet' ? 'רמה ב׳' : lvl === 'gimel' ? 'רמה ג׳' : 'רמה ד׳';
+
+        html += `<h4 style="margin:14px 0 8px;font-size:0.9rem;color:var(--primary-light);">${levelLabel}</h4>`;
+        html += '<div class="hebrew-mgmt-detail-grid">';
+
+        for (const unit of levelConfig.units) {
+            const key = lvl + '_' + unit.id;
+            const sections = userData.sections[key] || {};
+            const score = userData.scores[key];
+
+            html += `<div class="hebrew-mgmt-unit-item">
+                <div style="font-weight:600;">${unit.icon} ${unit.title}</div>
+                <div class="status-icons">
+                    <span class="status-icon ${sections.learn ? 'done' : ''}">📚 ${sections.learn ? '✓' : '—'}</span>
+                    <span class="status-icon ${sections.practice ? 'done' : ''}">✍️ ${sections.practice ? '✓' : '—'}</span>
+                    <span class="status-icon ${sections.quiz ? 'done' : ''}">✔️ ${sections.quiz ? (score !== undefined ? score+'%' : '✓') : '—'}</span>
+                </div>
+            </div>`;
+        }
+
+        html += '</div>';
+    }
+
+    html += '</div>';
+    panel.innerHTML = html;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function exportHebrewDashboard() {
+    const levelTotals = {};
+    for (const level of Object.keys(HEBREW_CURRICULUM)) {
+        levelTotals[level] = HEBREW_CURRICULUM[level].units.length;
+    }
+
+    let csv = '\uFEFF'; // BOM for Hebrew
+    csv += 'שם,רמה א,רמה ב,רמה ג,רמה ד,ציון ממוצע,פעילות אחרונה\n';
+
+    for (const [userId, data] of Object.entries(hebrewDashboardData)) {
+        const scores = Object.values(data.scores);
+        const avgScore = scores.length > 0 ? Math.round(scores.reduce((a,b) => a+b, 0) / scores.length) : 0;
+        const lastAct = data.lastActivity ? data.lastActivity.toLocaleDateString('he-IL') : '—';
+
+        csv += `"${data.name}",`;
+        for (const lvl of ['alef','bet','gimel','dalet']) {
+            csv += `${data.levels[lvl] || 0}/${levelTotals[lvl]},`;
+        }
+        csv += `${scores.length > 0 ? avgScore + '%' : '—'},${lastAct}\n`;
+    }
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'hebrew_progress_' + new Date().toISOString().slice(0,10) + '.csv';
+    link.click();
 }
 
 function selectTrainingWeek(program, week) {
