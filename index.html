@@ -134,20 +134,117 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .guest-bar { background:linear-gradient(135deg,var(--accent),var(--accent-light)); color:var(--primary); padding:8px 20px; text-align:center; font-size:0.82rem; font-weight:600; display:none; position:fixed; top:0; left:0; right:0; z-index:400; margin-right:var(--sidebar-w); }
 .guest-bar a { color:var(--primary); text-decoration:underline; cursor:pointer; font-weight:700; margin-right:8px; }
 
-/* INTERNET SAFETY — שולטים ברשת */
-.safety-category { margin-bottom:24px; }
-.safety-category-title { font-size:1rem; font-weight:700; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
-.safety-card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; transition:all 0.2s; }
-.safety-card:hover { box-shadow:var(--shadow); border-color:var(--accent); }
-.safety-card h4 { font-size:0.92rem; font-weight:700; color:var(--primary); margin-bottom:6px; }
-.safety-card p { font-size:0.83rem; color:var(--text-secondary); margin-bottom:10px; line-height:1.6; }
-.safety-link { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:var(--primary); color:#fff; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none; transition:all 0.2s; }
-.safety-link:hover { background:var(--primary-light); transform:translateY(-1px); }
-.safety-tip { background:#FFF8E7; border:1px solid #E8D48A; border-radius:var(--radius-sm); padding:12px; font-size:0.85rem; margin-bottom:10px; line-height:1.6; }
-.safety-tip b { color:var(--primary); }
-.safety-hotline { background:linear-gradient(135deg,#FFF3E0,#FFE0B2); border:1px solid #FFB74D; border-radius:var(--radius); padding:16px; text-align:center; margin-top:16px; }
-.safety-hotline h4 { color:#E65100; font-size:0.95rem; margin-bottom:6px; }
-.safety-hotline p { font-size:0.85rem; color:#333; }
+/* ===== שולטים ברשת — לוחמת תודעה ===== */
+/* Dark military theme */
+#page-internet-safety { --cw-bg: #0a0f1a; --cw-card: #131b2e; --cw-card2: #1a2540; --cw-border: #2a3654; --cw-gold: #c9a227; --cw-gold-dim: rgba(201,162,39,0.15); --cw-text: #e2e8f0; --cw-text2: #8899aa; --cw-blue: #3b82f6; --cw-green: #22c55e; --cw-red: #ef4444; --cw-radius: 12px; }
+#page-internet-safety { background:var(--cw-bg); margin:-20px -24px; padding:0; min-height:calc(100vh - 60px); }
+.cw-wrap { max-width:800px; margin:0 auto; padding:24px 20px 60px; }
+/* Quick exit */
+.cw-exit-btn { position:fixed; bottom:20px; left:20px; z-index:999; background:var(--cw-red); color:#fff; border:none; border-radius:50%; width:48px; height:48px; font-size:1.4rem; cursor:pointer; box-shadow:0 4px 20px rgba(239,68,68,0.4); transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
+.cw-exit-btn:hover { transform:scale(1.1); box-shadow:0 6px 30px rgba(239,68,68,0.6); }
+/* Header */
+.cw-header { text-align:center; padding:32px 0 24px; border-bottom:1px solid var(--cw-border); margin-bottom:28px; }
+.cw-header h1 { font-size:1.6rem; color:var(--cw-gold); font-weight:800; letter-spacing:1px; margin-bottom:6px; }
+.cw-header .cw-subtitle { font-size:0.88rem; color:var(--cw-text2); line-height:1.7; }
+.cw-anon-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); color:var(--cw-green); padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600; margin-top:10px; }
+/* Module navigation */
+.cw-nav { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:24px; }
+.cw-nav-btn { background:var(--cw-card); border:1px solid var(--cw-border); border-radius:var(--cw-radius); padding:16px 12px; text-align:center; cursor:pointer; transition:all 0.25s; }
+.cw-nav-btn:hover { border-color:var(--cw-gold); transform:translateY(-2px); box-shadow:0 4px 20px rgba(201,162,39,0.15); }
+.cw-nav-btn.active { border-color:var(--cw-gold); background:var(--cw-gold-dim); }
+.cw-nav-btn .cw-nav-icon { font-size:1.6rem; margin-bottom:8px; display:block; }
+.cw-nav-btn .cw-nav-label { font-size:0.82rem; font-weight:700; color:var(--cw-text); display:block; }
+.cw-nav-btn .cw-nav-sub { font-size:0.7rem; color:var(--cw-text2); margin-top:3px; display:block; }
+/* Module panels */
+.cw-module { display:none; }
+.cw-module.active { display:block; animation:cwFadeIn 0.3s ease; }
+@keyframes cwFadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+/* Cards */
+.cw-card { background:var(--cw-card); border:1px solid var(--cw-border); border-radius:var(--cw-radius); padding:20px; margin-bottom:14px; transition:all 0.2s; }
+.cw-card:hover { border-color:rgba(201,162,39,0.3); }
+.cw-card-title { font-size:1rem; font-weight:700; color:var(--cw-gold); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.cw-card-text { font-size:0.85rem; color:var(--cw-text); line-height:1.8; }
+.cw-card-text strong { color:var(--cw-gold); font-weight:600; }
+/* OSINT module */
+.cw-osint-step { background:var(--cw-card2); border:1px solid var(--cw-border); border-radius:var(--cw-radius); padding:18px; margin-bottom:12px; cursor:pointer; transition:all 0.3s; }
+.cw-osint-step.locked { opacity:0.5; cursor:default; }
+.cw-osint-step.completed { border-color:var(--cw-green); }
+.cw-osint-step.current { border-color:var(--cw-gold); box-shadow:0 0 20px rgba(201,162,39,0.15); }
+.cw-osint-step .step-header { display:flex; align-items:center; gap:10px; }
+.cw-osint-step .step-num { width:28px; height:28px; border-radius:50%; background:var(--cw-border); color:var(--cw-text2); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; flex-shrink:0; }
+.cw-osint-step.completed .step-num { background:var(--cw-green); color:#fff; }
+.cw-osint-step.current .step-num { background:var(--cw-gold); color:#000; }
+.cw-osint-step .step-title { font-size:0.9rem; font-weight:700; color:var(--cw-text); }
+.cw-osint-step .step-body { display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--cw-border); }
+.cw-osint-step.current .step-body { display:block; }
+.cw-osint-quiz { background:var(--cw-bg); border-radius:8px; padding:14px; margin-top:12px; }
+.cw-osint-quiz .quiz-q { font-size:0.88rem; color:var(--cw-gold); font-weight:600; margin-bottom:10px; }
+.cw-osint-opt { display:block; width:100%; text-align:right; background:var(--cw-card); border:1px solid var(--cw-border); border-radius:8px; padding:10px 14px; margin-bottom:6px; color:var(--cw-text); font-size:0.83rem; cursor:pointer; transition:all 0.2s; }
+.cw-osint-opt:hover { border-color:var(--cw-gold); background:var(--cw-gold-dim); }
+.cw-osint-opt.correct { border-color:var(--cw-green); background:rgba(34,197,94,0.1); color:var(--cw-green); }
+.cw-osint-opt.wrong { border-color:var(--cw-red); background:rgba(239,68,68,0.1); color:var(--cw-red); }
+.cw-osint-feedback { margin-top:10px; padding:12px; border-radius:8px; font-size:0.83rem; line-height:1.7; }
+.cw-osint-feedback.good { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); color:var(--cw-green); }
+.cw-osint-feedback.info { background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); color:var(--cw-blue); }
+/* Reflection module */
+.cw-feeling-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.cw-feeling-btn { background:var(--cw-card2); border:1px solid var(--cw-border); border-radius:10px; padding:14px 8px; text-align:center; cursor:pointer; transition:all 0.2s; }
+.cw-feeling-btn:hover { border-color:var(--cw-blue); transform:translateY(-2px); }
+.cw-feeling-btn.selected { border-color:var(--cw-blue); background:rgba(59,130,246,0.12); box-shadow:0 0 15px rgba(59,130,246,0.15); }
+.cw-feeling-btn .feeling-icon { font-size:1.4rem; display:block; margin-bottom:4px; }
+.cw-feeling-btn .feeling-label { font-size:0.78rem; color:var(--cw-text); font-weight:600; }
+.cw-mirror-response { background:var(--cw-card2); border:1px solid rgba(59,130,246,0.2); border-radius:var(--cw-radius); padding:20px; margin-top:16px; animation:cwFadeIn 0.5s ease; }
+.cw-mirror-response .mirror-title { font-size:0.9rem; color:var(--cw-blue); font-weight:700; margin-bottom:10px; }
+.cw-mirror-response .mirror-text { font-size:0.85rem; color:var(--cw-text); line-height:1.9; }
+.cw-textarea { width:100%; background:var(--cw-bg); border:1px solid var(--cw-border); border-radius:8px; padding:12px; color:var(--cw-text); font-size:0.85rem; resize:vertical; min-height:80px; font-family:inherit; direction:rtl; }
+.cw-textarea:focus { outline:none; border-color:var(--cw-blue); }
+.cw-zero-data { display:flex; align-items:center; gap:6px; font-size:0.72rem; color:var(--cw-text2); margin-top:8px; }
+/* Scenario module */
+.cw-scenario-header { background:var(--cw-card2); border:1px solid var(--cw-border); border-radius:var(--cw-radius); padding:20px; margin-bottom:14px; }
+.cw-scenario-text { font-size:0.88rem; color:var(--cw-text); line-height:2; white-space:pre-line; }
+.cw-choice-btn { display:block; width:100%; text-align:right; background:var(--cw-card); border:1px solid var(--cw-border); border-radius:10px; padding:14px 16px; margin-bottom:8px; color:var(--cw-text); font-size:0.85rem; line-height:1.6; cursor:pointer; transition:all 0.25s; }
+.cw-choice-btn:hover { border-color:var(--cw-gold); background:var(--cw-gold-dim); transform:translateX(-4px); }
+.cw-choice-btn.chosen { border-color:var(--cw-blue); background:rgba(59,130,246,0.1); }
+.cw-analysis { background:var(--cw-card2); border-right:3px solid var(--cw-gold); border-radius:0 var(--cw-radius) var(--cw-radius) 0; padding:18px; margin-top:12px; animation:cwFadeIn 0.4s ease; }
+.cw-analysis .analysis-title { font-size:0.88rem; color:var(--cw-gold); font-weight:700; margin-bottom:8px; }
+.cw-analysis .analysis-text { font-size:0.83rem; color:var(--cw-text); line-height:1.8; }
+.cw-progress-bar { background:var(--cw-bg); border-radius:6px; height:6px; overflow:hidden; margin:12px 0; }
+.cw-progress-fill { height:100%; background:linear-gradient(90deg,var(--cw-gold),var(--cw-blue)); border-radius:6px; transition:width 0.5s ease; }
+.cw-scenario-select { display:grid; grid-template-columns:1fr; gap:10px; }
+.cw-scenario-card { background:var(--cw-card2); border:1px solid var(--cw-border); border-radius:var(--cw-radius); padding:16px; cursor:pointer; transition:all 0.2s; }
+.cw-scenario-card:hover { border-color:var(--cw-gold); transform:translateY(-2px); }
+.cw-scenario-card .sc-title { font-size:0.9rem; font-weight:700; color:var(--cw-text); margin-bottom:4px; }
+.cw-scenario-card .sc-desc { font-size:0.78rem; color:var(--cw-text2); }
+.cw-scenario-card .sc-time { font-size:0.72rem; color:var(--cw-gold); margin-top:6px; }
+/* Toolkit module */
+.cw-tool-card { background:var(--cw-card); border:1px solid var(--cw-border); border-radius:var(--cw-radius); padding:18px; margin-bottom:12px; cursor:pointer; transition:all 0.2s; }
+.cw-tool-card:hover { border-color:var(--cw-gold); }
+.cw-tool-card .tool-header { display:flex; align-items:center; gap:10px; }
+.cw-tool-card .tool-icon { font-size:1.5rem; }
+.cw-tool-card .tool-name { font-size:0.9rem; font-weight:700; color:var(--cw-text); }
+.cw-tool-card .tool-desc { font-size:0.78rem; color:var(--cw-text2); margin-top:2px; }
+.cw-tool-card .tool-body { display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--cw-border); }
+.cw-tool-card.open .tool-body { display:block; animation:cwFadeIn 0.3s ease; }
+.cw-breath-circle { width:140px; height:140px; border-radius:50%; border:3px solid var(--cw-gold); display:flex; align-items:center; justify-content:center; margin:20px auto; font-size:1rem; color:var(--cw-gold); font-weight:700; transition:all 1s ease; }
+.cw-breath-circle.inhale { transform:scale(1.3); border-color:var(--cw-blue); color:var(--cw-blue); }
+.cw-breath-circle.hold { border-color:var(--cw-green); color:var(--cw-green); }
+.cw-breath-circle.exhale { transform:scale(0.85); border-color:var(--cw-gold); color:var(--cw-gold); }
+.cw-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s; border:none; }
+.cw-btn-gold { background:var(--cw-gold); color:#000; }
+.cw-btn-gold:hover { background:#d4ab2e; transform:translateY(-1px); }
+.cw-btn-outline { background:transparent; border:1px solid var(--cw-border); color:var(--cw-text); }
+.cw-btn-outline:hover { border-color:var(--cw-gold); color:var(--cw-gold); }
+.cw-btn-blue { background:var(--cw-blue); color:#fff; }
+.cw-btn-blue:hover { background:#2563eb; }
+.cw-text-card { background:var(--cw-card2); border-right:3px solid var(--cw-gold); border-radius:0 var(--cw-radius) var(--cw-radius) 0; padding:18px; margin-bottom:12px; }
+.cw-text-card .tc-title { font-size:0.88rem; color:var(--cw-gold); font-weight:700; margin-bottom:8px; }
+.cw-text-card .tc-body { font-size:0.85rem; color:var(--cw-text); line-height:1.9; }
+.cw-divider { border:none; border-top:1px solid var(--cw-border); margin:20px 0; }
+@media(max-width:600px) {
+    .cw-nav { grid-template-columns:1fr 1fr; gap:8px; }
+    .cw-feeling-grid { grid-template-columns:repeat(2,1fr); }
+    .cw-wrap { padding:16px 12px 50px; }
+}
 
 /* MAIN CONTENT */
 .main-content { flex:1; margin-right:var(--sidebar-w); min-height:100vh; }
@@ -1108,16 +1205,95 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 </div>
 
-<!-- ====== INTERNET SAFETY — שולטים ברשת ====== -->
+<!-- ====== שולטים ברשת — לוחמת תודעה ====== -->
 <div class="page-section" id="page-internet-safety">
-    <div class="card">
-        <div class="card-title">שולטים ברשת</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">כלים, מידע ותמיכה להתמודדות עם אתגרי עולם האינטרנט והרשתות החברתיות</p>
+<div class="cw-wrap">
+    <!-- Quick Exit Button -->
+    <button class="cw-exit-btn" onclick="cwQuickExit()" title="יציאה מהירה">✕</button>
+
+    <!-- Header -->
+    <div class="cw-header">
+        <h1>לוחמת תודעה</h1>
+        <div class="cw-subtitle">לשלוט במרחב הפנימי — מתקן אימונים תודעתי</div>
+        <div class="cw-anon-badge">🛡️ מרחב אנונימי ומוגן — אין זיהוי, אין שמירת מידע</div>
     </div>
-    <div class="card" style="text-align:center;padding:40px 20px;">
-        <p style="font-size:1.3rem;margin-bottom:12px;">המודול בבנייה</p>
-        <p style="color:var(--text-secondary);">תכנים בנושא בטיחות ברשת יתווספו בקרוב.</p>
+
+    <!-- Module Navigation -->
+    <div class="cw-nav">
+        <div class="cw-nav-btn active" onclick="cwSwitchModule('osint')">
+            <span class="cw-nav-icon">🔍</span>
+            <span class="cw-nav-label">מודיעין גלוי</span>
+            <span class="cw-nav-sub">חקירת התעשייה</span>
+        </div>
+        <div class="cw-nav-btn" onclick="cwSwitchModule('reflect')">
+            <span class="cw-nav-icon">🪞</span>
+            <span class="cw-nav-label">הערכת מצב</span>
+            <span class="cw-nav-sub">רפלקציה חופשית</span>
+        </div>
+        <div class="cw-nav-btn" onclick="cwSwitchModule('scenario')">
+            <span class="cw-nav-icon">🎯</span>
+            <span class="cw-nav-label">סימולטור שטח</span>
+            <span class="cw-nav-sub">תרחישי החלטות</span>
+        </div>
+        <div class="cw-nav-btn" onclick="cwSwitchModule('toolkit')">
+            <span class="cw-nav-icon">🧰</span>
+            <span class="cw-nav-label">פק״ל כיסים</span>
+            <span class="cw-nav-sub">כלים לנפש</span>
+        </div>
     </div>
+
+    <!-- ===== MODULE 1: OSINT ===== -->
+    <div class="cw-module active" id="cw-mod-osint">
+        <div class="cw-card">
+            <div class="cw-card-title">🔍 תיק חקירה: מודיעין גלוי</div>
+            <div class="cw-card-text">אתה עומד לחקור את אחת המכונות הרווחיות בעולם — <strong>תעשיית הקשב</strong>. המשימה: לגלות איך הרשתות והפלטפורמות מהנדסות את התודעה שלך, ולמה אתה לא "חלש" — אתה מתמודד מול מערכת שתוכננה לנצח.</div>
+        </div>
+        <div id="cw-osint-steps"></div>
+    </div>
+
+    <!-- ===== MODULE 2: REFLECTION ===== -->
+    <div class="cw-module" id="cw-mod-reflect">
+        <div class="cw-card">
+            <div class="cw-card-title">🪞 הערכת מצב חופשית</div>
+            <div class="cw-card-text">מרחב בטוח לבדוק מה קורה בפנים. <strong>שום דבר לא נשמר</strong> — לא בשרת, לא במכשיר. ברגע שתצא מהעמוד, הכל נמחק. המטרה: לתת שם לתחושה, בלי שיפוט.</div>
+        </div>
+        <div class="cw-zero-data">🔒 Zero-Data: אף מילה שתכתוב כאן לא נשמרת בשום מקום</div>
+        <hr class="cw-divider">
+        <div class="cw-card">
+            <div class="cw-card-title" style="font-size:0.9rem;">מה אתה מרגיש עכשיו?</div>
+            <div class="cw-feeling-grid" id="cw-feelings"></div>
+        </div>
+        <div class="cw-card">
+            <div class="cw-card-title" style="font-size:0.9rem;">רוצה להרחיב? (לא חובה)</div>
+            <textarea class="cw-textarea" id="cw-reflect-text" placeholder="זה לא נשמר בשום מקום. כתוב מה שעובר עליך..." rows="4"></textarea>
+            <div class="cw-zero-data">🔒 הטקסט הזה קיים רק על המסך שלך — ברגע שתצא הוא נעלם</div>
+        </div>
+        <div style="text-align:center;margin:16px 0;">
+            <button class="cw-btn cw-btn-blue" onclick="cwShowMirror()">הראה לי מראה</button>
+        </div>
+        <div id="cw-mirror-area"></div>
+    </div>
+
+    <!-- ===== MODULE 3: SCENARIOS ===== -->
+    <div class="cw-module" id="cw-mod-scenario">
+        <div class="cw-card">
+            <div class="cw-card-title">🎯 סימולטור החלטות בשטח</div>
+            <div class="cw-card-text">תרחישים כתובים בגוף שני. כל בחירה פותחת ענף אחר. אין תשובה "נכונה" — יש <strong>הבנה עמוקה</strong> של מה שמניע אותך.</div>
+        </div>
+        <div id="cw-scenario-area">
+            <div class="cw-scenario-select" id="cw-scenario-list"></div>
+        </div>
+    </div>
+
+    <!-- ===== MODULE 4: TOOLKIT ===== -->
+    <div class="cw-module" id="cw-mod-toolkit">
+        <div class="cw-card">
+            <div class="cw-card-title">🧰 פק״ל כיסים לנפש</div>
+            <div class="cw-card-text">כלים מעשיים שאפשר להפעיל <strong>ברגע אמת</strong>. נשימה קרבית, השהיית תגובה, עוגנים לחזרה לנוכחות.</div>
+        </div>
+        <div id="cw-toolkit-items"></div>
+    </div>
+</div>
 </div>
 
 <!-- ====== SURVEYS ====== -->
@@ -1636,6 +1812,7 @@ function activatePage(page) {
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
     if (page === 'content-mgmt') cmgmtProgramChanged();
+    if (page === 'internet-safety') cwInitModule();
     if (page === 'training') {
         const prog = currentTrainingProgram || 'basic';
         // Build platoon tabs dynamically based on user permissions
@@ -11556,6 +11733,663 @@ initApp().then(() => {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW:', e));
 }
+
+
+// =================================================================
+// ===== שולטים ברשת — לוחמת תודעה — Full Module =====
+// =================================================================
+
+// --- Quick Exit ---
+function cwQuickExit() {
+    navigate('home');
+    // Clear any reflection text from memory
+    const ta = document.getElementById('cw-reflect-text');
+    if (ta) ta.value = '';
+    const mirror = document.getElementById('cw-mirror-area');
+    if (mirror) mirror.innerHTML = '';
+}
+
+// --- Module Navigation ---
+function cwSwitchModule(mod) {
+    document.querySelectorAll('.cw-module').forEach(m => m.classList.remove('active'));
+    document.querySelectorAll('.cw-nav-btn').forEach(b => b.classList.remove('active'));
+    const el = document.getElementById('cw-mod-' + mod);
+    if (el) el.classList.add('active');
+    const btns = document.querySelectorAll('.cw-nav-btn');
+    const idx = { osint:0, reflect:1, scenario:2, toolkit:3 }[mod];
+    if (btns[idx]) btns[idx].classList.add('active');
+}
+
+// --- Init Module ---
+function cwInitModule() {
+    cwBuildOsint();
+    cwBuildFeelings();
+    cwBuildScenarioList();
+    cwBuildToolkit();
+}
+
+// ===============================
+// MODULE 1: OSINT — מודיעין גלוי
+// ===============================
+const CW_OSINT_DATA = [
+    {
+        title: 'נקודת ציון 1: מודל עסקי — אתה המוצר',
+        content: `<div class="cw-card-text">כשמשהו בחינם באינטרנט — <strong>אתה המוצר</strong>. רשתות חברתיות ופלטפורמות תוכן לא מוכרות לך שירות. הן מוכרות את <strong>הקשב שלך</strong> למפרסמים.<br><br>המודל העסקי פשוט: ככל שאתה גולל יותר, צופה יותר, נשאר יותר — הם מרוויחים יותר. הכל מתוכנן כך שתהיה <strong>מכור לגלילה</strong>.</div>
+        <div class="cw-osint-quiz">
+            <div class="quiz-q">שאלת חקירה: מה המוצר האמיתי של רשת חברתית חינמית?</div>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,0,true)">הקשב שלך — הזמן והנתונים שלך נמכרים למפרסמים</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,0,false)">הפוסטים שאתה מעלה</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,0,false)">חיבור בין אנשים</button>
+        </div>
+        <div id="cw-osint-fb-0"></div>`,
+        feedback: 'נכון. כל גלילה, כל לייק, כל שנייה שאתה שוהה — מתורגמת לנתון שנמכר. זו לא קונספירציה, זו עובדה עסקית.'
+    },
+    {
+        title: 'נקודת ציון 2: לולאת הדופמין — ההנדסה של ההרגל',
+        content: `<div class="cw-card-text">האלגוריתם לומד מה גורם לך <strong>לעצור ולהסתכל</strong>. הוא מנתח מה גרם לך ללחוץ, כמה זמן הסתכלת, מתי חזרת. ואז הוא מגיש לך עוד ועוד מאותו הדבר — כמו מכונת מזל שמחלקת ניצחון קטן כל כמה גלילות.<br><br><strong>לולאת הדופמין</strong>: ציפייה → גירוי → סיפוק קצר → ריקנות → חיפוש שוב. הגוף שלך מגיב כמו לכל התמכרות — לא כי אתה חלש, אלא כי המערכת <strong>תוכננה בדיוק לזה</strong>.</div>
+        <div class="cw-osint-quiz">
+            <div class="quiz-q">למה הגלילה ברשת דומה להתמכרות?</div>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,1,false)">כי אנשים חלשים</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,1,true)">כי האלגוריתם מהנדס לולאת דופמין שגורמת לגוף לחפש עוד</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,1,false)">כי אין מספיק תוכן איכותי</button>
+        </div>
+        <div id="cw-osint-fb-1"></div>`,
+        feedback: 'בדיוק. אתה לא מתמודד עם עצמך — אתה מתמודד מול צוותים של מהנדסים, פסיכולוגים ומדעני נתונים שמטרתם לגרום לך להישאר. וזה דורש כבוד, לא בושה.'
+    },
+    {
+        title: 'נקודת ציון 3: אשליית האינטימיות',
+        content: `<div class="cw-card-text">תעשיית הפורנוגרפיה בנויה על אשליה: שמה שאתה רואה הוא <strong>קשר אמיתי</strong>. אבל מאחורי הקלעים יש:<br><br>• <strong>תסריטים מבוימים</strong> — כלום לא ספונטני<br>• <strong>ניצול כלכלי</strong> — אנשים במצוקה שנדחפו לתעשייה<br>• <strong>אלגוריתם שמחמיר</strong> — התוכן הולך ונעשה קיצוני יותר כי הגוף מתרגל ודורש "מינון" גבוה יותר<br><br>כמו מים מלוחים: <strong>מרווה לרגע, מייבשת מבפנים עוד יותר</strong>.</div>
+        <div class="cw-osint-quiz">
+            <div class="quiz-q">למה הצריכה של פורנוגרפיה נוטה להחמיר עם הזמן?</div>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,2,false)">כי האדם נהיה יותר חופשי</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,2,false)">כי יש יותר תוכן זמין</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,2,true)">כי המוח מפתח סבילות ודורש גירוי חזק יותר — כמו בכל התמכרות</button>
+        </div>
+        <div id="cw-osint-fb-2"></div>`,
+        feedback: 'זה בדיוק מנגנון הסבילות (Tolerance). המוח מפתח עמידות לגירוי ודורש רמה גבוהה יותר כדי להגיע לאותה תחושה. זו לא בחירה — זו ביולוגיה.'
+    },
+    {
+        title: 'נקודת ציון 4: הפער בין הדימוי למציאות',
+        content: `<div class="cw-card-text">פורנוגרפיה מייצרת דימוי מעוות של:<br><br>• <strong>גוף</strong> — ציפיות לא ריאליסטיות שגורמות לתחושת חוסר<br>• <strong>מגע</strong> — מגע מכני בלי חיבור רגשי<br>• <strong>כוח</strong> — שליטה במקום שותפות<br>• <strong>אינטימיות</strong> — עירום בלי פגיעות, תשוקה בלי אחריות<br><br>התוצאה: כשמגיע הרגע האמיתי — עם בן זוג אמיתי — מרגישים <strong>ניתוק</strong>. לא כי אין אהבה, אלא כי המוח הורגל לגירוי מלאכותי שלא דורש <strong>אומץ רגשי</strong>.</div>
+        <div class="cw-osint-quiz">
+            <div class="quiz-q">מה ההשפעה המרכזית של צריכת פורנוגרפיה על קשר זוגי אמיתי?</div>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,3,true)">יוצרת ניתוק — המוח הורגל לגירוי שלא דורש אומץ רגשי וחשיפה אמיתית</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,3,false)">משפרת את ההבנה של הצד השני</button>
+            <button class="cw-osint-opt" onclick="cwOsintAnswer(this,3,false)">אין השפעה כלל</button>
+        </div>
+        <div id="cw-osint-fb-3"></div>`,
+        feedback: 'אינטימיות אמיתית לא נמדדת בעוצמת העירום — אלא בעומק ההיפתחות. פורנוגרפיה מלמדת את ההפך: עירום בלי נשמה, מגע בלי אמון.'
+    },
+    {
+        title: 'נקודת ציון 5: סיכום חקירה — אתה לא חלש, אתה לוחם',
+        content: `<div class="cw-card-text">מה גילית בחקירה הזו:<br><br>• אתה <strong>לא חלש</strong> — אתה מתמודד מול מכונה מהונדסת בידי צוותים של מומחים<br>• ה<strong>כמיהה</strong> שלך לקשר, למגע, לקרבה — היא <strong>אמיתית וקדושה</strong><br>• הבעיה היא לא הצורך — הבעיה היא ש<strong>מישהו מרוויח</strong> מלנצל את הצורך הזה<br>• <strong>כעס בריא</strong> על המניפולציה הוא כלי. להפוך מקורבן למורד.<br><br>עכשיו אתה יודע איך התעשייה עובדת. אתה יכול <strong>לבחור אחרת</strong> — לא מתוך בושה, אלא מתוך כבוד עצמי.</div>`,
+        feedback: ''
+    }
+];
+
+let cwOsintStep = 0;
+
+function cwBuildOsint() {
+    const container = document.getElementById('cw-osint-steps');
+    if (!container) return;
+    container.innerHTML = CW_OSINT_DATA.map((step, i) => {
+        const state = i === 0 ? 'current' : 'locked';
+        return `<div class="cw-osint-step ${state}" id="cw-osint-step-${i}" onclick="cwOpenOsintStep(${i})">
+            <div class="step-header">
+                <div class="step-num">${i + 1}</div>
+                <div class="step-title">${step.title}</div>
+            </div>
+            <div class="step-body">${step.content}</div>
+        </div>`;
+    }).join('');
+}
+
+function cwOpenOsintStep(i) {
+    if (i > cwOsintStep) return; // locked
+    document.querySelectorAll('.cw-osint-step').forEach((el, idx) => {
+        el.classList.remove('current');
+        if (idx < i) el.classList.add('completed');
+        if (idx > cwOsintStep) el.classList.add('locked');
+    });
+    const el = document.getElementById('cw-osint-step-' + i);
+    if (el) {
+        el.classList.add('current');
+        el.classList.remove('locked');
+    }
+}
+
+function cwOsintAnswer(btn, stepIdx, isCorrect) {
+    const parent = btn.parentElement;
+    if (parent.dataset.answered) return;
+    parent.dataset.answered = '1';
+
+    parent.querySelectorAll('.cw-osint-opt').forEach(b => {
+        b.style.pointerEvents = 'none';
+    });
+    btn.classList.add(isCorrect ? 'correct' : 'wrong');
+
+    const fbEl = document.getElementById('cw-osint-fb-' + stepIdx);
+    if (isCorrect && fbEl) {
+        fbEl.innerHTML = `<div class="cw-osint-feedback good">${CW_OSINT_DATA[stepIdx].feedback}</div>`;
+        // Unlock next step
+        setTimeout(() => {
+            if (stepIdx + 1 < CW_OSINT_DATA.length && stepIdx + 1 > cwOsintStep) {
+                cwOsintStep = stepIdx + 1;
+                const nextEl = document.getElementById('cw-osint-step-' + cwOsintStep);
+                if (nextEl) {
+                    nextEl.classList.remove('locked');
+                    nextEl.classList.add('current');
+                    const curEl = document.getElementById('cw-osint-step-' + stepIdx);
+                    if (curEl) { curEl.classList.remove('current'); curEl.classList.add('completed'); }
+                    nextEl.scrollIntoView({ behavior:'smooth', block:'center' });
+                }
+            }
+        }, 1500);
+    } else if (fbEl) {
+        fbEl.innerHTML = '<div class="cw-osint-feedback info">לא בדיוק. קרא שוב את הטקסט ונסה להבין מה המנגנון שמאחורי זה.</div>';
+        setTimeout(() => {
+            parent.dataset.answered = '';
+            parent.querySelectorAll('.cw-osint-opt').forEach(b => {
+                b.style.pointerEvents = '';
+                b.classList.remove('wrong');
+            });
+            fbEl.innerHTML = '';
+        }, 2500);
+    }
+}
+
+// ===============================
+// MODULE 2: REFLECTION — הערכת מצב
+// ===============================
+const CW_FEELINGS = [
+    { icon: '😔', label: 'בדידות', key: 'loneliness' },
+    { icon: '😰', label: 'עומס', key: 'overload' },
+    { icon: '😤', label: 'כעס', key: 'anger' },
+    { icon: '🫥', label: 'ריקנות', key: 'emptiness' },
+    { icon: '😞', label: 'בושה', key: 'shame' },
+    { icon: '🥺', label: 'כמיהה לקשר', key: 'longing' },
+    { icon: '😶', label: 'חוסר תחושה', key: 'numbness' },
+    { icon: '💔', label: 'כאב', key: 'pain' },
+    { icon: '😟', label: 'חרדה', key: 'anxiety' }
+];
+
+const CW_MIRROR_RESPONSES = {
+    loneliness: {
+        title: 'בדידות — זה לא חולשה, זה צורך אנושי',
+        text: 'הבדידות שאתה מרגיש היא לא סימן שמשהו שבור בך. היא סימן שאתה אדם שזקוק לקשר אמיתי — לא לתחליף דיגיטלי. הבדידות הזו היא בעצם קול פנימי שאומר: "אני רוצה להיות מוכר, אהוב, שייך." זה הקול הכי אנושי שיש. הפורנוגרפיה מציעה מגע ללא נוכחות — גוף בלי נשמה. היא לא פותרת בדידות — היא מעמיקה אותה, כי אחרי כל צפייה, אתה עדיין לבד.'
+    },
+    overload: {
+        title: 'עומס — הגוף מחפש מילוט',
+        text: 'כשהגוף והנפש תחת עומס — ואתה נמצא בסביבה קרבית שדורשת ממך כל הזמן — הם מחפשים דרך מהירה לברוח. זה טבעי. הבעיה היא לא שאתה מחפש הקלה, אלא שהמכונות שמהנדסות תוכן מכוונות בדיוק לרגע הזה — הרגע שבו אתה עמוס, עייף, פגיע. עכשיו קח נשימה ושאל את עצמך: מה אני באמת צריך? אולי שקט. אולי שינה. אולי שיחה עם מישהו.'
+    },
+    anger: {
+        title: 'כעס — אנרגיה שאפשר לכוון',
+        text: 'הכעס שלך הוא לא בעיה — הוא אנרגיה. השאלה היא לאן אתה מכוון אותו. כשאתה כועס ופונה לגלילה או לצפייה — אתה בעצם משתיק את הכעס בלי לפתור אותו. הוא נשאר בפנים ומתפוצץ אחר כך במקום אחר. כעס בריא אפשר לכוון: אימון גופני, שיחה עם חבר, כתיבה. הכעס שלך אומר שמשהו לא בסדר — תקשיב לו, אל תשתיק אותו.'
+    },
+    emptiness: {
+        title: 'ריקנות — מקום שמחפש משמעות',
+        text: 'הריקנות היא לא "כלום". היא חלל שנוצר כשמשהו חיוני חסר — משמעות, חיבור, תחושת מטרה. הגלילה, הצפייה — הן ניסיון למלא את החלל הזה. אבל הן ממלאות בחומר שמתפרק תוך דקות, ואז הריקנות חוזרת גדולה יותר. מה יכול באמת למלא? קשר אמיתי. פעולה שיש בה משמעות. אפילו רגע קטן שבו עשית משהו שאתה גאה בו.'
+    },
+    shame: {
+        title: 'בושה — המלכודת הכי חזקה',
+        text: 'הבושה היא המנגנון הכי מסוכן. היא עובדת ככה: אתה צופה → מרגיש רע → הבושה גורמת לך להרגיש שאתה "פגום" → כשאתה מרגיש פגום, אתה מחפש הקלה → ההקלה הכי מהירה שאתה מכיר היא... צפייה. וכך הלולאה נסגרת. הבושה אומרת: "אתה לא שווה." האמת היא: אתה אדם שנלחם בדבר קשה ומכיר בזה. וזה דורש אומץ שרוב האנשים לא מסוגלים אליו.'
+    },
+    longing: {
+        title: 'כמיהה לקשר — הצורך הכי אמיתי שלך',
+        text: 'הכמיהה שלך לקשר, למגע, לקרבה — היא לא חולשה. היא הצורך הכי עמוק והכי יפה שיש באדם. הפורנוגרפיה מנצלת את הכמיהה הזו ומציעה קיצור דרך: מגע בלי אינטימיות, תשוקה בלי אחריות, עונג בלי מחויבות. כמו מים מלוחים לצמא — מרווה לרגע, מייבשת עוד יותר. הקשר האמיתי שאתה מחפש נמצא בדרך הארוכה: פגיעות, חשיפה, אומץ להיות רך. זה מפחיד, אבל זה מה שבאמת ממלא.'
+    },
+    numbness: {
+        title: 'חוסר תחושה — מנגנון הגנה בעבודת שעות נוספות',
+        text: 'חוסר תחושה הוא לא עדות לקור — הוא עדות לכך שהרגשת יותר מדי. הגוף והנפש מגנים עליך כשיש עומס שלא ניתן לעבד. בסביבה קרבית, זה קורה הרבה. הבעיה מתחילה כשהחוסר תחושה הופך לברירת מחדל, ואז אתה מחפש גירוי קיצוני כדי "להרגיש משהו". חזור לגוף בעדינות — הנח את היד על הלב, נשום לאט. ההרגשה תחזור בזמנה.'
+    },
+    pain: {
+        title: 'כאב — עדות לכך שאתה חי',
+        text: 'הכאב שאתה מרגיש — בין אם הוא מאובדן, ממרחק, מפספוס — הוא הוכחה שאכפת לך. אנשים שלא כואבים הם אנשים שהפסיקו להרגיש. אתה לא שם. הצפייה בפורנוגרפיה מרדימה כאב — כמו משכך שלא מרפא. הכאב עדיין שם למחרת, ובתוספת בושה. הכאב שלך צריך מקום — שיחה, כתיבה, נוכחות של מישהו. לא מסך.'
+    },
+    anxiety: {
+        title: 'חרדה — אות אזעקה שדורש מענה',
+        text: 'החרדה היא מערכת ההתראה של הגוף. כשהיא דולקת — יש סיבה. אולי יש איום אמיתי, אולי יש עומס שלא עובד, אולי יש משהו שאתה נמנע ממנו. גלילה כפייתית או צפייה היא ניסיון להשתיק את האזעקה בלי לבדוק מה הפעיל אותה. עצור. נשום. שאל: ממה אני בורח עכשיו? לפעמים רק השאלה הזו כבר מרגיעה.'
+    }
+};
+
+let cwSelectedFeelings = [];
+
+function cwBuildFeelings() {
+    const container = document.getElementById('cw-feelings');
+    if (!container) return;
+    container.innerHTML = CW_FEELINGS.map(f =>
+        `<div class="cw-feeling-btn" data-key="${f.key}" onclick="cwToggleFeeling(this,'${f.key}')">
+            <span class="feeling-icon">${f.icon}</span>
+            <span class="feeling-label">${f.label}</span>
+        </div>`
+    ).join('');
+}
+
+function cwToggleFeeling(el, key) {
+    el.classList.toggle('selected');
+    if (cwSelectedFeelings.includes(key)) {
+        cwSelectedFeelings = cwSelectedFeelings.filter(k => k !== key);
+    } else {
+        cwSelectedFeelings.push(key);
+    }
+}
+
+function cwShowMirror() {
+    const area = document.getElementById('cw-mirror-area');
+    if (!area) return;
+    if (cwSelectedFeelings.length === 0) {
+        area.innerHTML = '<div class="cw-mirror-response"><div class="mirror-title">בחר לפחות תחושה אחת למעלה</div><div class="mirror-text">או כתוב משהו חופשי בשדה הטקסט.</div></div>';
+        return;
+    }
+
+    let html = '';
+    cwSelectedFeelings.forEach(key => {
+        const resp = CW_MIRROR_RESPONSES[key];
+        if (resp) {
+            html += `<div class="cw-mirror-response" style="margin-bottom:12px;">
+                <div class="mirror-title">${resp.title}</div>
+                <div class="mirror-text">${resp.text}</div>
+            </div>`;
+        }
+    });
+    area.innerHTML = html;
+    area.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ===============================
+// MODULE 3: SCENARIOS — סימולטור
+// ===============================
+const CW_SCENARIOS = [
+    {
+        id: 'weekend',
+        title: 'סוף שבוע — הבית הריק',
+        desc: 'יצאת הביתה אחרי 21 יום. הדירה ריקה. השקט צורם.',
+        time: '~7 דקות',
+        steps: [
+            {
+                text: 'סוף שבוע. יצאת הביתה אחרי 21 יום רצופים בבסיס. הדירה ריקה. השקט פתאום צורם באוזניים אחרי הרעש של הפלוגה.
+
+אתה שוכב על המיטה. היד נשלחת אוטומטית לכיס, מוציאה את הטלפון. האלגוריתם כבר מחכה לך. הפיד טוען. בול בשבילך.',
+                choices: [
+                    { text: 'ממשיך לגלול. סתם קצת. מה כבר יקרה.', next: 1, type: 'shortcut' },
+                    { text: 'שם את הטלפון על השולחן. יוצא לאוויר.', next: 2, type: 'long' },
+                    { text: 'מרגיש שמשהו מושך אותי, אבל עוצר — ושואל את עצמי: מה אני באמת צריך?', next: 3, type: 'aware' }
+                ]
+            },
+            { // 1 — shortcut
+                text: 'הגלילה מתחילה בלי שתשים לב. פוסט אחד, עוד אחד. מתישהו התוכן משתנה — נעשה יותר מרמז, יותר מושך. האלגוריתם זיהה שאתה בודד, בלילה, לבד. הוא מגיש בדיוק מה שהגוף רוצה.
+
+20 דקות עברו. ההרגשה: ריקנות. השקט עכשיו עוד יותר צורם.',
+                choices: [
+                    { text: 'ממשיך. כבר לא אכפת.', next: 4, type: 'spiral' },
+                    { text: 'סוגר את הטלפון ברגע. מרגיש מבואס אבל לא ממשיך.', next: 5, type: 'stop' }
+                ]
+            },
+            { // 2 — long path
+                text: 'יצאת החוצה. הרחוב שקט. האוויר הקר פוגע בפנים ומעורר את הגוף. אתה הולך בלי כיוון. מתחיל לשים לב לפרטים — עץ, אור, ריח של לחם ממאפייה פתוחה.
+
+משהו משתחרר. הבדידות עדיין שם, אבל היא פחות בוערת. היא הפכה משהו שמפחיד למשהו שקט.',
+                choices: [
+                    { text: 'מתקשר לחבר מהפלוגה.', next: 6, type: 'connect' },
+                    { text: 'ממשיך ללכת. לבד, אבל בנוכחות עצמי.', next: 7, type: 'presence' }
+                ]
+            },
+            { // 3 — awareness
+                text: 'עצרת. שאלת את עצמך: "מה אני באמת צריך עכשיו?"
+
+התשובה שעלתה לא הייתה "לצפות" — היא הייתה "לא להיות לבד." או "לנוח באמת." או "להרגיש שמישהו רואה אותי."
+
+זו הנקודה שבה קיצור הדרך מפסיק לעבוד — כי זיהית את הצורך האמיתי.',
+                choices: [
+                    { text: 'שולח הודעה למישהו קרוב. כותב: "היי, צריך לדבר."', next: 6, type: 'connect' },
+                    { text: 'פותח את מודול "פק"ל כיסים" ומתחיל נשימה קרבית.', next: 8, type: 'tools' }
+                ]
+            },
+            { // 4 — spiral
+                text: 'שעה עברה. אולי יותר. המסך כבר כבה פעם אחת ואתה הדלקת אותו מחדש. עכשיו ההרגשה: ריקנות, עם שכבה של בושה מעל.
+
+הגוף מרגיש כבד. הראש מלא ערפל. מחר חוזרים לפלוגה, ותצטרך לשים מסכה ולהתנהג כאילו הכל בסדר.',
+                analysis: { title: 'הערכת מצב', text: 'זו לולאת הדופמין הקלאסית: ציפייה → גירוי → סיפוק רגעי → ריקנות → בושה → חיפוש הקלה → גירוי חדש.
+
+שים לב שהבחירה הראשונה הייתה "סתם קצת" — ו"סתם קצת" הפכה לשעה. זה לא כי אתה חלש. זה כי המכונה הזו מתוכננת בדיוק לזה.
+
+הידע הזה הוא כלי. בפעם הבאה, תזהה את ה"סתם קצת" כהתחלה של מסלול, ותדע שיש רגע בחירה אחד — ממש בהתחלה — שבו הכי קל לעצור.' }
+            },
+            { // 5 — stop
+                text: 'סגרת. הטלפון על השולחן. הלב עדיין דופק מהר.
+
+יש תחושת תסכול — "כמעט נפלתי" — אבל גם משהו אחר: גאווה שקטה. עצרת באמצע. לא היית מושלם, אבל היית אמיץ.',
+                analysis: { title: 'הערכת מצב', text: 'רגע העצירה הזה — באמצע, כשהגוף כבר בלולאה — הוא אחד הדברים הקשים ביותר. רוב האנשים לא מסוגלים לעשות את זה.
+
+מה שעזר לך? ההכרה שמה שקורה הוא לא בחירה חופשית אלא דפוס אוטומטי. ברגע שהתודעה "נדלקת" — יש סיכוי לעצור.
+
+בפעם הבאה, נסה לזהות את הרגע עוד לפני הגלילה: "אני לבד, עייף, הגוף מחפש מילוט." זו ההערכת מצב הכי חשובה.' }
+            },
+            { // 6 — connect
+                text: 'הוא ענה. בהתחלה סתם שטויות — "מה קורה, אחי" — אבל אחרי כמה דקות הצלחת להגיד: "אחי, אני לא בכיף. הבית ריק ואני לא יודע מה לעשות עם עצמי."
+
+הוא אמר: "אני מכיר. גם לי ככה כל סוף שבוע." ופתאום הבדידות קצת התרככה. לא נעלמה — אבל אתה לא לבד איתה.',
+                analysis: { title: 'הערכת מצב', text: 'מה שעשית עכשיו הוא בדיוק ההפך מקיצור הדרך: במקום לחפש נגיעה מלאכותית דרך מסך, בחרת בקשר אמיתי — גם אם הוא לא מושלם, גם אם הוא "רק" שיחת טלפון.
+
+הפגיעות שנדרשה להגיד "אני לא בכיף" — היא בדיוק הסוג של אומץ שיבנה אותך לקשרים עמוקים בעתיד. זו הדרך הארוכה. והיא שווה.' }
+            },
+            { // 7 — presence
+                text: 'ההליכה נמשכת. אתה מתחיל לשים לב לדברים שבדרך כלל מתעלם מהם: הקול של החתול בחצר, האור הכתום של פנס הרחוב, הקור הנעים שנכנס מתחת לחולצה.
+
+משהו מתחיל להירגע. הבדידות עדיין שם, אבל היא לא מפחידה. היא פשוט — שם.',
+                analysis: { title: 'הערכת מצב', text: 'מה שעשית עכשיו נקרא "נוכחות בגוף" (Grounding). במקום לברוח מהתחושה — הלכת לתוכה, עם הגוף. ההליכה, האוויר, החושים — הכל הביא אותך חזרה לכאן ועכשיו.
+
+זה אחד הכלים הכי חזקים: כשהגוף מחפש גירוי — תן לו גירוי אמיתי. לא מסך, אלא רוח, אור, תנועה.' }
+            },
+            { // 8 — tools
+                text: 'פתחת את מודול הכלים. התחלת נשימה קרבית: שאיפה ל-4, עצירה ל-4, נשיפה ל-6.
+
+אחרי 3 סבבים הגוף התחיל להירגע. הדופק ירד. ההיסחפות שהרגשת לפני רגע — היא עדיין שם, אבל כמו גל שנשבר ולא הציף.',
+                analysis: { title: 'הערכת מצב', text: 'הנשימה הקרבית אינה פותרת את הבדידות — אבל היא נותנת לך 30 שניות של שליטה בגוף. ו-30 שניות זה לפעמים כל מה שצריך כדי לא ליפול ללולאה.
+
+הכלי הזה עובד כי הוא פיזיולוגי — הוא לא דורש "כוח רצון" או "מוטיבציה". הוא פשוט מאפס את מערכת העצבים. שמור אותו קרוב.' }
+            }
+        ]
+    },
+    {
+        id: 'guard',
+        title: 'שמירה — 03:00 בלילה',
+        desc: 'שמירה לילית. 4 שעות לבד עם הטלפון.',
+        time: '~6 דקות',
+        steps: [
+            {
+                text: 'שלוש בלילה. שמירה. הבסיס שקט כמו בטן של לוויתן. כולם ישנים חוץ ממך ומהירח.
+
+יש לך 4 שעות. הטלפון ביד. הוא הדבר היחיד שמאיר בחושך.',
+                choices: [
+                    { text: 'פותח את הטלפון ומתחיל לגלול. אין כאן אף אחד.', next: 1, type: 'shortcut' },
+                    { text: 'שם את הטלפון בכיס. מנסה להישאר עם השקט.', next: 2, type: 'present' },
+                    { text: 'פותח את הטלפון אבל למשהו ספציפי — מוזיקה, פודקאסט, הודעה למישהו.', next: 3, type: 'intentional' }
+                ]
+            },
+            { // 1 — shortcut
+                text: 'הגלילה מתחילה. בלילה, לבד, בחושך — האלגוריתם יודע בדיוק איפה אתה. התוכן מחליק מהר מדי למקומות מוכרים.
+
+איש לא רואה. איש לא ידע. אבל אתה יודע.',
+                choices: [
+                    { text: 'ממשיך. לא אכפת לי עכשיו.', next: 4, type: 'continue' },
+                    { text: 'עוצר ונושם עמוק. מה אני עושה לעצמי?', next: 5, type: 'stop' }
+                ]
+            },
+            { // 2 — present
+                text: 'שקט. הגוף מתלונן — "משעמם, קר, עייף." אבל אתה נשאר.
+
+אחרי כמה דקות מתחילים לעלות מחשבות שבדרך כלל אתה בורח מהם: על הבית, על אבא, על מה שיהיה אחרי הצבא. מפחיד, אבל גם — אמיתי.',
+                analysis: { title: 'הערכת מצב', text: 'מה שעשית עכשיו הוא הדבר הכי נדיר בעולם שלנו: בחרת בשקט. בעולם שבו כל רגע ריק ממולא מיידית בגירוי — היכולת לשבת עם השקט היא כוח-על.
+
+המחשבות שעלו? הן תמיד שם. הגלילה רק מכסה אותן. ברגע שהורדת את הכיסוי — יכולת לראות מה באמת קורה בפנים. זו הערכת מצב אמיתית.' }
+            },
+            { // 3 — intentional
+                text: 'פתחת את הטלפון עם כוונה: שמת מוזיקה, או שלחת הודעה למישהו. השימוש ממוקד, עם גבול.
+
+כשהאלגוריתם ניסה למשוך אותך לגלילה — סגרת את האפליקציה וחזרת למוזיקה.',
+                analysis: { title: 'הערכת מצב', text: 'שימוש מכוון (Intentional Use) הוא אחד הכלים הכי אפקטיביים. ההבדל בין "אני פותח כדי..." ל"סתם פותח" — הוא ההבדל בין שליטה להיסחפות.
+
+הטכניקה: לפני שאתה פותח טלפון, אמור לעצמך במשפט אחד למה אתה פותח אותו. "אני פותח כדי לשמוע שיר." ברגע שהמטרה הושלמה — סוגר.' }
+            },
+            { // 4 — continue
+                text: 'השמירה נגמרה. הטלפון חם. הגוף עייף מסיבה אחרת מאשר חוסר שינה. בבוקר, תזכור את הלילה הזה — ותרגיש שהיית יכול אחרת.
+
+אבל הרגע הזה — שבו אתה קורא את המילים האלה — הוא הרגע שבו אתה כבר עושה אחרת.',
+                analysis: { title: 'הערכת מצב', text: 'הלילה הזה עבר. לא ניתן להחזיר אותו. אבל מה שכן ניתן — לבנות תכנית להפעם הבאה.
+
+השמירה הבאה: מכין מראש פודקאסט או ספר. משאיר את הטלפון במצב מטוס. מחליט מראש: "הלילה הזה שלי, לא של האלגוריתם."
+
+אתה לא נמדד על מה שקרה — אתה נמדד על מה שתבחר מעכשיו.' }
+            },
+            { // 5 — stop in middle
+                text: 'עצרת. נשמת. שאלת את עצמך: "מה אני עושה לעצמי?"
+
+הטלפון נכנס לכיס. הידיים רועדות קצת. הלב דופק. אבל אתה בחרת.',
+                analysis: { title: 'הערכת מצב', text: 'העצירה באמצע — אחרי שכבר התחלת — היא הרגע הכי חזק של כל הסימולציה הזו. רוב האנשים לא עוצרים שם.
+
+מה שעזר: שאלה פשוטה שמדליקה את התודעה. "מה אני עושה לעצמי?" היא לא שאלה של ביקורת — היא שאלה של דאגה. כאילו חבר טוב שואל אותך.
+
+שמור את השאלה הזו כנשק חם. היא עובדת.' }
+            }
+        ]
+    }
+];
+
+let cwCurrentScenario = null;
+let cwCurrentStep = 0;
+
+function cwBuildScenarioList() {
+    const container = document.getElementById('cw-scenario-list');
+    if (!container) return;
+    container.innerHTML = CW_SCENARIOS.map(s =>
+        `<div class="cw-scenario-card" onclick="cwStartScenario('${s.id}')">
+            <div class="sc-title">${s.title}</div>
+            <div class="sc-desc">${s.desc}</div>
+            <div class="sc-time">${s.time}</div>
+        </div>`
+    ).join('');
+}
+
+function cwStartScenario(id) {
+    cwCurrentScenario = CW_SCENARIOS.find(s => s.id === id);
+    cwCurrentStep = 0;
+    if (!cwCurrentScenario) return;
+    cwRenderStep();
+}
+
+function cwRenderStep() {
+    const area = document.getElementById('cw-scenario-area');
+    if (!area || !cwCurrentScenario) return;
+    const step = cwCurrentScenario.steps[cwCurrentStep];
+    if (!step) return;
+
+    const totalSteps = cwCurrentScenario.steps.length;
+    const progress = Math.round(((cwCurrentStep + 1) / totalSteps) * 100);
+
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <button class="cw-btn cw-btn-outline" onclick="cwBackToScenarios()">← חזרה לתרחישים</button>
+        <span style="font-size:0.75rem;color:var(--cw-text2);">${cwCurrentScenario.title}</span>
+    </div>
+    <div class="cw-progress-bar"><div class="cw-progress-fill" style="width:${progress}%"></div></div>`;
+
+    html += `<div class="cw-scenario-header"><div class="cw-scenario-text">${step.text}</div></div>`;
+
+    if (step.choices) {
+        html += '<div style="margin-top:14px;">';
+        step.choices.forEach((c, i) => {
+            html += `<button class="cw-choice-btn" onclick="cwChoose(${c.next})">${c.text}</button>`;
+        });
+        html += '</div>';
+    }
+
+    if (step.analysis) {
+        html += `<div class="cw-analysis">
+            <div class="analysis-title">${step.analysis.title}</div>
+            <div class="analysis-text" style="white-space:pre-line;">${step.analysis.text}</div>
+        </div>
+        <div style="text-align:center;margin-top:16px;">
+            <button class="cw-btn cw-btn-gold" onclick="cwBackToScenarios()">חזרה לתרחישים</button>
+        </div>`;
+    }
+
+    area.innerHTML = html;
+    area.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function cwChoose(nextStep) {
+    cwCurrentStep = nextStep;
+    cwRenderStep();
+}
+
+function cwBackToScenarios() {
+    cwCurrentScenario = null;
+    cwCurrentStep = 0;
+    const area = document.getElementById('cw-scenario-area');
+    if (area) {
+        area.innerHTML = '<div class="cw-scenario-select" id="cw-scenario-list"></div>';
+        cwBuildScenarioList();
+    }
+}
+
+// ===============================
+// MODULE 4: TOOLKIT — פק"ל כיסים
+// ===============================
+const CW_TOOLS = [
+    {
+        id: 'breathe',
+        icon: '🌬️',
+        name: 'נשימה קרבית',
+        desc: 'תרגיל נשימה 4-4-6 להרגעת מערכת העצבים',
+        body: `<div style="text-align:center;">
+            <div class="cw-breath-circle" id="cw-breath-display">התחל</div>
+            <div style="margin-top:14px;">
+                <button class="cw-btn cw-btn-gold" onclick="cwStartBreathing()">התחל נשימה</button>
+                <button class="cw-btn cw-btn-outline" onclick="cwStopBreathing()" style="margin-right:8px;">עצור</button>
+            </div>
+            <div style="margin-top:10px;font-size:0.78rem;color:var(--cw-text2);">שאיפה 4 שניות → עצירה 4 שניות → נשיפה 6 שניות</div>
+        </div>`
+    },
+    {
+        id: 'pause',
+        icon: '⏸️',
+        name: 'השהיית תגובה',
+        desc: '30 שניות של עצירה לפני שהגוף בוחר בשבילך',
+        body: `<div class="cw-card-text" style="margin-bottom:14px;">
+            <p>כשאתה מרגיש את המשיכה — <strong>עצור 30 שניות</strong>. רק 30.</p>
+            <p style="margin-top:8px;">בזמן הזה שאל את עצמך שלוש שאלות:</p>
+            <div style="margin:12px 0;padding:14px;background:var(--cw-bg);border-radius:8px;">
+                <div style="margin-bottom:8px;color:var(--cw-gold);font-weight:600;">1. מה אני באמת מרגיש עכשיו?</div>
+                <div style="margin-bottom:8px;color:var(--cw-gold);font-weight:600;">2. מה אני באמת צריך?</div>
+                <div style="color:var(--cw-gold);font-weight:600;">3. מה אני ארגיש אחרי שעה?</div>
+            </div>
+            <div style="text-align:center;">
+                <button class="cw-btn cw-btn-blue" onclick="cwStartPauseTimer()">התחל 30 שניות</button>
+                <div id="cw-pause-timer" style="font-size:1.8rem;color:var(--cw-gold);font-weight:800;margin-top:12px;display:none;">30</div>
+            </div>
+        </div>`
+    },
+    {
+        id: 'anchor',
+        icon: '⚓',
+        name: 'עוגנים לנוכחות',
+        desc: 'חזרה לגוף ולכאן-ועכשיו',
+        body: `<div class="cw-card-text">
+            <div style="margin-bottom:14px;"><strong style="color:var(--cw-gold);">5-4-3-2-1:</strong> עוגן חושי מהיר</div>
+            <div style="padding:14px;background:var(--cw-bg);border-radius:8px;margin-bottom:12px;">
+                <div style="margin-bottom:6px;">👀 5 דברים שאתה <strong>רואה</strong></div>
+                <div style="margin-bottom:6px;">✋ 4 דברים שאתה <strong>נוגע</strong> בהם</div>
+                <div style="margin-bottom:6px;">👂 3 דברים שאתה <strong>שומע</strong></div>
+                <div style="margin-bottom:6px;">👃 2 דברים שאתה <strong>מריח</strong></div>
+                <div>👅 1 דבר שאתה <strong>טועם</strong></div>
+            </div>
+            <div style="margin-bottom:14px;"><strong style="color:var(--cw-gold);">יד על הלב:</strong></div>
+            <div style="padding:14px;background:var(--cw-bg);border-radius:8px;">
+                שים את היד על הלב. הרגש את הפעימות. ספור 10 פעימות. אתה כאן. אתה חי. הגוף שלך שלך.
+            </div>
+        </div>`
+    },
+    {
+        id: 'texts',
+        icon: '📜',
+        name: 'מילים לרגע אמת',
+        desc: 'טקסטים קצרים לחיזוק פנימי',
+        body: `<div id="cw-strength-texts"></div>`
+    }
+];
+
+const CW_STRENGTH_TEXTS = [
+    { title: 'כשאתה מרגיש שאתה נופל', text: 'אתה לא נופל — אתה עומד על קצה. יש הבדל. נפילה זה כשאין בחירה. אתה עדיין כאן, עדיין קורא את זה, עדיין שואל שאלות. זה לא נפילה — זה קרב. ובקרב, גם לוחמים גדולים מקבלים מכות. זה לא אומר שהם הפסידו.' },
+    { title: 'כשהבושה אוכלת', text: 'הבושה אומרת: "אם היו יודעים מה עובר עליך, היו מתבזים." זה שקר. כי כמעט כל אחד פוגש את זה. ההבדל בין מי ש"מסתדר" למי ש"לא" — הוא לא בטוהר, אלא בנכונות להודות. וההודאה שלך — גם אם היא רק בינך לבין עצמך — היא הצעד הכי אמיץ שיש.' },
+    { title: 'כשהגוף דורש', text: 'הגוף שלך לא אויב. הוא בעל ברית ששומר עליך. כשהוא דורש — הוא מנסה להגיד לך משהו. אולי הוא עייף. אולי הוא בודד. אולי הוא צריך מגע אמיתי. תקשיב לו בכבוד — ותן לו תשובה אמיתית, לא תחליף.' },
+    { title: 'כשאתה חושב שאתה לבד בזה', text: 'אתה לא. סטטיסטית, רוב הגברים בגילך מתמודדים עם בדיוק אותו הדבר. אף אחד לא מדבר על זה — אבל כולם יודעים. הבדידות של ההתמודדות הזו היא חלק מהמלכודת. שבירת השתיקה — גם אם רק בפנים — היא שבירת הכלא.' }
+];
+
+function cwBuildToolkit() {
+    const container = document.getElementById('cw-toolkit-items');
+    if (!container) return;
+    container.innerHTML = CW_TOOLS.map(t =>
+        `<div class="cw-tool-card" id="cw-tool-${t.id}">
+            <div class="tool-header" onclick="cwToggleTool('${t.id}')">
+                <span class="tool-icon">${t.icon}</span>
+                <div>
+                    <div class="tool-name">${t.name}</div>
+                    <div class="tool-desc">${t.desc}</div>
+                </div>
+            </div>
+            <div class="tool-body">${t.body}</div>
+        </div>`
+    ).join('');
+
+    // Build strength texts
+    const textsEl = document.getElementById('cw-strength-texts');
+    if (textsEl) {
+        textsEl.innerHTML = CW_STRENGTH_TEXTS.map(t =>
+            `<div class="cw-text-card"><div class="tc-title">${t.title}</div><div class="tc-body">${t.text}</div></div>`
+        ).join('');
+    }
+}
+
+function cwToggleTool(id) {
+    const el = document.getElementById('cw-tool-' + id);
+    if (el) el.classList.toggle('open');
+}
+
+// --- Breathing Exercise ---
+let cwBreathInterval = null;
+function cwStartBreathing() {
+    cwStopBreathing();
+    const el = document.getElementById('cw-breath-display');
+    if (!el) return;
+    const phases = [
+        { label: 'שאיפה', dur: 4, cls: 'inhale' },
+        { label: 'עצירה', dur: 4, cls: 'hold' },
+        { label: 'נשיפה', dur: 6, cls: 'exhale' }
+    ];
+    let phaseIdx = 0;
+    let counter = phases[0].dur;
+
+    function tick() {
+        const phase = phases[phaseIdx];
+        el.textContent = phase.label + '\n' + counter;
+        el.className = 'cw-breath-circle ' + phase.cls;
+        counter--;
+        if (counter < 0) {
+            phaseIdx = (phaseIdx + 1) % phases.length;
+            counter = phases[phaseIdx].dur;
+        }
+    }
+    tick();
+    cwBreathInterval = setInterval(tick, 1000);
+}
+
+function cwStopBreathing() {
+    if (cwBreathInterval) { clearInterval(cwBreathInterval); cwBreathInterval = null; }
+    const el = document.getElementById('cw-breath-display');
+    if (el) { el.textContent = 'התחל'; el.className = 'cw-breath-circle'; }
+}
+
+// --- Pause Timer ---
+let cwPauseInterval = null;
+function cwStartPauseTimer() {
+    if (cwPauseInterval) { clearInterval(cwPauseInterval); }
+    const timerEl = document.getElementById('cw-pause-timer');
+    if (!timerEl) return;
+    timerEl.style.display = 'block';
+    let sec = 30;
+    timerEl.textContent = sec;
+    cwPauseInterval = setInterval(() => {
+        sec--;
+        timerEl.textContent = sec;
+        if (sec <= 0) {
+            clearInterval(cwPauseInterval);
+            cwPauseInterval = null;
+            timerEl.textContent = 'עכשיו שאל את עצמך — מה אתה באמת צריך?';
+            timerEl.style.fontSize = '0.95rem';
+        }
+    }, 1000);
+}
+
 </script>
 </body>
 </html>
