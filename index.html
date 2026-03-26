@@ -1419,6 +1419,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('phones')">טבלת משתמשים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">סקרים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">ניהול תכנים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('cw-videos')">סרטוני מרחב</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
     </div>
 
@@ -1590,6 +1591,33 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- CW Videos management -->
+    <div class="admin-panel" id="admin-cw-videos" style="display:none;">
+        <div class="card">
+            <h3 style="margin-bottom:14px;">ניהול סרטוני מרחב פנימי</h3>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                <input type="text" id="cw-vid-title" placeholder="כותרת הסרטון" style="flex:2;min-width:180px;">
+                <input type="text" id="cw-vid-youtube" placeholder="YouTube ID (למשל: n1jHH0x7zMY)" style="flex:1;min-width:140px;direction:ltr;">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                <input type="text" id="cw-vid-desc" placeholder="תיאור קצר" style="flex:2;min-width:180px;">
+                <select id="cw-vid-cat" style="flex:1;min-width:140px;">
+                    <option value="חיזוק יומי">חיזוק יומי</option>
+                    <option value="ביטחון ואמונה">ביטחון ואמונה</option>
+                    <option value="עבודת השם הפנימית">עבודת השם הפנימית</option>
+                    <option value="חסידות">חסידות</option>
+                    <option value="מעגל השנה">מעגל השנה</option>
+                    <option value="כוח פנימי">כוח פנימי</option>
+                    <option value="שמחה">שמחה</option>
+                    <option value="תשובה">תשובה</option>
+                    <option value="פרספקטיבה">פרספקטיבה</option>
+                </select>
+            </div>
+            <button class="btn-primary btn-sm" onclick="cwAdminAddVideo()">+ הוסף סרטון</button>
+        </div>
+        <div id="cw-admin-videos-list" style="margin-top:16px;"></div>
     </div>
 
     <!-- Admin dashboard -->
@@ -11362,6 +11390,7 @@ function showAdminTab(tab) {
     if (tab === 'phones') showFrameworkPhones('yonatan');
     if (tab === 'surveys-mgmt') loadAdminSurveys();
     if (tab === 'training-mgmt') { adminTrainingChanged(); }
+    if (tab === 'cw-videos') cwAdminLoadVideos();
     if (tab === 'dashboard') loadAdminDashboard();
 }
 
@@ -11661,6 +11690,59 @@ async function loadAdminSurveys(){
 async function deleteSurvey(id){if(!confirm('למחוק?'))return;await db.collection('surveys').doc(id).delete();showToast('סקר נמחק');loadAdminSurveys();}
 
 // Old addTrainingModule/loadAdminTrainingModules/deleteModule removed — training content now managed inline via openAddLessonModal/saveLesson/deleteLesson
+
+// --- CW Video Admin CRUD ---
+async function cwAdminLoadVideos() {
+    var list = document.getElementById('cw-admin-videos-list');
+    if (!list) return;
+    list.innerHTML = '<div class="card">טוען...</div>';
+    try {
+        var snap = await db.collection('cw_videos').orderBy('order','asc').get();
+        var videos = [];
+        snap.forEach(function(doc) { var d = doc.data(); d._id = doc.id; videos.push(d); });
+        if (videos.length === 0) {
+            list.innerHTML = '<div class="card" style="text-align:center;color:var(--text-secondary);">אין סרטונים ב-Firestore עדיין.<br>הסרטונים הקבועים בקוד פועלים כגיבוי.</div>';
+            return;
+        }
+        var groups = {};
+        videos.forEach(function(v) { var c = v.cat || 'כללי'; if (!groups[c]) groups[c] = []; groups[c].push(v); });
+        var h = '';
+        Object.keys(groups).forEach(function(cat) {
+            var vids = groups[cat];
+            h += '<div class="card" style="margin-bottom:12px;"><h4 style="margin-bottom:10px;color:var(--primary);">' + cat + ' (' + vids.length + ')</h4>';
+            vids.forEach(function(v) {
+                h += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">';
+                if (v.youtube) h += '<img src="https://img.youtube.com/vi/' + v.youtube + '/default.jpg" style="width:60px;border-radius:6px;">';
+                h += '<div style="flex:1;"><div style="font-weight:600;font-size:0.85rem;">' + v.title + '</div>';
+                h += '<div style="font-size:0.75rem;color:var(--text-secondary);">' + (v.desc || '') + '</div></div>';
+                h += '<button class="btn-secondary btn-sm" style="font-size:0.72rem;color:red;" onclick="cwAdminDeleteVideo(\'' + v._id + '\')">🗑️</button></div>';
+            });
+            h += '</div>';
+        });
+        list.innerHTML = h;
+    } catch(e) { list.innerHTML = '<div class="card" style="color:red;">שגיאה: ' + e.message + '</div>'; }
+}
+async function cwAdminAddVideo() {
+    var title = document.getElementById('cw-vid-title').value.trim();
+    var youtube = document.getElementById('cw-vid-youtube').value.trim();
+    var desc = document.getElementById('cw-vid-desc').value.trim();
+    var cat = document.getElementById('cw-vid-cat').value;
+    if (!title || !youtube) { showToast('צריך כותרת ו-YouTube ID'); return; }
+    try {
+        var snap = await db.collection('cw_videos').get();
+        await db.collection('cw_videos').add({ title:title, youtube:youtube, desc:desc, cat:cat, order:snap.size, createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+        showToast('סרטון נוסף!');
+        document.getElementById('cw-vid-title').value = '';
+        document.getElementById('cw-vid-youtube').value = '';
+        document.getElementById('cw-vid-desc').value = '';
+        cwAdminLoadVideos();
+    } catch(e) { showToast('שגיאה: ' + e.message); }
+}
+async function cwAdminDeleteVideo(id) {
+    if (!confirm('למחוק את הסרטון?')) return;
+    try { await db.collection('cw_videos').doc(id).delete(); showToast('סרטון נמחק'); cwAdminLoadVideos(); }
+    catch(e) { showToast('שגיאה: ' + e.message); }
+}
 
 async function loadAdminDashboard() {
     const c = document.getElementById('admin-dashboard-content');
@@ -12156,87 +12238,70 @@ function cwOpenSpace(space) {
 }
 
 // --- Init ---
-function cwInitModule() {
-    cwBuildVideos();
+async function cwInitModule() {
+    await cwBuildVideos();
     cwBuildThieves();
     cwBuildDeep();
     cwBuildTools();
 }
 
 // ===============================
-// SPACE 1: VIDEOS — חיזוק והעצמה
+// SPACE 1: VIDEOS — חיזוק והעצמה (Firestore + fallback)
 // ===============================
-const CW_VIDEOS = [
-    {
-        id: 'v1',
-        cat: 'כוח פנימי',
-        title: 'איך להתמודד עם חוסר אנרגיה?',
-        desc: 'כשהכוחות נגמרים — איך מתמלאים מחדש',
-        youtube: 'n1jHH0x7zMY'
-    },
-    {
-        id: 'v2',
-        cat: 'ביטחון',
-        title: 'זרוק על השם!!',
-        desc: 'הרב יגאל כהן — חיזוק אמיתי לרגעים קשים',
-        youtube: 'Udqf8gFPByw'
-    },
-    {
-        id: 'v3',
-        cat: 'שמחה',
-        title: 'איך אני יכול לשמוח כשהלב לא נותן?',
-        desc: 'הרב שניאור אשכנזי — על שמחה אמיתית גם בתוך קושי',
-        youtube: 'TAj7OKuVXHY'
-    },
-    {
-        id: 'v4',
-        cat: 'ביטחון',
-        title: 'בטחון בה\'',
-        desc: 'הרב שניאור אשכנזי — לסמוך על התהליך',
-        youtube: 'bs1JeSEWrGg'
-    },
-    {
-        id: 'v5',
-        cat: 'פרספקטיבה',
-        title: 'למה אלוקים מאתגר אותנו?',
-        desc: 'הרב שניאור אשכנזי — הרבי מדבר אֵלַי',
-        youtube: 'omFwqyVy3iU'
-    },
-    {
-        id: 'v6',
-        cat: 'חיזוק',
-        title: 'רגע של חיזוק',
-        desc: 'קליפ קצר — תזכורת שאתה לא לבד',
-        youtube: 'iHgK07Jw_3E'
-    },
-    {
-        id: 'v7',
-        cat: 'תשובה',
-        title: 'תשוב לה\' מיד — תוריד מעצמך את הכובד',
-        desc: 'נפלת? קום. בלי לשקוע באשמה',
-        youtube: 'qMfD6DGhNeE'
-    }
+let CW_VIDEOS = [
+    { id:'v1', cat:'חיזוק יומי', title:'איך להתמודד עם חוסר אנרגיה?', desc:'כשהכוחות נגמרים — איך מתמלאים מחדש', youtube:'n1jHH0x7zMY' },
+    { id:'v2', cat:'ביטחון ואמונה', title:'זרוק על השם!!', desc:'הרב יגאל כהן — חיזוק אמיתי', youtube:'Udqf8gFPByw' },
+    { id:'v3', cat:'שמחה', title:'איך אני יכול לשמוח כשהלב לא נותן?', desc:'הרב שניאור אשכנזי — שמחה אמיתית בתוך קושי', youtube:'TAj7OKuVXHY' },
+    { id:'v4', cat:'ביטחון ואמונה', title:'בטחון בה\'', desc:'הרב שניאור אשכנזי — לסמוך על התהליך', youtube:'bs1JeSEWrGg' },
+    { id:'v5', cat:'פרספקטיבה', title:'למה אלוקים מאתגר אותנו?', desc:'הרב שניאור אשכנזי — הרבי מדבר אֵלַי', youtube:'omFwqyVy3iU' },
+    { id:'v6', cat:'חיזוק יומי', title:'רגע של חיזוק', desc:'קליפ קצר — תזכורת שאתה לא לבד', youtube:'iHgK07Jw_3E' },
+    { id:'v7', cat:'תשובה', title:'תשוב לה\' מיד', desc:'נפלת? קום. בלי לשקוע באשמה', youtube:'qMfD6DGhNeE' }
 ];
+async function cwLoadVideosFromDB() {
+    if (!db) return;
+    try {
+        const snap = await db.collection('cw_videos').orderBy('order','asc').get();
+        if (!snap.empty) {
+            const dbVids = [];
+            snap.forEach(doc => { const d = doc.data(); d._id = doc.id; dbVids.push(d); });
+            if (dbVids.length > 0) CW_VIDEOS = dbVids;
+        }
+    } catch(e) { /* fallback to hardcoded */ }
+}
+const CW_VIDEO_CATEGORIES = ['חיזוק יומי','ביטחון ואמונה','עבודת השם הפנימית','חסידות','מעגל השנה','כוח פנימי','שמחה','תשובה','פרספקטיבה'];
 
-function cwBuildVideos() {
+async function cwBuildVideos() {
     const container = document.getElementById('cw-video-list');
     if (!container) return;
-    container.innerHTML = CW_VIDEOS.map(v =>
-        `<div class="cw-video-card" onclick="cwPlayVideo('${v.id}')">
-            <div class="cw-video-thumb" ${v.youtube ? `style="background:url('https://img.youtube.com/vi/${v.youtube}/hqdefault.jpg') center/cover no-repeat;"` : ''}>
-                <div class="play-btn">▶</div>
-            </div>
-            <div class="cw-video-info">
-                <span class="v-cat">${v.cat}</span>
-                <div class="v-title">${v.title}</div>
-                <div class="v-desc">${v.desc}</div>
-            </div>
-        </div>`
-    ).join('');
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--cw-text2);">טוען סרטונים...</div>';
+    await cwLoadVideosFromDB();
+    const groups = {};
+    CW_VIDEOS.forEach(v => { const c = v.cat || 'כללי'; if (!groups[c]) groups[c] = []; groups[c].push(v); });
+    let h = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;justify-content:center;">';
+    h += '<button class="cw-btn cw-btn-accent" style="font-size:0.75rem;padding:6px 14px;" onclick="cwFilterVideos(\'all\')">הכל (' + CW_VIDEOS.length + ')</button>';
+    Object.entries(groups).forEach(function(entry) {
+        h += '<button class="cw-btn cw-btn-outline" style="font-size:0.75rem;padding:6px 14px;" onclick="cwFilterVideos(\'' + entry[0] + '\')">' + entry[0] + ' (' + entry[1].length + ')</button>';
+    });
+    h += '</div><div id="cw-video-cards" class="cw-video-grid">';
+    CW_VIDEOS.forEach(function(v) {
+        var vid = v._id || v.id;
+        h += '<div class="cw-video-card" data-cat="' + (v.cat||'') + '" onclick="cwPlayVideo(\'' + vid + '\')">';
+        h += '<div class="cw-video-thumb"' + (v.youtube ? ' style="background:url(\'https://img.youtube.com/vi/' + v.youtube + '/hqdefault.jpg\') center/cover no-repeat;"' : '') + '>';
+        h += '<div class="play-btn">▶</div></div>';
+        h += '<div class="cw-video-info"><span class="v-cat">' + (v.cat||'') + '</span>';
+        h += '<div class="v-title">' + v.title + '</div><div class="v-desc">' + (v.desc||'') + '</div></div></div>';
+    });
+    h += '</div>';
+    container.innerHTML = h;
+}
+function cwFilterVideos(cat) {
+    document.querySelectorAll('#cw-video-cards .cw-video-card').forEach(function(c) {
+        c.style.display = (cat === 'all' || c.getAttribute('data-cat') === cat) ? '' : 'none';
+    });
 }
 
 function cwPlayVideo(id) {
-    const video = CW_VIDEOS.find(v => v.id === id);
+    const video = CW_VIDEOS.find(v => (v._id || v.id) === id);
     if (!video) return;
     const player = document.getElementById('cw-video-player');
     const list = document.getElementById('cw-video-list');
@@ -12703,56 +12768,78 @@ function cwBuildThieves() {
             <div class="step-text">כשאתה מבין איך המנגנון עובד — אתה כבר לא בתוך הלולאה בלי לדעת. אתה מתחיל <span class="highlight">לבחור</span> במקום <span class="highlight">להיסחף</span>.<br><br>
             <span class="whisper">וזה כבר לא דבר קטן.</span></div>
         </div>
+
+        <div class="cw-journey-step" style="border-right:3px solid var(--cw-accent);">
+            <span class="step-icon">🧠</span>
+            <div class="step-title">הדופמין — מה באמת קורה במוח</div>
+            <div class="step-text">המוח שלך בנוי לחפש חידוש. כל סקרול, כל קליק, כל גירוי חדש — משחרר טיפת דופמין. אבל הנה הקאץ': <span class="highlight">הגוף מתרגל ודורש עוד. ועוד. וחזק יותר.</span><br><br>
+            זה לא חולשה מוסרית — זה כימיה. בדיוק אותו מנגנון שפועל בהתמכרות לסמים, להימורים, לאוכל. <span class="highlight">המוח לא מבדיל בין סוגי הדופמין.</span><br><br>
+            <span class="whisper">החדשות הטובות: המוח גם מסוגל להשתקם. הוא פלסטי — הוא יכול להתאושש. אבל צריך לתת לו זמן.</span></div>
+        </div>
+
+        <div class="cw-journey-step" style="border-right:3px solid var(--cw-accent);">
+            <span class="step-icon">🎯</span>
+            <div class="step-title">עיצוב מניפולטיבי — Design Against You</div>
+            <div class="step-text">מהנדסי הרשתות החברתיות <span class="highlight">יודעים מה הם עושים</span>. הם משתמשים ב:<br><br>
+            <strong style="color:var(--cw-accent);">Infinite Scroll</strong> — אין סוף, אין נקודת עצירה טבעית. אתה גולל ולא שם לב שעברה שעה.<br><br>
+            <strong style="color:var(--cw-accent);">Variable Reward</strong> — כמו מכונת מזל. לא יודע מה יהיה בפוסט הבא. הציפייה ממכרת יותר מהתוצאה.<br><br>
+            <strong style="color:var(--cw-accent);">Social Validation</strong> — לייקים, תגובות, צפיות. מספרים שמספרים לך כמה אתה "שווה". שקר.<br><br>
+            <span class="whisper">כשאתה יודע את זה — אתה רואה את החוטים. ומי שרואה את החוטים, כבר לא בובה.</span></div>
+        </div>
+
+        <div class="cw-journey-step" style="border-right:3px solid var(--cw-accent);">
+            <span class="step-icon">🛡️</span>
+            <div class="step-title">צעדים מעשיים — איך לוקחים שליטה</div>
+            <div class="step-text">
+            <strong style="color:var(--cw-accent);">1. הגבלת זמן מסך</strong> — הגדר מגבלה יומית. לא כעונש — כמעשה של כבוד עצמי.<br><br>
+            <strong style="color:var(--cw-accent);">2. מחיקת אפליקציות</strong> — לא לתמיד. אפילו ליום. תרגיש את ההבדל.<br><br>
+            <strong style="color:var(--cw-accent);">3. מצב אפור (Grayscale)</strong> — הפוך את המסך לשחור-לבן. פתאום הוא הרבה פחות מושך.<br><br>
+            <strong style="color:var(--cw-accent);">4. שעות ללא טלפון</strong> — לפני שינה ובשעה הראשונה של הבוקר. תנו למוח לנוח.<br><br>
+            <span class="whisper">כל צעד קטן הוא ניצחון. לא צריך לעשות הכל ביום אחד.</span></div>
+        </div>
     `;
 }
 
 // ===============================
-// SPACE 3: DEEP — המים המלוחים
+// SPACE 3: DEEP — מסע הנשמה
 // ===============================
 function cwBuildDeep() {
     const container = document.getElementById('cw-deep-content');
     if (!container) return;
-    container.innerHTML = `
-        <div class="cw-card" style="border-color:rgba(139,126,200,0.3);background:rgba(139,126,200,0.06);">
-            <div style="text-align:center;font-size:0.82rem;color:var(--cw-soft);line-height:1.8;padding:10px 0;">
-                ⚠️ המרחב הזה מדבר על נושאים רגישים בעדינות.<br>
-                אם עכשיו לא מתאים — זה בסדר. המרחב יחכה לך.
-            </div>
-        </div>
 
-        <div class="cw-journey-step">
-            <span class="step-icon">🌊</span>
-            <div class="step-title">מים מלוחים</div>
-            <div class="step-text">הפורנוגרפיה היא קיצור הדרך האולטימטיבי. היא לוקחת את הכמיהה הכי טהורה שלך — <span class="highlight">הרצון לאהוב, להתמזג, להיות שייך, להרגיש מגע ונוכחות</span> — ומציעה לך חיקוי.<br><br>
-            היא לא לכלוך שנדבק בך. היא שקר שאתה מסכים להאמין לו כשאתה בודד או עייף.<br><br>
-            <span class="highlight">כמו מים מלוחים: מרווה לרגע, מייבשת את הנפש.</span></div>
-        </div>
+    const layers = [
+        { icon:'🌊', title:'הצמא שלא נגמר — בארות נשברים', sub:'למה ככל שמנסים למלא, הריקנות רק גדלה?',
+          body:'<p>ירמיהו הנביא אומר: <strong>"כי שתיים רעות עשה עמי — אותי עזבו, מקור מים חיים, לחצוב להם בורות, בורות נשברים, אשר לא יכילו המים."</strong></p><p style="margin-top:12px;">הנפש שלך צמאה. זה לא חולשה — זה הדבר הכי אנושי שיש. הצמא הזה הוא בעצם כמיהה לקדושה, לחיבור, לאמת. אבל כשמנסים למלא את הצמא הזה מ"בארות נשברים" — מתוכן שמתחזה לאינטימיות, מגירויים שמבטיחים סיפוק — התוצאה היא כמו לשתות מים מלוחים: <span class="highlight">ככל ששותים יותר, הצמא גדל</span>.</p><p style="margin-top:12px;"><span class="whisper">הרמח"ל בדרך ה\' מסביר: התענוג האמיתי היחיד הוא ההתקרבות למקור. כל תחליף — ככל שיהיה מושך — רק מרחיק אותנו מהמילוי האמיתי.</span></p>' },
+        { icon:'🔄', title:'המלכוד הכפול — ההלקאה שאחרי הנפילה', sub:'למה תחושת ה"אני נורא" היא חלק מהבעיה, לא מהפתרון',
+          body:'<p>אחרי נפילה, מגיע הגל — הבושה, האשמה, ה"אני לא שווה כלום". <span class="highlight">וזה בדיוק מה שהיצר רוצה.</span></p><p style="margin-top:12px;">רבי נחמן מברסלב אומר: <strong>"אם אתה מאמין שאפשר לקלקל — תאמין שאפשר לתקן."</strong> ועוד: <strong>"אסור להתייאש! אין שום ייאוש בעולם כלל!"</strong></p><p style="margin-top:12px;">הרב פדיה נגר מסביר שהמעגל עובד ככה:<br>נפילה → בושה → "אני פגום" → ריחוק מהקב"ה → ריקנות → חיפוש מילוי → נפילה שוב.</p><p style="margin-top:12px;">המפתח הוא <span class="highlight">לשבור את המעגל בנקודה של הבושה</span>. לא להילחם ביצר ישירות — אלא לסרב לשקר של "אתה לא שווה".</p><p style="margin-top:12px;"><span class="whisper">בעל התניא מלמד: גם ברגע הנפילה הכי עמוקה, הניצוץ האלוקי שבך לא נפגע. הוא שלם. תמיד.</span></p>' },
+        { icon:'🕳️', title:'ירידה צורך עלייה — הסוד הקבלי', sub:'מה אם הנפילה היא בדיוק מה שהנשמה שלך באה לעשות פה?',
+          body:'<p>אחד הסודות העמוקים בקבלת האר"י הקדוש: <span class="highlight">"אין אור גדול יותר מאור שבא מתוך החושך."</span></p><p style="margin-top:12px;">הבעל שם טוב מלמד שכל ירידה היא הכנה לעלייה. הירידה עצמה <span class="highlight">מכילה בתוכה את הניצוצות של העלייה הבאה</span>. בלי החושך, אי אפשר לגלות את עוצמת האור שבך.</p><p style="margin-top:12px;">הרמח"ל מוסיף בדרך ה\': המקומות שבהם האדם מאותגר הכי הרבה — <strong>שם נמצא הסיפור שלו בעולם</strong>. האתגר הוא לא עונש. הוא מפת הדרכים של הנשמה.</p><p style="margin-top:12px;"><span class="whisper">אתה לא נלחם סתם. אתה נלחם את המלחמה שהנשמה שלך בחרה לבוא לעולם בשבילה.</span></p>' },
+        { icon:'🔗', title:'חלק מרצף — אתה לא לבד בזה', sub:'אתה מתקן לא רק בשביל עצמך',
+          body:'<p>האר"י הקדוש מגלה שהנשמה שלנו היא חלק משרשרת. <span class="highlight">האתגרים שלך אולי שייכים לפצעים קדומים</span> — דורות שהיו לפניך, חלקים בנשמה שמחכים לתיקון.</p><p style="margin-top:12px;">זה לא אומר שאתה אשם. זה אומר שאתה <span class="highlight">הגיבור שנבחר לרפא את זה</span>. כשאתה מתגבר — אתה מתקן אחורה ומתקן קדימה. אתה משחרר ניצוצות שהיו כלואים דורות.</p><p style="margin-top:12px;"><span class="whisper">הרב פדיה נגר מדבר על כך שהיכולת שלנו להגיע לייעוד עוברת דרך מרחבי האתגר. לא מסביב — דרך.</span></p>' },
+        { icon:'💎', title:'מה באמת קורה ברגע הדחף', sub:'הדחף הוא צימאון לקדושה שטועה בכתובת',
+          body:'<p>הבעל שם טוב מלמד עיקרון מהפכני: <span class="highlight">כל תאווה היא קדושה שנפלה בשבי</span>. הכמיהה לקשר, למגע, לחיבור — זה לא יצר רע. זה צורך קדוש שמחפש את הכתובת הנכונה.</p><p style="margin-top:12px;">כשמבינים את זה, משהו משתנה. במקום "אני חלש" → "יש בי כוח עצום שצריך כיוון". במקום "אני פגום" → "יש בי צימאון שמחכה למילוי אמיתי".</p><p style="margin-top:12px;">בעל התניא מסביר: <span class="highlight">המלחמה עצמה היא הניצחון</span> — כי כל רגע שאתה נלחם, אתה מוכיח שהנשמה שלך חיה ופועלת.</p><p style="margin-top:12px;">רבי נחמן אומר: <strong>"כל העולם כולו גשר צר מאוד — והעיקר לא לפחד כלל."</strong> הגשר צר — אבל <span class="highlight">יש גשר</span>. אתה בדרך.</p>' },
+        { icon:'🌅', title:'לקום בשמחה, לא באשמה', sub:'התשובה האמיתית לפי הפנימיות',
+          body:'<p>רבי נחמן נותן את המפתח: <strong>"מצווה גדולה להיות בשמחה תמיד."</strong> גם — ובעיקר — אחרי נפילה.</p><p style="margin-top:12px;"><span class="highlight">השמחה היא הכוח שמאפשר לך לקום</span>. העצבות אחרי נפילה היא לא תשובה — היא חלק מהמלכוד.</p><p style="margin-top:12px;">הרב פדיה נגר מסביר: התשובה האמיתית היא לא "להרגיש רע מספיק". תשובה היא <span class="highlight">חזרה — לעצמך, למקור, לאמת שלך</span>. בעדינות, בחמלה, בלי מקלות.</p><p style="margin-top:12px;">הרמח"ל כותב: מטרת הנשמה — "להיטיב." הקב"ה רוצה להיטיב לך. <span class="highlight">גם עכשיו. גם אחרי הנפילה. בלי תנאים מוקדמים.</span></p><p style="margin-top:12px;"><span class="whisper">נפלת? קום. חייך. ותתחיל מחדש. לא כי לא קרה כלום — אלא כי אתה גדול מכל נפילה.</span></p>' }
+    ];
 
-        <div class="cw-journey-step">
-            <span class="step-icon">💔</span>
-            <div class="step-title">אשליית האינטימיות</div>
-            <div class="step-text">מה שמוצג על המסך נראה כמו קשר — אבל מאחורי הקלעים יש תסריטים מבוימים, ניצול כלכלי, ומנגנון שמחמיר. התוכן הולך ונעשה קיצוני יותר כי הגוף מתרגל ודורש "מינון" גבוה יותר.<br><br>
-            זו לא בחירה — <span class="highlight">זו ביולוגיה</span>. המוח מפתח סבילות, בדיוק כמו בכל התמכרות.<br><br>
-            <span class="whisper">התוצאה: כשמגיע הרגע האמיתי — עם בן זוג אמיתי — מרגישים ניתוק. לא כי אין אהבה, אלא כי המוח הורגל לגירוי מלאכותי שלא דורש אומץ רגשי.</span></div>
-        </div>
-
-        <div class="cw-journey-step">
-            <span class="step-icon">🕊️</span>
-            <div class="step-title">אני מבין למה אתה שם</div>
-            <div class="step-text"><span class="highlight">זה כואב לא להיות באמת שייך.</span> זה כואב לחזור לחדר ריק. זה כואב לשאת את העומס בלי מרחב לנשום בו.<br><br>
-            הכמיהה שלך לקשר, למגע, לקרבה — <span class="highlight">היא לא חולשה. היא הצורך הכי עמוק והכי יפה שיש באדם.</span><br><br>
-            אבל הקשר האמיתי שאתה מחפש נמצא בדרך הארוכה: פגיעות, חשיפה, אומץ להיות רך. זה מפחיד, אבל זה מה שבאמת ממלא.<br><br>
-            <span class="whisper">אתה נועדת לגדולות יותר ממופע של החפצה.</span></div>
-        </div>
-
-        <div class="cw-journey-step">
-            <span class="step-icon">🌱</span>
-            <div class="step-title">אתה לא שבור — אתה בדרך</div>
-            <div class="step-text">הבושה אומרת: "אם היו יודעים, היו מתבזים." זה שקר. כי כמעט כל אחד פוגש את זה.<br><br>
-            ההבדל בין מי ש"מסתדר" למי ש"לא" — הוא לא בטוהר, <span class="highlight">אלא בנכונות להודות</span>. וההודאה שלך — גם אם היא רק בינך לבין עצמך — היא הצעד הכי אמיץ שיש.<br><br>
-            <span class="whisper">כל מעבר שעבר מדבר — היו רגעים של חושך מוחלט. ובכל זאת — עברו.</span></div>
-        </div>
-    `;
+    container.innerHTML =
+        '<div class="cw-card" style="border-color:rgba(46,139,87,0.3);background:rgba(46,139,87,0.04);text-align:center;margin-bottom:18px;">' +
+            '<div style="font-size:0.85rem;color:var(--cw-text);line-height:1.8;">✨ מסע לתוך הנפש — שש שכבות של הבנה עמוקה<br>' +
+            '<span style="font-size:0.78rem;color:var(--cw-text2);">מבוסס על תורת הפנימיות: קבלת האר"י, הרמח"ל, הבעש"ט, רבי נחמן, בעל התניא, והרב פדיה נגר</span></div>' +
+        '</div>' +
+        layers.map(function(l) {
+            return '<div class="cw-journey-step" style="cursor:pointer;" onclick="this.classList.toggle(\'open\');var b=this.querySelector(\'.layer-body\');b.style.display=this.classList.contains(\'open\')?\'\':\' none\';">' +
+                '<div style="display:flex;align-items:center;gap:10px;">' +
+                    '<span style="font-size:1.4rem;">' + l.icon + '</span>' +
+                    '<div style="flex:1;">' +
+                        '<div class="step-title" style="margin-bottom:2px;">' + l.title + '</div>' +
+                        '<div style="font-size:0.78rem;color:var(--cw-text2);">' + l.sub + '</div>' +
+                    '</div>' +
+                    '<span style="font-size:1.2rem;color:var(--cw-text2);transition:transform 0.3s;">▾</span>' +
+                '</div>' +
+                '<div class="layer-body" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--cw-border);"><div class="cw-card-text">' + l.body + '</div></div>' +
+            '</div>';
+        }).join('');
 }
 
 // ===============================
@@ -12835,8 +12922,50 @@ const CW_TOOLS = [
         id: 'texts',
         icon: '📜',
         name: 'מילים לרגע אמת',
-        desc: 'טקסטים קצרים לחיזוק פנימי',
+        desc: 'טקסטים מהמקורות — לחיזוק פנימי',
         body: `<div id="cw-strength-texts"></div>`
+    },
+    {
+        id: 'soul-talk',
+        icon: '💬',
+        name: 'שיחה עם הנשמה',
+        desc: 'תרגיל פנימי — מבוסס על תורת הפנימיות',
+        body: `<div class="cw-card-text">
+            <p><strong style="color:var(--cw-accent);">תרגיל מהבעל שם טוב:</strong></p>
+            <p style="margin-top:8px;">עצום עיניים. דמיין שהנשמה שלך עומדת מולך — כאור חם, שקט, אוהב.</p>
+            <p style="margin-top:8px;">עכשיו שאל אותה בלב:</p>
+            <div style="margin:14px 0;padding:16px;background:rgba(46,139,87,0.06);border-radius:12px;border-right:3px solid var(--cw-accent);">
+                <div style="margin-bottom:10px;font-weight:600;color:var(--cw-accent);">1. "מה באמת כואב לי עכשיו?"</div>
+                <div style="margin-bottom:10px;font-weight:600;color:var(--cw-accent);">2. "מה אני באמת מחפש?"</div>
+                <div style="font-weight:600;color:var(--cw-accent);">3. "מה הנשמה שלי רוצה להגיד לי?"</div>
+            </div>
+            <p style="margin-top:8px;"><span class="whisper">אין תשובה נכונה. יש רק הקשבה. תן לתשובה לעלות מעצמה.</span></p>
+            <textarea class="cw-textarea" placeholder="אם עלה משהו — כתוב לעצמך כאן. זה לא נשמר." rows="3" style="margin-top:12px;"></textarea>
+            <div class="cw-zero-data">🔒 הטקסט קיים רק על המסך שלך</div>
+        </div>`
+    },
+    {
+        id: 'prayer',
+        icon: '🙏',
+        name: 'תפילה קצרה לרגע קשה',
+        desc: 'מילים פשוטות — כשאין מילים',
+        body: `<div class="cw-card-text">
+            <div class="cw-text-card" style="margin-bottom:14px;">
+                <div class="tc-title">מתוך ליקוטי תפילות — רבי נחמן</div>
+                <div class="tc-body" style="font-style:italic;">ריבונו של עולם, אתה יודע מה עובר עליי.<br>אתה יודע שאני רוצה להיות קרוב אליך.<br>עזור לי לקום מהמקום שאני בו.<br>תן לי כוח להתחיל מחדש — בשמחה, לא באשמה.<br>תזכיר לי שאני שלך, תמיד.</div>
+            </div>
+            <div class="cw-text-card" style="margin-bottom:14px;">
+                <div class="tc-title">בשפה חופשית — דבר עם הקב"ה</div>
+                <div class="tc-body">רבי נחמן מלמד שהתפילה הכי חזקה היא <strong>התבודדות</strong> — לדבר עם הקב"ה בשפה שלך, כמו שמדברים עם חבר.<br><br>אתה יכול פשוט לומר: "אבא, אני פה. עזור לי." זה מספיק. הוא שומע.</div>
+            </div>
+            <div class="cw-text-card">
+                <div class="tc-title">פסוק לשמירה</div>
+                <div class="tc-body" style="font-size:1.1rem;text-align:center;font-weight:700;color:var(--cw-accent);padding:10px 0;">
+                    "שִׁוִּיתִי ה' לְנֶגְדִּי תָמִיד"<br>
+                    <span style="font-size:0.82rem;font-weight:400;color:var(--cw-text2);">תהילים ט"ז — השם איתך. תמיד. גם עכשיו.</span>
+                </div>
+            </div>
+        </div>`
     }
 ];
 
@@ -12894,10 +13023,13 @@ const CW_MIRROR_RESPONSES = {
 let cwSelectedFeelings = [];
 
 const CW_STRENGTH_TEXTS = [
-    { title: 'כשאתה מרגיש שאתה נופל', text: 'אתה לא נופל — אתה עומד על קצה. יש הבדל. נפילה זה כשאין בחירה. אתה עדיין כאן, עדיין קורא את זה, עדיין שואל שאלות. זה לא נפילה — זה מאבק. וכל מי שנמצא במאבק — לפעמים נופל ולפעמים קם.' },
-    { title: 'כשהבושה אוכלת', text: 'הבושה אומרת: "אם היו יודעים..." זה שקר. כי כמעט כל אחד פוגש את זה. ההבדל הוא בנכונות להודות. וההודאה שלך — גם אם היא רק בינך לבין עצמך — היא הצעד הכי אמיץ שיש.' },
-    { title: 'כשהגוף דורש', text: 'הגוף שלך לא אויב. הוא בעל ברית ששומר עליך. כשהוא דורש — הוא מנסה להגיד לך משהו. אולי הוא עייף, אולי בודד, אולי צריך מגע אמיתי. תקשיב לו בכבוד — ותן לו תשובה אמיתית, לא תחליף.' },
-    { title: 'כשאתה חושב שאתה לבד בזה', text: 'אתה לא. רוב הגברים בגילך מתמודדים עם בדיוק אותו הדבר. אף אחד לא מדבר על זה — אבל כולם יודעים. שבירת השתיקה — גם אם רק בפנים — היא הצעד הראשון.' }
+    { title: '💫 כשאתה מרגיש שנפלת', text: 'רבי נחמן אומר: "אם אתה מאמין שאפשר לקלקל — תאמין שאפשר לתקן." אתה לא נופל — אתה במסע. לפעמים הדרך יורדת כדי שתוכל לעלות גבוה יותר. הניצוץ שבך לא כבה — הוא רק מחכה שתזכיר לו שהוא שם.' },
+    { title: '🌊 כשהבושה שוטפת', text: 'בעל התניא מלמד: גם ברגע הנפילה הכי עמוקה, הנשמה שלך שלמה. הבושה שאתה מרגיש? היא הוכחה שאכפת לך. אבל אל תיתן לה לשתק אותך. קום, נער את עצמך, ותמשיך. בלי אשמה — בשמחה.' },
+    { title: '🔥 כשהדחף בוער', text: 'הבעל שם טוב מגלה: כל תאווה היא קדושה שנפלה בשבי. הדחף שאתה מרגיש? זה כוח אדיר שמחפש כיוון. אתה לא חלש — אתה פשוט מלא באנרגיה שצריכה כתובת נכונה. נשום עמוק, ותזכור מי אתה באמת.' },
+    { title: '🌱 כשאתה חושב שאתה לבד', text: 'רבי נחמן אומר: "כל העולם כולו גשר צר מאוד — והעיקר לא לפחד כלל." הגשר צר — אבל יש גשר. ואתה לא לבד עליו. דורות שלמים עוברים איתך, מתפללים בשבילך, מחכים שתקום.' },
+    { title: '✨ כשאתה שוכח מי אתה', text: 'הרמח"ל כותב: מטרת הנשמה היא "להיטיב". הקב"ה שלח אותך לעולם כדי להיטיב לך — גם עכשיו, גם אחרי הכל. אתה בן מלך שנפל לבור. הבור לא משנה את מי שאתה — הוא רק משנה את מה שאתה רואה.' },
+    { title: '🕯️ כשהחושך מרגיש מוחלט', text: 'האר"י הקדוש מלמד: אין אור גדול יותר מאור שבא מתוך החושך. ברגע הכי חשוך — שם מחכה האור הכי גדול. אתה לא צריך לחכות שהחושך ייגמר כדי להתחיל להאיר. נר קטן אחד מגרש הרבה חושך.' },
+    { title: '🤲 כשאתה צריך חמלה', text: 'הרב פדיה נגר מלמד: תשובה אמיתית היא לא להרגיש רע מספיק. תשובה היא חזרה — לעצמך, למקור, לאמת. בעדינות, בחמלה. הקב"ה לא מחכה שתהיה מושלם. הוא מחכה שתחזור — כמו שאתה, עם כל השברים.' }
 ];
 
 function cwBuildTools() {
