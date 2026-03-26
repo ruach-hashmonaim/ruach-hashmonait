@@ -1240,7 +1240,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="cw-session-timer" id="cw-session-timer">
         <span class="timer-dot"></span>
         <span id="cw-live-timer">00:00</span>
-        <span>בסשן הנוכחי</span>
+        <span>היום</span>
     </div>
     <div class="cw-progress-bar-wrap" id="cw-progress-wrap">
         <div class="cw-progress-header">
@@ -12362,16 +12362,16 @@ const CW_MILESTONES = {
 // --- Tracking State ---
 let cwTrackingActive = false;
 let cwSessionStart = null;
-let cwSessionSeconds = 0;
-let cwLastSavedSecond = 0; // tracks how many seconds we already saved to Firestore
+let cwSessionSeconds = 0;      // cumulative seconds for TODAY (loaded from Firestore + current session)
+let cwLastSavedSecond = 0;     // last saved checkpoint (to compute delta)
 let cwTickInterval = null;
 let cwSaveInterval = null;
-let cwUserData = null; // { totalMinutes, currentStreak, longestStreak, badges, lastVisitDate, monthlyMinutes }
+let cwUserData = null;
+// cwUserData shape: { totalMinutes, currentStreak, longestStreak, badges, lastVisitDate, dailyMinutes:{}, dailyLevels:{} }
 
 // --- Start Tracking ---
 async function cwStartTracking() {
     if (cwTrackingActive) return;
-    // Ensure Firebase is initialized
     if (!db) {
         try {
             if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
@@ -12380,11 +12380,15 @@ async function cwStartTracking() {
     }
     cwTrackingActive = true;
     cwSessionStart = Date.now();
-    cwSessionSeconds = 0;
-    cwLastSavedSecond = 0;
 
     // Load user data from Firestore
     await cwLoadUserData();
+
+    // Restore today's accumulated time so timer continues from where user left off
+    const today = new Date().toISOString().split('T')[0];
+    const todayMinutesSaved = (cwUserData && cwUserData.dailyMinutes && cwUserData.dailyMinutes[today]) || 0;
+    cwSessionSeconds = todayMinutesSaved * 60;  // Start from saved minutes
+    cwLastSavedSecond = cwSessionSeconds;        // Mark as already saved
 
     // Update streak
     cwUpdateStreak();
@@ -12393,22 +12397,42 @@ async function cwStartTracking() {
     cwRenderProgress();
     cwRenderBadges();
 
-    // Start tick (update every second for live timer)
+    // Start tick
     cwTickInterval = setInterval(() => {
-        if (document.hidden) return; // Don't count hidden time
+        if (document.hidden) return;
         cwSessionSeconds++;
         cwUpdateLiveTimer();
-        // Every 60 seconds, save to Firestore
+        cwCheckDailyLevel();
         if (cwSessionSeconds % 60 === 0) {
             cwSaveProgress();
         }
     }, 1000);
 
-    // Listen for visibility changes
     document.addEventListener('visibilitychange', cwVisibilityHandler);
-
-    // Save on page unload
     window.addEventListener('beforeunload', cwSaveOnExit);
+}
+
+// Check if user reached a new daily level
+function cwCheckDailyLevel() {
+    const todayMin = Math.floor(cwSessionSeconds / 60);
+    const currentLevel = cwGetDailyLevel(todayMin);
+    const today = new Date().toISOString().split('T')[0];
+    const savedLevel = (cwUserData && cwUserData.dailyLevels && cwUserData.dailyLevels[today]) || 0;
+    if (currentLevel > savedLevel) {
+        if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
+        cwUserData.dailyLevels[today] = currentLevel;
+        const lvl = CW_DAILY_LEVELS.find(l => l.level === currentLevel);
+        if (lvl) setTimeout(() => cwCelebrate(lvl), 600);
+        cwRenderProgress();
+    }
+}
+
+function cwGetDailyLevel(minutes) {
+    let level = 0;
+    for (const l of CW_DAILY_LEVELS) {
+        if (minutes >= l.minutes) level = l.level;
+    }
+    return level;
 }
 
 function cwStopTracking() {
@@ -12450,6 +12474,9 @@ async function cwLoadUserData() {
         const snap = await docRef.get();
         if (snap.exists) {
             cwUserData = snap.data();
+            // Ensure new fields exist
+            if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
+            if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
         } else {
             cwUserData = {
                 totalMinutes: 0,
@@ -12458,13 +12485,15 @@ async function cwLoadUserData() {
                 badges: [],
                 lastVisitDate: '',
                 monthlyMinutes: {},
+                dailyMinutes: {},
+                dailyLevels: {},
                 userName: cwGetUserName()
             };
             await docRef.set(cwUserData);
         }
     } catch(e) {
         console.warn('CW: Failed to load progress', e);
-        cwUserData = { totalMinutes:0, currentStreak:0, longestStreak:0, badges:[], lastVisitDate:'', monthlyMinutes:{} };
+        cwUserData = { totalMinutes:0, currentStreak:0, longestStreak:0, badges:[], lastVisitDate:'', monthlyMinutes:{}, dailyMinutes:{}, dailyLevels:{} };
     }
 }
 
@@ -12472,28 +12501,35 @@ async function cwSaveProgress() {
     if (!db || (!currentUser && !currentParticipant) || !cwUserData) return;
     try {
         const userId = cwGetUserId();
-        // Only save NEW minutes since last save (delta, not total)
         const deltaSeconds = cwSessionSeconds - cwLastSavedSecond;
         const deltaMinutes = Math.floor(deltaSeconds / 60);
-        if (deltaMinutes < 1) return; // Nothing new to save yet
-        cwLastSavedSecond += deltaMinutes * 60; // Mark those minutes as saved
+        if (deltaMinutes < 1) return;
+        cwLastSavedSecond += deltaMinutes * 60;
 
         const today = new Date().toISOString().split('T')[0];
-        const monthKey = today.substring(0, 7); // YYYY-MM
+        const monthKey = today.substring(0, 7);
 
-        // Update totals with delta only
+        // Update totals
         cwUserData.totalMinutes = (cwUserData.totalMinutes || 0) + deltaMinutes;
         if (!cwUserData.monthlyMinutes) cwUserData.monthlyMinutes = {};
         cwUserData.monthlyMinutes[monthKey] = (cwUserData.monthlyMinutes[monthKey] || 0) + deltaMinutes;
+
+        // Update daily minutes (cumulative for today)
+        if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
+        cwUserData.dailyMinutes[today] = Math.floor(cwSessionSeconds / 60);
+
+        // Update daily level
+        if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
+        cwUserData.dailyLevels[today] = cwGetDailyLevel(Math.floor(cwSessionSeconds / 60));
+
         cwUserData.lastVisitDate = today;
         cwUserData.userName = cwGetUserName();
 
-        // Check for new badges
+        // Check streak badges
         cwCheckMilestones();
 
         await db.collection('cw_progress').doc(userId).set(cwUserData, { merge: true });
 
-        // Update UI
         cwRenderProgress();
         cwRenderBadges();
     } catch(e) {
@@ -12534,21 +12570,12 @@ function cwUpdateStreak() {
 // --- Milestone Checking ---
 function cwCheckMilestones() {
     if (!cwUserData) return;
-    const totalHours = (cwUserData.totalMinutes || 0) / 60;
     const streak = cwUserData.currentStreak || 0;
     const earned = new Set(cwUserData.badges || []);
     let newBadge = null;
 
-    // Check hour milestones
-    for (const m of CW_MILESTONES.hours) {
-        if (totalHours >= m.hours && !earned.has(m.id)) {
-            earned.add(m.id);
-            newBadge = m;
-        }
-    }
-
-    // Check streak milestones
-    for (const m of CW_MILESTONES.streaks) {
+    // Check streak badges
+    for (const m of CW_STREAK_BADGES) {
         if (streak >= m.days && !earned.has(m.id)) {
             earned.add(m.id);
             newBadge = m;
@@ -12557,7 +12584,6 @@ function cwCheckMilestones() {
 
     cwUserData.badges = Array.from(earned);
 
-    // Celebrate newest badge
     if (newBadge) {
         setTimeout(() => cwCelebrate(newBadge), 600);
     }
@@ -12566,49 +12592,125 @@ function cwCheckMilestones() {
 // --- Render Progress Bar ---
 function cwRenderProgress() {
     if (!cwUserData) return;
-    const totalMin = cwUserData.totalMinutes || 0;
-    const totalHours = totalMin / 60;
+    const todayMin = Math.floor(cwSessionSeconds / 60);
     const streak = cwUserData.currentStreak || 0;
+    const currentLevel = cwGetDailyLevel(todayMin);
 
-    // Update streak display
+    // Streak display
     const streakEl = document.getElementById('cw-streak-display');
     if (streakEl) streakEl.textContent = '🔥 רצף: ' + streak + ' ימים';
 
-    // Update total time
+    // Today's time + level
     const timeEl = document.getElementById('cw-total-time');
     if (timeEl) {
-        if (totalMin < 60) {
-            timeEl.textContent = 'סה"כ: ' + totalMin + ' דקות';
-        } else {
-            const h = Math.floor(totalHours);
-            const m = totalMin % 60;
-            timeEl.textContent = 'סה"כ: ' + h + ' שעות' + (m > 0 ? ' ו-' + m + ' דקות' : '');
-        }
+        const lvl = CW_DAILY_LEVELS.find(l => l.level === currentLevel);
+        timeEl.textContent = 'היום: ' + todayMin + ' דקות' + (lvl ? ' — ' + lvl.icon + ' ' + lvl.label : '');
     }
 
-    // Find next milestone
-    const nextHourMilestone = CW_MILESTONES.hours.find(m => totalHours < m.hours);
+    // Progress bar = progress within current day toward next level
     const progressFill = document.getElementById('cw-progress-fill');
     const progressNext = document.getElementById('cw-progress-next');
+    const nextLevel = CW_DAILY_LEVELS.find(l => todayMin < l.minutes);
 
-    if (nextHourMilestone && progressFill) {
-        const prevHours = CW_MILESTONES.hours[CW_MILESTONES.hours.indexOf(nextHourMilestone) - 1]?.hours || 0;
-        const pct = Math.min(100, ((totalHours - prevHours) / (nextHourMilestone.hours - prevHours)) * 100);
+    if (nextLevel && progressFill) {
+        const prevMin = CW_DAILY_LEVELS[CW_DAILY_LEVELS.indexOf(nextLevel) - 1]?.minutes || 0;
+        const pct = Math.min(100, ((todayMin - prevMin) / (nextLevel.minutes - prevMin)) * 100);
         progressFill.style.width = Math.max(2, pct) + '%';
     } else if (progressFill) {
         progressFill.style.width = '100%';
     }
 
-    if (nextHourMilestone && progressNext) {
-        const remaining = Math.ceil((nextHourMilestone.hours * 60) - totalMin);
-        if (remaining > 60) {
-            progressNext.textContent = nextHourMilestone.icon + ' ' + nextHourMilestone.label + ' — עוד ' + Math.ceil(remaining/60) + ' שעות';
-        } else {
-            progressNext.textContent = nextHourMilestone.icon + ' ' + nextHourMilestone.label + ' — עוד ' + remaining + ' דקות!';
-        }
+    if (nextLevel && progressNext) {
+        const remaining = nextLevel.minutes - todayMin;
+        progressNext.textContent = nextLevel.icon + ' ' + nextLevel.label + ' — עוד ' + remaining + ' דקות';
     } else if (progressNext) {
-        progressNext.textContent = '👑 כתר תורה — הגעת לפסגה!';
+        progressNext.textContent = '👑 כתר! הגעת לרמה הגבוהה ביותר היום';
     }
+
+    // Weekly + Monthly stats
+    cwRenderWeeklyMonthly();
+}
+
+function cwRenderWeeklyMonthly() {
+    let wrap = document.getElementById('cw-weekly-monthly');
+    if (!wrap) {
+        // Create weekly/monthly display after badges
+        const badgesWrap = document.getElementById('cw-badges-wrap');
+        if (!badgesWrap) return;
+        wrap = document.createElement('div');
+        wrap.id = 'cw-weekly-monthly';
+        wrap.style.cssText = 'margin-bottom:18px;';
+        badgesWrap.parentNode.insertBefore(wrap, badgesWrap.nextSibling);
+    }
+    if (!cwUserData || !cwUserData.dailyLevels) { wrap.innerHTML = ''; return; }
+
+    const today = new Date();
+    const dailyLevels = cwUserData.dailyLevels || {};
+
+    // This week (Sunday-Saturday)
+    const dayOfWeek = today.getDay(); // 0=Sun
+    let weekDays = [];
+    for (let i = dayOfWeek; i >= 0; i--) {
+        const d = new Date(today); d.setDate(today.getDate() - i);
+        weekDays.push(d.toISOString().split('T')[0]);
+    }
+
+    // This month
+    const monthStr = today.toISOString().split('T')[0].substring(0, 7);
+    const monthDays = Object.keys(dailyLevels).filter(k => k.startsWith(monthStr));
+
+    // Compute stats
+    const weekLevels = weekDays.map(d => dailyLevels[d] || 0);
+    const weekMax = Math.max(...weekLevels, 0);
+    const weekDaysAtMax = weekLevels.filter(l => l > 0 && l === weekMax).length;
+    const weekActiveDays = weekLevels.filter(l => l > 0).length;
+
+    const monthLevels = monthDays.map(d => dailyLevels[d] || 0);
+    const monthMax = Math.max(...monthLevels, 0);
+    const monthDaysAtMax = monthLevels.filter(l => l > 0 && l === monthMax).length;
+    const monthActiveDays = monthLevels.filter(l => l > 0).length;
+
+    const weekMaxLvl = CW_DAILY_LEVELS.find(l => l.level === weekMax);
+    const monthMaxLvl = CW_DAILY_LEVELS.find(l => l.level === monthMax);
+
+    let h = '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
+
+    // Weekly card
+    h += '<div style="flex:1;min-width:140px;background:var(--cw-card);border:1px solid var(--cw-border);border-radius:var(--cw-radius);padding:12px;">';
+    h += '<div style="font-size:0.78rem;font-weight:700;color:var(--cw-accent);margin-bottom:8px;">📅 השבוע</div>';
+    h += '<div style="font-size:0.82rem;color:var(--cw-text);">' + weekActiveDays + ' ימים פעילים</div>';
+    if (weekMaxLvl) {
+        h += '<div style="font-size:0.78rem;color:var(--cw-text2);margin-top:4px;">שיא: ' + weekMaxLvl.icon + ' ' + weekMaxLvl.label + ' (' + weekDaysAtMax + ' פעמים)</div>';
+    }
+    // Mini week dots
+    h += '<div style="display:flex;gap:3px;margin-top:8px;justify-content:center;">';
+    const dayNames = ['א','ב','ג','ד','ה','ו','ש'];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i);
+        const ds = d.toISOString().split('T')[0];
+        const lv = dailyLevels[ds] || 0;
+        const lvObj = CW_DAILY_LEVELS.find(l => l.level === lv);
+        const isToday = ds === today.toISOString().split('T')[0];
+        h += '<div style="text-align:center;' + (isToday ? 'font-weight:700;' : '') + '">';
+        h += '<div style="font-size:0.62rem;color:var(--cw-text2);">' + dayNames[i] + '</div>';
+        h += '<div style="font-size:0.9rem;">' + (lv > 0 ? (lvObj ? lvObj.icon : '·') : '·') + '</div>';
+        h += '</div>';
+    }
+    h += '</div>';
+    h += '</div>';
+
+    // Monthly card
+    h += '<div style="flex:1;min-width:140px;background:var(--cw-card);border:1px solid var(--cw-border);border-radius:var(--cw-radius);padding:12px;">';
+    h += '<div style="font-size:0.78rem;font-weight:700;color:var(--cw-accent);margin-bottom:8px;">📆 החודש</div>';
+    h += '<div style="font-size:0.82rem;color:var(--cw-text);">' + monthActiveDays + ' ימים פעילים</div>';
+    if (monthMaxLvl) {
+        h += '<div style="font-size:0.78rem;color:var(--cw-text2);margin-top:4px;">שיא: ' + monthMaxLvl.icon + ' ' + monthMaxLvl.label + ' (' + monthDaysAtMax + ' פעמים)</div>';
+    }
+    h += '<div style="font-size:0.78rem;color:var(--cw-text2);margin-top:4px;">סה"כ: ' + (cwUserData.totalMinutes || 0) + ' דקות</div>';
+    h += '</div>';
+
+    h += '</div>';
+    wrap.innerHTML = h;
 }
 
 // --- Render Badges ---
@@ -12617,25 +12719,39 @@ function cwRenderBadges() {
     if (!wrap || !cwUserData) return;
     const earned = new Set(cwUserData.badges || []);
 
-    const allMilestones = [
-        ...CW_MILESTONES.hours.map(m => ({ ...m, type:'hours' })),
-        ...CW_MILESTONES.streaks.map(m => ({ ...m, type:'streak' }))
-    ];
+    // Show daily levels (today's progress) + streak badges
+    let h = '';
+    // Daily levels row
+    h += '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;">';
+    const todayMin = Math.floor(cwSessionSeconds / 60);
+    for (const l of CW_DAILY_LEVELS) {
+        const reached = todayMin >= l.minutes;
+        h += '<div class="cw-badge ' + (reached ? 'earned' : 'locked') + '" title="' + l.desc + '" style="' + (reached ? 'transform:scale(1.05);' : 'opacity:0.5;') + '">';
+        h += '<span class="badge-icon">' + (reached ? l.icon : '🔒') + '</span>';
+        h += '<span class="badge-label">' + l.label + '</span>';
+        h += '</div>';
+    }
+    h += '</div>';
 
-    wrap.innerHTML = allMilestones.map(m => {
+    // Streak badges row
+    h += '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">';
+    for (const m of CW_STREAK_BADGES) {
         const isEarned = earned.has(m.id);
-        return '<div class="cw-badge ' + (isEarned ? 'earned' : 'locked') + '" title="' + m.desc + '">' +
-            '<span class="badge-icon">' + (isEarned ? m.icon : '🔒') + '</span>' +
-            '<span class="badge-label">' + m.label + '</span>' +
-        '</div>';
-    }).join('');
+        h += '<div class="cw-badge ' + (isEarned ? 'earned' : 'locked') + '" title="' + m.desc + '">';
+        h += '<span class="badge-icon">' + (isEarned ? m.icon : '🔒') + '</span>';
+        h += '<span class="badge-label">' + m.label + '</span>';
+        h += '</div>';
+    }
+    h += '</div>';
+
+    wrap.innerHTML = h;
 }
 
 // --- Live Timer ---
 function cwUpdateLiveTimer() {
     const el = document.getElementById('cw-live-timer');
     if (!el) return;
-    // Show session time continuously (never resets mid-session)
+    // Show today's cumulative time (persists across sessions)
     const totalSec = cwSessionSeconds;
     const hrs = Math.floor(totalSec / 3600);
     const mins = Math.floor((totalSec % 3600) / 60);
@@ -12653,7 +12769,7 @@ function cwCelebrate(milestone) {
     const existing = document.querySelector('.cw-celebration');
     if (existing) existing.remove();
 
-    const isPhysicalPrize = milestone.id === 'h15' || milestone.id === 'h25' || milestone.id === 'h50' || milestone.id === 's30';
+    const isPhysicalPrize = milestone.id === 's30' || milestone.level === 5;
 
     const div = document.createElement('div');
     div.className = 'cw-celebration';
@@ -12762,6 +12878,26 @@ function cwBuildThieves() {
             <span class="highlight">לולאת הדופמין:</span> ציפייה → גירוי → סיפוק רגעי → ריקנות → חיפוש שוב. כמו מכונת מזל שנותנת ניצחון קטן כל כמה גלילות.</div>
         </div>
 
+        <div class="cw-journey-step" style="border-right:3px solid #e74c3c;">
+            <span class="step-icon">🕸️</span>
+            <div class="step-title">איך האלגוריתם לוכד אותך — צעד אחר צעד</div>
+            <div class="step-text">
+            <strong style="color:#e74c3c;">שלב 1 — מיפוי:</strong> מהרגע שפתחת את האפליקציה, האלגוריתם מתחיל לבנות עליך פרופיל. הוא עוקב אחרי: כמה זמן עצרת על כל תוכן, מה גללת מהר, על מה לחצת, באיזה שעה אתה הכי פעיל, ואיזה מילות חיפוש הקלדת. <span class="highlight">הוא יודע עליך יותר ממה שאתה יודע על עצמך.</span><br><br>
+            <strong style="color:#e74c3c;">שלב 2 — הדרגתיות:</strong> הוא לא מתחיל מהתוכן הכי קיצוני. הוא מתחיל מתוכן "קצה" — קצת פרובוקטיבי, קצת מושך. ואז עוד קצת. ועוד קצת. כמו להכניס צפרדע למים חמים לאט לאט — <span class="highlight">עד שלא שמים לב שהמים רותחים</span>.<br><br>
+            <strong style="color:#e74c3c;">שלב 3 — בועה:</strong> ככל שלוחצים על סוג מסוים של תוכן, האלגוריתם מגיש עוד ועוד מאותו הסוג. <span class="highlight">נוצרת "בועת פילטר"</span> — העולם שהמסך מציג לך הופך מצומצם ומעוות. אתה חושב שזה מה שכולם רואים. זה לא. זו הבועה שלך.<br><br>
+            <strong style="color:#e74c3c;">שלב 4 — תלות:</strong> המוח מתרגל לרמת הגירוי. מה שהיה "מספיק" כבר לא עובד. צריך יותר. חזק יותר. מפתיע יותר. <span class="highlight">זה אותו מנגנון בדיוק כמו סם — טולרנטיות.</span></div>
+        </div>
+
+        <div class="cw-journey-step" style="border-right:3px solid #e74c3c;">
+            <span class="step-icon">⏰</span>
+            <div class="step-title">הטריקים שעובדים עליך — ואתה לא יודע</div>
+            <div class="step-text">
+            <strong style="color:var(--cw-accent);">🔔 התראות מתוזמנות:</strong> ההתראות לא מגיעות באקראי. הן מגיעות בדיוק ברגע שהמערכת חושבת שתחזור. אחרי אוכל, לפני שינה, כשאתה משועמם. <span class="highlight">הן מתוכננות לשבור את הרצון שלך.</span><br><br>
+            <strong style="color:var(--cw-accent);">🎰 Slot Machine Effect:</strong> למה ממשיכים לגלול? כי כל גלילה היא כמו סיבוב במכונת מזל. רוב הפעמים — שום דבר מעניין. אבל מדי פעם — בול! משהו שגורם לך להרגיש טוב. <span class="highlight">ההפתעה הזו ממכרת יותר מתוצאה קבועה.</span><br><br>
+            <strong style="color:var(--cw-accent);">🪝 Open Loops:</strong> "הסיפור שלא תאמין מה קרה אחר כך..." — המוח שונא דברים לא גמורים. הוא חייב לדעת מה קרה. הם יודעים את זה ומשתמשים בזה — כל סרטון, כל כותרת, כל קליפ נגמר באמצע כדי שתלחץ על הבא.<br><br>
+            <strong style="color:var(--cw-accent);">👥 Social Proof:</strong> "מיליון צפיות!" "כולם מדברים על זה!" — אתה חושב שאם כולם צופים, כנראה שזה בסדר. <span class="highlight">האלגוריתם מנפח מספרים בכוונה כדי ליצור את התחושה הזו.</span></div>
+        </div>
+
         <div class="cw-journey-step">
             <span class="step-icon">💡</span>
             <div class="step-title">הידע הזה משחרר</div>
@@ -12774,7 +12910,21 @@ function cwBuildThieves() {
             <div class="step-title">הדופמין — מה באמת קורה במוח</div>
             <div class="step-text">המוח שלך בנוי לחפש חידוש. כל סקרול, כל קליק, כל גירוי חדש — משחרר טיפת דופמין. אבל הנה הקאץ': <span class="highlight">הגוף מתרגל ודורש עוד. ועוד. וחזק יותר.</span><br><br>
             זה לא חולשה מוסרית — זה כימיה. בדיוק אותו מנגנון שפועל בהתמכרות לסמים, להימורים, לאוכל. <span class="highlight">המוח לא מבדיל בין סוגי הדופמין.</span><br><br>
-            <span class="whisper">החדשות הטובות: המוח גם מסוגל להשתקם. הוא פלסטי — הוא יכול להתאושש. אבל צריך לתת לו זמן.</span></div>
+            <strong style="color:var(--cw-accent);">מה הדופמין עושה לך:</strong><br>
+            • <span class="highlight">ירידת רגישות</span> — מה שפעם הספיק כבר לא מספיק. המוח דורש גירוי חזק יותר, יותר קיצוני, יותר מפתיע.<br>
+            • <span class="highlight">פגיעה בריכוז</span> — מוח שרגיל לגירויים מהירים מתקשה עם שקט, למידה, שיחה ארוכה. המוח הופך "מלוכלך" בגירויים.<br>
+            • <span class="highlight">ערפול רגשי</span> — קשה להרגיש שמחה אמיתית מדברים פשוטים. שקיעה, שיחה עם חבר, תפילה — הכל נראה "חלש" לעומת הגירוי מהמסך.<br><br>
+            <span class="whisper">החדשות הטובות: המוח גם מסוגל להשתקם. הוא פלסטי — הוא יכול להתאושש. מחקרים מראים שאחרי 30-90 יום של הפחתת גירויים, הרגישות חוזרת. הצבעים חוזרים.</span></div>
+        </div>
+
+        <div class="cw-journey-step" style="border-right:3px solid var(--cw-accent);">
+            <span class="step-icon">💀</span>
+            <div class="step-title">ההרס השקט — מה האלגוריתם גונב ממך</div>
+            <div class="step-text">
+            <strong style="color:var(--cw-accent);">⏳ זמן:</strong> חוקרים מצאו שהמשתמש הממוצע מבזבז 2-4 שעות ביום על גלילה ברשתות. זה 1,000+ שעות בשנה. תחשוב מה היית יכול לעשות עם 1,000 שעות.<br><br>
+            <strong style="color:var(--cw-accent);">🧠 יצירתיות:</strong> מוח שצורך כל הזמן לא יוצר. הוא רק קולט, קולט, קולט. <span class="highlight">הגלילה הורגת את היכולת שלך לחשוב, לחלום, ליצור.</span><br><br>
+            <strong style="color:var(--cw-accent);">💔 מערכות יחסים:</strong> כשהמוח רגיל לגירויים מהירים ומושלמים — מערכות יחסים אמיתיות נראות "משעממות". קשר אמיתי דורש סבלנות, פגיעות, התמדה. האלגוריתם מאמן אותך בדיוק להפך.<br><br>
+            <strong style="color:var(--cw-accent);">🙏 רוחניות:</strong> קשה מאוד להתפלל, ללמוד, או להרגיש קדושה כשהמוח מלא רעש. <span class="highlight">האלגוריתם גונב ממך את היכולת להתחבר — לעצמך ולקב"ה.</span></div>
         </div>
 
         <div class="cw-journey-step" style="border-right:3px solid var(--cw-accent);">
@@ -12809,23 +12959,23 @@ function cwBuildDeep() {
 
     const layers = [
         { icon:'🌊', title:'הצמא שלא נגמר — בארות נשברים', sub:'למה ככל שמנסים למלא, הריקנות רק גדלה?',
-          body:'<p>ירמיהו הנביא אומר: <strong>"כי שתיים רעות עשה עמי — אותי עזבו, מקור מים חיים, לחצוב להם בורות, בורות נשברים, אשר לא יכילו המים."</strong></p><p style="margin-top:12px;">הנפש שלך צמאה. זה לא חולשה — זה הדבר הכי אנושי שיש. הצמא הזה הוא בעצם כמיהה לקדושה, לחיבור, לאמת. אבל כשמנסים למלא את הצמא הזה מ"בארות נשברים" — מתוכן שמתחזה לאינטימיות, מגירויים שמבטיחים סיפוק — התוצאה היא כמו לשתות מים מלוחים: <span class="highlight">ככל ששותים יותר, הצמא גדל</span>.</p><p style="margin-top:12px;"><span class="whisper">הרמח"ל בדרך ה\' מסביר: התענוג האמיתי היחיד הוא ההתקרבות למקור. כל תחליף — ככל שיהיה מושך — רק מרחיק אותנו מהמילוי האמיתי.</span></p>' },
+          body:'<p>ירמיהו הנביא אומר: <strong>"כי שתיים רעות עשה עמי — אותי עזבו, מקור מים חיים, לחצוב להם בורות, בורות נשברים, אשר לא יכילו המים."</strong></p><p style="margin-top:12px;">הנפש שלך צמאה. זה לא חולשה — זה הדבר הכי אנושי שיש. הצמא הזה הוא בעצם כמיהה לקדושה, לחיבור, לאמת. אבל כשמנסים למלא את הצמא הזה מ"בארות נשברים" — מתוכן שמתחזה לאינטימיות, מגירויים שמבטיחים סיפוק — התוצאה היא כמו לשתות מים מלוחים: <span class="highlight">ככל ששותים יותר, הצמא גדל</span>.</p><p style="margin-top:12px;"><span class="whisper">הרמח"ל בדרך ה\' מסביר: התענוג האמיתי היחיד הוא ההתקרבות למקור. כל תחליף — ככל שיהיה מושך — רק מרחיק אותנו מהמילוי האמיתי.</span></p><p style="margin-top:12px;">ובמסילת ישרים הוא מוסיף: <strong>"האדם לא נברא אלא להתענג על ה\' וליהנות מזיו שכינתו, שזהו התענוג האמיתי והעידון הגדול מכל העידונים שיכולים להימצא."</strong> כל תענוג אחר הוא רק צל — והנפש יודעת את זה.</p>' },
         { icon:'🔄', title:'המלכוד הכפול — ההלקאה שאחרי הנפילה', sub:'למה תחושת ה"אני נורא" היא חלק מהבעיה, לא מהפתרון',
-          body:'<p>אחרי נפילה, מגיע הגל — הבושה, האשמה, ה"אני לא שווה כלום". <span class="highlight">וזה בדיוק מה שהיצר רוצה.</span></p><p style="margin-top:12px;">רבי נחמן מברסלב אומר: <strong>"אם אתה מאמין שאפשר לקלקל — תאמין שאפשר לתקן."</strong> ועוד: <strong>"אסור להתייאש! אין שום ייאוש בעולם כלל!"</strong></p><p style="margin-top:12px;">הרב פדיה נגר מסביר שהמעגל עובד ככה:<br>נפילה → בושה → "אני פגום" → ריחוק מהקב"ה → ריקנות → חיפוש מילוי → נפילה שוב.</p><p style="margin-top:12px;">המפתח הוא <span class="highlight">לשבור את המעגל בנקודה של הבושה</span>. לא להילחם ביצר ישירות — אלא לסרב לשקר של "אתה לא שווה".</p><p style="margin-top:12px;"><span class="whisper">בעל התניא מלמד: גם ברגע הנפילה הכי עמוקה, הניצוץ האלוקי שבך לא נפגע. הוא שלם. תמיד.</span></p>' },
+          body:'<p>אחרי נפילה, מגיע הגל — הבושה, האשמה, ה"אני לא שווה כלום". <span class="highlight">וזה בדיוק מה שהיצר רוצה.</span></p><p style="margin-top:12px;">רבי נחמן מברסלב אומר: <strong>"אם אתה מאמין שאפשר לקלקל — תאמין שאפשר לתקן."</strong> ועוד: <strong>"אסור להתייאש! אין שום ייאוש בעולם כלל!"</strong></p><p style="margin-top:12px;">בספרי הפנימיות מוסבר שהמעגל עובד ככה:<br>נפילה → בושה → "אני פגום" → ריחוק מהקב"ה → ריקנות → חיפוש מילוי → נפילה שוב.</p><p style="margin-top:12px;">המפתח הוא <span class="highlight">לשבור את המעגל בנקודה של הבושה</span>. לא להילחם ביצר ישירות — אלא לסרב לשקר של "אתה לא שווה".</p><p style="margin-top:12px;"><span class="whisper">בעל התניא מלמד (פרק כ"ו): גם ברגע הנפילה הכי עמוקה, הניצוץ האלוקי שבך לא נפגע. הוא שלם. תמיד.</span></p><p style="margin-top:12px;">ועוד מלמד בעל התניא (פרק ל"א): <strong>העצבות עצמה אינה עבירה, אבל היא גוררת אדם למקומות שהעבירה לבד לא הייתה מביאה אותו.</strong> המלכוד האמיתי אינו הנפילה — אלא העצב שאחריה. השמחה היא החרב שלך.</p>' },
         { icon:'🕳️', title:'ירידה צורך עלייה — הסוד הקבלי', sub:'מה אם הנפילה היא בדיוק מה שהנשמה שלך באה לעשות פה?',
           body:'<p>אחד הסודות העמוקים בקבלת האר"י הקדוש: <span class="highlight">"אין אור גדול יותר מאור שבא מתוך החושך."</span></p><p style="margin-top:12px;">הבעל שם טוב מלמד שכל ירידה היא הכנה לעלייה. הירידה עצמה <span class="highlight">מכילה בתוכה את הניצוצות של העלייה הבאה</span>. בלי החושך, אי אפשר לגלות את עוצמת האור שבך.</p><p style="margin-top:12px;">הרמח"ל מוסיף בדרך ה\': המקומות שבהם האדם מאותגר הכי הרבה — <strong>שם נמצא הסיפור שלו בעולם</strong>. האתגר הוא לא עונש. הוא מפת הדרכים של הנשמה.</p><p style="margin-top:12px;"><span class="whisper">אתה לא נלחם סתם. אתה נלחם את המלחמה שהנשמה שלך בחרה לבוא לעולם בשבילה.</span></p>' },
         { icon:'🔗', title:'חלק מרצף — אתה לא לבד בזה', sub:'אתה מתקן לא רק בשביל עצמך',
-          body:'<p>האר"י הקדוש מגלה שהנשמה שלנו היא חלק משרשרת. <span class="highlight">האתגרים שלך אולי שייכים לפצעים קדומים</span> — דורות שהיו לפניך, חלקים בנשמה שמחכים לתיקון.</p><p style="margin-top:12px;">זה לא אומר שאתה אשם. זה אומר שאתה <span class="highlight">הגיבור שנבחר לרפא את זה</span>. כשאתה מתגבר — אתה מתקן אחורה ומתקן קדימה. אתה משחרר ניצוצות שהיו כלואים דורות.</p><p style="margin-top:12px;"><span class="whisper">הרב פדיה נגר מדבר על כך שהיכולת שלנו להגיע לייעוד עוברת דרך מרחבי האתגר. לא מסביב — דרך.</span></p>' },
+          body:'<p>האר"י הקדוש מגלה שהנשמה שלנו היא חלק משרשרת. <span class="highlight">האתגרים שלך אולי שייכים לפצעים קדומים</span> — דורות שהיו לפניך, חלקים בנשמה שמחכים לתיקון.</p><p style="margin-top:12px;">זה לא אומר שאתה אשם. זה אומר שאתה <span class="highlight">הגיבור שנבחר לרפא את זה</span>. כשאתה מתגבר — אתה מתקן אחורה ומתקן קדימה. אתה משחרר ניצוצות שהיו כלואים דורות.</p><p style="margin-top:12px;"><span class="whisper">בתורת הפנימיות מובא שהיכולת שלנו להגיע לייעוד עוברת דרך מרחבי האתגר. לא מסביב — דרך.</span></p>' },
         { icon:'💎', title:'מה באמת קורה ברגע הדחף', sub:'הדחף הוא צימאון לקדושה שטועה בכתובת',
           body:'<p>הבעל שם טוב מלמד עיקרון מהפכני: <span class="highlight">כל תאווה היא קדושה שנפלה בשבי</span>. הכמיהה לקשר, למגע, לחיבור — זה לא יצר רע. זה צורך קדוש שמחפש את הכתובת הנכונה.</p><p style="margin-top:12px;">כשמבינים את זה, משהו משתנה. במקום "אני חלש" → "יש בי כוח עצום שצריך כיוון". במקום "אני פגום" → "יש בי צימאון שמחכה למילוי אמיתי".</p><p style="margin-top:12px;">בעל התניא מסביר: <span class="highlight">המלחמה עצמה היא הניצחון</span> — כי כל רגע שאתה נלחם, אתה מוכיח שהנשמה שלך חיה ופועלת.</p><p style="margin-top:12px;">רבי נחמן אומר: <strong>"כל העולם כולו גשר צר מאוד — והעיקר לא לפחד כלל."</strong> הגשר צר — אבל <span class="highlight">יש גשר</span>. אתה בדרך.</p>' },
         { icon:'🌅', title:'לקום בשמחה, לא באשמה', sub:'התשובה האמיתית לפי הפנימיות',
-          body:'<p>רבי נחמן נותן את המפתח: <strong>"מצווה גדולה להיות בשמחה תמיד."</strong> גם — ובעיקר — אחרי נפילה.</p><p style="margin-top:12px;"><span class="highlight">השמחה היא הכוח שמאפשר לך לקום</span>. העצבות אחרי נפילה היא לא תשובה — היא חלק מהמלכוד.</p><p style="margin-top:12px;">הרב פדיה נגר מסביר: התשובה האמיתית היא לא "להרגיש רע מספיק". תשובה היא <span class="highlight">חזרה — לעצמך, למקור, לאמת שלך</span>. בעדינות, בחמלה, בלי מקלות.</p><p style="margin-top:12px;">הרמח"ל כותב: מטרת הנשמה — "להיטיב." הקב"ה רוצה להיטיב לך. <span class="highlight">גם עכשיו. גם אחרי הנפילה. בלי תנאים מוקדמים.</span></p><p style="margin-top:12px;"><span class="whisper">נפלת? קום. חייך. ותתחיל מחדש. לא כי לא קרה כלום — אלא כי אתה גדול מכל נפילה.</span></p>' }
+          body:'<p>רבי נחמן נותן את המפתח: <strong>"מצווה גדולה להיות בשמחה תמיד."</strong> גם — ובעיקר — אחרי נפילה.</p><p style="margin-top:12px;"><span class="highlight">השמחה היא הכוח שמאפשר לך לקום</span>. העצבות אחרי נפילה היא לא תשובה — היא חלק מהמלכוד.</p><p style="margin-top:12px;">בתורת הפנימיות: התשובה האמיתית היא לא "להרגיש רע מספיק". תשובה היא <span class="highlight">חזרה — לעצמך, למקור, לאמת שלך</span>. בעדינות, בחמלה, בלי מקלות.</p><p style="margin-top:12px;">הרמח"ל כותב: מטרת הנשמה — "להיטיב." הקב"ה רוצה להיטיב לך. <span class="highlight">גם עכשיו. גם אחרי הנפילה. בלי תנאים מוקדמים.</span></p><p style="margin-top:12px;"><span class="whisper">נפלת? קום. חייך. ותתחיל מחדש. לא כי לא קרה כלום — אלא כי אתה גדול מכל נפילה.</span></p><p style="margin-top:12px;">רבי נחמן בליקוטי מוהר"ן (תנינא, מח): <strong>"כשאדם יודע שכל מה שעובר עליו — הכל לטובתו, זה מעין עולם הבא."</strong> ועוד: <strong>"מצווה גדולה להיות בשמחה תמיד, ולהתגבר להרחיק העצבות בכל כוחו."</strong></p>' }
     ];
 
     container.innerHTML =
         '<div class="cw-card" style="border-color:rgba(46,139,87,0.3);background:rgba(46,139,87,0.04);text-align:center;margin-bottom:18px;">' +
             '<div style="font-size:0.85rem;color:var(--cw-text);line-height:1.8;">✨ מסע לתוך הנפש — שש שכבות של הבנה עמוקה<br>' +
-            '<span style="font-size:0.78rem;color:var(--cw-text2);">מבוסס על תורת הפנימיות: קבלת האר"י, הרמח"ל, הבעש"ט, רבי נחמן, בעל התניא, והרב פדיה נגר</span></div>' +
+            '<span style="font-size:0.78rem;color:var(--cw-text2);">מבוסס על תורת הפנימיות: קבלת האר"י, הרמח"ל, הבעש"ט, רבי נחמן, בעל התניא</span></div>' +
         '</div>' +
         layers.map(function(l) {
             return '<div class="cw-journey-step" style="cursor:pointer;" onclick="this.classList.toggle(\'open\');var b=this.querySelector(\'.layer-body\');b.style.display=this.classList.contains(\'open\')?\'\':\' none\';">' +
@@ -12916,6 +13066,47 @@ const CW_TOOLS = [
                 <button class="cw-btn cw-btn-soft" onclick="cwShowMirror()">הראה לי</button>
             </div>
             <div id="cw-mirror-area"></div>
+        </div>`
+    },
+    {
+        id: 'tips',
+        icon: '📋',
+        name: 'עצות מעשיות לכל יום',
+        desc: 'טיפים קצרים שעובדים — מנוסים על בשר ודם',
+        body: `<div class="cw-card-text">
+            <div style="margin-bottom:14px;font-weight:600;color:var(--cw-accent);">💡 טיפים מיידיים לרגע קשה:</div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>1. כלל 5 הדקות:</strong> אמור לעצמך "רק 5 דקות אני לא נכנס לזה." ברוב המקרים, הדחף יירד משמעותית.
+            </div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>2. שנה מיקום:</strong> קום מהמקום שאתה בו. צא מהחדר. שטוף פנים במים קרים. השינוי הפיזי שובר את הלולאה.
+            </div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>3. התקשר למישהו:</strong> לא צריך לספר מה עובר עליך. רק לשמוע קול אנושי חם. זה משנה את הכימיה במוח.
+            </div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>4. פעילות גופנית:</strong> אפילו 10 שקפיצות, 20 שכיבות סמיכה. הגוף ישחרר דופמין בריא במקום מזיק.
+            </div>
+            <div style="margin:18px 0 14px;font-weight:600;color:var(--cw-accent);">🛡️ הגנות לטווח ארוך:</div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>מצב אפור (Grayscale):</strong> הפעל מצב שחור-לבן על הטלפון. הצבעים הם חלק מהמניפולציה — בלעדיהם המסך הרבה פחות מושך.
+            </div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>שעות ללא מסך:</strong> שעה לפני שינה ושעה אחרי קימה — ללא טלפון. תן למוח לנוח ולהתאפס.
+            </div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>הגבלת זמן מסך:</strong> השתמש באפליקציית הגבלה. הגדר 30 דקות ליום לרשתות. זה לא עונש — זה מעשה של כבוד עצמי.
+            </div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>מחק אפליקציות:</strong> לא לתמיד. אפילו ליומיים. תרגיש את ההבדל. תגלה כמה זמן יש לך פתאום.
+            </div>
+            <div style="margin:18px 0 14px;font-weight:600;color:var(--cw-accent);">🌱 בנייה מחדש:</div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;margin-bottom:10px;">
+                <strong>מלא את הריק:</strong> כשמוציאים את המסך, צריך לשים משהו במקום. ספר טוב, שיעור תורה, הליכה בטבע, שיחה עמוקה, יצירה. הנפש צריכה מילוי.
+            </div>
+            <div style="padding:12px;background:var(--cw-bg);border-radius:10px;">
+                <strong>30 יום של איפוס:</strong> תקופה של 30 יום עם מינימום גירויים מאפשרת למוח להשתקם. הרגישות חוזרת, הצבעים חוזרים, היכולת להתרגש מדברים פשוטים חוזרת.
+            </div>
         </div>`
     },
     {
@@ -13029,7 +13220,7 @@ const CW_STRENGTH_TEXTS = [
     { title: '🌱 כשאתה חושב שאתה לבד', text: 'רבי נחמן אומר: "כל העולם כולו גשר צר מאוד — והעיקר לא לפחד כלל." הגשר צר — אבל יש גשר. ואתה לא לבד עליו. דורות שלמים עוברים איתך, מתפללים בשבילך, מחכים שתקום.' },
     { title: '✨ כשאתה שוכח מי אתה', text: 'הרמח"ל כותב: מטרת הנשמה היא "להיטיב". הקב"ה שלח אותך לעולם כדי להיטיב לך — גם עכשיו, גם אחרי הכל. אתה בן מלך שנפל לבור. הבור לא משנה את מי שאתה — הוא רק משנה את מה שאתה רואה.' },
     { title: '🕯️ כשהחושך מרגיש מוחלט', text: 'האר"י הקדוש מלמד: אין אור גדול יותר מאור שבא מתוך החושך. ברגע הכי חשוך — שם מחכה האור הכי גדול. אתה לא צריך לחכות שהחושך ייגמר כדי להתחיל להאיר. נר קטן אחד מגרש הרבה חושך.' },
-    { title: '🤲 כשאתה צריך חמלה', text: 'הרב פדיה נגר מלמד: תשובה אמיתית היא לא להרגיש רע מספיק. תשובה היא חזרה — לעצמך, למקור, לאמת. בעדינות, בחמלה. הקב"ה לא מחכה שתהיה מושלם. הוא מחכה שתחזור — כמו שאתה, עם כל השברים.' }
+    { title: '🤲 כשאתה צריך חמלה', text: 'בתורת הפנימיות: תשובה אמיתית היא לא להרגיש רע מספיק. תשובה היא חזרה — לעצמך, למקור, לאמת. בעדינות, בחמלה. הקב"ה לא מחכה שתהיה מושלם. הוא מחכה שתחזור — כמו שאתה, עם כל השברים.' }
 ];
 
 function cwBuildTools() {
