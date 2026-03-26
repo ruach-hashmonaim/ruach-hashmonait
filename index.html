@@ -1995,6 +1995,8 @@ function updateUIForRole() {
     document.querySelectorAll('.nav-training, .nav-training-section, .tile-training').forEach(el => {
         el.style.display = lvl >= 1 ? '' : 'none';
     });
+    // Update program tab visibility based on framework
+    if (lvl >= 1) { try { updateTrainingProgramTabs(); } catch(e) {} }
 
     // Content management (canAddContent)
     document.querySelectorAll('.nav-content-mgmt').forEach(el => {
@@ -2365,6 +2367,54 @@ let currentOfficerPluga = 'pluga_a'; // separate platoon state for officer cours
 let currentTrainingTrack = { 'basic':'pluga_a', 'nco':'pluga_a', 'officer':'pluga_a' };
 let currentTrainingWeek = {};
 
+
+// Framework-to-program mapping: which frameworks can access which programs
+function getUserAllowedPrograms() {
+    if (!currentUser) return ['basic','nco','officer'];
+    const lvl = userLevel();
+    const fw = currentUser.framework || '';
+    const role = currentUser.role || '';
+
+    // Level 4+ (בה"ד/מפח"ט and above) see all programs
+    if (lvl >= 4) return ['basic','nco','officer'];
+
+    // Ruach hashmonait staff see all
+    if (fw === 'ruach' || fw === 'mifhat') return ['basic','nco','officer'];
+
+    // Framework-specific:
+    // maccabim = בה"ד מכבים: all training programs happen here
+    if (fw === 'maccabim') return ['basic','nco','officer'];
+
+    // If no framework assigned, show all (safe default)
+    if (!fw) return ['basic','nco','officer'];
+
+    // Battalion users (yonatan/shimon) only see basic training relevant to them
+    return ['basic'];
+}
+
+// Check if user can provide weekly feedback for a given platoon
+function canGiveFeedback(plugaLetter) {
+    if (!currentUser) return false;
+    const lvl = userLevel();
+    const role = currentUser.role || '';
+    const userPluga = currentUser.pluga || '';
+
+    // Level 4+ (קצין חינוך, מג"ד, מנהל, etc.) can give feedback for any platoon
+    if (lvl >= 4) return true;
+
+    // מ"פ (company commander) - only for their own platoon
+    if ((role === 'mefaked_pluga' || role === 'mefaked_pluga_yonatan') && userPluga === plugaLetter) return true;
+
+    // קמב"ץ - only for their own platoon
+    if (role === 'kambatz' && userPluga === plugaLetter) return true;
+
+    // מנהל-level roles in ROLES
+    if (role === 'menahel' || role === 'admin_system' || role === 'segel') return true;
+
+    // Everyone else cannot give feedback
+    return false;
+}
+
 function switchTrainingProgram(prog) {
     currentTrainingProgram = prog;
     document.getElementById('training-prog-basic').classList.toggle('active', prog === 'basic');
@@ -2394,8 +2444,8 @@ function buildPlugaTabs(prog) {
     const getCurrentPluga = () => prog === 'officer' ? currentOfficerPluga : currentTrainingTrack[prog];
     const setCurrentPluga = (t) => { if (prog === 'officer') { currentOfficerPluga = t; } else { currentTrainingTrack[prog] = t; } };
 
-    if (lvl >= 4 || !userPluga) {
-        // בה"ד/מפח"ט level or no pluga assigned: show all 8 tabs
+    if (lvl >= 4) {
+        // בה"ד/מפח"ט level: show all 8 platoon tabs
         let html = '';
         const allTracks = ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'];
         const current = getCurrentPluga() || 'pluga_a';
@@ -2406,13 +2456,33 @@ function buildPlugaTabs(prog) {
             html += `<button class="track-tab ${t===current?'active':''}" data-track="${t}" onclick="${onclick}">${TRAINING_TRACKS[t]}</button>`;
         });
         container.innerHTML = html;
-    } else {
-        // Platoon-level user: only show their own platoon (no tabs needed, just a label)
+    } else if (userPluga) {
+        // Platoon-level user: ONLY their own platoon — locked, no switching
         const userTrack = PLUGA_TRACK_MAP[userPluga];
         if (userTrack) {
             setCurrentPluga(userTrack);
-            container.innerHTML = `<span style="font-size:0.88rem;font-weight:600;color:var(--primary);">פלוגה ${userPluga}׳</span>`;
+            container.innerHTML = `<span style="font-size:0.88rem;font-weight:600;color:var(--primary);">🔒 פלוגה ${userPluga}׳</span>`;
         }
+    } else {
+        // No platoon assigned, not a manager — show message
+        container.innerHTML = '<span style="font-size:0.82rem;color:var(--text-secondary);">לא שויכת לפלוגה — פנה למשק חינוך</span>';
+    }
+}
+
+
+function updateTrainingProgramTabs() {
+    const allowed = getUserAllowedPrograms();
+    const basicBtn = document.getElementById('training-prog-basic');
+    const ncoBtn = document.getElementById('training-prog-nco');
+    const officerBtn = document.getElementById('training-prog-officer');
+
+    if (basicBtn) basicBtn.style.display = allowed.includes('basic') ? '' : 'none';
+    if (ncoBtn) ncoBtn.style.display = allowed.includes('nco') ? '' : 'none';
+    if (officerBtn) officerBtn.style.display = allowed.includes('officer') ? '' : 'none';
+
+    // If current program is not allowed, switch to first allowed
+    if (!allowed.includes(currentTrainingProgram) && allowed.length > 0) {
+        switchTrainingProgram(allowed[0]);
     }
 }
 
@@ -2434,6 +2504,7 @@ function switchTrainingTrack(program, track) {
 }
 
 async function loadTrainingPage(program) {
+    updateTrainingProgramTabs();
     const container = document.getElementById('training-content');
     const controls = document.getElementById('training-controls');
     if (!container) return;
@@ -2465,10 +2536,7 @@ async function loadTrainingPage(program) {
     const plugaLetter = hasPluga ? TRAINING_TRACKS[plugaTrack]?.replace('פלוגה ','').replace('׳','') : null;
     const userPluga = currentUser?.pluga || '';
     const lvl = userLevel();
-    const canMark = canUserMarkCompletion() && (
-        lvl >= 4 || // בה"ד / מפח"ט level — can mark any platoon
-        (plugaLetter && userPluga === plugaLetter) // platoon-level user — only their own
-    );
+    const canMark = canGiveFeedback(plugaLetter);
 
     try {
         // Content query: filter by content track (sade/gefen for officer), not by platoon
