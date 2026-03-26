@@ -11755,12 +11755,18 @@ async function loadAdminDashboard() {
         window._dashDays = days;
         c.innerHTML = '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:1.5rem;">📊</div><div style="margin-top:8px;">טוען נתונים...</div></div>';
 
-        const [stats, usersSnap] = await Promise.all([
-            analyticsGetStats(days),
-            db.collection('users').get()
-        ]);
+        let stats, usersSnap;
+        try {
+            [stats, usersSnap] = await Promise.all([
+                analyticsGetStats(days),
+                db.collection('users').get()
+            ]);
+        } catch(err) {
+            c.innerHTML = '<div class="card" style="color:red;">שגיאה בטעינת דשבורד: ' + err.message + '</div>';
+            return;
+        }
 
-        const staffCount = usersSnap.size;
+        const staffCount = usersSnap ? usersSnap.size : 0;
 
         // Build dashboard HTML
         let h = '';
@@ -11996,11 +12002,21 @@ async function analyticsGetStats(days) {
     const sinceStr = since.toISOString().split('T')[0];
 
     try {
-        const snap = await db.collection('analytics')
-            .where('date', '>=', sinceStr)
-            .orderBy('date', 'desc')
-            .limit(5000)
-            .get();
+        let snap;
+        try {
+            snap = await db.collection('analytics')
+                .where('date', '>=', sinceStr)
+                .orderBy('date', 'desc')
+                .limit(5000)
+                .get();
+        } catch(indexErr) {
+            // Composite index may not exist — fallback to simpler query
+            console.warn('Analytics: falling back to simple query', indexErr.message);
+            snap = await db.collection('analytics')
+                .where('date', '>=', sinceStr)
+                .limit(5000)
+                .get();
+        }
 
         const events = [];
         snap.forEach(doc => events.push(doc.data()));
@@ -12393,11 +12409,12 @@ async function cwStartTracking() {
     // Update streak
     cwUpdateStreak();
 
-    // Render UI
+    // Render UI immediately
+    cwUpdateLiveTimer();
     cwRenderProgress();
     cwRenderBadges();
 
-    // Start tick
+    // Start tick (every second)
     cwTickInterval = setInterval(() => {
         if (document.hidden) return;
         cwSessionSeconds++;
