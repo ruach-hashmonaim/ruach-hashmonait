@@ -3548,12 +3548,94 @@ async function loadCmgmtContent() {
                 <td>${d.instructor || '—'}</td>
                 <td>${d.hours || '—'}</td>
                 <td>${linkHtml}</td>
-                <td><button class="btn-sm btn-danger" onclick="cmgmtDeleteLesson('${doc.id}')">מחק</button></td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-sm btn-secondary" onclick="openEditLesson('${doc.id}','cmgmt')">ערוך</button>
+                    <button class="btn-sm btn-danger" onclick="cmgmtDeleteLesson('${doc.id}')">מחק</button>
+                </td>
             </tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;
     } catch(e) { container.innerHTML = '<p style="color:var(--danger);">שגיאה: ' + e.message + '</p>'; }
+}
+
+// --- Edit existing lesson modal ---
+function openEditLesson(docId, source) {
+    db.collection('training_content').doc(docId).get().then(doc => {
+        if (!doc.exists) { showToast('תוכן לא נמצא'); return; }
+        const d = doc.data();
+        const catOptions = Object.entries(CONTENT_RESPONSIBILITY).map(([k,v]) =>
+            `<option value="${k}" ${k === d.category ? 'selected' : ''}>${v}</option>`
+        ).join('');
+        const modal = document.createElement('div');
+        modal.id = 'edit-lesson-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:480px;width:92%;direction:rtl;max-height:85vh;overflow-y:auto;">
+            <h3 style="margin-bottom:16px;color:var(--primary);">✏️ עריכת תוכן</h3>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div>
+                    <label style="font-weight:600;font-size:0.88rem;">שם יחידת לימוד:</label>
+                    <input type="text" id="edit-title" value="${(d.title||'').replace(/"/g,'&quot;')}" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;">
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-weight:600;font-size:0.88rem;">מעביר:</label>
+                        <input type="text" id="edit-instructor" value="${(d.instructor||'').replace(/"/g,'&quot;')}" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;">
+                    </div>
+                    <div style="width:80px;">
+                        <label style="font-weight:600;font-size:0.88rem;">שעות:</label>
+                        <input type="number" id="edit-hours" value="${d.hours||''}" step="0.5" min="0" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:0.88rem;">אחריות:</label>
+                    <select id="edit-category" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;">${catOptions}</select>
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:0.88rem;">קישור:</label>
+                    <input type="text" id="edit-url" value="${(d.url||'').replace(/"/g,'&quot;')}" placeholder="https://..." style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;direction:ltr;text-align:left;">
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:0.88rem;">החלפת קובץ (אופציונלי):</label>
+                    <input type="file" id="edit-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="margin-top:4px;font-size:0.85rem;">
+                    ${d.fileUrl ? `<div style="margin-top:4px;"><a href="${d.fileUrl}" target="_blank" style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ נוכחי: ${d.fileName || 'הורד'}</a></div>` : ''}
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-start;margin-top:10px;">
+                    <button class="btn-primary btn-sm" onclick="saveEditLesson('${docId}','${source}')">שמור</button>
+                    <button class="btn-secondary btn-sm" onclick="document.getElementById('edit-lesson-modal').remove()">ביטול</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    }).catch(e => { showToast('שגיאה בטעינת תוכן'); console.error(e); });
+}
+
+async function saveEditLesson(docId, source) {
+    const title = document.getElementById('edit-title').value.trim();
+    const instructor = document.getElementById('edit-instructor').value.trim();
+    const hours = parseFloat(document.getElementById('edit-hours').value) || 0;
+    const category = document.getElementById('edit-category').value;
+    const url = document.getElementById('edit-url').value.trim();
+    const fileInput = document.getElementById('edit-file');
+    if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
+    try {
+        const update = { title, instructor, hours, category, url, updatedBy: currentUser.name, updatedAt: new Date() };
+        if (fileInput && fileInput.files.length > 0 && storage) {
+            const file = fileInput.files[0];
+            const path = `content_files/edit_${docId}_${Date.now()}_${file.name}`;
+            showToast('מעלה קובץ...');
+            const ref = storage.ref(path);
+            const snap = await ref.put(file);
+            update.fileUrl = await snap.ref.getDownloadURL();
+            update.fileName = file.name;
+        }
+        await db.collection('training_content').doc(docId).update(update);
+        document.getElementById('edit-lesson-modal').remove();
+        showToast('תוכן עודכן');
+        if (source === 'admin') loadAdminTrainingContent();
+        else loadCmgmtContent();
+    } catch(e) { showToast('שגיאה: ' + (e.message || '')); console.error(e); }
 }
 
 async function cmgmtAddLesson() {
@@ -3650,7 +3732,10 @@ async function loadAdminTrainingContent() {
                 <td>${d.instructor || '—'}</td>
                 <td>${d.hours || '—'}</td>
                 <td>${linkHtml}</td>
-                <td><button class="btn-sm btn-danger" onclick="adminDeleteLesson('${doc.id}')">מחק</button></td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-sm btn-secondary" onclick="openEditLesson('${doc.id}','admin')">ערוך</button>
+                    <button class="btn-sm btn-danger" onclick="adminDeleteLesson('${doc.id}')">מחק</button>
+                </td>
             </tr>`;
         });
         html += '</tbody></table>';
