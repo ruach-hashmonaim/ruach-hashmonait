@@ -1845,8 +1845,8 @@ function activatePage(page) {
     if (page === 'admin') loadAdminPage();
     if (page === 'content-mgmt') cmgmtProgramChanged();
     if (page === 'internet-safety') {
-        // Require login for this module
-        if (!currentUser) {
+        // Require login (either staff or participant) for this module
+        if (!currentUser && !currentParticipant) {
             showToast('כדי להיכנס למרחב הפנימי צריך להתחבר קודם 🔑');
             openUserLoginModal('internet-safety');
             return;
@@ -1908,7 +1908,9 @@ function closeRegisterModal() {
 }
 
 // --- User Login Modal ---
-function openUserLoginModal() {
+let cwLoginRedirect = null;
+function openUserLoginModal(redirectPage) {
+    cwLoginRedirect = redirectPage || null;
     document.getElementById('user-login-modal').classList.add('open');
 }
 function closeUserLoginModal() {
@@ -2144,6 +2146,12 @@ function onParticipantLogin() {
     document.getElementById('sidebar-participant-name').textContent = currentParticipant.fullName;
     document.getElementById('sidebar-participant-avatar').textContent = currentParticipant.fullName.charAt(0);
     document.getElementById('home-greeting').textContent = '— ' + currentParticipant.fullName;
+    // Redirect to page that required login
+    if (cwLoginRedirect) {
+        const target = cwLoginRedirect;
+        cwLoginRedirect = null;
+        activatePage(target);
+    }
 }
 
 // --- Participant logout ---
@@ -2200,7 +2208,11 @@ function onLoginSuccess() {
     // Show/hide nav items based on role
     updateUIForRole();
 
-    if (pendingLoginPage) {
+    if (cwLoginRedirect) {
+        const target = cwLoginRedirect;
+        cwLoginRedirect = null;
+        activatePage(target);
+    } else if (pendingLoginPage) {
         navigate(pendingLoginPage);
         pendingLoginPage = null;
     }
@@ -12017,10 +12029,21 @@ function cwSaveOnExit() {
 }
 
 // --- Firestore Load/Save ---
+function cwGetUserId() {
+    if (currentUser) return currentUser.odot || currentUser.id || currentUser.name || 'anon';
+    if (currentParticipant) return 'p_' + (currentParticipant.id || currentParticipant.username || 'anon');
+    return 'anon';
+}
+function cwGetUserName() {
+    if (currentUser) return currentUser.name || '';
+    if (currentParticipant) return currentParticipant.fullName || '';
+    return '';
+}
+
 async function cwLoadUserData() {
-    if (!db || !currentUser) return;
+    if (!db || (!currentUser && !currentParticipant)) return;
     try {
-        const userId = currentUser.odot || currentUser.name || 'anon';
+        const userId = cwGetUserId();
         const docRef = db.collection('cw_progress').doc(userId);
         const snap = await docRef.get();
         if (snap.exists) {
@@ -12033,7 +12056,7 @@ async function cwLoadUserData() {
                 badges: [],
                 lastVisitDate: '',
                 monthlyMinutes: {},
-                userName: currentUser.name || ''
+                userName: cwGetUserName()
             };
             await docRef.set(cwUserData);
         }
@@ -12044,9 +12067,9 @@ async function cwLoadUserData() {
 }
 
 async function cwSaveProgress() {
-    if (!db || !currentUser || !cwUserData) return;
+    if (!db || (!currentUser && !currentParticipant) || !cwUserData) return;
     try {
-        const userId = currentUser.odot || currentUser.name || 'anon';
+        const userId = cwGetUserId();
         // Only save NEW minutes since last save (delta, not total)
         const deltaSeconds = cwSessionSeconds - cwLastSavedSecond;
         const deltaMinutes = Math.floor(deltaSeconds / 60);
@@ -12061,7 +12084,7 @@ async function cwSaveProgress() {
         if (!cwUserData.monthlyMinutes) cwUserData.monthlyMinutes = {};
         cwUserData.monthlyMinutes[monthKey] = (cwUserData.monthlyMinutes[monthKey] || 0) + deltaMinutes;
         cwUserData.lastVisitDate = today;
-        cwUserData.userName = currentUser.name || '';
+        cwUserData.userName = cwGetUserName();
 
         // Check for new badges
         cwCheckMilestones();
