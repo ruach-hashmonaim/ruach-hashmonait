@@ -1805,6 +1805,8 @@ function navigate(page) {
 }
 
 function activatePage(page) {
+    // Analytics: track page
+    if (typeof analyticsTrackPage === 'function') analyticsTrackPage(page);
     // Stop CW tracking when leaving internet-safety
     if (typeof cwStopTracking === 'function' && typeof cwTrackingActive !== 'undefined' && cwTrackingActive) {
         const goingTo = page.startsWith('survey/') ? 'surveys' : page;
@@ -11662,36 +11664,166 @@ async function deleteSurvey(id){if(!confirm('למחוק?'))return;await db.colle
 
 async function loadAdminDashboard() {
     const c = document.getElementById('admin-dashboard-content');
-    c.innerHTML = '<div class="card"><h3>דשבורד מנהל</h3><p>טוען...</p></div>';
-    try {
-        const [users, reports, surveys] = await Promise.all([
-            db.collection('users').get(),
-            db.collection('reports').get(),
-            db.collection('surveys').get()
+    c.innerHTML = '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:1.5rem;">📊</div><div style="margin-top:8px;">טוען נתונים...</div></div>';
+
+    // Time range state
+    if (!window._dashDays) window._dashDays = 7;
+
+    async function renderDashboard(days) {
+        window._dashDays = days;
+        c.innerHTML = '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:1.5rem;">📊</div><div style="margin-top:8px;">טוען נתונים...</div></div>';
+
+        const [stats, usersSnap] = await Promise.all([
+            analyticsGetStats(days),
+            db.collection('users').get()
         ]);
 
-        // Count per framework
-        const fwCounts = {};
-        Object.keys(FRAMEWORKS).forEach(fw => fwCounts[fw] = 0);
-        users.forEach(doc => { const d = doc.data(); if (d.framework && fwCounts[d.framework] !== undefined) fwCounts[d.framework]++; });
+        const staffCount = usersSnap.size;
 
-        c.innerHTML = `
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px;">
-                <div class="card" style="text-align:center;"><div style="font-size:2rem;font-weight:800;color:var(--primary);">${users.size}</div><div style="font-size:0.85rem;">משתמשים</div></div>
-                <div class="card" style="text-align:center;"><div style="font-size:2rem;font-weight:800;color:var(--success);">${reports.size}</div><div style="font-size:0.85rem;">דיווחים שבועיים</div></div>
-                <div class="card" style="text-align:center;"><div style="font-size:2rem;font-weight:800;color:var(--accent);">${surveys.size}</div><div style="font-size:0.85rem;">סקרים</div></div>
-            </div>
-            <div class="card">
-                <h3 style="margin-bottom:14px;">משתמשים לפי מסגרת</h3>
-                ${Object.entries(FRAMEWORKS).map(([key, label]) => `
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-                        <span class="framework-badge ${getFrameworkClass(key)}">${label}</span>
-                        <b>${fwCounts[key] || 0}</b>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } catch(e) { c.innerHTML = '<div class="card">שגיאה בטעינת דשבורד</div>'; }
+        // Build dashboard HTML
+        let h = '';
+
+        // Time range selector
+        h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;justify-content:flex-end;">';
+        h += '<span style="font-size:0.85rem;color:var(--text-secondary);">טווח זמן:</span>';
+        [1,7,30,90].forEach(d => {
+            const label = d === 1 ? 'היום' : d + ' ימים';
+            const active = d === days ? 'background:var(--primary);color:#fff;' : '';
+            h += '<button onclick="loadAdminDashboard_range(' + d + ')" class="btn-secondary btn-sm" style="' + active + '">' + label + '</button>';
+        });
+        h += '</div>';
+
+        if (!stats) {
+            h += '<div class="card">אין נתונים עדיין. הנתונים יתחילו להיאסף כשמשתמשים יגלשו באתר.</div>';
+            c.innerHTML = h;
+            return;
+        }
+
+        // === TOP STATS CARDS ===
+        const avgMins = Math.floor(stats.avgTimeOnPage / 60);
+        const avgSecs = stats.avgTimeOnPage % 60;
+
+        h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;">';
+
+        const statCards = [
+            { icon:'👁️', value: stats.totalSessions, label:'ביקורים', color:'var(--primary)' },
+            { icon:'👤', value: stats.uniqueUsers, label:'מבקרים ייחודיים', color:'#2e8b57' },
+            { icon:'📄', value: stats.totalPageViews, label:'צפיות בדפים', color:'#5fa8d3' },
+            { icon:'⏱️', value: avgMins + ':' + String(avgSecs).padStart(2,'0'), label:'זמן ממוצע בדף', color:'#e8a838' },
+            { icon:'📱', value: stats.mobilePercent + '%', label:'אחוז מובייל', color:'#8b5cf6' },
+            { icon:'📊', value: stats.pagesPerSession, label:'דפים לביקור', color:'#3b82f6' },
+            { icon:'👥', value: staffCount, label:'משתמשי צוות', color:'var(--primary)' },
+            { icon:'🎓', value: stats.participantsCount, label:'נרשמים/משתתפים', color:'#27ae60' },
+        ];
+
+        statCards.forEach(s => {
+            h += '<div class="card" style="text-align:center;padding:16px;">';
+            h += '<div style="font-size:1.3rem;margin-bottom:4px;">' + s.icon + '</div>';
+            h += '<div style="font-size:1.8rem;font-weight:800;color:' + s.color + ';">' + s.value + '</div>';
+            h += '<div style="font-size:0.78rem;color:var(--text-secondary);">' + s.label + '</div>';
+            h += '</div>';
+        });
+        h += '</div>';
+
+        // === DAILY CHART (CSS bars) ===
+        h += '<div class="card" style="margin-bottom:16px;">';
+        h += '<h3 style="margin-bottom:14px;">📈 ביקורים לפי יום</h3>';
+        const dailyEntries = Object.entries(stats.dailyCounts).sort((a,b) => a[0].localeCompare(b[0]));
+        const maxDaily = Math.max(...dailyEntries.map(e => e[1]), 1);
+        h += '<div style="display:flex;align-items:flex-end;gap:4px;height:120px;direction:ltr;">';
+        dailyEntries.forEach(([date, count]) => {
+            const pct = Math.max(4, (count / maxDaily) * 100);
+            const dayLabel = date.split('-').slice(1).join('/');
+            h += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">';
+            h += '<span style="font-size:0.65rem;color:var(--text-secondary);">' + count + '</span>';
+            h += '<div style="width:100%;height:' + pct + '%;background:linear-gradient(180deg,var(--primary),#5fa8d3);border-radius:4px 4px 0 0;min-height:4px;"></div>';
+            h += '<span style="font-size:0.6rem;color:var(--text-secondary);white-space:nowrap;">' + dayLabel + '</span>';
+            h += '</div>';
+        });
+        h += '</div></div>';
+
+        // === HOURLY ACTIVITY ===
+        h += '<div class="card" style="margin-bottom:16px;">';
+        h += '<h3 style="margin-bottom:14px;">🕐 שעות פעילות</h3>';
+        const maxHour = Math.max(...stats.hourly, 1);
+        h += '<div style="display:flex;align-items:flex-end;gap:2px;height:80px;direction:ltr;">';
+        stats.hourly.forEach((count, hr) => {
+            const pct = Math.max(2, (count / maxHour) * 100);
+            h += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">';
+            h += '<div style="width:100%;height:' + pct + '%;background:' + (count > 0 ? 'var(--primary)' : '#e5e7eb') + ';border-radius:2px;min-height:2px;opacity:' + (count > 0 ? '1' : '0.3') + ';"></div>';
+            h += (hr % 3 === 0 ? '<span style="font-size:0.55rem;color:var(--text-secondary);">' + hr + '</span>' : '');
+            h += '</div>';
+        });
+        h += '</div></div>';
+
+        // === POPULAR PAGES ===
+        h += '<div class="card" style="margin-bottom:16px;">';
+        h += '<h3 style="margin-bottom:14px;">📄 דפים פופולריים</h3>';
+        const sortedPages = Object.entries(stats.pageViews).sort((a,b) => b[1] - a[1]).slice(0, 10);
+        const maxPageViews = sortedPages.length > 0 ? sortedPages[0][1] : 1;
+        sortedPages.forEach(([page, count]) => {
+            const pct = (count / maxPageViews) * 100;
+            h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
+            h += '<div style="width:100px;font-size:0.82rem;font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + page + '</div>';
+            h += '<div style="flex:1;background:#e5e7eb;border-radius:4px;height:20px;overflow:hidden;">';
+            h += '<div style="width:' + pct + '%;height:100%;background:var(--primary);border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;">';
+            h += '<span style="font-size:0.7rem;color:#fff;font-weight:700;">' + count + '</span>';
+            h += '</div></div></div>';
+        });
+        h += '</div>';
+
+        // === DEVICES ===
+        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">';
+        h += '<div class="card" style="text-align:center;">';
+        h += '<h3 style="margin-bottom:10px;">📱 מכשירים</h3>';
+        const totalDevices = stats.mobileCount + stats.desktopCount || 1;
+        h += '<div style="display:flex;gap:16px;justify-content:center;">';
+        h += '<div><div style="font-size:1.5rem;font-weight:800;color:#8b5cf6;">' + stats.mobilePercent + '%</div><div style="font-size:0.78rem;color:var(--text-secondary);">מובייל</div></div>';
+        h += '<div><div style="font-size:1.5rem;font-weight:800;color:#3b82f6;">' + (100 - stats.mobilePercent) + '%</div><div style="font-size:0.78rem;color:var(--text-secondary);">דסקטופ</div></div>';
+        h += '</div></div>';
+
+        // CW Module card
+        h += '<div class="card" style="text-align:center;">';
+        h += '<h3 style="margin-bottom:10px;">🌿 מרחב פנימי</h3>';
+        if (stats.cwStats) {
+            h += '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">';
+            h += '<div><div style="font-size:1.5rem;font-weight:800;color:#2e8b57;">' + stats.cwStats.totalUsers + '</div><div style="font-size:0.72rem;color:var(--text-secondary);">משתמשים</div></div>';
+            h += '<div><div style="font-size:1.5rem;font-weight:800;color:#e8a838;">' + Math.round(stats.cwStats.totalMinutes / 60) + '</div><div style="font-size:0.72rem;color:var(--text-secondary);">שעות סה"כ</div></div>';
+            h += '<div><div style="font-size:1.5rem;font-weight:800;color:#8b5cf6;">' + stats.cwStats.totalBadges + '</div><div style="font-size:0.72rem;color:var(--text-secondary);">מדליות</div></div>';
+            h += '</div>';
+        } else {
+            h += '<div style="font-size:0.85rem;color:var(--text-secondary);">אין נתונים עדיין</div>';
+        }
+        h += '</div></div>';
+
+        // === CW TOP USERS ===
+        if (stats.cwStats && stats.cwStats.topUsers.length > 0) {
+            h += '<div class="card" style="margin-bottom:16px;">';
+            h += '<h3 style="margin-bottom:14px;">🏆 מובילים במרחב הפנימי</h3>';
+            h += '<div style="overflow-x:auto;"><table style="width:100%;font-size:0.82rem;border-collapse:collapse;">';
+            h += '<tr style="background:var(--bg-secondary);"><th style="padding:8px;text-align:right;">מקום</th><th style="padding:8px;text-align:right;">שם</th><th style="padding:8px;text-align:center;">דקות</th><th style="padding:8px;text-align:center;">רצף</th><th style="padding:8px;text-align:center;">מדליות</th></tr>';
+            stats.cwStats.topUsers.forEach((u, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+                h += '<tr style="border-bottom:1px solid var(--border);">';
+                h += '<td style="padding:8px;text-align:right;font-weight:700;">' + medal + '</td>';
+                h += '<td style="padding:8px;text-align:right;">' + u.name + '</td>';
+                h += '<td style="padding:8px;text-align:center;">' + u.totalMinutes + '</td>';
+                h += '<td style="padding:8px;text-align:center;">' + u.currentStreak + ' ימים</td>';
+                h += '<td style="padding:8px;text-align:center;">' + u.badges.length + '</td>';
+                h += '</tr>';
+            });
+            h += '</table></div></div>';
+        }
+
+        c.innerHTML = h;
+    }
+
+    // Range change helper
+    window.loadAdminDashboard_range = async function(days) {
+        await renderDashboard(days);
+    };
+
+    await renderDashboard(window._dashDays || 7);
 }
 
 // ============================================================
@@ -11707,6 +11839,193 @@ function loadReportsPage() {
             <a href="reports.html" class="btn-primary" style="display:inline-block;margin-top:12px;text-decoration:none;">כניסה למערכת הדיווח</a>
         </div>
     `;
+}
+
+
+// ============================================================
+// ANALYTICS TRACKING — page views, sessions, events
+// ============================================================
+let _analyticsSessionId = null;
+let _analyticsSessionStart = null;
+let _analyticsPageStart = null;
+let _analyticsCurrentPage = null;
+
+function analyticsInit() {
+    _analyticsSessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    _analyticsSessionStart = Date.now();
+    // Track session start
+    analyticsTrackEvent('session_start', {
+        userAgent: navigator.userAgent,
+        isMobile: /Mobi|Android/i.test(navigator.userAgent),
+        screenWidth: screen.width,
+        referrer: document.referrer || 'direct'
+    });
+    // Track page exit
+    window.addEventListener('beforeunload', () => {
+        analyticsTrackPageTime();
+        analyticsTrackEvent('session_end', {
+            durationSec: Math.round((Date.now() - _analyticsSessionStart) / 1000)
+        });
+    });
+}
+
+function analyticsTrackPage(pageName) {
+    analyticsTrackPageTime(); // save time on previous page
+    _analyticsCurrentPage = pageName;
+    _analyticsPageStart = Date.now();
+    analyticsTrackEvent('page_view', { page: pageName });
+}
+
+function analyticsTrackPageTime() {
+    if (_analyticsCurrentPage && _analyticsPageStart) {
+        const sec = Math.round((Date.now() - _analyticsPageStart) / 1000);
+        if (sec > 1) {
+            analyticsTrackEvent('page_time', { page: _analyticsCurrentPage, seconds: sec });
+        }
+    }
+}
+
+async function analyticsTrackEvent(eventName, data) {
+    if (!db) return;
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const hour = new Date().getHours();
+        const userId = currentUser ? (currentUser.id || currentUser.name) : currentParticipant ? ('p_' + currentParticipant.id) : 'guest';
+        const userName = currentUser ? currentUser.name : currentParticipant ? currentParticipant.fullName : 'אורח';
+        await db.collection('analytics').add({
+            event: eventName,
+            data: data || {},
+            sessionId: _analyticsSessionId,
+            userId: userId,
+            userName: userName,
+            date: today,
+            hour: hour,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            isMobile: /Mobi|Android/i.test(navigator.userAgent)
+        });
+    } catch(e) { /* silent fail — analytics should never break the app */ }
+}
+
+// Aggregate daily stats (runs once per dashboard load for efficiency)
+async function analyticsGetStats(days) {
+    if (!db) return null;
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceStr = since.toISOString().split('T')[0];
+
+    try {
+        const snap = await db.collection('analytics')
+            .where('date', '>=', sinceStr)
+            .orderBy('date', 'desc')
+            .limit(5000)
+            .get();
+
+        const events = [];
+        snap.forEach(doc => events.push(doc.data()));
+
+        // Compute stats
+        const sessions = new Set();
+        const uniqueUsers = new Set();
+        const pageViews = {};
+        const dailyVisits = {};
+        const hourly = Array(24).fill(0);
+        let totalPageTimeSec = 0;
+        let pageTimeCount = 0;
+        let mobileCount = 0;
+        let desktopCount = 0;
+        const sessionFirstSeen = {};
+        const userNames = {};
+
+        events.forEach(e => {
+            if (e.sessionId) sessions.add(e.sessionId);
+            if (e.userId && e.userId !== 'guest') {
+                uniqueUsers.add(e.userId);
+                if (e.userName) userNames[e.userId] = e.userName;
+            }
+            if (e.event === 'page_view' && e.data && e.data.page) {
+                pageViews[e.data.page] = (pageViews[e.data.page] || 0) + 1;
+            }
+            if (e.event === 'page_time' && e.data && e.data.seconds) {
+                totalPageTimeSec += e.data.seconds;
+                pageTimeCount++;
+            }
+            if (e.date) {
+                dailyVisits[e.date] = (dailyVisits[e.date] || new Set());
+                if (e.sessionId) dailyVisits[e.date].add(e.sessionId);
+            }
+            if (typeof e.hour === 'number') hourly[e.hour]++;
+            if (e.event === 'session_start' && e.data) {
+                if (e.data.isMobile) mobileCount++; else desktopCount++;
+            }
+            // First seen tracking
+            if (e.event === 'session_start' && e.sessionId && e.date) {
+                if (!sessionFirstSeen[e.userId] || e.date < sessionFirstSeen[e.userId]) {
+                    sessionFirstSeen[e.userId] = e.date;
+                }
+            }
+        });
+
+        // Convert dailyVisits sets to counts
+        const dailyCounts = {};
+        Object.entries(dailyVisits).forEach(([d, s]) => dailyCounts[d] = s.size);
+
+        const avgTimeSec = pageTimeCount > 0 ? Math.round(totalPageTimeSec / pageTimeCount) : 0;
+        const totalSessions = sessions.size || 1;
+
+        // CW Module specific stats
+        let cwStats = null;
+        try {
+            const cwSnap = await db.collection('cw_progress').get();
+            const cwUsers = [];
+            cwSnap.forEach(doc => {
+                const d = doc.data();
+                cwUsers.push({
+                    id: doc.id,
+                    name: d.userName || doc.id,
+                    totalMinutes: d.totalMinutes || 0,
+                    currentStreak: d.currentStreak || 0,
+                    longestStreak: d.longestStreak || 0,
+                    badges: d.badges || [],
+                    lastVisitDate: d.lastVisitDate || ''
+                });
+            });
+            cwUsers.sort((a, b) => b.totalMinutes - a.totalMinutes);
+            cwStats = {
+                totalUsers: cwUsers.length,
+                totalMinutes: cwUsers.reduce((s, u) => s + u.totalMinutes, 0),
+                totalBadges: cwUsers.reduce((s, u) => s + u.badges.length, 0),
+                topUsers: cwUsers.slice(0, 10),
+                avgMinutes: cwUsers.length > 0 ? Math.round(cwUsers.reduce((s, u) => s + u.totalMinutes, 0) / cwUsers.length) : 0
+            };
+        } catch(e) { /* ignore */ }
+
+        // Participants count
+        let participantsCount = 0;
+        try {
+            const pSnap = await db.collection('participants').get();
+            participantsCount = pSnap.size;
+        } catch(e) {}
+
+        return {
+            totalSessions: sessions.size,
+            uniqueUsers: uniqueUsers.size,
+            participantsCount,
+            pageViews,
+            totalPageViews: Object.values(pageViews).reduce((a,b) => a+b, 0),
+            avgTimeOnPage: avgTimeSec,
+            dailyCounts,
+            hourly,
+            mobileCount,
+            desktopCount,
+            mobilePercent: totalSessions > 0 ? Math.round((mobileCount / (mobileCount + desktopCount || 1)) * 100) : 0,
+            pagesPerSession: totalSessions > 0 ? (Object.values(pageViews).reduce((a,b) => a+b, 0) / totalSessions).toFixed(1) : 0,
+            cwStats,
+            userNames
+        };
+    } catch(e) {
+        console.error('Analytics error:', e);
+        return null;
+    }
 }
 
 // ============================================================
@@ -11739,6 +12058,7 @@ async function initApp() {
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.firestore();
         if (firebase.storage) storage = firebase.storage();
+        analyticsInit();
     } catch(e) { console.error('Init error:', e); }
 }
 
