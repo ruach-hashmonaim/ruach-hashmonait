@@ -11928,20 +11928,20 @@ function cwCloseVideo() {
 // --- Milestones Definition ---
 const CW_MILESTONES = {
     hours: [
-        { id:'h1', hours:1,    icon:'🌱', label:'ניצן',     desc:'שעה ראשונה במרחב — ההתחלה!' },
-        { id:'h2', hours:3,    icon:'🌿', label:'צומח',     desc:'3 שעות של עבודה פנימית' },
-        { id:'h5', hours:5,    icon:'🌳', label:'מתחזק',    desc:'5 שעות — אתה בונה שריר פנימי' },
-        { id:'h10', hours:10,  icon:'⭐', label:'כוכב',     desc:'10 שעות! השקעה אמיתית' },
-        { id:'h15', hours:15,  icon:'🏆', label:'אלוף',     desc:'15 שעות בחודש — פרס פיזי מגיע לך!' },
-        { id:'h25', hours:25,  icon:'💎', label:'יהלום',    desc:'25 שעות — אתה מופת לאחרים' },
-        { id:'h50', hours:50,  icon:'👑', label:'כתר',      desc:'50 שעות — מלך על עצמו' }
+        { id:'h1', hours:1,    icon:'🌱', label:'זריעה',        desc:'שעה ראשונה — זרעת את הזרע הראשון' },
+        { id:'h2', hours:3,    icon:'🌿', label:'נביטה',        desc:'3 שעות — הנבט מתחיל לבצבץ מהאדמה' },
+        { id:'h5', hours:5,    icon:'🌾', label:'שתילה',        desc:'5 שעות — נטעת עץ של אמונה' },
+        { id:'h10', hours:10,  icon:'🌳', label:'שורשים',       desc:'10 שעות — השורשות מתחזקים עמוק' },
+        { id:'h15', hours:15,  icon:'🕎', label:'אור',          desc:'15 שעות — כמו נרות החנוכה, אתה מוסיף אור. פרס פיזי מגיע לך!' },
+        { id:'h25', hours:25,  icon:'🏔️', label:'הר סיני',     desc:'25 שעות — עלית להר, קיבלת תורה פנימית' },
+        { id:'h50', hours:50,  icon:'👑', label:'כתר תורה',     desc:'50 שעות — כתר תורה עולה על כולם. הגעת לפסגה!' }
     ],
     streaks: [
-        { id:'s3',  days:3,  icon:'🔥', label:'3 ימים',    desc:'3 ימים ברצף — מומנטום!' },
-        { id:'s7',  days:7,  icon:'🔥', label:'שבוע שלם',  desc:'שבוע שלם! הרגל נבנה' },
-        { id:'s14', days:14, icon:'💪', label:'שבועיים',    desc:'14 ימים — החוזק הפנימי גדל' },
-        { id:'s21', days:21, icon:'🌟', label:'21 יום',     desc:'21 יום — הרגל חדש נוצר!' },
-        { id:'s30', days:30, icon:'🏅', label:'חודש!',     desc:'חודש שלם ברצף — פרס מיוחד!' }
+        { id:'s3',  days:3,  icon:'🕯️', label:'שלושת האבות', desc:'3 ימים ברצף — כמו אברהם יצחק ויעקב, אתה בונה שושלת' },
+        { id:'s7',  days:7,  icon:'✡️', label:'שבת שלמה',     desc:'שבוע שלם! כמו שבעת ימי הבריאה' },
+        { id:'s14', days:14, icon:'🌙', label:'חצי חודש',      desc:'14 ימים — כמו הלבנה שמתמלאת' },
+        { id:'s21', days:21, icon:'📜', label:'כ״א יום',       desc:'21 יום — כמו 21 ימי ספירת העומר, הרגל חדש נוצר!' },
+        { id:'s30', days:30, icon:'🌕', label:'חודש שלם',      desc:'חודש שלם ברצף — ראש חודש חדש! פרס מיוחד מגיע לך' }
     ]
 };
 
@@ -11949,6 +11949,7 @@ const CW_MILESTONES = {
 let cwTrackingActive = false;
 let cwSessionStart = null;
 let cwSessionSeconds = 0;
+let cwLastSavedSecond = 0; // tracks how many seconds we already saved to Firestore
 let cwTickInterval = null;
 let cwSaveInterval = null;
 let cwUserData = null; // { totalMinutes, currentStreak, longestStreak, badges, lastVisitDate, monthlyMinutes }
@@ -11966,6 +11967,7 @@ async function cwStartTracking() {
     cwTrackingActive = true;
     cwSessionStart = Date.now();
     cwSessionSeconds = 0;
+    cwLastSavedSecond = 0;
 
     // Load user data from Firestore
     await cwLoadUserData();
@@ -12045,19 +12047,21 @@ async function cwSaveProgress() {
     if (!db || !currentUser || !cwUserData) return;
     try {
         const userId = currentUser.odot || currentUser.name || 'anon';
-        const sessionMinutes = Math.floor(cwSessionSeconds / 60);
+        // Only save NEW minutes since last save (delta, not total)
+        const deltaSeconds = cwSessionSeconds - cwLastSavedSecond;
+        const deltaMinutes = Math.floor(deltaSeconds / 60);
+        if (deltaMinutes < 1) return; // Nothing new to save yet
+        cwLastSavedSecond += deltaMinutes * 60; // Mark those minutes as saved
+
         const today = new Date().toISOString().split('T')[0];
         const monthKey = today.substring(0, 7); // YYYY-MM
 
-        // Update totals
-        cwUserData.totalMinutes = (cwUserData.totalMinutes || 0) + sessionMinutes;
+        // Update totals with delta only
+        cwUserData.totalMinutes = (cwUserData.totalMinutes || 0) + deltaMinutes;
         if (!cwUserData.monthlyMinutes) cwUserData.monthlyMinutes = {};
-        cwUserData.monthlyMinutes[monthKey] = (cwUserData.monthlyMinutes[monthKey] || 0) + sessionMinutes;
+        cwUserData.monthlyMinutes[monthKey] = (cwUserData.monthlyMinutes[monthKey] || 0) + deltaMinutes;
         cwUserData.lastVisitDate = today;
         cwUserData.userName = currentUser.name || '';
-
-        // Reset session seconds (already counted)
-        cwSessionSeconds = cwSessionSeconds % 60;
 
         // Check for new badges
         cwCheckMilestones();
@@ -12178,7 +12182,7 @@ function cwRenderProgress() {
             progressNext.textContent = nextHourMilestone.icon + ' ' + nextHourMilestone.label + ' — עוד ' + remaining + ' דקות!';
         }
     } else if (progressNext) {
-        progressNext.textContent = '👑 השלמת את כל אבני הדרך!';
+        progressNext.textContent = '👑 כתר תורה — הגעת לפסגה!';
     }
 }
 
@@ -12206,9 +12210,16 @@ function cwRenderBadges() {
 function cwUpdateLiveTimer() {
     const el = document.getElementById('cw-live-timer');
     if (!el) return;
-    const mins = Math.floor(cwSessionSeconds / 60);
-    const secs = cwSessionSeconds % 60;
-    el.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+    // Show session time continuously (never resets mid-session)
+    const totalSec = cwSessionSeconds;
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    if (hrs > 0) {
+        el.textContent = String(hrs) + ':' + String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+    } else {
+        el.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+    }
 }
 
 // --- Celebration Popup ---
@@ -12222,11 +12233,11 @@ function cwCelebrate(milestone) {
     const div = document.createElement('div');
     div.className = 'cw-celebration';
     div.innerHTML = '<div class="celeb-icon">' + milestone.icon + '</div>' +
-        '<div class="celeb-title">כל הכבוד! 🎉</div>' +
+        '<div class="celeb-title">אשריך! 🎉</div>' +
         '<div class="celeb-desc">' + milestone.desc +
-        (isPhysicalPrize ? '<br><strong style="color:var(--cw-accent);">🎁 מגיע לך פרס! פנה למפקד/מחנך</strong>' : '') +
+        (isPhysicalPrize ? '<br><strong style="color:var(--cw-accent);">🎁 מגיע לך פרס! פנה למדריך</strong>' : '') +
         '</div>' +
-        '<button class="celeb-close" onclick="this.parentElement.remove()">💪 להמשיך</button>';
+        '<button class="celeb-close" onclick="this.parentElement.remove()">💪 קדימה לעלייה הבאה</button>';
 
     document.body.appendChild(div);
 
