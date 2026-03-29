@@ -12356,24 +12356,24 @@ function cwCloseVideo() {
 // ===== שולטים ברשת הפנימית — Gamification System =====
 
 // --- Milestones Definition ---
-const CW_MILESTONES = {
-    hours: [
-        { id:'h1', hours:1,    icon:'🌱', label:'זריעה',        desc:'שעה ראשונה — זרעת את הזרע הראשון' },
-        { id:'h2', hours:3,    icon:'🌿', label:'נביטה',        desc:'3 שעות — הנבט מתחיל לבצבץ מהאדמה' },
-        { id:'h5', hours:5,    icon:'🌾', label:'שתילה',        desc:'5 שעות — נטעת עץ של אמונה' },
-        { id:'h10', hours:10,  icon:'🌳', label:'שורשים',       desc:'10 שעות — השורשות מתחזקים עמוק' },
-        { id:'h15', hours:15,  icon:'🕎', label:'אור',          desc:'15 שעות — כמו נרות החנוכה, אתה מוסיף אור. פרס פיזי מגיע לך!' },
-        { id:'h25', hours:25,  icon:'🏔️', label:'הר סיני',     desc:'25 שעות — עלית להר, קיבלת תורה פנימית' },
-        { id:'h50', hours:50,  icon:'👑', label:'כתר תורה',     desc:'50 שעות — כתר תורה עולה על כולם. הגעת לפסגה!' }
-    ],
-    streaks: [
-        { id:'s3',  days:3,  icon:'🕯️', label:'שלושת האבות', desc:'3 ימים ברצף — כמו אברהם יצחק ויעקב, אתה בונה שושלת' },
-        { id:'s7',  days:7,  icon:'✡️', label:'שבת שלמה',     desc:'שבוע שלם! כמו שבעת ימי הבריאה' },
-        { id:'s14', days:14, icon:'🌙', label:'חצי חודש',      desc:'14 ימים — כמו הלבנה שמתמלאת' },
-        { id:'s21', days:21, icon:'📜', label:'כ״א יום',       desc:'21 יום — כמו 21 ימי ספירת העומר, הרגל חדש נוצר!' },
-        { id:'s30', days:30, icon:'🌕', label:'חודש שלם',      desc:'חודש שלם ברצף — ראש חודש חדש! פרס מיוחד מגיע לך' }
-    ]
-};
+// === DAILY LEVELS SYSTEM ===
+// 5 daily levels based on minutes spent TODAY
+const CW_DAILY_LEVELS = [
+    { level:1, minutes:5,  icon:'🌱', label:'נביטה',    desc:'5 דקות — הנבט הראשון של היום' },
+    { level:2, minutes:15, icon:'🌿', label:'שתילה',    desc:'15 דקות — שורשים מתחילים לצמוח' },
+    { level:3, minutes:30, icon:'🌳', label:'צמיחה',    desc:'30 דקות — העץ מתחזק' },
+    { level:4, minutes:45, icon:'🔥', label:'להבה',     desc:'45 דקות — האש הפנימית בוערת' },
+    { level:5, minutes:60, icon:'👑', label:'כתר',      desc:'שעה שלמה! כתר של מסירות' }
+];
+
+// Weekly/Monthly tracking derives from daily data
+const CW_STREAK_BADGES = [
+    { id:'s3', days:3, icon:'🕯️', label:'שלושת האבות', desc:'3 ימים ברצף — כמו אברהם יצחק ויעקב' },
+    { id:'s7', days:7, icon:'✡️', label:'שבת שלמה', desc:'שבוע שלם! כמו שבעת ימי הבריאה' },
+    { id:'s14', days:14, icon:'🌙', label:'חצי חודש', desc:'14 ימים — כמו הלבנה שמתמלאת' },
+    { id:'s21', days:21, icon:'📜', label:'כ״א יום', desc:'21 יום — הרגל חדש נוצר!' },
+    { id:'s30', days:30, icon:'🌕', label:'חודש שלם', desc:'חודש שלם ברצף! פרס מיוחד מגיע לך' }
+];
 
 // --- Tracking State ---
 let cwTrackingActive = false;
