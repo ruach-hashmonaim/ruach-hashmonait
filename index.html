@@ -12483,41 +12483,60 @@ function cwGetUserName() {
     return '';
 }
 
-async function cwLoadUserData() {
-    if (!db || (!currentUser && !currentParticipant)) return;
+function cwGetLocalData() {
     try {
-        const userId = cwGetUserId();
-        const docRef = db.collection('cw_progress').doc(userId);
-        const snap = await docRef.get();
-        if (snap.exists) {
-            cwUserData = snap.data();
-            // Ensure new fields exist
-            if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
-            if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
-        } else {
-            cwUserData = {
-                totalMinutes: 0,
-                currentStreak: 0,
-                longestStreak: 0,
-                badges: [],
-                lastVisitDate: '',
-                monthlyMinutes: {},
-                dailyMinutes: {},
-                dailyLevels: {},
-                userName: cwGetUserName()
-            };
-            await docRef.set(cwUserData);
+        const raw = localStorage.getItem('cw_progress_' + cwGetUserId());
+        if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+}
+function cwSaveLocalData() {
+    if (!cwUserData) return;
+    try {
+        localStorage.setItem('cw_progress_' + cwGetUserId(), JSON.stringify(cwUserData));
+    } catch(e) {}
+}
+
+async function cwLoadUserData() {
+    const defaultData = { totalMinutes:0, currentStreak:0, longestStreak:0, badges:[], lastVisitDate:'', monthlyMinutes:{}, dailyMinutes:{}, dailyLevels:{}, userName: cwGetUserName() };
+
+    // Try Firestore first
+    if (db && (currentUser || currentParticipant)) {
+        try {
+            const userId = cwGetUserId();
+            const docRef = db.collection('cw_progress').doc(userId);
+            const snap = await docRef.get();
+            if (snap.exists) {
+                cwUserData = snap.data();
+                if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
+                if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
+                cwSaveLocalData(); // sync to local
+                return;
+            } else {
+                cwUserData = { ...defaultData };
+                await docRef.set(cwUserData);
+                cwSaveLocalData();
+                return;
+            }
+        } catch(e) {
+            console.warn('CW: Firestore load failed, using localStorage', e);
         }
-    } catch(e) {
-        console.warn('CW: Failed to load progress', e);
-        cwUserData = { totalMinutes:0, currentStreak:0, longestStreak:0, badges:[], lastVisitDate:'', monthlyMinutes:{}, dailyMinutes:{}, dailyLevels:{} };
+    }
+
+    // Fallback to localStorage
+    const local = cwGetLocalData();
+    if (local) {
+        cwUserData = local;
+        if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
+        if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
+    } else {
+        cwUserData = { ...defaultData };
     }
 }
 
 async function cwSaveProgress() {
-    if (!db || (!currentUser && !currentParticipant) || !cwUserData) return;
+    if (!cwUserData) return;
     try {
-        const userId = cwGetUserId();
         const deltaSeconds = cwSessionSeconds - cwLastSavedSecond;
         const deltaMinutes = Math.floor(deltaSeconds / 60);
         if (deltaMinutes < 1) return;
@@ -12545,7 +12564,18 @@ async function cwSaveProgress() {
         // Check streak badges
         cwCheckMilestones();
 
-        await db.collection('cw_progress').doc(userId).set(cwUserData, { merge: true });
+        // Always save to localStorage (reliable)
+        cwSaveLocalData();
+
+        // Try Firestore (may fail with permissions)
+        if (db && (currentUser || currentParticipant)) {
+            try {
+                const userId = cwGetUserId();
+                await db.collection('cw_progress').doc(userId).set(cwUserData, { merge: true });
+            } catch(e) {
+                // Firestore save failed — data is safe in localStorage
+            }
+        }
 
         cwRenderProgress();
         cwRenderBadges();
