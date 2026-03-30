@@ -927,7 +927,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> לימוד עברית</a>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> בעקבות הנצח</a>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת הפנימית</a>
-        <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי</a>
+        <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> תוכנית הרוח והחינוך של בה״ד מכבים</a>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
 
         <!-- Staff-only sections -->
@@ -997,7 +997,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </a>
         <a class="home-tile tile-training" style="display:none;" onclick="navigate('training')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
-            <div class="tile-title">רוח מכבי</div>
+            <div class="tile-title">תוכנית הרוח והחינוך של בה״ד מכבים</div>
             <div class="tile-desc">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</div>
         </a>
         <a class="home-tile" onclick="navigate('hebrew')">
@@ -1057,10 +1057,10 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 
-<!-- ====== TRAINING — רוח מכבי (unified) ====== -->
+<!-- ====== TRAINING — תוכנית הרוח והחינוך של בה״ד מכבים (unified) ====== -->
 <div class="page-section" id="page-training">
     <div class="card">
-        <div class="card-title">רוח מכבי</div>
+        <div class="card-title">תוכנית הרוח והחינוך של בה״ד מכבים</div>
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</p>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <button class="track-tab active" id="training-prog-basic" onclick="switchTrainingProgram('basic')">הכשרת יסוד</button>
@@ -1340,23 +1340,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="cw-subtitle">מקום שקט להבין, להרגיש, ולבחור מחדש</div>
     </div>
 
-    <!-- Gamification: Session Timer + Progress + Badges -->
-    <div class="cw-session-timer" id="cw-session-timer">
-        <span class="timer-dot"></span>
-        <span id="cw-live-timer">00:00</span>
-        <span>היום</span>
-    </div>
-    <div class="cw-progress-bar-wrap" id="cw-progress-wrap">
-        <div class="cw-progress-header">
-            <span class="cw-streak" id="cw-streak-display">🔥 רצף: 0 ימים</span>
-            <span class="cw-total-time" id="cw-total-time">סה"כ: 0 דקות</span>
-        </div>
-        <div class="cw-progress-track">
-            <div class="cw-progress-fill" id="cw-progress-fill" style="width:2%"></div>
-        </div>
-        <div class="cw-progress-next" id="cw-progress-next"></div>
-    </div>
-    <div class="cw-badges-wrap" id="cw-badges-wrap"></div>
+    <!-- Gamification removed per request -->
 
     <!-- 4 Doors -->
     <div class="cw-doors">
@@ -1978,7 +1962,7 @@ const PAGE_TITLES = {
     'home': 'דף הבית',
     'learning': 'והגית בו — למידה יומית',
     'hebrew': 'לימוד עברית',
-    'training': 'רוח מכבי',
+    'training': 'תוכנית הרוח והחינוך של בה״ד מכבים',
     'geography': 'בעקבות הנצח',
     'internet-safety': 'שולטים ברשת הפנימית',
     'reports': 'מעקב שבועי — צוות חינוכי',
@@ -11289,11 +11273,16 @@ function adminTrainingChanged() {
     const weekSelect = document.getElementById('admin-train-week');
     // Show track selector only for officer
     trackSelect.style.display = prog === 'officer' ? '' : 'none';
-    // Build week options
+    // Build week options (regular + special weeks)
     const config = TRAINING_CONFIG[prog];
     let weekHtml = '';
     for (let w = 1; w <= config.weeks; w++) {
         weekHtml += `<option value="${w}">שבוע ${w}</option>`;
+    }
+    // Add special training weeks
+    const specialWeeks = TRAINING_SPECIAL_WEEKS[prog] || [];
+    for (const sw of specialWeeks) {
+        weekHtml += `<option value="${sw.weekNum}">${sw.icon} ${sw.name}</option>`;
     }
     weekSelect.innerHTML = weekHtml;
     loadAdminTrainingContent();
@@ -13017,6 +13006,490 @@ const MAP_QUIZZES = [
                 correct: 2,
                 explanation: 'חצור — ראש כל הממלכות, יהושע לכד אותה והכה את מלכה בחרב.',
                 expansion: '<b>📖 מקור:</b> יהושע י"א, י\'<br><b>🔍 רקע:</b> "וישב יהושע בעת ההיא וילכד את חצור ואת מלכה הכה בחרב — כי חצור לפנים היא ראש כל הממלכות האלה." חצור הייתה העיר הגדולה והחשובה ביותר בצפון כנען, וכיבושה סימל את השלמת מסע הכיבוש הצפוני.'
+            }
+        ]
+    },
+
+    // ========== ערי ישראל הקדומות ==========
+    {
+        id: 'ancient_cities',
+        title: 'ערי ישראל הקדומות',
+        description: '19 ערים קדומות בארץ ישראל — מבאר שבע ועד דן',
+        icon: '🏛️',
+        center: [31.8, 35.0],
+        zoom: 8,
+        locations: [
+            { id: 1, name: 'באר שבע', lat: 31.25, lng: 34.79, desc: 'עיר קדומה בשוליים הדרומיים של נחלת יהודה, מגורי אברהם ויצחק' },
+            { id: 2, name: 'עזה', lat: 31.50, lng: 34.47, desc: 'עיר מרכזית על דרך הים בואך מצרים, אחת מ-5 ערי הפלישתים' },
+            { id: 3, name: 'לכיש', lat: 31.56, lng: 34.85, desc: 'שער לאזור הר חברון, בצומת אסטרטגית בין הדרכים לעזה ולבאר שבע' },
+            { id: 4, name: 'בית שמש', lat: 31.72, lng: 34.98, desc: 'עיר לויים בשוליים המערביים של נחלת יהודה, קרובה לאזור הפלישתים' },
+            { id: 5, name: 'חברון', lat: 31.53, lng: 35.10, desc: 'עיר האבות, מערת המכפלה, עיר מלכות דוד ב-7 שנותיו הראשונות' },
+            { id: 6, name: 'גזר', lat: 31.87, lng: 34.92, desc: 'בפתח נחל איילון, צומת דרכים חשובה, עיר מקלט של שבט אפרים' },
+            { id: 7, name: 'ירושלים (יבוס)', lat: 31.78, lng: 35.23, desc: 'עיר דוד, הר הבית, בירת ישראל שבחר בה דוד המלך' },
+            { id: 8, name: 'יריחו', lat: 31.87, lng: 35.44, desc: 'העיר הנמוכה והעתיקה בעולם, עיר התמרים, הראשונה שנכבשה ע"י יהושע' },
+            { id: 9, name: 'גבעון', lat: 31.85, lng: 35.18, desc: 'עיר בעלת מערכת מים מרשימה, שימשה לפולחן לאחר חורבן שילה' },
+            { id: 10, name: 'אפק', lat: 32.10, lng: 34.93, desc: 'עיר על מקורות הירקון, שולטת על מעבר דרך הים הבינלאומית' },
+            { id: 11, name: 'שילה', lat: 32.06, lng: 35.29, desc: 'בירת ישראל הראשונה, עיר המשכן במשך כ-400 שנה' },
+            { id: 12, name: 'שכם', lat: 32.21, lng: 35.28, desc: 'עיר מרכזית לאורך כל התקופות, בירה לאחר פילוג הממלכה' },
+            { id: 13, name: 'שומרון', lat: 32.28, lng: 35.19, desc: 'בירת ממלכת ישראל, נוסדה ע"י בית עמרי במאה ה-9 לפנה"ס' },
+            { id: 14, name: 'פנואל', lat: 32.20, lng: 35.65, desc: 'בירת ממלכת ישראל לתקופה קצרה בעבר הירדן, במורדות הרי גלעד' },
+            { id: 15, name: 'עין גנים', lat: 32.46, lng: 35.30, desc: 'עיר לויים בגבול יששכר-מנשה, ג\'נין של ימינו' },
+            { id: 16, name: 'דותן', lat: 32.40, lng: 35.22, desc: 'מוכרת מסיפור יוסף ואחיו ומישיבתו של אלישע הנביא' },
+            { id: 17, name: 'מגידו', lat: 32.58, lng: 35.18, desc: 'שולטת על השער לעמק יזרעאל, מוזכרת בתעודות מצריות מהמאה ה-14 לפנה"ס' },
+            { id: 18, name: 'בית שאן', lat: 32.50, lng: 35.50, desc: 'צומת דרכים בין בקעת הירדן, הירמוך ועמק יזרעאל' },
+            { id: 19, name: 'דן (ליש)', lat: 33.25, lng: 35.65, desc: 'עיר קדומה למרגלות החרמון, שער בצורת קשת מתקופת האבות' }
+        ],
+        routes: [],
+        questions: [
+            {
+                id: 1,
+                text: 'איזו עיר הייתה בשוליים הדרומיים של נחלת יהודה ובה התגוררו אברהם ויצחק?',
+                options: ['חברון', 'באר שבע', 'לכיש', 'עזה'],
+                correct: 1,
+                explanation: 'באר שבע — עיר קדומה בדרום נחלת יהודה, מגורי האבות.',
+                expansion: '<b>📖 מקור:</b> בראשית כ"א, ל-ל"א<br><b>🔍 רקע:</b> "על כן קרא למקום ההוא באר שבע כי שם נשבעו שניהם." באר שבע שימשה כמרכז חיים לאברהם ויצחק בדרום הארץ.'
+            },
+            {
+                id: 2,
+                text: 'איזו עיר הייתה אחת מ-5 ערי הפלישתים ושכנה על דרך הים בואך מצרים?',
+                options: ['אשדוד', 'עזה', 'גזר', 'אפק'],
+                correct: 1,
+                explanation: 'עזה — עיר מרכזית על שפת הים ועל דרך הים, אחת מערי הפלישתים.',
+                expansion: '<b>📖 מקור:</b> שופטים א\', י"ח-י"ט<br><b>🔍 רקע:</b> "וילכד יהודה את עזה ואת גבולה." עזה הייתה העיר הדרומית ביותר של ערי הפלישתים ושלטה על נתיב הסחר למצרים.'
+            },
+            {
+                id: 3,
+                text: 'איזו עיר שימשה כשער לאזור הר חברון מדרום-מערב?',
+                options: ['בית שמש', 'גזר', 'לכיש', 'באר שבע'],
+                correct: 2,
+                explanation: 'לכיש — בצומת אסטרטגית בין הדרך לעזה והדרך לבאר שבע.',
+                expansion: '<b>📖 מקור:</b> דברי הימים ב\' י"א, ה\'-ט\'<br><b>🔍 רקע:</b> רחבעם ביצר את לכיש כחלק ממערך ההגנה של יהודה. העיר שימשה שער כניסה להר חברון מכיוון מישור החוף.'
+            },
+            {
+                id: 4,
+                text: 'לאיזו עיר הוחזר ארון הברית מהפלישתים?',
+                options: ['שילה', 'גבעון', 'בית שמש', 'ירושלים'],
+                correct: 2,
+                explanation: 'בית שמש — עיר לויים הקרובה ביותר לאזור הפלישתים.',
+                expansion: '<b>📖 מקור:</b> שמואל א\' ו\', י"ב<br><b>🔍 רקע:</b> "וישרנה הפרות בדרך על דרך בית שמש..." הפרות שנשאו את ארון הברית הלכו ישירות לבית שמש, סימן שהאל מוביל אותן.'
+            },
+            {
+                id: 5,
+                text: 'באיזו עיר קבורים האבות והאמהות לפי המסורת?',
+                options: ['ירושלים', 'באר שבע', 'חברון', 'שכם'],
+                correct: 2,
+                explanation: 'חברון — עיר האבות, במערת המכפלה.',
+                expansion: '<b>📖 מקור:</b> בראשית כ"ג, י"ט<br><b>🔍 רקע:</b> "ואחרי כן קבר אברהם את שרה אשתו אל מערת שדה המכפלה על פני ממרא היא חברון." חברון שימשה גם כעיר מלכות לדוד ב-7 שנותיו הראשונות.'
+            },
+            {
+                id: 6,
+                text: 'איזו עיר שכנה בפתח נחל איילון ונחשבה עיר מקלט של שבט אפרים?',
+                options: ['אפק', 'גזר', 'גבעון', 'שילה'],
+                correct: 1,
+                explanation: 'גזר — על צומת דרכים חשובה בין אזור הפלישתים לנחלות יהודה, דן ואפרים.',
+                expansion: '<b>📖 מקור:</b> יהושע כ"א<br><b>🔍 רקע:</b> גזר שלטה על צומת דרכים אסטרטגית וחיברה בין מישור החוף להר.'
+            },
+            {
+                id: 7,
+                text: 'את איזו עיר כבש דוד המלך והפך אותה לבירתו?',
+                options: ['חברון', 'שכם', 'ירושלים (יבוס)', 'שילה'],
+                correct: 2,
+                explanation: 'ירושלים (יבוס) — דוד כבש את מצודת ציון והפכה לעיר דוד.',
+                expansion: '<b>📖 מקור:</b> שמואל ב\' ה\', ו\'-ז\'<br><b>🔍 רקע:</b> "וילך המלך ואנשיו ירושלם אל היבוסי יושב הארץ... וילכד דוד את מצודת ציון היא עיר דוד."'
+            },
+            {
+                id: 8,
+                text: 'מהי העיר הראשונה שנכבשה ע"י יהושע בארץ כנען?',
+                options: ['עי', 'יריחו', 'חצור', 'שכם'],
+                correct: 1,
+                explanation: 'יריחו — העיר הנמוכה והעתיקה בעולם, הראשונה שנכבשה.',
+                expansion: '<b>📖 מקור:</b> יהושע ו\', ב\'<br><b>🔍 רקע:</b> "ויאמר ה\' אל יהושע ראה נתתי בידך את יריחו ואת מלכה גיבורי החיל." יריחו נכבשה בדרך נסית — חומותיה נפלו לאחר הקפת הכהנים.'
+            },
+            {
+                id: 9,
+                text: 'באיזו עיר נמצאה הבמה הגדולה שבה הקריב שלמה המלך?',
+                options: ['שילה', 'גבעון', 'ירושלים', 'שכם'],
+                correct: 1,
+                explanation: 'גבעון — "וילך המלך גבעונה לזבוח שם כי היא הבמה הגדולה".',
+                expansion: '<b>📖 מקור:</b> מלכים א\' ג\', ד\'<br><b>🔍 רקע:</b> לאחר חורבן שילה שימשה גבעון כמרכז פולחן חשוב עד בניית בית המקדש בירושלים.'
+            },
+            {
+                id: 10,
+                text: 'ליד איזו עיר חנו הפלישתים לקראת הקרב בו נלקח ארון הברית?',
+                options: ['גזר', 'אפק', 'בית שמש', 'עזה'],
+                correct: 1,
+                explanation: 'אפק — עיר על מקורות הירקון, שולטת על דרך הים.',
+                expansion: '<b>📖 מקור:</b> שמואל א\' ד\', א\'<br><b>🔍 רקע:</b> "ויצא ישראל לקראת פלשתים למלחמה ויחנו על האבן העזר ופלשתים חנו באפק." בקרב זה נלקח ארון הברית.'
+            },
+            {
+                id: 11,
+                text: 'איזו עיר שימשה כבירת ישראל הראשונה ובה עמד המשכן כ-400 שנה?',
+                options: ['גבעון', 'ירושלים', 'שילה', 'שכם'],
+                correct: 2,
+                explanation: 'שילה — בירתה הראשונה של עם ישראל ועיר המשכן.',
+                expansion: '<b>📖 מקור:</b> יהושע י"ח, א\'<br><b>🔍 רקע:</b> "ויקהלו כל עדת בני ישראל שלה וישכינו שם את אהל מועד." שילה שימשה מרכז דתי ומנהלי לשבטי ישראל.'
+            },
+            {
+                id: 12,
+                text: 'לאיזו עיר הגיע אברהם ראשון בכניסתו לארץ כנען?',
+                options: ['ירושלים', 'חברון', 'שכם', 'באר שבע'],
+                correct: 2,
+                explanation: 'שכם — "ויעבר אברם בארץ עד מקום שכם עד אלון מורה".',
+                expansion: '<b>📖 מקור:</b> בראשית י"ב, ו\'<br><b>🔍 רקע:</b> שכם הייתה תחנתו הראשונה של אברהם בכנען והפכה למרכזית לאורך כל התקופות, כולל בירת ממלכת ישראל לאחר הפילוג.'
+            },
+            {
+                id: 13,
+                text: 'איזו עיר נוסדה ע"י בית עמרי ושימשה כבירת ממלכת ישראל?',
+                options: ['שכם', 'פנואל', 'שומרון', 'מגידו'],
+                correct: 2,
+                explanation: 'שומרון — בירת ממלכת ישראל שנוסדה במאה ה-9 לפנה"ס.',
+                expansion: '<b>📖 מקור:</b> מלכים א\' ט"ז, כ"ד<br><b>🔍 רקע:</b> "ויקן את ההר שומרון מאת שמר בככרים כסף ויבן את ההר ויקרא את שם העיר אשר בנה על שם שמר אדוני ההר שומרון." בחפירות נמצאו שנהבים ואוסטרקונים.'
+            },
+            {
+                id: 14,
+                text: 'איזו עיר שימשה כבירת ממלכת ישראל בעבר הירדן לתקופה קצרה?',
+                options: ['יריחו', 'פנואל', 'בית שאן', 'דן'],
+                correct: 1,
+                explanation: 'פנואל — ירבעם בנה אותה כבירה זמנית בעבר הירדן.',
+                expansion: '<b>📖 מקור:</b> מלכים א\' י"ב, כ"ה<br><b>🔍 רקע:</b> "ויבן ירבעם את שכם בהר אפרים וישב בה ויצא משם ויבן את פנואל." פנואל שימשה ככל הנראה בירה משנית למקרה מצור על שכם.'
+            },
+            {
+                id: 15,
+                text: 'איזו עיר לויים ידועה היום בשם ג\'נין?',
+                options: ['דותן', 'עין גנים', 'מגידו', 'בית שאן'],
+                correct: 1,
+                explanation: 'עין גנים — עיר לויים בגבול יששכר-מנשה, ג\'נין הוא שימור השם המקראי.',
+                expansion: '<b>📖 מקור:</b> יהושע כ"א, כ"ט<br><b>🔍 רקע:</b> עין גנים שכנה בחיבור בין עמק דותן לעמק יזרעאל, במקום פורה ושופע מים.'
+            },
+            {
+                id: 16,
+                text: 'באיזו עיר הושלך יוסף לבור ע"י אחיו?',
+                options: ['שכם', 'דותן', 'שילה', 'עין גנים'],
+                correct: 1,
+                explanation: 'דותן — מוכרת מסיפור יוסף ואחיו, שמה מרמז על בארות או בורות.',
+                expansion: '<b>📖 מקור:</b> בראשית ל"ז, י"ז<br><b>🔍 רקע:</b> "וימצאם בדותן." דותן שכנה על ציר רוחב מרכזי מעבר הירדן אל דרך הים מצרימה.'
+            },
+            {
+                id: 17,
+                text: 'איזו עיר שלטה על המעבר מעמק יזרעאל דרומה דרך רכס הכרמל?',
+                options: ['בית שאן', 'דותן', 'מגידו', 'עין גנים'],
+                correct: 2,
+                explanation: 'מגידו — שולטת על השער ממעבר עמק יזרעאל, מוזכרת בתעודות מצריות.',
+                expansion: '<b>📖 מקור:</b> מלכים א\' ד\', י"ב<br><b>🔍 רקע:</b> רכס הכרמל "קוטע" את דרך הים ומגידו שולטת על המעבר. העיר מוזכרת בתעודות מצריות מהמאה ה-14 לפנה"ס.'
+            },
+            {
+                id: 18,
+                text: 'איזו עיר שכנה על צומת דרכים בין בקעת הירדן, הירמוך ועמק יזרעאל?',
+                options: ['מגידו', 'דן', 'בית שאן', 'פנואל'],
+                correct: 2,
+                explanation: 'בית שאן — צומת דרכים אסטרטגית בין שלושה אזורים.',
+                expansion: '<b>📖 מקור:</b> יהושע י"ז, ט"ז<br><b>🔍 רקע:</b> שמה הקדום כנראה "בית סן" על שם אל השמש. מיקומה האסטרטגי הפך אותה למרכז חשוב לאורך כל התקופות.'
+            },
+            {
+                id: 19,
+                text: 'איזו עיר למרגלות החרמון נכבשה ע"י שבט דן?',
+                options: ['פנואל', 'דן (ליש)', 'בית שאן', 'עין גנים'],
+                correct: 1,
+                explanation: 'דן (ליש) — אנשי שבט דן כבשו את ליש והקימו בה את העיר דן.',
+                expansion: '<b>📖 מקור:</b> שופטים י"ח, כ"ו-כ"ט<br><b>🔍 רקע:</b> "וילכו בני דן לדרכם ויבאו על ליש על עם שוקט ובוטח... ויבנו את העיר וישבו בה ויקראו שם העיר דן." נמצא בה שער בצורת קשת מתקופת האבות.'
+            }
+        ]
+    },
+
+    // ========== דרכים מודרניות ==========
+    {
+        id: 'modern_roads',
+        title: 'דרכים מודרניות',
+        description: '16 כבישים מרכזיים בישראל — מדרך 90 ועד דרך 3',
+        icon: '🛣️',
+        center: [31.5, 35.0],
+        zoom: 8,
+        locations: [],
+        routes: [
+            { id: 'road90', name: 'כביש 90', color: '#FFC107', points: [
+                [29.50,34.96],[30.60,35.15],[31.05,35.38],[31.50,35.45],[31.87,35.44],[32.50,35.50],[32.77,35.55],[33.05,35.63],[33.28,35.57]
+            ], desc: 'הכביש הארוך במדינה — מאילת ועד מטולה, לאורך בקעת הירדן והערבה' },
+            { id: 'road40', name: 'כביש 40', color: '#FF9800', points: [
+                [31.25,34.79],[30.98,35.03],[30.85,35.18],[30.62,35.15]
+            ], desc: 'חובר מבאר שבע לכביש 90 כדי לעקוף את מעלה עקרבים המפותל' },
+            { id: 'road60', name: 'כביש 60', color: '#4CAF50', points: [
+                [31.25,34.79],[31.53,35.10],[31.78,35.23],[32.00,35.20],[32.21,35.28],[32.28,35.19],[32.46,35.30],[32.70,35.30],[33.00,35.50]
+            ], desc: 'דרך ההר — ברובו עוקב אחרי תוואי דרך האבות העתיקה' },
+            { id: 'road65', name: 'כביש 65', color: '#9C27B0', points: [
+                [32.45,35.00],[32.50,35.15],[32.55,35.28],[32.60,35.35]
+            ], desc: 'מחבר מרכז עמק יזרעאל עם מישור החוף דרך ואדי ערה — מעבר עירון העתיק' },
+            { id: 'road1', name: 'כביש 1', color: '#F44336', points: [
+                [32.07,34.77],[31.90,35.00],[31.78,35.23],[31.82,35.35],[31.87,35.44]
+            ], desc: 'מתל אביב לירושלים ולים המלח. על החלק המערבי נאמר "חזית ברוחב כביש"' },
+            { id: 'road4', name: 'כביש 4', color: '#607D8B', points: [
+                [31.65,34.57],[32.07,34.77],[32.30,34.85],[32.60,35.00],[32.80,35.07],[33.00,35.10]
+            ], desc: 'בחלקו הצפוני עוקב אחרי "דרך הים" העתיקה' },
+            { id: 'road_alon', name: 'דרך אלון', color: '#FF5722', points: [
+                [31.85,35.35],[32.00,35.40],[32.15,35.42],[32.30,35.45],[32.50,35.50]
+            ], desc: 'נסללה על תוואי דרכים רומיות, שימשה ציר פטרולים לצבא בבקעת הירדן' },
+            { id: 'road98', name: 'כביש 98', color: '#00BCD4', points: [
+                [32.77,35.78],[32.90,35.80],[33.05,35.82],[33.25,35.80]
+            ], desc: 'לאורך קו שביתת הנשק עם סוריה ברמת הגולן — הכביש המזרחי ביותר' },
+            { id: 'road89', name: 'כביש 89', color: '#8BC34A', points: [
+                [33.00,35.10],[33.05,35.30],[32.97,35.50],[32.90,35.55]
+            ], desc: 'כביש רוחב מגבול לבנון, מחבר צפון-מערב הגליל עם צפת ובקעת הכנרת' },
+            { id: 'road2', name: 'כביש 2', color: '#3F51B5', points: [
+                [32.07,34.77],[32.30,34.80],[32.60,34.93],[32.80,34.98]
+            ], desc: 'דרך החוף — נסלל על קו החוף מחיפה עד נתיבי איילון בתל אביב' },
+            { id: 'road57', name: 'כביש 57', color: '#795548', points: [
+                [32.21,35.28],[32.20,35.15],[32.25,35.00],[32.30,34.85]
+            ], desc: 'עובר על תוואי "דרך מבוא השמש" מנחל תרצה אל דרך הים' },
+            { id: 'road443', name: 'כביש 443', color: '#E91E63', points: [
+                [31.90,35.05],[31.85,35.10],[31.82,35.18],[31.78,35.23]
+            ], desc: 'הדרך המודרנית ממודיעין לירושלים, במגביל ל"מעלה חורון" העתיק' },
+            { id: 'road38', name: 'כביש 38', color: '#009688', points: [
+                [31.72,34.98],[31.65,34.90],[31.55,34.85],[31.45,34.78]
+            ], desc: 'משער הגיא דרך עמק האלה לקרית גת — על הגבול בין הפלישתים וממלכת ישראל' },
+            { id: 'road31', name: 'כביש 31', color: '#CDDC39', points: [
+                [31.25,34.79],[31.20,35.00],[31.16,35.22],[31.05,35.38]
+            ], desc: 'מבאר שבע דרך ערד לדרום ים המלח — על גבול האזור המיושב ושבטים נוודים' },
+            { id: 'road25', name: 'כביש 25', color: '#FF8A65', points: [
+                [31.35,34.38],[31.25,34.79],[31.05,35.05],[30.83,35.15]
+            ], desc: 'מרצועת עזה דרך באר שבע ודימונה לערבה' },
+            { id: 'road3', name: 'כביש 3', color: '#AB47BC', points: [
+                [31.90,35.05],[31.80,34.85],[31.68,34.65],[31.55,34.55]
+            ], desc: 'דרך אלכסונית ממודיעין ולטרון לאשקלון — ציר מרכזי בין מרכז הארץ לצפון-מערב הנגב' }
+        ],
+        questions: [
+            {
+                id: 1,
+                text: 'מהו הכביש הארוך ביותר במדינת ישראל?',
+                options: ['כביש 1', 'כביש 60', 'כביש 90', 'כביש 4'],
+                correct: 2,
+                routeId: 'road90',
+                explanation: 'כביש 90 — הכביש הארוך במדינה, מאילת ועד מטולה.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 90 עובר לאורך בקעת הירדן והערבה, ומחבר את הדרום הרחוק עם הצפון הרחוק של ישראל.'
+            },
+            {
+                id: 2,
+                text: 'איזה כביש חובר כדי לעקוף את מעלה עקרבים המפותל?',
+                options: ['כביש 31', 'כביש 25', 'כביש 40', 'כביש 90'],
+                correct: 2,
+                routeId: 'road40',
+                explanation: 'כביש 40 — חובר מבאר שבע לכביש 90 כדי לעקוף את מעלה עקרבים.',
+                expansion: '<b>🛣️ תיאור:</b> מעלה עקרבים היא מעלה תלולה ומפותלת. כביש 40 מספק נתיב חלופי נוח יותר מבאר שבע לבקעת הירדן.'
+            },
+            {
+                id: 3,
+                text: 'איזה כביש עוקב ברובו אחרי תוואי "דרך האבות" העתיקה?',
+                options: ['כביש 4', 'כביש 60', 'כביש 90', 'דרך אלון'],
+                correct: 1,
+                routeId: 'road60',
+                explanation: 'כביש 60 — דרך ההר שעוקבת אחרי דרך האבות העתיקה.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 60 עובר לאורך רכס ההר המרכזי מבאר שבע דרך חברון, ירושלים, שכם ועד הגליל — בדיוק כפי שעברה דרך האבות בתקופה המקראית.'
+            },
+            {
+                id: 4,
+                text: 'איזה כביש עובר דרך ואדי ערה — מעבר עירון העתיק?',
+                options: ['כביש 65', 'כביש 2', 'כביש 57', 'כביש 89'],
+                correct: 0,
+                routeId: 'road65',
+                explanation: 'כביש 65 — מחבר עמק יזרעאל עם מישור החוף דרך מעבר עירון.',
+                expansion: '<b>🛣️ תיאור:</b> ואדי ערה (מעבר עירון) הוא מעבר טבעי ברכס הכרמל ששימש מאז ומתמיד כנתיב בין עמק יזרעאל למישור החוף.'
+            },
+            {
+                id: 5,
+                text: 'על איזה כביש נאמר "חזית ברוחב כביש" במלחמת השחרור?',
+                options: ['כביש 443', 'כביש 1', 'כביש 60', 'כביש 38'],
+                correct: 1,
+                routeId: 'road1',
+                explanation: 'כביש 1 — מתל אביב לירושלים, על חלקו המערבי נערכו קרבות עזים.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 1 הוא הנתיב המרכזי בין תל אביב לירושלים. במלחמת השחרור נערכו קרבות עזים על שליטה בציר זה, בעיקר באזור שער הגיא ולטרון.'
+            },
+            {
+                id: 6,
+                text: 'איזה כביש עוקב בחלקו הצפוני אחרי "דרך הים" העתיקה?',
+                options: ['כביש 2', 'כביש 4', 'כביש 3', 'כביש 90'],
+                correct: 1,
+                routeId: 'road4',
+                explanation: 'כביש 4 — עוקב אחרי דרך הים העתיקה, ובמגביל אליו נסלל כביש 6.',
+                expansion: '<b>🛣️ תיאור:</b> דרך הים היא אחת הדרכים העתיקות ביותר בעולם. כביש 4 עובר בתוואי דומה בחלקו הצפוני, ולצידו נסלל כביש 6 המשוכלל.'
+            },
+            {
+                id: 7,
+                text: 'איזו דרך נסללה על תוואי דרכים רומיות ושימשה ציר פטרולים בבקעת הירדן?',
+                options: ['כביש 90', 'כביש 57', 'דרך אלון', 'כביש 98'],
+                correct: 2,
+                routeId: 'road_alon',
+                explanation: 'דרך אלון — נסללה על דרכים רומיות, ציר פטרולים בין גב ההר לבקעה.',
+                expansion: '<b>🛣️ תיאור:</b> דרך אלון (כבישים 458/508/578) נקראה על שם יגאל אלון ונועדה לשמש ציר ביטחוני במדרגת הביניים בין רכס ההר לבקעת הירדן.'
+            },
+            {
+                id: 8,
+                text: 'מהו הכביש המזרחי ביותר במדינת ישראל?',
+                options: ['כביש 90', 'כביש 98', 'דרך אלון', 'כביש 65'],
+                correct: 1,
+                routeId: 'road98',
+                explanation: 'כביש 98 — לאורך קו שביתת הנשק עם סוריה ברמת הגולן.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 98 עובר במזרח רמת הגולן לאורך קו שביתת הנשק עם סוריה והוא הכביש המזרחי ביותר בישראל.'
+            },
+            {
+                id: 9,
+                text: 'איזה כביש רוחב מחבר את צפון-מערב הגליל עם צפת ובקעת הכנרת?',
+                options: ['כביש 65', 'כביש 98', 'כביש 89', 'כביש 2'],
+                correct: 2,
+                routeId: 'road89',
+                explanation: 'כביש 89 — כביש רוחב מגביל לגבול לבנון, מחבר הגליל לכנרת.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 89 הוא כביש רוחב כ-5 ק"מ מגביל לגבול לבנון, המחבר את הגליל המערבי עם צפת והכנרת.'
+            },
+            {
+                id: 10,
+                text: 'איזה כביש נסלל ממש על קו החוף מחיפה עד תל אביב?',
+                options: ['כביש 4', 'כביש 2', 'כביש 3', 'כביש 6'],
+                correct: 1,
+                routeId: 'road2',
+                explanation: 'כביש 2 — דרך החוף, נסלל על קו החוף מחיפה עד נתיבי איילון.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 2 הוא "דרך החוף" המודרנית, עוברת ממש על קו חוף הים מחיפה דרומה עד למרכז תל אביב.'
+            },
+            {
+                id: 11,
+                text: 'איזה כביש עובר על תוואי "דרך מבוא השמש" מנחל תרצה לדרך הים?',
+                options: ['כביש 443', 'כביש 65', 'כביש 57', 'כביש 38'],
+                correct: 2,
+                routeId: 'road57',
+                explanation: 'כביש 57 — עובר מגשר אדם דרך שכם ונחל תרצה לדרך הים.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 57 (בעוקף טול כרם 557) עובר על תוואי "דרך מבוא השמש" העתיקה מגשר אדם אל שכם ומשם מערבה.'
+            },
+            {
+                id: 12,
+                text: 'איזה כביש עובר במגביל ל"מעלה חורון" העתיק?',
+                options: ['כביש 1', 'כביש 443', 'כביש 38', 'כביש 60'],
+                correct: 1,
+                routeId: 'road443',
+                explanation: 'כביש 443 — הדרך המודרנית ממודיעין לירושלים.',
+                expansion: '<b>🛣️ תיאור:</b> "מעלה חורון" היה מעבר עתיק ומפורסם. כביש 443 עובר במגביל לו דרך הכפרים עור א-פוקא ועור א-תחתא אל רמאללה.'
+            },
+            {
+                id: 13,
+                text: 'איזה כביש עובר בעמק האלה בו התרחש קרב דוד וגלית?',
+                options: ['כביש 3', 'כביש 443', 'כביש 38', 'כביש 1'],
+                correct: 2,
+                routeId: 'road38',
+                explanation: 'כביש 38 — משער הגיא דרך עמק האלה לקרית גת.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 38 עובר בחלק המערבי של עמק האלה, זירת הקרב בין דוד וגלית. הדרך הייתה על הגבול בין הפלישתים לממלכת ישראל.'
+            },
+            {
+                id: 14,
+                text: 'איזה כביש מבאר שבע דרך ערד לדרום ים המלח מבוסס על דרך עתיקה?',
+                options: ['כביש 25', 'כביש 40', 'כביש 31', 'כביש 90'],
+                correct: 2,
+                routeId: 'road31',
+                explanation: 'כביש 31 — על גבול האזור המיושב ושבטים נוודים בצפון הנגב.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 31 מבאר שבע דרך ערד לדרום ים המלח, מבוסס על דרך עתיקה שחצתה צפון הנגב ושימשה כגבול בין אזור חקלאי למדבר.'
+            },
+            {
+                id: 15,
+                text: 'באיזה כביש עברו לישובי גוש קטיף דרך מעבר כיסופים?',
+                options: ['כביש 31', 'כביש 3', 'כביש 25', 'כביש 40'],
+                correct: 2,
+                routeId: 'road25',
+                explanation: 'כביש 25 — מרצועת עזה דרך באר שבע לערבה.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 25 חיבר את רצועת עזה עם באר שבע ודימונה. עד ההתנתקות ב-2005 עברו בו אל ישובי גוש קטיף דרך מעבר כיסופים.'
+            },
+            {
+                id: 16,
+                text: 'איזה כביש אלכסוני מחבר בין מודיעין ולטרון לאשקלון?',
+                options: ['כביש 38', 'כביש 4', 'כביש 3', 'כביש 443'],
+                correct: 2,
+                routeId: 'road3',
+                explanation: 'כביש 3 — ציר מרכזי בין מרכז הארץ לצפון-מערב הנגב.',
+                expansion: '<b>🛣️ תיאור:</b> כביש 3 הוא דרך אלכסונית ממודיעין ולטרון לאשקלון, ציר חשוב בחיבור בין מרכז הארץ וצפון-מערב הנגב.'
+            }
+        ]
+    },
+
+    // ========== קרבות דוד המלך ==========
+    {
+        id: 'david_battles',
+        title: 'קרבות דוד המלך',
+        description: '6 מסעות קרב של דוד המלך — מאדום ועד הפלישתים',
+        icon: '⚔️',
+        center: [31.5, 35.5],
+        zoom: 7,
+        locations: [
+            { id: 1, name: 'ירושלים', lat: 31.78, lng: 35.23, desc: 'בירת ממלכת דוד — כבש את יבוס והפכה לבירה' },
+            { id: 2, name: 'חברון', lat: 31.53, lng: 35.10, desc: 'עיר מלכות דוד בשבע שנותיו הראשונות' },
+            { id: 3, name: 'שכם', lat: 32.21, lng: 35.28, desc: 'עיר מרכזית בהר אפרים' }
+        ],
+        routes: [
+            { id: 'edom', name: 'מסע אדום', color: '#F44336', points: [
+                [31.53,35.10],[31.20,35.10],[30.80,35.15],[30.30,35.20],[29.80,35.00]
+            ], desc: 'דוד הציב ניצבים בכל אדום — "ויהי כל אדום עבדים לדוד"' },
+            { id: 'moab', name: 'מסע מואב', color: '#FF9800', points: [
+                [31.78,35.23],[31.80,35.50],[31.60,35.60],[31.30,35.55],[31.00,35.50]
+            ], desc: 'דוד הכה את מואב ומדד אותם בחבל — "ותהי מואב לדוד לעבדים נושאי מנחה"' },
+            { id: 'ammon', name: 'מסע עמון', color: '#9C27B0', points: [
+                [31.78,35.23],[31.85,35.45],[31.90,35.65],[31.95,35.85]
+            ], desc: 'יואב בן צרויה לחם ברבת בני עמון ולכד את עיר המלוכה' },
+            { id: 'aram', name: 'מסע ארם', color: '#2196F3', points: [
+                [32.21,35.28],[32.50,35.50],[32.80,35.70],[33.10,35.90],[33.50,36.30]
+            ], desc: 'דוד הכה בארם דמשק 22,000 איש — "ותהי ארם לדוד לעבדים"' },
+            { id: 'amalek', name: 'מסע העמלקים', color: '#4CAF50', points: [
+                [31.53,35.10],[31.30,34.80],[31.10,34.60],[30.90,34.50]
+            ], desc: 'דוד שב מהכות את העמלקים — המשך מלחמת חורמה שהחל שאול' },
+            { id: 'philistines', name: 'מסע הפלישתים', color: '#1A237E', points: [
+                [31.78,35.23],[31.73,35.10],[31.70,34.98],[31.65,34.85]
+            ], desc: 'דוד הכה את הפלישתים מגבע עד בואך גזר — הכרעה מאזור ההר' }
+        ],
+        questions: [
+            {
+                id: 1,
+                text: 'באיזה עם הציב דוד ניצבים בכל ארצו ו"ויהי כל אדום עבדים לדוד"?',
+                options: ['מואב', 'עמון', 'אדום', 'ארם'],
+                correct: 2,
+                routeId: 'edom',
+                explanation: 'אדום — דוד הציב ניצבים בכל אדום והפכם לנתינים.',
+                expansion: '<b>📖 מקור:</b> שמואל ב\' ח\', י"ד<br><b>🔍 רקע:</b> "וישם באדום נציבים בכל אדום שם נציבים ויהי כל אדום עבדים לדוד." אדום שכנה מדרום לים המלח ועד אילת.'
+            },
+            {
+                id: 2,
+                text: 'את מי מדד דוד בחבל — שני חבלים להמית ומלוא החבל להחיות?',
+                options: ['אדום', 'ארם', 'מואב', 'עמלק'],
+                correct: 2,
+                routeId: 'moab',
+                explanation: 'מואב — דוד הכה את מואב ומדד אותם בחבל.',
+                expansion: '<b>📖 מקור:</b> שמואל ב\' ח\', ב\'<br><b>🔍 רקע:</b> "ויך את מואב וימדדם בחבל השכב אותם ארצה וימדד שני חבלים להמית ומלא החבל להחיות." מואב שכנה מזרחית לים המלח.'
+            },
+            {
+                id: 3,
+                text: 'מי פיקד על הקרב בו נלכדה רבת בני עמון?',
+                options: ['דוד', 'יואב בן צרויה', 'אבישי', 'בניהו'],
+                correct: 1,
+                routeId: 'ammon',
+                explanation: 'יואב בן צרויה — לחם ולכד את עיר המלוכה של עמון.',
+                expansion: '<b>📖 מקור:</b> שמואל ב\' י"ב, כ"ו-כ"ט<br><b>🔍 רקע:</b> "וילחם יואב ברבת בני עמון וילכוד את עיר המלוכה... ויאסוף דוד את כל העם וילך רבתה וילחם בה וילכדה."'
+            },
+            {
+                id: 4,
+                text: 'כמה אנשים הכה דוד בארם דמשק?',
+                options: ['10,000', '18,000', '22,000', '30,000'],
+                correct: 2,
+                routeId: 'aram',
+                explanation: '22,000 — "ויך דוד בארם עשרים ושנים אלף איש".',
+                expansion: '<b>📖 מקור:</b> שמואל ב\' ח\', ה\'-ו\'<br><b>🔍 רקע:</b> "ותבוא ארם דמשק לעזור להדדעזר מלך צובה ויך דוד בארם עשרים ושנים אלף איש. וישם דוד ניצבים בארם דמשק ותהי ארם לדוד לעבדים."'
+            },
+            {
+                id: 5,
+                text: 'איזה מלך התחיל את המלחמה בעמלק אך לא השלים את המשימה?',
+                options: ['דוד', 'שלמה', 'שאול', 'יהושע'],
+                correct: 2,
+                routeId: 'amalek',
+                explanation: 'שאול — התחיל אך לא השלים, דוד המשיך את המלחמה בעמלק.',
+                expansion: '<b>📖 מקור:</b> שמואל ב\' א\', א\'<br><b>🔍 רקע:</b> "ויהי אחרי מות שאול ודוד שב מהכות את העמלק." שאול צווה להשמיד את עמלק אך חס על אגג מלכם ועל מיטב הצאן.'
+            },
+            {
+                id: 6,
+                text: 'מהיכן ועד היכן הכה דוד את הפלישתים בקרב ההכרעה?',
+                options: ['מחברון עד עזה', 'מגבע עד בואך גזר', 'מירושלים עד אשדוד', 'מבית שמש עד עקרון'],
+                correct: 1,
+                routeId: 'philistines',
+                explanation: 'מגבע עד בואך גזר — הכרעת הפלישתים מאזור ההר.',
+                expansion: '<b>📖 מקור:</b> שמואל ב\' ה\', י"ח-כ"ה<br><b>🔍 רקע:</b> "ויעש דוד כן כאשר ציווהו ה\' ויך את הפלישתים מגבע עד בואך גזר." דוד הכריע את הפלישתים בעמק רפאים והדף אותם מאזור ההר.'
             }
         ]
     }
@@ -15576,160 +16049,19 @@ function cwCheckMilestones() {
 
 // --- Render Progress Bar ---
 function cwRenderProgress() {
-    if (!cwUserData) return;
-    const todayMin = Math.floor(cwSessionSeconds / 60);
-    const streak = cwUserData.currentStreak || 0;
-    const currentLevel = cwGetDailyLevel(todayMin);
-
-    // Streak display
-    const streakEl = document.getElementById('cw-streak-display');
-    if (streakEl) streakEl.textContent = '🔥 רצף: ' + streak + ' ימים';
-
-    // Today's time + level
-    const timeEl = document.getElementById('cw-total-time');
-    if (timeEl) {
-        const lvl = CW_DAILY_LEVELS.find(l => l.level === currentLevel);
-        timeEl.textContent = 'היום: ' + todayMin + ' דקות' + (lvl ? ' — ' + lvl.icon + ' ' + lvl.label : '');
-    }
-
-    // Progress bar = progress within current day toward next level
-    const progressFill = document.getElementById('cw-progress-fill');
-    const progressNext = document.getElementById('cw-progress-next');
-    const nextLevel = CW_DAILY_LEVELS.find(l => todayMin < l.minutes);
-
-    if (nextLevel && progressFill) {
-        const prevMin = CW_DAILY_LEVELS[CW_DAILY_LEVELS.indexOf(nextLevel) - 1]?.minutes || 0;
-        const pct = Math.min(100, ((todayMin - prevMin) / (nextLevel.minutes - prevMin)) * 100);
-        progressFill.style.width = Math.max(2, pct) + '%';
-    } else if (progressFill) {
-        progressFill.style.width = '100%';
-    }
-
-    if (nextLevel && progressNext) {
-        const remaining = nextLevel.minutes - todayMin;
-        progressNext.textContent = nextLevel.icon + ' ' + nextLevel.label + ' — עוד ' + remaining + ' דקות';
-    } else if (progressNext) {
-        progressNext.textContent = '👑 כתר! הגעת לרמה הגבוהה ביותר היום';
-    }
-
-    // Weekly + Monthly stats
-    cwRenderWeeklyMonthly();
+    // Gamification levels/minutes removed
+    return;
 }
 
 function cwRenderWeeklyMonthly() {
-    let wrap = document.getElementById('cw-weekly-monthly');
-    if (!wrap) {
-        // Create weekly/monthly display after badges
-        const badgesWrap = document.getElementById('cw-badges-wrap');
-        if (!badgesWrap) return;
-        wrap = document.createElement('div');
-        wrap.id = 'cw-weekly-monthly';
-        wrap.style.cssText = 'margin-bottom:18px;';
-        badgesWrap.parentNode.insertBefore(wrap, badgesWrap.nextSibling);
-    }
-    if (!cwUserData || !cwUserData.dailyLevels) { wrap.innerHTML = ''; return; }
-
-    const today = new Date();
-    const dailyLevels = cwUserData.dailyLevels || {};
-
-    // This week (Sunday-Saturday)
-    const dayOfWeek = today.getDay(); // 0=Sun
-    let weekDays = [];
-    for (let i = dayOfWeek; i >= 0; i--) {
-        const d = new Date(today); d.setDate(today.getDate() - i);
-        weekDays.push(d.toISOString().split('T')[0]);
-    }
-
-    // This month
-    const monthStr = today.toISOString().split('T')[0].substring(0, 7);
-    const monthDays = Object.keys(dailyLevels).filter(k => k.startsWith(monthStr));
-
-    // Compute stats
-    const weekLevels = weekDays.map(d => dailyLevels[d] || 0);
-    const weekMax = Math.max(...weekLevels, 0);
-    const weekDaysAtMax = weekLevels.filter(l => l > 0 && l === weekMax).length;
-    const weekActiveDays = weekLevels.filter(l => l > 0).length;
-
-    const monthLevels = monthDays.map(d => dailyLevels[d] || 0);
-    const monthMax = Math.max(...monthLevels, 0);
-    const monthDaysAtMax = monthLevels.filter(l => l > 0 && l === monthMax).length;
-    const monthActiveDays = monthLevels.filter(l => l > 0).length;
-
-    const weekMaxLvl = CW_DAILY_LEVELS.find(l => l.level === weekMax);
-    const monthMaxLvl = CW_DAILY_LEVELS.find(l => l.level === monthMax);
-
-    let h = '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
-
-    // Weekly card
-    h += '<div style="flex:1;min-width:140px;background:var(--cw-card);border:1px solid var(--cw-border);border-radius:var(--cw-radius);padding:12px;">';
-    h += '<div style="font-size:0.78rem;font-weight:700;color:var(--cw-accent);margin-bottom:8px;">📅 השבוע</div>';
-    h += '<div style="font-size:0.82rem;color:var(--cw-text);">' + weekActiveDays + ' ימים פעילים</div>';
-    if (weekMaxLvl) {
-        h += '<div style="font-size:0.78rem;color:var(--cw-text2);margin-top:4px;">שיא: ' + weekMaxLvl.icon + ' ' + weekMaxLvl.label + ' (' + weekDaysAtMax + ' פעמים)</div>';
-    }
-    // Mini week dots
-    h += '<div style="display:flex;gap:3px;margin-top:8px;justify-content:center;">';
-    const dayNames = ['א','ב','ג','ד','ה','ו','ש'];
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(today); d.setDate(today.getDate() - dayOfWeek + i);
-        const ds = d.toISOString().split('T')[0];
-        const lv = dailyLevels[ds] || 0;
-        const lvObj = CW_DAILY_LEVELS.find(l => l.level === lv);
-        const isToday = ds === today.toISOString().split('T')[0];
-        h += '<div style="text-align:center;' + (isToday ? 'font-weight:700;' : '') + '">';
-        h += '<div style="font-size:0.62rem;color:var(--cw-text2);">' + dayNames[i] + '</div>';
-        h += '<div style="font-size:0.9rem;">' + (lv > 0 ? (lvObj ? lvObj.icon : '·') : '·') + '</div>';
-        h += '</div>';
-    }
-    h += '</div>';
-    h += '</div>';
-
-    // Monthly card
-    h += '<div style="flex:1;min-width:140px;background:var(--cw-card);border:1px solid var(--cw-border);border-radius:var(--cw-radius);padding:12px;">';
-    h += '<div style="font-size:0.78rem;font-weight:700;color:var(--cw-accent);margin-bottom:8px;">📆 החודש</div>';
-    h += '<div style="font-size:0.82rem;color:var(--cw-text);">' + monthActiveDays + ' ימים פעילים</div>';
-    if (monthMaxLvl) {
-        h += '<div style="font-size:0.78rem;color:var(--cw-text2);margin-top:4px;">שיא: ' + monthMaxLvl.icon + ' ' + monthMaxLvl.label + ' (' + monthDaysAtMax + ' פעמים)</div>';
-    }
-    h += '<div style="font-size:0.78rem;color:var(--cw-text2);margin-top:4px;">סה"כ: ' + (cwUserData.totalMinutes || 0) + ' דקות</div>';
-    h += '</div>';
-
-    h += '</div>';
-    wrap.innerHTML = h;
+    // Gamification levels/minutes removed
+    return;
 }
 
 // --- Render Badges ---
 function cwRenderBadges() {
-    const wrap = document.getElementById('cw-badges-wrap');
-    if (!wrap || !cwUserData) return;
-    const earned = new Set(cwUserData.badges || []);
-
-    // Show daily levels (today's progress) + streak badges
-    let h = '';
-    // Daily levels row
-    h += '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;">';
-    const todayMin = Math.floor(cwSessionSeconds / 60);
-    for (const l of CW_DAILY_LEVELS) {
-        const reached = todayMin >= l.minutes;
-        h += '<div class="cw-badge ' + (reached ? 'earned' : 'locked') + '" title="' + l.desc + '" style="' + (reached ? 'transform:scale(1.05);' : 'opacity:0.5;') + '">';
-        h += '<span class="badge-icon">' + (reached ? l.icon : '🔒') + '</span>';
-        h += '<span class="badge-label">' + l.label + '</span>';
-        h += '</div>';
-    }
-    h += '</div>';
-
-    // Streak badges row
-    h += '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">';
-    for (const m of CW_STREAK_BADGES) {
-        const isEarned = earned.has(m.id);
-        h += '<div class="cw-badge ' + (isEarned ? 'earned' : 'locked') + '" title="' + m.desc + '">';
-        h += '<span class="badge-icon">' + (isEarned ? m.icon : '🔒') + '</span>';
-        h += '<span class="badge-label">' + m.label + '</span>';
-        h += '</div>';
-    }
-    h += '</div>';
-
-    wrap.innerHTML = h;
+    // Gamification badges removed
+    return;
 }
 
 // --- Live Timer ---
