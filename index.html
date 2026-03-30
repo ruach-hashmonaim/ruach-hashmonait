@@ -11960,10 +11960,10 @@ function mqRenderQuestion() {
                     var startMarker = L.marker(startPt, { icon: circleIcon, interactive: true }).addTo(qmap);
 
                     // ▶ End arrowhead — single triangle at the very end
-                    // dx = longitude diff (screen-x), dy = -latitude diff (screen-y is inverted)
-                    var dx = endPt[1] - prevPt[1];
-                    var dy = -(endPt[0] - prevPt[0]);
-                    var endAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+                    // Use Leaflet pixel projection for correct screen direction
+                    var pxEnd = qmap.latLngToContainerPoint(L.latLng(endPt[0], endPt[1]));
+                    var pxPrev = qmap.latLngToContainerPoint(L.latLng(prevPt[0], prevPt[1]));
+                    var endAngle = Math.atan2(pxEnd.y - pxPrev.y, pxEnd.x - pxPrev.x) * (180 / Math.PI);
                     var arrowSvg = '<svg width="22" height="22" viewBox="0 0 22 22" style="transform:rotate('+(90+endAngle)+'deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.45));">' +
                         '<polygon points="11,1 21,19 11,14 1,19" fill="'+rc+'" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>' +
                     '</svg>';
