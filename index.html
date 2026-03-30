@@ -12098,18 +12098,19 @@ async function loadAdminDashboard() {
         window._dashDays = days;
         c.innerHTML = '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:1.5rem;">📊</div><div style="margin-top:8px;">טוען נתונים...</div></div>';
 
-        let stats, usersSnap;
+        var stats = null, usersSnap = null;
         try {
-            [stats, usersSnap] = await Promise.all([
-                analyticsGetStats(days),
-                db.collection('users').get()
-            ]);
+            stats = await analyticsGetStats(days);
         } catch(err) {
-            c.innerHTML = '<div class="card" style="color:red;">שגיאה בטעינת דשבורד: ' + err.message + '</div>';
-            return;
+            console.warn('Dashboard: analyticsGetStats failed', err.message);
+        }
+        try {
+            if (db) usersSnap = await db.collection('users').get();
+        } catch(err) {
+            console.warn('Dashboard: users query failed', err.message);
         }
 
-        const staffCount = usersSnap ? usersSnap.size : 0;
+        var staffCount = usersSnap ? usersSnap.size : 0;
 
         // Build dashboard HTML
         let h = '';
@@ -12317,52 +12318,100 @@ function analyticsTrackPageTime() {
 }
 
 async function analyticsTrackEvent(eventName, data) {
-    if (!db) return;
+    var today = new Date().toISOString().split('T')[0];
+    var hour = new Date().getHours();
+    var userId = currentUser ? (currentUser.id || currentUser.name) : currentParticipant ? ('p_' + currentParticipant.id) : 'guest';
+    var userName = currentUser ? currentUser.name : currentParticipant ? currentParticipant.fullName : 'אורח';
+    var eventObj = {
+        event: eventName,
+        data: data || {},
+        sessionId: _analyticsSessionId,
+        userId: userId,
+        userName: userName,
+        date: today,
+        hour: hour,
+        ts: Date.now(),
+        isMobile: /Mobi|Android/i.test(navigator.userAgent)
+    };
+    // Always save to localStorage (reliable)
+    analyticsLocalSave(eventObj);
+    // Try Firestore
+    if (db) {
+        try {
+            eventObj.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+            await db.collection('analytics').add(eventObj);
+        } catch(e) { /* Firestore failed — data safe in localStorage */ }
+    }
+}
+function analyticsLocalSave(evt) {
     try {
-        const today = new Date().toISOString().split('T')[0];
-        const hour = new Date().getHours();
-        const userId = currentUser ? (currentUser.id || currentUser.name) : currentParticipant ? ('p_' + currentParticipant.id) : 'guest';
-        const userName = currentUser ? currentUser.name : currentParticipant ? currentParticipant.fullName : 'אורח';
-        await db.collection('analytics').add({
-            event: eventName,
-            data: data || {},
-            sessionId: _analyticsSessionId,
-            userId: userId,
-            userName: userName,
-            date: today,
-            hour: hour,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            isMobile: /Mobi|Android/i.test(navigator.userAgent)
-        });
-    } catch(e) { /* silent fail — analytics should never break the app */ }
+        var key = 'ruach_analytics';
+        var arr = JSON.parse(localStorage.getItem(key) || '[]');
+        arr.push(evt);
+        // Keep last 2000 events max (to avoid localStorage overflow)
+        if (arr.length > 2000) arr = arr.slice(-2000);
+        localStorage.setItem(key, JSON.stringify(arr));
+    } catch(e) {}
+}
+function analyticsLocalGet(sinceDateStr) {
+    try {
+        var arr = JSON.parse(localStorage.getItem('ruach_analytics') || '[]');
+        if (sinceDateStr) arr = arr.filter(function(e) { return e.date >= sinceDateStr; });
+        return arr;
+    } catch(e) { return []; }
 }
 
 // Aggregate daily stats (runs once per dashboard load for efficiency)
 async function analyticsGetStats(days) {
-    if (!db) return null;
-    const since = new Date();
+    var since = new Date();
     since.setDate(since.getDate() - days);
-    const sinceStr = since.toISOString().split('T')[0];
+    var sinceStr = since.toISOString().split('T')[0];
+
+    var events = [];
+
+    // 1. Try Firestore
+    if (db) {
+        try {
+            var snap;
+            try {
+                snap = await db.collection('analytics')
+                    .where('date', '>=', sinceStr)
+                    .orderBy('date', 'desc')
+                    .limit(5000)
+                    .get();
+            } catch(indexErr) {
+                console.warn('Analytics: falling back to simple query', indexErr.message);
+                snap = await db.collection('analytics')
+                    .where('date', '>=', sinceStr)
+                    .limit(5000)
+                    .get();
+            }
+            snap.forEach(function(doc) { events.push(doc.data()); });
+        } catch(e) {
+            console.warn('Analytics: Firestore read failed', e.message);
+        }
+    }
+
+    // 2. Merge localStorage analytics (always)
+    var localEvents = analyticsLocalGet(sinceStr);
+    if (localEvents.length > 0) {
+        // Deduplicate by sessionId+event+ts
+        var seen = new Set();
+        events.forEach(function(e) {
+            if (e.sessionId && e.event) seen.add(e.sessionId + '_' + e.event + '_' + (e.ts || ''));
+        });
+        localEvents.forEach(function(e) {
+            var key = (e.sessionId || '') + '_' + (e.event || '') + '_' + (e.ts || '');
+            if (!seen.has(key)) {
+                events.push(e);
+                seen.add(key);
+            }
+        });
+    }
+
+    if (events.length === 0) return null;
 
     try {
-        let snap;
-        try {
-            snap = await db.collection('analytics')
-                .where('date', '>=', sinceStr)
-                .orderBy('date', 'desc')
-                .limit(5000)
-                .get();
-        } catch(indexErr) {
-            // Composite index may not exist — fallback to simpler query
-            console.warn('Analytics: falling back to simple query', indexErr.message);
-            snap = await db.collection('analytics')
-                .where('date', '>=', sinceStr)
-                .limit(5000)
-                .get();
-        }
-
-        const events = [];
-        snap.forEach(doc => events.push(doc.data()));
 
         // Compute stats
         const sessions = new Set();
@@ -12414,29 +12463,42 @@ async function analyticsGetStats(days) {
         const totalSessions = sessions.size || 1;
 
         // CW Module specific stats
-        let cwStats = null;
+        var cwStats = null;
         try {
-            const cwSnap = await db.collection('cw_progress').get();
-            const cwUsers = [];
-            cwSnap.forEach(doc => {
-                const d = doc.data();
-                cwUsers.push({
-                    id: doc.id,
-                    name: d.userName || doc.id,
-                    totalMinutes: d.totalMinutes || 0,
-                    currentStreak: d.currentStreak || 0,
-                    longestStreak: d.longestStreak || 0,
-                    badges: d.badges || [],
-                    lastVisitDate: d.lastVisitDate || ''
-                });
-            });
-            cwUsers.sort((a, b) => b.totalMinutes - a.totalMinutes);
+            var cwUsers = [];
+            // Try Firestore
+            if (db) {
+                try {
+                    var cwSnap = await db.collection('cw_progress').get();
+                    cwSnap.forEach(function(doc) {
+                        var d = doc.data();
+                        cwUsers.push({ id: doc.id, name: d.userName || doc.id, totalMinutes: d.totalMinutes || 0, currentStreak: d.currentStreak || 0, longestStreak: d.longestStreak || 0, badges: d.badges || [], lastVisitDate: d.lastVisitDate || '' });
+                    });
+                } catch(e2) { console.warn('CW stats: Firestore failed', e2.message); }
+            }
+            // Merge localStorage CW data (current user at minimum)
+            if (cwUserData && cwGetUserId() !== 'anon') {
+                var localId = cwGetUserId();
+                var exists = cwUsers.some(function(u) { return u.id === localId; });
+                if (!exists) {
+                    cwUsers.push({ id: localId, name: cwUserData.userName || localId, totalMinutes: cwUserData.totalMinutes || 0, currentStreak: cwUserData.currentStreak || 0, longestStreak: cwUserData.longestStreak || 0, badges: cwUserData.badges || [], lastVisitDate: cwUserData.lastVisitDate || '' });
+                } else {
+                    // Update with local data if it's more recent
+                    cwUsers = cwUsers.map(function(u) {
+                        if (u.id === localId && (cwUserData.totalMinutes || 0) > u.totalMinutes) {
+                            return { id: localId, name: cwUserData.userName || localId, totalMinutes: cwUserData.totalMinutes || 0, currentStreak: cwUserData.currentStreak || 0, longestStreak: cwUserData.longestStreak || 0, badges: cwUserData.badges || [], lastVisitDate: cwUserData.lastVisitDate || '' };
+                        }
+                        return u;
+                    });
+                }
+            }
+            cwUsers.sort(function(a, b) { return b.totalMinutes - a.totalMinutes; });
             cwStats = {
                 totalUsers: cwUsers.length,
-                totalMinutes: cwUsers.reduce((s, u) => s + u.totalMinutes, 0),
-                totalBadges: cwUsers.reduce((s, u) => s + u.badges.length, 0),
+                totalMinutes: cwUsers.reduce(function(s, u) { return s + u.totalMinutes; }, 0),
+                totalBadges: cwUsers.reduce(function(s, u) { return s + u.badges.length; }, 0),
                 topUsers: cwUsers.slice(0, 10),
-                avgMinutes: cwUsers.length > 0 ? Math.round(cwUsers.reduce((s, u) => s + u.totalMinutes, 0) / cwUsers.length) : 0
+                avgMinutes: cwUsers.length > 0 ? Math.round(cwUsers.reduce(function(s, u) { return s + u.totalMinutes; }, 0) / cwUsers.length) : 0
             };
         } catch(e) { /* ignore */ }
 
@@ -12721,12 +12783,12 @@ const CW_STREAK_BADGES = [
 // --- Tracking State ---
 let cwTrackingActive = false;
 let cwSessionStart = null;
-let cwSessionSeconds = 0;      // cumulative seconds for TODAY (loaded from Firestore + current session)
+let cwSessionSeconds = 0;      // cumulative seconds for TODAY (loaded from storage + current session)
 let cwLastSavedSecond = 0;     // last saved checkpoint (to compute delta)
 let cwTickInterval = null;
 let cwSaveInterval = null;
 let cwUserData = null;
-// cwUserData shape: { totalMinutes, currentStreak, longestStreak, badges, lastVisitDate, dailyMinutes:{}, dailyLevels:{} }
+// cwUserData shape: { totalMinutes, totalSeconds, currentStreak, longestStreak, badges, lastVisitDate, dailyMinutes:{}, dailySeconds:{}, dailyLevels:{} }
 
 // --- Start Tracking ---
 async function cwStartTracking() {
@@ -12740,14 +12802,15 @@ async function cwStartTracking() {
     cwTrackingActive = true;
     cwSessionStart = Date.now();
 
-    // Load user data from Firestore
+    // Load user data from storage (Firestore with localStorage fallback)
     await cwLoadUserData();
 
-    // Restore today's accumulated time so timer continues from where user left off
+    // Restore today's accumulated time — use seconds for precision, fallback to minutes*60
     const today = new Date().toISOString().split('T')[0];
+    const todaySecondsSaved = (cwUserData && cwUserData.dailySeconds && cwUserData.dailySeconds[today]) || 0;
     const todayMinutesSaved = (cwUserData && cwUserData.dailyMinutes && cwUserData.dailyMinutes[today]) || 0;
-    cwSessionSeconds = todayMinutesSaved * 60;  // Start from saved minutes
-    cwLastSavedSecond = cwSessionSeconds;        // Mark as already saved
+    cwSessionSeconds = todaySecondsSaved > 0 ? todaySecondsSaved : (todayMinutesSaved * 60);
+    cwLastSavedSecond = cwSessionSeconds;
 
     // Update streak
     cwUpdateStreak();
@@ -12758,13 +12821,14 @@ async function cwStartTracking() {
     cwRenderBadges();
 
     // Start tick (every second)
-    cwTickInterval = setInterval(() => {
+    cwTickInterval = setInterval(function() {
         if (document.hidden) return;
         cwSessionSeconds++;
         cwUpdateLiveTimer();
         cwCheckDailyLevel();
-        if (cwSessionSeconds % 60 === 0) {
-            cwSaveProgress();
+        // Save every 30 seconds for reliability
+        if (cwSessionSeconds % 30 === 0) {
+            cwSaveProgress(false);
         }
     }, 1000);
 
@@ -12801,17 +12865,20 @@ function cwStopTracking() {
     if (cwSaveInterval) clearInterval(cwSaveInterval);
     cwTickInterval = null;
     cwSaveInterval = null;
-    cwSaveProgress();
+    cwSaveProgress(true); // force save even partial seconds
     document.removeEventListener('visibilitychange', cwVisibilityHandler);
     window.removeEventListener('beforeunload', cwSaveOnExit);
 }
 
 function cwVisibilityHandler() {
-    // Pause counting when tab is hidden (but keep interval to resume)
+    if (document.hidden) {
+        // Tab hidden — force save immediately
+        cwSaveProgress(true);
+    }
 }
 
 function cwSaveOnExit() {
-    cwSaveProgress();
+    cwSaveProgress(true); // force save on exit
 }
 
 // --- Firestore Load/Save ---
@@ -12841,65 +12908,89 @@ function cwSaveLocalData() {
 }
 
 async function cwLoadUserData() {
-    const defaultData = { totalMinutes:0, currentStreak:0, longestStreak:0, badges:[], lastVisitDate:'', monthlyMinutes:{}, dailyMinutes:{}, dailyLevels:{}, userName: cwGetUserName() };
+    var defaultData = { totalMinutes:0, totalSeconds:0, currentStreak:0, longestStreak:0, badges:[], lastVisitDate:'', monthlyMinutes:{}, dailyMinutes:{}, dailySeconds:{}, dailyLevels:{}, userName: cwGetUserName() };
 
-    // Try Firestore first
+    // Always load localStorage first as baseline (instant, reliable)
+    var localData = cwGetLocalData();
+
+    // Try Firestore
     if (db && (currentUser || currentParticipant)) {
         try {
-            const userId = cwGetUserId();
-            const docRef = db.collection('cw_progress').doc(userId);
-            const snap = await docRef.get();
+            var userId = cwGetUserId();
+            var docRef = db.collection('cw_progress').doc(userId);
+            var snap = await docRef.get();
             if (snap.exists) {
-                cwUserData = snap.data();
-                if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
-                if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
-                cwSaveLocalData(); // sync to local
-                return;
+                var fsData = snap.data();
+                // Merge: use whichever has more total minutes (local or Firestore)
+                if (localData && (localData.totalMinutes || 0) > (fsData.totalMinutes || 0)) {
+                    cwUserData = localData;
+                    // Push local data to Firestore (local is ahead)
+                    try { await docRef.set(localData, { merge: true }); } catch(e2) {}
+                } else {
+                    cwUserData = fsData;
+                    cwSaveLocalData(); // sync Firestore → local
+                }
+            } else if (localData) {
+                cwUserData = localData;
+                try { await docRef.set(localData); } catch(e2) {}
             } else {
-                cwUserData = { ...defaultData };
-                await docRef.set(cwUserData);
+                cwUserData = Object.assign({}, defaultData);
+                try { await docRef.set(cwUserData); } catch(e2) {}
                 cwSaveLocalData();
-                return;
             }
         } catch(e) {
             console.warn('CW: Firestore load failed, using localStorage', e);
+            cwUserData = localData || Object.assign({}, defaultData);
         }
+    } else {
+        cwUserData = localData || Object.assign({}, defaultData);
     }
 
-    // Fallback to localStorage
-    const local = cwGetLocalData();
-    if (local) {
-        cwUserData = local;
-        if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
-        if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
-    } else {
-        cwUserData = { ...defaultData };
-    }
+    // Ensure all fields exist
+    if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
+    if (!cwUserData.dailySeconds) cwUserData.dailySeconds = {};
+    if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
+    if (!cwUserData.monthlyMinutes) cwUserData.monthlyMinutes = {};
+    if (!cwUserData.badges) cwUserData.badges = [];
 }
 
-async function cwSaveProgress() {
+async function cwSaveProgress(force) {
     if (!cwUserData) return;
     try {
         const deltaSeconds = cwSessionSeconds - cwLastSavedSecond;
-        const deltaMinutes = Math.floor(deltaSeconds / 60);
-        if (deltaMinutes < 1) return;
-        cwLastSavedSecond += deltaMinutes * 60;
+        // Normal save: require at least 10 seconds delta; Force save: save any delta
+        if (!force && deltaSeconds < 10) return;
+        cwLastSavedSecond = cwSessionSeconds;
 
         const today = new Date().toISOString().split('T')[0];
         const monthKey = today.substring(0, 7);
+        const todayTotalMinutes = Math.floor(cwSessionSeconds / 60);
 
-        // Update totals
-        cwUserData.totalMinutes = (cwUserData.totalMinutes || 0) + deltaMinutes;
-        if (!cwUserData.monthlyMinutes) cwUserData.monthlyMinutes = {};
-        cwUserData.monthlyMinutes[monthKey] = (cwUserData.monthlyMinutes[monthKey] || 0) + deltaMinutes;
-
-        // Update daily minutes (cumulative for today)
+        // Recalculate total minutes from all daily entries
         if (!cwUserData.dailyMinutes) cwUserData.dailyMinutes = {};
-        cwUserData.dailyMinutes[today] = Math.floor(cwSessionSeconds / 60);
+        var oldTodayMin = cwUserData.dailyMinutes[today] || 0;
+        var addedMinutes = todayTotalMinutes - oldTodayMin;
+        if (addedMinutes > 0) {
+            cwUserData.totalMinutes = (cwUserData.totalMinutes || 0) + addedMinutes;
+            if (!cwUserData.monthlyMinutes) cwUserData.monthlyMinutes = {};
+            cwUserData.monthlyMinutes[monthKey] = (cwUserData.monthlyMinutes[monthKey] || 0) + addedMinutes;
+        }
+
+        // Update daily minutes AND seconds (seconds for precision on restore)
+        cwUserData.dailyMinutes[today] = todayTotalMinutes;
+        if (!cwUserData.dailySeconds) cwUserData.dailySeconds = {};
+        cwUserData.dailySeconds[today] = cwSessionSeconds;
+
+        // Total seconds for overall tracking
+        cwUserData.totalSeconds = (cwUserData.totalSeconds || (cwUserData.totalMinutes || 0) * 60);
+        // Recalculate totalSeconds from totalMinutes if it seems wrong
+        if (cwUserData.totalSeconds < cwUserData.totalMinutes * 60 - 120) {
+            cwUserData.totalSeconds = cwUserData.totalMinutes * 60;
+        }
 
         // Update daily level
         if (!cwUserData.dailyLevels) cwUserData.dailyLevels = {};
-        cwUserData.dailyLevels[today] = cwGetDailyLevel(Math.floor(cwSessionSeconds / 60));
+        cwUserData.dailyLevels[today] = cwGetDailyLevel(todayTotalMinutes);
 
         cwUserData.lastVisitDate = today;
         cwUserData.userName = cwGetUserName();
@@ -12907,13 +12998,13 @@ async function cwSaveProgress() {
         // Check streak badges
         cwCheckMilestones();
 
-        // Always save to localStorage (reliable)
+        // Always save to localStorage FIRST (reliable, instant)
         cwSaveLocalData();
 
         // Try Firestore (may fail with permissions)
         if (db && (currentUser || currentParticipant)) {
             try {
-                const userId = cwGetUserId();
+                var userId = cwGetUserId();
                 await db.collection('cw_progress').doc(userId).set(cwUserData, { merge: true });
             } catch(e) {
                 // Firestore save failed — data is safe in localStorage
