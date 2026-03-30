@@ -806,6 +806,20 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 </div>
 
+<!-- ========== PERMISSIONS EDIT MODAL ========== -->
+<div class="modal-overlay" id="permissions-modal" style="display:none;">
+    <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto;">
+        <button class="modal-close" onclick="closePermissionsModal()">&times;</button>
+        <h2 style="color:var(--primary);margin-bottom:4px;font-size:1.2rem;">🔑 עריכת הרשאות</h2>
+        <p id="perm-modal-user" style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;"></p>
+        <div id="perm-modal-body"></div>
+        <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-start;">
+            <button class="btn-primary btn-sm" onclick="savePermissions()">שמור הרשאות</button>
+            <button class="btn-secondary btn-sm" onclick="closePermissionsModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+
 <!-- ========== STAFF LOGIN MODAL ========== -->
 <div class="modal-overlay" id="login-modal">
     <div class="modal-box">
@@ -1753,28 +1767,105 @@ const FRAMEWORKS = {
     'ruach':    'רוח חשמונאית'
 };
 
+// ============================================================
+// PERMISSIONS SYSTEM
+// Each permission has: label (Hebrew), category, icon
+// Role defaults are defined per role; user overrides stored in Firestore user.permissions[]
+// ============================================================
+const PERMISSIONS = {
+    'weekly-report-fill':   { label:'מילוי דיווח שבועי',      cat:'דיווחים',  icon:'📝' },
+    'weekly-report-view':   { label:'צפייה בדיווחים שבועיים',  cat:'דיווחים',  icon:'📊' },
+    'weekly-report-all':    { label:'צפייה בכל הדיווחים',      cat:'דיווחים',  icon:'📈' },
+    'training-content-add': { label:'הוספת תכנים להכשרה',      cat:'תכנים',    icon:'➕' },
+    'training-content-edit':{ label:'עריכת תכנים קיימים',      cat:'תכנים',    icon:'✏️' },
+    'training-mark':        { label:'סימון ביצוע ימים',        cat:'הכשרה',    icon:'✅' },
+    'training-mark-all':    { label:'סימון ביצוע לכל הפלוגות', cat:'הכשרה',    icon:'☑️' },
+    'admin-panel':          { label:'גישה לפאנל ניהול',        cat:'ניהול',    icon:'⚙️' },
+    'manage-users':         { label:'ניהול משתמשים',           cat:'ניהול',    icon:'👥' },
+    'manage-permissions':   { label:'עריכת הרשאות משתמשים',    cat:'ניהול',    icon:'🔑' },
+    'export-data':          { label:'ייצוא נתונים',            cat:'ניהול',    icon:'📤' },
+    'manage-hebrew':        { label:'ניהול לימוד עברית',       cat:'תכנים',    icon:'🔤' },
+    'manage-surveys':       { label:'ניהול סקרים',             cat:'ניהול',    icon:'📋' },
+    'view-dashboard':       { label:'צפייה בדשבורד',           cat:'ניהול',    icon:'📊' }
+};
+
+// Default permissions per role (based on role level and existing flags)
+const ROLE_PERMISSIONS = {
+    'admin_system':     Object.keys(PERMISSIONS),
+    'menahel':          ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','manage-surveys','view-dashboard'],
+    'mhat':             ['weekly-report-view','weekly-report-all','training-mark','training-mark-all','admin-panel','view-dashboard'],
+    'raan_mediniyut':   ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','view-dashboard'],
+    'rav_hativa':       ['weekly-report-view','weekly-report-all','training-mark','admin-panel','view-dashboard'],
+    'katzin_chinuch_hativa': ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','manage-surveys','view-dashboard'],
+    'ruach_menahel':    ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','manage-surveys','view-dashboard'],
+    'ruach_manheh':     ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard'],
+    'ruach_ram':        ['weekly-report-fill','training-content-add','training-content-edit','training-mark'],
+    'magad':            ['weekly-report-view','training-mark','training-mark-all','view-dashboard'],
+    'katzin_chinuch':   ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard'],
+    'mashak_chinuch':   ['weekly-report-fill','training-content-add','training-content-edit','training-mark'],
+    'mashak_ivrit':     ['training-content-add','training-content-edit','training-mark','manage-hebrew'],
+    'ramad_hadraha':    ['weekly-report-view','training-mark','training-mark-all'],
+    'mashak_hadraha':   ['training-mark'],
+    'rav':              ['weekly-report-view','training-mark'],
+    'sgan_rav':         ['training-mark'],
+    'katzin_mediniyut': ['weekly-report-view','training-mark','training-mark-all'],
+    'magad_yonatan':    ['weekly-report-view','training-mark','training-mark-all','view-dashboard'],
+    'sgan_magad_yonatan':['training-mark'],
+    'mefaked_pluga_yonatan':['training-mark'],
+    'mefaked_pluga':    ['weekly-report-fill','training-mark'],
+    'samap':            [],
+    'kambatz':          ['weekly-report-fill','training-mark'],
+    'mem_mem':          [],
+    'samal':            [],
+    'mach':             [],
+    'lohem':            [],
+    'mefaked_zater':    [],
+    'katzin_bachir':    ['training-mark'],
+    'segel':            ['weekly-report-fill','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard']
+};
+
 function userLevel() { return ROLES[currentUser?.role]?.level || 0; }
 function userRoleLabel() { return ROLES[currentUser?.role]?.label || ''; }
-function canUserAddContent() { return currentUser && (ROLES[currentUser.role]?.canAddContent === true); }
-function canUserMarkCompletion() { return currentUser && (ROLES[currentUser.role]?.canMarkCompletion === true); }
+function canUserAddContent() { return hasPermission('training-content-add'); }
+function canUserMarkCompletion() { return hasPermission('training-mark'); }
+
+function getUserPermissions(user) {
+    if (!user) return [];
+    const roleDefaults = ROLE_PERMISSIONS[user.role] || [];
+    const overrides = user.permissions || [];
+    // Merge: role defaults + user-specific additions
+    const merged = new Set([...roleDefaults, ...overrides]);
+    return Array.from(merged);
+}
 
 function hasPermission(action) {
     if (!currentUser) return false;
-    const lvl = userLevel();
-    switch(action) {
-        case 'learning':           return true;
-        case 'geography':          return true;
-        case 'view-training':      return lvl >= 1;
-        case 'mark-training':      return canUserMarkCompletion();
-        case 'add-content':        return canUserAddContent();
-        case 'mark-training-all':  return lvl >= 4;
-        case 'weekly-reports':     return lvl >= 4;
-        case 'view-all-reports':   return lvl >= 5;
-        case 'admin':              return lvl >= 5;
-        case 'export':             return lvl >= 5;
-        case 'manage-users':       return lvl >= 5;
-        default: return false;
+    // Map legacy action names to new permission keys
+    const legacyMap = {
+        'learning':          null,   // always allowed
+        'geography':         null,   // always allowed
+        'view-training':     null,   // level >= 1
+        'mark-training':     'training-mark',
+        'add-content':       'training-content-add',
+        'mark-training-all': 'training-mark-all',
+        'weekly-reports':    'weekly-report-fill',
+        'view-all-reports':  'weekly-report-all',
+        'admin':             'admin-panel',
+        'export':            'export-data',
+        'manage-users':      'manage-users'
+    };
+    // Handle legacy actions
+    if (action in legacyMap) {
+        if (legacyMap[action] === null) {
+            // Always-allowed or level-based
+            if (action === 'learning' || action === 'geography') return true;
+            if (action === 'view-training') return userLevel() >= 1;
+            return true;
+        }
+        action = legacyMap[action];
     }
+    const perms = getUserPermissions(currentUser);
+    return perms.includes(action);
 }
 
 function getFrameworkLabel(fw) { return FRAMEWORKS[fw] || fw || ''; }
@@ -11869,7 +11960,10 @@ function mqRenderQuestion() {
                     var startMarker = L.marker(startPt, { icon: circleIcon, interactive: true }).addTo(qmap);
 
                     // ▶ End arrowhead — single triangle at the very end
-                    var endAngle = Math.atan2(endPt[1] - prevPt[1], endPt[0] - prevPt[0]) * (180 / Math.PI);
+                    // dx = longitude diff (screen-x), dy = -latitude diff (screen-y is inverted)
+                    var dx = endPt[1] - prevPt[1];
+                    var dy = -(endPt[0] - prevPt[0]);
+                    var endAngle = Math.atan2(dy, dx) * (180 / Math.PI);
                     var arrowSvg = '<svg width="22" height="22" viewBox="0 0 22 22" style="transform:rotate('+(90+endAngle)+'deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.45));">' +
                         '<polygon points="11,1 21,19 11,14 1,19" fill="'+rc+'" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>' +
                     '</svg>';
@@ -12176,7 +12270,7 @@ async function loadAdminUsers() {
     container.innerHTML = 'טוען...';
     try {
         const snap = await db.collection('users').get();
-        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>מייל</th><th>היררכיה</th><th>פעולות</th></tr></thead><tbody>';
+        let html = '<table class="admin-table"><thead><tr><th>שם</th><th>מייל</th><th>היררכיה</th><th>הרשאות</th><th>פעולות</th></tr></thead><tbody>';
         snap.forEach(doc => {
             const d = doc.data();
             const rl = ROLES[d.role]?.label || d.role || '—';
@@ -12189,10 +12283,16 @@ async function loadAdminUsers() {
             } else {
                 hierarchy = rl;
             }
+            const userPerms = getUserPermissions(d);
+            const extraPerms = (d.permissions || []).length;
+            const permBadge = extraPerms > 0
+                ? '<span style="background:#E8F5E9;color:#2E7D32;padding:2px 7px;border-radius:10px;font-size:0.75rem;font-weight:600;">+' + extraPerms + ' נוספות</span>'
+                : '<span style="color:var(--text-secondary);font-size:0.75rem;">ברירת מחדל</span>';
             html += `<tr>
                 <td>${d.name || doc.id}</td>
                 <td style="direction:ltr;text-align:right;">${d.email || d.phone || '—'}</td>
                 <td>${hierarchy}</td>
+                <td style="text-align:center;">${permBadge}<br><button class="btn-sm" style="font-size:0.7rem;padding:2px 8px;margin-top:3px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;" onclick="openPermissionsModal('${doc.id}')">🔑 ערוך</button></td>
                 <td>
                     <button class="btn-sm btn-secondary" onclick="editUserRole('${doc.id}')">ערוך</button>
                     <button class="btn-sm btn-danger" onclick="deleteUser('${doc.id}')">מחק</button>
@@ -12295,6 +12395,91 @@ async function editUserRole(docId) {
 async function deleteUser(docId) {
     if (!confirm('למחוק את המשתמש?')) return;
     try { await db.collection('users').doc(docId).delete(); showToast('נמחק'); loadAdminUsers(); } catch(e) { showToast('שגיאה'); }
+}
+
+// ============================================================
+// PERMISSIONS MODAL
+// ============================================================
+let permEditDocId = null;
+let permEditData = null;
+
+async function openPermissionsModal(docId) {
+    permEditDocId = docId;
+    try {
+        const doc = await db.collection('users').doc(docId).get();
+        if (!doc.exists) { showToast('משתמש לא נמצא'); return; }
+        permEditData = doc.data();
+    } catch(e) { showToast('שגיאה בטעינה'); return; }
+
+    const roleName = ROLES[permEditData.role]?.label || permEditData.role || '—';
+    document.getElementById('perm-modal-user').innerHTML =
+        '<b>' + (permEditData.name || docId) + '</b> — ' + roleName +
+        (permEditData.pluga ? ' / פלוגה ' + permEditData.pluga + '׳' : '');
+
+    const roleDefaults = ROLE_PERMISSIONS[permEditData.role] || [];
+    const userExtras = permEditData.permissions || [];
+
+    // Group by category
+    const cats = {};
+    Object.entries(PERMISSIONS).forEach(([key, p]) => {
+        if (!cats[p.cat]) cats[p.cat] = [];
+        cats[p.cat].push({ key, ...p });
+    });
+
+    let html = '';
+    Object.entries(cats).forEach(([cat, perms]) => {
+        html += '<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:0.85rem;color:var(--primary);margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:4px;">' + cat + '</div>';
+        perms.forEach(p => {
+            const isRoleDefault = roleDefaults.includes(p.key);
+            const isUserExtra = userExtras.includes(p.key);
+            const isChecked = isRoleDefault || isUserExtra;
+            const isLocked = isRoleDefault; // role defaults shown but marked as default
+            html += '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:0.85rem;">' +
+                '<input type="checkbox" class="perm-cb" data-key="' + p.key + '" data-role-default="' + isRoleDefault + '"' +
+                (isChecked ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--primary);">' +
+                '<span>' + p.icon + ' ' + p.label + '</span>' +
+                (isRoleDefault ? '<span style="font-size:0.7rem;color:#888;background:#f0f0f0;padding:1px 6px;border-radius:8px;margin-right:auto;">ברירת מחדל</span>' : '') +
+                (isUserExtra && !isRoleDefault ? '<span style="font-size:0.7rem;color:#2E7D32;background:#E8F5E9;padding:1px 6px;border-radius:8px;margin-right:auto;">נוסף ידנית</span>' : '') +
+                '</label>';
+        });
+        html += '</div>';
+    });
+
+    document.getElementById('perm-modal-body').innerHTML = html;
+    document.getElementById('permissions-modal').style.display = 'flex';
+}
+
+function closePermissionsModal() {
+    document.getElementById('permissions-modal').style.display = 'none';
+    permEditDocId = null;
+    permEditData = null;
+}
+
+async function savePermissions() {
+    if (!permEditDocId || !permEditData) return;
+    const roleDefaults = ROLE_PERMISSIONS[permEditData.role] || [];
+    const checkboxes = document.querySelectorAll('.perm-cb');
+    const userExtras = [];
+
+    checkboxes.forEach(cb => {
+        const key = cb.dataset.key;
+        const isRoleDefault = roleDefaults.includes(key);
+        if (cb.checked && !isRoleDefault) {
+            // User explicitly added this permission beyond their role
+            userExtras.push(key);
+        }
+        // Note: unchecking a role default doesn't remove it (role defaults are always active)
+    });
+
+    try {
+        await db.collection('users').doc(permEditDocId).update({ permissions: userExtras });
+        showToast('הרשאות עודכנו בהצלחה');
+        closePermissionsModal();
+        loadAdminUsers();
+    } catch(e) {
+        showToast('שגיאה בשמירת הרשאות');
+        console.error('savePermissions error:', e);
+    }
 }
 
 // Excel import
