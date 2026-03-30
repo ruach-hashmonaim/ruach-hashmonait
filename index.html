@@ -11353,17 +11353,17 @@ const MAP_QUIZZES = [
         desc: 'מסעות אברהם, יצחק ויעקב — מיקומים ומסלולים',
         difficulty: 'בינוני',
         locations: [
-            { num: 1, name: 'שכם — אלון מורה', lat: 32.2132, lng: 35.2852 },
-            { num: 2, name: 'בית אל', lat: 31.9430, lng: 35.2200 },
-            { num: 3, name: 'חברון', lat: 31.5243, lng: 35.1108 },
-            { num: 4, name: 'באר שבע', lat: 31.2518, lng: 34.7913 },
-            { num: 5, name: 'ארץ גרר', lat: 31.3900, lng: 34.4700 }
+            { num: 1, name: 'שכם — אלון מורה', lat: 32.2132, lng: 35.2852, icon: '⛰️', color: '#8B4513', desc: 'תחנה ראשונה של אברהם בכניסתו לארץ כנען' },
+            { num: 2, name: 'בית אל', lat: 31.9430, lng: 35.2200, icon: '🪜', color: '#4A148C', desc: 'מקום חלום הסולם של יעקב' },
+            { num: 3, name: 'חברון', lat: 31.5243, lng: 35.1108, icon: '🕍', color: '#1B5E20', desc: 'מערת המכפלה — קבורת האבות והאמהות' },
+            { num: 4, name: 'באר שבע', lat: 31.2518, lng: 34.7913, icon: '💧', color: '#0D47A1', desc: 'מרכז חיי יצחק — עיר הבארות והשבועות' },
+            { num: 5, name: 'ארץ גרר', lat: 31.3900, lng: 34.4700, icon: '🌾', color: '#BF360C', desc: 'אברהם ויצחק ירדו לכאן בשנות רעב' }
         ],
         routes: [
-            { id: 'א', name: 'מסע אברהם', color: '#E74C3C', points: [[32.2132,35.2852],[31.9430,35.2200],[31.5243,35.1108],[31.3900,34.4700],[31.5243,35.1108]] },
-            { id: 'ב', name: 'מסע יצחק', color: '#3498DB', points: [[31.5243,35.1108],[31.2518,34.7913],[31.3900,34.4700],[31.2518,34.7913]] },
-            { id: 'ג1', name: 'בריחת יעקב', color: '#27AE60', points: [[31.2518,34.7913],[31.9430,35.2200],[32.85,35.53]] },
-            { id: 'ג2', name: 'חזרת יעקב', color: '#8E44AD', points: [[32.85,35.53],[32.2132,35.2852],[31.9430,35.2200],[31.5243,35.1108]] }
+            { id: 'א', name: 'מסע אברהם', color: '#E74C3C', points: [[32.2132,35.2852],[31.9430,35.2200],[31.5243,35.1108],[31.3900,34.4700],[31.5243,35.1108]], desc: 'שכם → בית אל → חברון → גרר → חברון' },
+            { id: 'ב', name: 'מסע יצחק', color: '#3498DB', points: [[31.5243,35.1108],[31.2518,34.7913],[31.3900,34.4700],[31.2518,34.7913]], desc: 'חברון → באר שבע → גרר — נשאר בדרום הארץ' },
+            { id: 'ג1', name: 'בריחת יעקב', color: '#27AE60', points: [[31.2518,34.7913],[31.9430,35.2200],[32.85,35.53]], desc: 'באר שבע → בית אל → חרן — בריחה מעשיו' },
+            { id: 'ג2', name: 'חזרת יעקב', color: '#8E44AD', points: [[32.85,35.53],[32.2132,35.2852],[31.9430,35.2200],[31.5243,35.1108]], desc: 'חרן → שכם → בית אל → חברון — חזרה אחרי 20 שנה' }
         ],
         questions: [
             {
@@ -11480,19 +11480,19 @@ const MAP_QUIZZES = [
         desc: 'בראשית י"ד — מלחמת המלכים והצלת לוט',
         difficulty: 'בינוני',
         locations: [
-            { num: 1, name: 'בלע היא צוער', lat: 31.03, lng: 35.36 },
-            { num: 2, name: 'סדום', lat: 31.10, lng: 35.39 },
-            { num: 3, name: 'עמורה', lat: 31.15, lng: 35.38 },
-            { num: 4, name: 'צבויים', lat: 31.28, lng: 35.44 },
-            { num: 5, name: 'אדמה', lat: 31.35, lng: 35.45 },
-            { num: 6, name: 'דן (ליש)', lat: 33.2487, lng: 35.6519 }
+            { num: 1, name: 'בלע היא צוער', lat: 31.03, lng: 35.36, icon: '🏚️', color: '#795548', desc: 'העיר הקטנה שניצלה — לוט ברח אליה' },
+            { num: 2, name: 'סדום', lat: 31.10, lng: 35.39, icon: '🔥', color: '#B71C1C', desc: 'עיר הרשעה — שם ישב לוט בן אחי אברהם' },
+            { num: 3, name: 'עמורה', lat: 31.15, lng: 35.38, icon: '🔥', color: '#C62828', desc: 'נחרבה יחד עם סדום באש וגופרית' },
+            { num: 4, name: 'צבויים', lat: 31.28, lng: 35.44, icon: '🏛️', color: '#4E342E', desc: 'אחת מחמש ערי ככר הירדן' },
+            { num: 5, name: 'אדמה', lat: 31.35, lng: 35.45, icon: '🏛️', color: '#5D4037', desc: 'אחת מחמש ערי ככר הירדן' },
+            { num: 6, name: 'דן (ליש)', lat: 33.2487, lng: 35.6519, icon: '⚔️', color: '#1565C0', desc: 'כאן אברהם תפס את ארבעת המלכים בהתקפת לילה' }
         ],
         routes: [
-            { id: 'א', name: 'אמרפל מלך שנער', color: '#1a1a1a', points: [[33.60,36.30],[33.25,35.65],[31.76,35.23],[31.20,35.40]] },
-            { id: 'ב', name: 'כדרלעומר מלך עילם', color: '#333333', points: [[33.55,36.50],[33.25,35.65],[31.76,35.23],[31.20,35.40]] },
-            { id: 'ג', name: 'תדעל מלך גויים', color: '#555555', points: [[33.70,36.20],[33.25,35.65],[31.76,35.23],[31.20,35.40]] },
-            { id: 'ד', name: 'אריוך מלך אלסר', color: '#777777', points: [[33.50,36.40],[33.25,35.65],[31.76,35.23],[31.20,35.40]] },
-            { id: 'אברהם', name: 'מרדף אברהם', color: '#C0A030', points: [[31.52,35.11],[32.21,35.29],[33.25,35.65]] }
+            { id: 'א', name: 'אמרפל מלך שנער', color: '#8B0000', points: [[33.60,36.30],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'פלישה ממסופוטמיה — הוא נמרוד לפי חז"ל' },
+            { id: 'ב', name: 'כדרלעומר מלך עילם', color: '#B22222', points: [[33.55,36.50],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'המנהיג — 12 שנה שלט בערי הככר' },
+            { id: 'ג', name: 'תדעל מלך גויים', color: '#A52A2A', points: [[33.70,36.20],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'מלך הגויים — בעל ברית כדרלעומר' },
+            { id: 'ד', name: 'אריוך מלך אלסר', color: '#CD5C5C', points: [[33.50,36.40],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'בעל ברית נוסף מהצפון-מזרח' },
+            { id: 'אברהם', name: 'מרדף אברהם', color: '#DAA520', points: [[31.52,35.11],[32.21,35.29],[33.25,35.65]], desc: 'חברון → דן — 318 חניכים במרדף של 200 ק"מ!' }
         ],
         questions: [
             {
@@ -11574,20 +11574,20 @@ const MAP_QUIZZES = [
         desc: 'קרבות מרכזיים בתקופת השופטים — אהוד, דבורה, גדעון, יפתח ושמשון',
         difficulty: 'מתקדם',
         locations: [
-            { num: 1, name: 'יריחו — מוקד מואב', lat: 31.87, lng: 35.45 },
-            { num: 2, name: 'חצור', lat: 33.02, lng: 35.57 },
-            { num: 3, name: 'עין חרוד / הר תבור', lat: 32.56, lng: 35.36 },
-            { num: 4, name: 'מצפה גלעד', lat: 32.30, lng: 35.80 },
-            { num: 5, name: 'אזור דן — שפלת יהודה', lat: 31.73, lng: 34.85 },
-            { num: 6, name: 'אזור העמלקים — הנגב', lat: 30.80, lng: 34.50 }
+            { num: 1, name: 'יריחו — מוקד מואב', lat: 31.87, lng: 35.45, icon: '🗡️', color: '#C62828', desc: 'אהוד בן גרא הרג את עגלון מלך מואב' },
+            { num: 2, name: 'חצור', lat: 33.02, lng: 35.57, icon: '🏰', color: '#1A237E', desc: 'יבין מלך חצור — שלח 900 רכב ברזל' },
+            { num: 3, name: 'עין חרוד / הר תבור', lat: 32.56, lng: 35.36, icon: '🏔️', color: '#2E7D32', desc: 'דבורה וברק / גדעון עם 300 לוחמים' },
+            { num: 4, name: 'מצפה גלעד', lat: 32.30, lng: 35.80, icon: '⚔️', color: '#37474F', desc: 'יפתח יצא מכאן נגד עמון' },
+            { num: 5, name: 'אזור דן — שפלת יהודה', lat: 31.73, lng: 34.85, icon: '🦁', color: '#E65100', desc: 'שמשון נלחם בפלישתים' },
+            { num: 6, name: 'אזור העמלקים — הנגב', lat: 30.80, lng: 34.50, icon: '🏜️', color: '#33691E', desc: 'אויב מר מימי יציאת מצרים' }
         ],
         routes: [
-            { id: 'א', name: 'פשיטת מואב', color: '#E74C3C', points: [[31.60,35.80],[31.87,35.45]] },
-            { id: 'ב', name: 'מסע סיסרא', color: '#1B0080', points: [[33.02,35.57],[32.56,35.36]] },
-            { id: 'ג', name: 'מחנה מדין', color: '#8E44AD', points: [[32.80,36.00],[32.56,35.36],[32.30,35.50],[31.80,35.30]] },
-            { id: 'ד', name: 'פלישת עמון', color: '#111111', points: [[32.10,36.10],[32.30,35.80],[31.87,35.45]] },
-            { id: 'ה', name: 'שלטון פלישתים', color: '#FF6600', points: [[31.50,34.55],[31.73,34.85]] },
-            { id: 'ו', name: 'אזור עמלק', color: '#006600', points: [[30.40,34.30],[30.80,34.50],[31.30,34.70]] }
+            { id: 'א', name: 'פשיטת מואב', color: '#E74C3C', points: [[31.60,35.80],[31.87,35.45]], desc: 'עגלון מלך מואב כבש את עיר התמרים' },
+            { id: 'ב', name: 'מסע סיסרא', color: '#1B0080', points: [[33.02,35.57],[32.56,35.36]], desc: '900 רכב ברזל מחצור לנחל קישון' },
+            { id: 'ג', name: 'מחנה מדין ועמלק', color: '#8E44AD', points: [[32.80,36.00],[32.56,35.36],[32.30,35.50],[31.80,35.30]], desc: 'פשיטות שנתיות לשדוד את היבול' },
+            { id: 'ד', name: 'פלישת עמון', color: '#37474F', points: [[32.10,36.10],[32.30,35.80],[31.87,35.45]], desc: 'פלישה מעבר הירדן אל עומק ישראל' },
+            { id: 'ה', name: 'שלטון פלישתים', color: '#FF6600', points: [[31.50,34.55],[31.73,34.85]], desc: 'דחקו את שבט דן ויהודה אל ההר' },
+            { id: 'ו', name: 'אזור עמלק', color: '#33691E', points: [[30.40,34.30],[30.80,34.50],[31.30,34.70]], desc: 'ישבו בין הר שעיר, הנגב וסיני' }
         ],
         questions: [
             {
@@ -11775,25 +11775,77 @@ function mqRenderQuestion() {
             var qmap = L.map(mapDiv, { zoomControl: true, attributionControl: false, tap: true, dragging: true, touchZoom: true });
             L.tileLayer(GEO_TILE_LAYERS['hebrew'].url, GEO_TILE_LAYERS['hebrew'].opts).addTo(qmap);
 
-            // Add only relevant markers (showLocs=null means show all, showLocs=[] means show none)
+            // Add only relevant markers with styled pin icons + popup
             quiz.locations.forEach(function(loc) {
                 if (showLocs !== null && showLocs.indexOf(loc.num) === -1) return;
+                var pinColor = loc.color || '#D4A843';
+                var pinEmoji = loc.icon || '📌';
                 var icon = L.divIcon({
                     className: 'mq-marker',
-                    html: '<div style="width:32px;height:32px;border-radius:50%;background:#D4A843;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.95rem;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);">' + loc.num + '</div>',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
+                    html: '<div style="position:relative;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.4));cursor:pointer;">' +
+                        '<div style="width:36px;height:36px;border-radius:50%;background:'+pinColor+';display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:3px solid #fff;box-shadow:inset 0 -2px 4px rgba(0,0,0,0.15);">'+pinEmoji+'</div>' +
+                        '<div style="width:3px;height:10px;background:'+pinColor+';border-radius:0 0 2px 2px;"></div>' +
+                        '<div style="width:8px;height:4px;background:rgba(0,0,0,0.2);border-radius:50%;margin-top:1px;"></div>' +
+                    '</div>',
+                    iconSize: [36, 52],
+                    iconAnchor: [18, 52],
+                    popupAnchor: [0, -52]
                 });
-                L.marker([loc.lat, loc.lng], { icon: icon }).addTo(qmap);
+                var marker = L.marker([loc.lat, loc.lng], { icon: icon }).addTo(qmap);
+                // Rich popup with name and description
+                var popupContent = '<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px;text-align:center;padding:4px;">' +
+                    '<div style="font-size:1.1rem;margin-bottom:3px;">'+pinEmoji+'</div>' +
+                    '<b style="color:#1B4332;font-size:0.9rem;">' + loc.name + '</b>';
+                if (loc.desc) {
+                    popupContent += '<br><span style="font-size:0.78rem;color:#555;line-height:1.4;">' + loc.desc + '</span>';
+                }
+                popupContent += '</div>';
+                marker.bindPopup(popupContent, { maxWidth: 250, className: 'mq-popup' });
                 bounds.push([loc.lat, loc.lng]);
             });
 
-            // Add only relevant routes (showRts=null means show all, showRts=[] means show none)
+            // Add only relevant routes with arrows and labels
             if (quiz.routes) {
                 quiz.routes.forEach(function(route) {
                     if (showRts !== null && showRts.indexOf(route.id) === -1) return;
-                    L.polyline(route.points, { color: route.color, weight: 3.5, opacity: 0.85, dashArray: '8 6' }).addTo(qmap);
-                    route.points.forEach(function(p) { bounds.push(p); });
+                    var rc = route.color || '#333';
+                    var pts = route.points;
+                    // Draw the main line
+                    var polyline = L.polyline(pts, {
+                        color: rc, weight: 4.5, opacity: 0.9,
+                        lineCap: 'round', lineJoin: 'round'
+                    }).addTo(qmap);
+                    // Add arrowheads along the route at intervals
+                    for (var ai = 0; ai < pts.length - 1; ai++) {
+                        var p1 = pts[ai], p2 = pts[ai + 1];
+                        // Place arrow at 70% of each segment
+                        var arrowLat = p1[0] + (p2[0] - p1[0]) * 0.7;
+                        var arrowLng = p1[1] + (p2[1] - p1[1]) * 0.7;
+                        var angle = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * (180 / Math.PI);
+                        var arrowIcon = L.divIcon({
+                            className: 'mq-arrow',
+                            html: '<div style="font-size:18px;color:'+rc+';transform:rotate('+(90 - angle)+'deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));line-height:1;">▼</div>',
+                            iconSize: [18, 18],
+                            iconAnchor: [9, 9]
+                        });
+                        L.marker([arrowLat, arrowLng], { icon: arrowIcon, interactive: false }).addTo(qmap);
+                    }
+                    // Route label at midpoint
+                    if (route.name) {
+                        var mid = pts[Math.floor(pts.length / 2)];
+                        var labelIcon = L.divIcon({
+                            className: 'mq-route-label',
+                            html: '<div style="background:'+rc+';color:#fff;padding:3px 8px;border-radius:12px;font-size:0.7rem;font-weight:700;font-family:Heebo,sans-serif;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.35);border:1.5px solid rgba(255,255,255,0.6);direction:rtl;">' + route.name + '</div>',
+                            iconSize: [0, 0],
+                            iconAnchor: [-10, 12]
+                        });
+                        L.marker(mid, { icon: labelIcon, interactive: false }).addTo(qmap);
+                    }
+                    // Route popup on click
+                    if (route.desc) {
+                        polyline.bindPopup('<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:150px;"><b style="color:'+rc+';">' + route.name + '</b><br><span style="font-size:0.8rem;color:#555;">' + route.desc + '</span></div>', { maxWidth: 250 });
+                    }
+                    pts.forEach(function(p) { bounds.push(p); });
                 });
             }
 
