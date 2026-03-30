@@ -1232,7 +1232,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <button class="geo-tab active" onclick="geoSwitchRaster('hebrew',this)">🗺️ מפה</button>
             <button class="geo-tab" onclick="geoSwitchRaster('satellite',this)">🛰️ לוויין</button>
             <button class="geo-tab" onclick="geoSwitchRaster('topo',this)">⛰️ טופו 1:25K</button>
-            <button class="geo-tab" onclick="geoSwitchRaster('historic',this)">📜 היסטורית</button>
+            <button class="geo-tab" onclick="geoSwitchRaster('historic',this)">🌍 קלאסית</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;"><div id="geo-map"></div></div>
         <div class="card geo-results" id="geo-results-container" style="display:none;">
@@ -11189,7 +11189,7 @@ const GEO_TILE_LAYERS = {
     'hebrew': { name: 'מפה', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom: 19, minZoom: 3, subdomains: 'abc' } },
     'satellite': { name: 'לוויין', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, Maxar, Earthstar', maxZoom: 19, minZoom: 3 } },
     'topo': { name: 'טופו', url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, minZoom: 3 } },
-    'historic': { name: 'היסטורית', url: 'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg', opts: { attribution: '&copy; Stadia Maps &copy; Stamen Design &copy; OSM', maxZoom: 16, minZoom: 3 } }
+    'historic': { name: 'קלאסית', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, National Geographic', maxZoom: 16, minZoom: 3 } }
 };
 
 const GEO_SITES = [
