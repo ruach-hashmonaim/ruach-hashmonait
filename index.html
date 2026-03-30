@@ -11838,47 +11838,58 @@ function mqRenderQuestion() {
                 bounds.push([loc.lat, loc.lng]);
             });
 
-            // Add only relevant routes with arrows and labels
+            // Add only relevant routes: circle at start, arrowhead at end, smooth line
             if (quiz.routes) {
                 quiz.routes.forEach(function(route) {
                     if (showRts !== null && showRts.indexOf(route.id) === -1) return;
                     var rc = route.color || '#333';
                     var pts = route.points;
-                    // Draw the travel-corridor line (dashed border + solid core)
-                    // Outer line — wider, semi-transparent border
+                    var startPt = pts[0];
+                    var endPt = pts[pts.length - 1];
+                    var prevPt = pts.length >= 2 ? pts[pts.length - 2] : startPt;
+
+                    // Outer glow line — wider, semi-transparent
                     L.polyline(pts, {
-                        color: rc, weight: 8, opacity: 0.18,
+                        color: rc, weight: 9, opacity: 0.15,
                         lineCap: 'round', lineJoin: 'round', interactive: false
                     }).addTo(qmap);
-                    // Core line — dashed for ancient-route feel
+                    // Core line — solid, smooth
                     var polyline = L.polyline(pts, {
-                        color: rc, weight: 3.5, opacity: 0.85,
-                        dashArray: '10, 6', lineCap: 'round', lineJoin: 'round'
+                        color: rc, weight: 4, opacity: 0.85,
+                        lineCap: 'round', lineJoin: 'round'
                     }).addTo(qmap);
-                    // Add SVG arrowheads at the END of each segment
-                    for (var ai = 0; ai < pts.length - 1; ai++) {
-                        var p1 = pts[ai], p2 = pts[ai + 1];
-                        // Place arrowhead at the endpoint of the segment
-                        var arrowLat = p2[0];
-                        var arrowLng = p2[1];
-                        // Compute angle from segment direction
-                        var angle = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * (180 / Math.PI);
-                        var svgArrow = '<svg width="20" height="20" viewBox="0 0 20 20" style="transform:rotate('+(90+angle)+'deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">' +
-                            '<polygon points="10,1 18,16 10,12 2,16" fill="'+rc+'" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>' +
-                        '</svg>';
-                        var arrowIcon = L.divIcon({
-                            className: 'mq-arrow',
-                            html: svgArrow,
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10]
-                        });
-                        // Arrows are interactive — clicking shows route info
-                        var arrowMarker = L.marker([arrowLat, arrowLng], { icon: arrowIcon, interactive: true }).addTo(qmap);
-                        if (route.desc) {
-                            arrowMarker.bindPopup('<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:150px;text-align:center;"><b style="color:'+rc+';font-size:0.95rem;">' + route.name + '</b><br><span style="font-size:0.8rem;color:#555;line-height:1.5;">' + route.desc + '</span></div>', { maxWidth: 260, className: 'mq-popup' });
-                        }
-                    }
-                    // Route label at midpoint
+
+                    // ● Start circle
+                    var circleIcon = L.divIcon({
+                        className: 'mq-start-dot',
+                        html: '<div style="width:14px;height:14px;border-radius:50%;background:'+rc+';border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7]
+                    });
+                    var startMarker = L.marker(startPt, { icon: circleIcon, interactive: true }).addTo(qmap);
+
+                    // ▶ End arrowhead — single triangle at the very end
+                    var endAngle = Math.atan2(endPt[1] - prevPt[1], endPt[0] - prevPt[0]) * (180 / Math.PI);
+                    var arrowSvg = '<svg width="22" height="22" viewBox="0 0 22 22" style="transform:rotate('+(90+endAngle)+'deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.45));">' +
+                        '<polygon points="11,1 21,19 11,14 1,19" fill="'+rc+'" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>' +
+                    '</svg>';
+                    var arrowIcon = L.divIcon({
+                        className: 'mq-arrow',
+                        html: arrowSvg,
+                        iconSize: [22, 22],
+                        iconAnchor: [11, 11]
+                    });
+                    var endMarker = L.marker(endPt, { icon: arrowIcon, interactive: true }).addTo(qmap);
+
+                    // Popups — clicking start, end, or line shows route info
+                    var popupHtml = '<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:150px;text-align:center;">' +
+                        '<b style="color:'+rc+';font-size:0.95rem;">' + route.name + '</b><br>' +
+                        '<span style="font-size:0.8rem;color:#555;line-height:1.5;">' + (route.desc || '') + '</span></div>';
+                    startMarker.bindPopup(popupHtml, { maxWidth: 260, className: 'mq-popup' });
+                    endMarker.bindPopup(popupHtml, { maxWidth: 260, className: 'mq-popup' });
+                    polyline.bindPopup(popupHtml, { maxWidth: 260, className: 'mq-popup' });
+
+                    // Route name label at midpoint
                     if (route.name) {
                         var mid = pts[Math.floor(pts.length / 2)];
                         var labelIcon = L.divIcon({
@@ -11888,10 +11899,6 @@ function mqRenderQuestion() {
                             iconAnchor: [-10, 12]
                         });
                         L.marker(mid, { icon: labelIcon, interactive: false }).addTo(qmap);
-                    }
-                    // Route line popup on click too
-                    if (route.desc) {
-                        polyline.bindPopup('<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:150px;text-align:center;"><b style="color:'+rc+';font-size:0.95rem;">' + route.name + '</b><br><span style="font-size:0.8rem;color:#555;line-height:1.5;">' + route.desc + '</span></div>', { maxWidth: 260, className: 'mq-popup' });
                     }
                     pts.forEach(function(p) { bounds.push(p); });
                 });
