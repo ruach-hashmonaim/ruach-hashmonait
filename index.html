@@ -2834,15 +2834,15 @@ const TRAINING_WEEK_NAMES = {
 
 const TRAINING_SPECIAL_WEEKS = {
     'basic': [
-        { name: 'מסע שרשרת הדורות א׳ (סד"ח)', icon: '🚶' }
+        { name: 'מסע שרשרת הדורות א׳ (סד"ח)', icon: '🚶', weekNum: 101 }
     ],
     'nco': [
-        { name: 'מסע פיקוד — שרשרת הדורות ב׳', icon: '🗡️' }
+        { name: 'מסע פיקוד — שרשרת הדורות ב׳', icon: '🗡️', weekNum: 101 }
     ],
     'officer': [
-        { name: 'בעקבות מנהיגים במדבר — שרשרת הדורות ג׳', icon: '🏜️' },
-        { name: 'שבוע אתרי קרבות', icon: '⚔️' },
-        { name: 'שבוע זהות', icon: '🔯' }
+        { name: 'בעקבות מנהיגים במדבר — שרשרת הדורות ג׳', icon: '🏜️', weekNum: 101 },
+        { name: 'שבוע אתרי קרבות', icon: '⚔️', weekNum: 102 },
+        { name: 'שבוע זהות', icon: '🔯', weekNum: 103 }
     ]
 };
 
@@ -3009,13 +3009,14 @@ async function loadTrainingPage(program) {
             weekHtml += `<button class="week-btn ${isActive ? 'active' : ''}" onclick="selectTrainingWeek('${program}',${w})">${w}</button>`;
         }
         weekHtml += '</div>';
-        // Add special weeks/events for this program
+        // Add special education weeks for this program (clickable, editable like regular weeks)
         var specWeeks = TRAINING_SPECIAL_WEEKS[program];
         if (specWeeks && specWeeks.length > 0) {
             weekHtml += '<div style="margin-top:10px;padding:10px 14px;background:rgba(212,168,67,0.08);border-radius:10px;border-right:3px solid var(--primary);">';
-            weekHtml += '<div style="font-size:0.82rem;font-weight:700;color:var(--primary);margin-bottom:6px;">🗓️ שבועות הכשרה מיוחדים:</div>';
+            weekHtml += '<div style="font-size:0.82rem;font-weight:700;color:var(--primary);margin-bottom:6px;">🗓️ שבועות חינוך בהכשרה:</div>';
             specWeeks.forEach(function(sw) {
-                weekHtml += '<div style="font-size:0.82rem;color:var(--text-primary);padding:3px 0;">' + (sw.icon||'') + ' ' + sw.name + '</div>';
+                var isActiveSpec = (currentTrainingWeek[program] === sw.weekNum);
+                weekHtml += '<button class="week-btn ' + (isActiveSpec ? 'active' : '') + '" style="display:block;width:100%;text-align:right;margin:4px 0;padding:6px 10px;font-size:0.82rem;" onclick="selectTrainingWeek(\'' + program + '\',' + sw.weekNum + ')">' + (sw.icon||'') + ' ' + sw.name + '</button>';
             });
             weekHtml += '</div>';
         }
@@ -3058,8 +3059,14 @@ async function loadTrainingPage(program) {
         const plugaLabel = hasPluga ? (TRAINING_TRACKS[plugaTrack] || '') : '';
         const headerParts = [trackLabel, plugaLabel].filter(Boolean).join(' — ');
 
+        // Check if this is a special education week
+        var specWeekName = '';
+        var specWeeksForProgram = TRAINING_SPECIAL_WEEKS[program] || [];
+        specWeeksForProgram.forEach(function(sw) { if (sw.weekNum === week) specWeekName = (sw.icon||'') + ' ' + sw.name; });
+        var weekTitle = specWeekName || ('שבוע ' + week);
+
         let html = `<div style="margin-bottom:14px;">
-            <h3 style="color:var(--primary);font-size:1.1rem;">שבוע ${week}${headerParts ? ' — ' + headerParts : ''}</h3>
+            <h3 style="color:var(--primary);font-size:1.1rem;">${weekTitle}${headerParts ? ' — ' + headerParts : ''}</h3>
         </div>`;
 
         if (lessons.length === 0) {
@@ -11386,7 +11393,7 @@ let geoMap = null; let geoMarkers = []; let geoUserMarker = null; let geoCircle 
 let geoCurrentMode = 'location'; let geoCurrentCategory = 'all';
 let geoCurrentLayer = null;
 const GEO_TILE_LAYERS = {
-    'hebrew': { name: 'מפה', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom: 19, minZoom: 3, subdomains: 'abc' } },
+    'hebrew': { name: 'מפה', url: 'https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', opts: { attribution: '&copy; Google Maps', maxZoom: 20, minZoom: 3, subdomains: '0123' } },
     'satellite': { name: 'לוויין', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, Maxar, Earthstar', maxZoom: 19, minZoom: 3 } },
     'topo': { name: 'טופו', url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, minZoom: 3 } },
     'historic': { name: 'קלאסית', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, National Geographic', maxZoom: 16, minZoom: 3 } }
@@ -13353,7 +13360,7 @@ function sakalBuildTemplate(lat, lng, placeName) {
     mapEl.style.display = '';
     if (sakalCreateMap) { sakalCreateMap.remove(); sakalCreateMap = null; }
     sakalCreateMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(sakalCreateMap);
+    L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123', attribution: '&copy; Google Maps' }).addTo(sakalCreateMap);
     L.marker([lat, lng], {
         icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[36,36], iconAnchor:[18,18] })
     }).addTo(sakalCreateMap);
@@ -13657,7 +13664,7 @@ function gedolimOpenDetail(idx) {
         var mapEl = document.getElementById('gedolim-detail-map');
         if (gedolimDetailMap) { gedolimDetailMap.remove(); gedolimDetailMap = null; }
         gedolimDetailMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([31.5, 35.0], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(gedolimDetailMap);
+        L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123', attribution: '&copy; Google Maps' }).addTo(gedolimDetailMap);
 
         var bounds = [];
         f.stations.forEach(function(st, i) {
