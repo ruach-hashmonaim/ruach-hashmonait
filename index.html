@@ -1234,6 +1234,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="geo-cat-btn" onclick="filterGeoCategory('nature')">🌿 טבע ונוף</button>
         <button class="geo-cat-btn" onclick="filterGeoCategory('tanach')">📜 מקומות תנ״כיים</button>
     </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;" id="geo-raster-bar">
+        <button class="geo-tab active" onclick="geoSwitchRaster('hebrew',this)">🗺️ מפה</button>
+        <button class="geo-tab" onclick="geoSwitchRaster('satellite',this)">🛰️ לוויין</button>
+        <button class="geo-tab" onclick="geoSwitchRaster('topo',this)">⛰️ טופו</button>
+        <button class="geo-tab" onclick="geoSwitchRaster('terrain',this)">🏔️ שטח</button>
+    </div>
     <div class="card" style="padding:0;overflow:hidden;"><div id="geo-map"></div></div>
     <div class="card geo-results" id="geo-results-container" style="display:none;">
         <div class="card-title"><div class="icon">📌</div> אתרים בקרבת מקום</div>
@@ -11183,6 +11189,13 @@ async function adminDeleteLesson(lessonId) {
 // ============================================================
 let geoMap = null; let geoMarkers = []; let geoUserMarker = null; let geoCircle = null;
 let geoCurrentMode = 'location'; let geoCurrentCategory = 'all';
+let geoCurrentLayer = null;
+const GEO_TILE_LAYERS = {
+    'hebrew': { name: 'עברית (OSM)', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; OpenStreetMap', maxZoom: 19 }, transformUrl: function(z,x,y){ return 'https://tile.openstreetmap.org/' + z + '/' + x + '/' + y + '.png'; } },
+    'satellite': { name: 'לוויין', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri', maxZoom: 18 } },
+    'topo': { name: 'טופוגרפית', url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; OpenTopoMap', maxZoom: 17 } },
+    'terrain': { name: 'שטח', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri', maxZoom: 18 } }
+};
 
 const GEO_SITES = [
     {name:'הכותל המערבי',lat:31.7767,lng:35.2345,cat:'holy',icon:'🕍',desc:'שריד בית המקדש — המקום הקדוש ביותר ליהודים'},
@@ -11251,9 +11264,21 @@ function initGeoMap() {
         setTimeout(initGeoMap, 500); return;
     }
     geoMap = L.map('geo-map', { zoomControl: true }).setView([31.7767, 35.2345], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap', maxZoom:18 }).addTo(geoMap);
+    // Default: Hebrew OSM
+    geoSetTileLayer('hebrew');
     showAllSitesOnMap();
-    setTimeout(() => geoMap.invalidateSize(), 200);
+    setTimeout(function() { geoMap.invalidateSize(); }, 200);
+}
+function geoSetTileLayer(key) {
+    var info = GEO_TILE_LAYERS[key];
+    if (!info || !geoMap) return;
+    if (geoCurrentLayer) geoMap.removeLayer(geoCurrentLayer);
+    geoCurrentLayer = L.tileLayer(info.url, info.opts).addTo(geoMap);
+}
+function geoSwitchRaster(key, btn) {
+    geoSetTileLayer(key);
+    document.querySelectorAll('#geo-raster-bar .geo-tab').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
 }
 
 function showAllSitesOnMap() {
@@ -11281,17 +11306,20 @@ function setGeoMode(mode) {
     document.getElementById('geo-mode-search').style.display = mode === 'search' ? '' : 'none';
     document.getElementById('geo-mode-mapquiz').style.display = mode === 'mapquiz' ? '' : 'none';
     // Hide map and categories when in quiz mode
-    const mapCard = document.querySelector('#page-geography .card[style*="padding:0"]') || document.getElementById('geo-map').parentElement;
+    const mapCard = document.getElementById('geo-map') ? document.getElementById('geo-map').parentElement : null;
     const catFilter = document.getElementById('geo-categories');
     const resultsContainer = document.getElementById('geo-results-container');
+    const rasterBar = document.getElementById('geo-raster-bar');
     if (mode === 'mapquiz') {
         if (mapCard) mapCard.style.display = 'none';
         if (catFilter) catFilter.style.display = 'none';
         if (resultsContainer) resultsContainer.style.display = 'none';
+        if (rasterBar) rasterBar.style.display = 'none';
         mqRenderQuizList();
     } else {
         if (mapCard) mapCard.style.display = '';
         if (catFilter) catFilter.style.display = '';
+        if (rasterBar) rasterBar.style.display = '';
         initGeoMap();
     }
 }
