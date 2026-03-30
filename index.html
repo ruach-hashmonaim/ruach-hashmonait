@@ -1204,26 +1204,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <div class="page-section" id="page-geography">
     <div class="card">
         <div class="card-title"><div class="icon">🗺️</div> בעקבות הנצח</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">מפת ארץ ישראל — אתרים היסטוריים, מקומות קדושים ומקורות תורניים. חפש לפי מיקום או שם מקום.</p>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">מפת ארץ ישראל — אתרים היסטוריים, מקומות קדושים ומקורות תורניים.</p>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-            <button class="geo-tab active" id="geo-tab-location" onclick="setGeoMode('location')">📍 המיקום שלי</button>
-            <button class="geo-tab" id="geo-tab-search" onclick="setGeoMode('search')">🔍 חיפוש מקום</button>
-            <button class="geo-tab" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מפה אילמת</button>
+            <button class="geo-tab active" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מפה אילמת</button>
             <button class="geo-tab" id="geo-tab-sakal" onclick="setGeoMode('sakal')">📋 תבנית נוף הכשרתו</button>
-        </div>
-        <div id="geo-mode-location">
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <button class="btn-primary btn-sm" onclick="getMyLocation()" id="btn-geolocate">📍 אתר את המיקום שלי</button>
-                <span id="geo-location-status" style="font-size:0.82rem;color:var(--text-secondary);"></span>
-            </div>
-            <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:6px;">יוצגו אתרים ברדיוס של 1 ק״מ מהמיקום שלך</p>
-        </div>
-        <div id="geo-mode-search" style="display:none;">
-            <div class="geo-search-box">
-                <input type="text" id="geo-search-input" placeholder="הזן שם מקום... (לדוגמא: ירושלים, מצדה, חברון)" onkeydown="if(event.key==='Enter')searchPlace()">
-                <button class="btn-primary btn-sm" onclick="searchPlace()">חפש</button>
-            </div>
-            <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:6px;">יוצגו אתרים ברדיוס של 2 ק״מ מהמקום שחיפשת</p>
+            <button class="geo-tab" id="geo-tab-gedolim" onclick="setGeoMode('gedolim')">🌟 גדולי האומה</button>
         </div>
         <!-- Map Quiz Mode -->
         <div id="geo-mode-mapquiz" style="display:none;">
@@ -1260,7 +1245,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 </div>
                 <h3 id="sakal-detail-title" style="text-align:center;margin-bottom:4px;color:var(--primary);"></h3>
                 <p id="sakal-detail-subtitle" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></p>
-                <div id="sakal-detail-map" style="height:350px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;z-index:0;"></div>
                 <div id="sakal-detail-sections"></div>
                 <div id="sakal-pdf-embed-wrap" style="margin-top:16px;">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'; this.querySelector('.sakal-chevron').textContent=this.nextElementSibling.style.display==='none'?'◀':'▼'">
@@ -1289,6 +1273,21 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <div id="sakal-create-status" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></div>
                 <div id="sakal-create-map" style="height:300px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;display:none;z-index:0;"></div>
                 <div id="sakal-create-template" style="display:none;"></div>
+            </div>
+        </div>
+        <!-- ====== תחנות בחייהם של גדולי האומה ====== -->
+        <div id="geo-mode-gedolim" style="display:none;">
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">בחר דמות מגדולי האומה — וגלה את המקומות בהם פעלו, חיו ועיצבו את ההיסטוריה של עם ישראל.</p>
+            <div id="gedolim-category-tabs" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
+            <div id="gedolim-figures-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px;"></div>
+            <div id="gedolim-detail" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <button class="btn-primary btn-sm" onclick="gedolimBackToList()" style="font-size:0.8rem;">← חזרה לרשימה</button>
+                </div>
+                <h3 id="gedolim-detail-title" style="text-align:center;margin-bottom:4px;color:var(--primary);"></h3>
+                <p id="gedolim-detail-subtitle" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></p>
+                <div id="gedolim-detail-map" style="height:400px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;z-index:0;"></div>
+                <div id="gedolim-detail-stations"></div>
             </div>
         </div>
     </div>
@@ -11411,25 +11410,20 @@ function clearGeoMarkers() {
 }
 function setGeoMode(mode) {
     geoCurrentMode = mode;
-    document.getElementById('geo-tab-location').classList.toggle('active', mode === 'location');
-    document.getElementById('geo-tab-search').classList.toggle('active', mode === 'search');
     document.getElementById('geo-tab-mapquiz').classList.toggle('active', mode === 'mapquiz');
     document.getElementById('geo-tab-sakal').classList.toggle('active', mode === 'sakal');
-    document.getElementById('geo-mode-location').style.display = mode === 'location' ? '' : 'none';
-    document.getElementById('geo-mode-search').style.display = mode === 'search' ? '' : 'none';
+    document.getElementById('geo-tab-gedolim').classList.toggle('active', mode === 'gedolim');
     document.getElementById('geo-mode-mapquiz').style.display = mode === 'mapquiz' ? '' : 'none';
     document.getElementById('geo-mode-sakal').style.display = mode === 'sakal' ? '' : 'none';
-    // Hide map section when in quiz or sakal mode
+    document.getElementById('geo-mode-gedolim').style.display = mode === 'gedolim' ? '' : 'none';
     var mapSection = document.getElementById('geo-map-section');
+    if (mapSection) mapSection.style.display = 'none';
     if (mode === 'mapquiz') {
-        if (mapSection) mapSection.style.display = 'none';
         mqRenderQuizList();
     } else if (mode === 'sakal') {
-        if (mapSection) mapSection.style.display = 'none';
         sakalRenderList();
-    } else {
-        if (mapSection) mapSection.style.display = '';
-        initGeoMap();
+    } else if (mode === 'gedolim') {
+        gedolimRenderList();
     }
 }
 function filterGeoCategory(cat) {
@@ -12691,38 +12685,6 @@ function sakalOpenDetail(idx) {
 
     // PDF embed
     document.getElementById('sakal-pdf-iframe').src = s.pdfUrl;
-
-    // Initialize map
-    setTimeout(function() {
-        var mapEl = document.getElementById('sakal-detail-map');
-        if (sakalDetailMap) { sakalDetailMap.remove(); sakalDetailMap = null; }
-        sakalDetailMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView(s.center, s.zoom || 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(sakalDetailMap);
-
-        // Add location markers
-        var bounds = [];
-        s.locations.forEach(function(loc) {
-            var marker = L.marker([loc.lat, loc.lng], {
-                icon: L.divIcon({
-                    className: 'sakal-marker',
-                    html: '<div style="background:'+loc.color+';color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">'+loc.icon+'</div>',
-                    iconSize: [32, 32], iconAnchor: [16, 16]
-                })
-            }).addTo(sakalDetailMap);
-            marker.bindPopup('<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px;"><b style="color:'+loc.color+';">'+loc.name+'</b><br><span style="font-size:0.82rem;color:#555;">'+loc.desc+'</span></div>');
-            bounds.push([loc.lat, loc.lng]);
-        });
-
-        // Add routes
-        if (s.routes && s.routes.length > 0) {
-            s.routes.forEach(function(route) {
-                L.polyline(route.points, { color: route.color, weight: 3, opacity: 0.8, dashArray: '8,6' }).addTo(sakalDetailMap);
-            });
-        }
-
-        if (bounds.length > 0) sakalDetailMap.fitBounds(bounds, { padding: [30, 30] });
-        setTimeout(function() { try { sakalDetailMap.invalidateSize(); } catch(e) {} }, 300);
-    }, 100);
 }
 
 function sakalBackToList() {
@@ -12857,6 +12819,267 @@ function sakalBuildTemplate(lat, lng, placeName) {
     '</div>';
 
     setTimeout(function() { try { sakalCreateMap.invalidateSize(); } catch(e) {} }, 300);
+}
+
+// ============================================================
+// תחנות בחייהם של גדולי האומה
+// ============================================================
+
+var GEDOLIM_CATEGORIES = [
+    { id: 'tanach_early', name: 'מאדם הראשון עד האבות', icon: '🌍' },
+    { id: 'avot', name: 'האבות והאמהות', icon: '⛺' },
+    { id: 'prophets', name: 'נביאים', icon: '📜' },
+    { id: 'kings', name: 'מלכים', icon: '👑' },
+    { id: 'second_temple', name: 'בית שני וחשמונאים', icon: '🕎' },
+    { id: 'tanaim', name: 'תנאים', icon: '📖' },
+    { id: 'amoraim', name: 'אמוראים', icon: '📚' },
+    { id: 'rishonim', name: 'ראשונים', icon: '🏛️' },
+    { id: 'achronim', name: 'אחרונים', icon: '✡️' },
+    { id: 'modern', name: 'גיבורי העת החדשה', icon: '🇮🇱' }
+];
+
+var GEDOLIM_FIGURES = [
+    { id: 'adam', name: 'אדם הראשון', category: 'tanach_early', years: 'בריאת העולם', icon: '🌍',
+      stations: [
+        { name: 'גן עדן', lat: 31.778, lng: 35.235, desc: 'מקום הבריאה — "וַיִּטַּע ה\' אֱלֹהִים גַּן בְּעֵדֶן מִקֶּדֶם"', icon: '🌳', color: '#2E7D32' },
+        { name: 'הר המוריה', lat: 31.778, lng: 35.235, desc: 'לפי המדרש, אדם הראשון נברא מעפר מקום המזבח בהר המוריה', icon: '⛰️', color: '#795548' },
+        { name: 'חברון', lat: 31.524, lng: 35.111, desc: 'מערת המכפלה — מקום קבורתו של אדם הראשון לפי המסורת', icon: '🪦', color: '#4A148C' }
+      ]
+    },
+    { id: 'noach', name: 'נח', category: 'tanach_early', years: '1056-2006 לבריאה', icon: '🌊',
+      stations: [
+        { name: 'הר אררט', lat: 39.702, lng: 44.298, desc: '"וַתָּנַח הַתֵּבָה... עַל הָרֵי אֲרָרָט" — מקום נחיתת התיבה', icon: '⛰️', color: '#5D4037' },
+        { name: 'בבל', lat: 32.542, lng: 44.421, desc: 'מגדל בבל — דור הפלגה, תחילת פיזור האנושות', icon: '🏗️', color: '#B71C1C' }
+      ]
+    },
+    { id: 'avraham', name: 'אברהם אבינו', category: 'avot', years: '1948-2123 לבריאה', icon: '⛺',
+      stations: [
+        { name: 'אור כשדים', lat: 30.963, lng: 46.103, desc: '"לֶךְ לְךָ מֵאַרְצְךָ" — מוצאו של אברהם, ממנה יצא בציווי ה\'', icon: '🔥', color: '#B71C1C' },
+        { name: 'חרן', lat: 36.864, lng: 39.029, desc: 'תחנת ביניים — "וַיֵּצְאוּ לָלֶכֶת אַרְצָה כְּנַעַן" — כאן נפטר תרח אביו', icon: '🏚️', color: '#795548' },
+        { name: 'שכם — אלון מורה', lat: 32.213, lng: 35.285, desc: '"עַד מְקוֹם שְׁכֶם עַד אֵלוֹן מוֹרֶה" — תחנה ראשונה בארץ כנען', icon: '🌳', color: '#2E7D32' },
+        { name: 'בית אל', lat: 31.943, lng: 35.220, desc: '"וַיַּעְתֵּק מִשָּׁם הָהָרָה מִקֶּדֶם לְבֵית אֵל" — בנה מזבח', icon: '⛰️', color: '#1565C0' },
+        { name: 'מצרים', lat: 30.044, lng: 31.235, desc: 'ירידה למצרים בשל רעב — "וַיְהִי רָעָב בָּאָרֶץ"', icon: '🏛️', color: '#E65100' },
+        { name: 'באר שבע', lat: 31.252, lng: 34.791, desc: '"וַיִּטַּע אֶשֶׁל בִּבְאֵר שָׁבַע" — מרכז חייו בנגב', icon: '💧', color: '#0D47A1' },
+        { name: 'חברון — אלוני ממרא', lat: 31.524, lng: 35.111, desc: '"וַיָּבֹא אַבְרָם וַיֵּשֶׁב בְּאֵלֹנֵי מַמְרֵא" — הכנסת אורחים', icon: '⛺', color: '#4A148C' },
+        { name: 'הר המוריה', lat: 31.778, lng: 35.235, desc: 'עקידת יצחק — "לֶךְ לְךָ אֶל אֶרֶץ הַמֹּרִיָּה"', icon: '🔥', color: '#D32F2F' }
+      ]
+    },
+    { id: 'sarah', name: 'שרה אימנו', category: 'avot', years: '1958-2085 לבריאה', icon: '👑',
+      stations: [
+        { name: 'אור כשדים', lat: 30.963, lng: 46.103, desc: 'מוצאה — יצאה יחד עם אברהם', icon: '🔥', color: '#B71C1C' },
+        { name: 'מצרים', lat: 30.044, lng: 31.235, desc: '"אִמְרִי נָא אֲחֹתִי אָתְּ" — ניסיון פרעה', icon: '🏛️', color: '#E65100' },
+        { name: 'חברון — קרית ארבע', lat: 31.524, lng: 35.111, desc: '"וַתָּמָת שָׂרָה בְּקִרְיַת אַרְבַּע" — מערת המכפלה', icon: '🪦', color: '#4A148C' }
+      ]
+    },
+    { id: 'yitzchak', name: 'יצחק אבינו', category: 'avot', years: '2048-2228 לבריאה', icon: '💧',
+      stations: [
+        { name: 'הר המוריה', lat: 31.778, lng: 35.235, desc: 'עקידת יצחק — "וַיַּעֲלֵהוּ לְעֹלָה"', icon: '🔥', color: '#D32F2F' },
+        { name: 'באר לחי רואי', lat: 30.960, lng: 34.700, desc: '"וְיִצְחָק בָּא מִבּוֹא בְּאֵר לַחַי רֹאִי" — מקום מגוריו', icon: '💧', color: '#0277BD' },
+        { name: 'גרר', lat: 31.390, lng: 34.470, desc: '"וַיֵּלֶךְ יִצְחָק אֶל אֲבִימֶלֶךְ... גְּרָרָה" — חפירת בארות', icon: '🌾', color: '#BF360C' },
+        { name: 'באר שבע', lat: 31.252, lng: 34.791, desc: '"וַיִּקְרָא אֹתָהּ שִׁבְעָה" — שבועות וברכות', icon: '💧', color: '#0D47A1' },
+        { name: 'חברון', lat: 31.524, lng: 35.111, desc: 'מערת המכפלה — מקום קבורתו', icon: '🪦', color: '#4A148C' }
+      ]
+    },
+    { id: 'yaakov', name: 'יעקב אבינו', category: 'avot', years: '2108-2255 לבריאה', icon: '⭐',
+      stations: [
+        { name: 'באר שבע', lat: 31.252, lng: 34.791, desc: '"וַיֵּצֵא יַעֲקֹב מִבְּאֵר שָׁבַע" — תחילת המסע לחרן', icon: '🏠', color: '#0D47A1' },
+        { name: 'בית אל', lat: 31.943, lng: 35.220, desc: 'חלום הסולם — "וַיִּקְרָא אֶת שֵׁם הַמָּקוֹם הַהוּא בֵּית אֵל"', icon: '🪜', color: '#4A148C' },
+        { name: 'חרן', lat: 36.864, lng: 39.029, desc: '20 שנה אצל לבן — נשא את רחל ולאה, בנה את שבטי ישראל', icon: '🏚️', color: '#795548' },
+        { name: 'מעבר יבוק', lat: 32.205, lng: 35.655, desc: '"וַיֵּאָבֵק אִישׁ עִמּוֹ" — מאבק עם המלאך, שינוי שם לישראל', icon: '🌊', color: '#0277BD' },
+        { name: 'שכם', lat: 32.213, lng: 35.285, desc: 'מעשה דינה ושמעון ולוי', icon: '⚔️', color: '#B71C1C' },
+        { name: 'חברון', lat: 31.524, lng: 35.111, desc: '"וַיָּבֹא יַעֲקֹב אֶל יִצְחָק אָבִיו מַמְרֵא" — חזרה הביתה', icon: '⛺', color: '#2E7D32' },
+        { name: 'מצרים — גושן', lat: 30.900, lng: 31.800, desc: '"וַיִּשְׁלַח אֶת יְהוּדָה לְפָנָיו... גֹּשְׁנָה" — ירד למצרים', icon: '🏛️', color: '#E65100' }
+      ]
+    },
+    { id: 'moshe', name: 'משה רבינו', category: 'prophets', years: '2368-2488 לבריאה', icon: '📜',
+      stations: [
+        { name: 'מצרים', lat: 30.044, lng: 31.235, desc: 'נולד ונתגלה בתיבה ע"י בת פרעה, גדל בבית פרעה', icon: '🏛️', color: '#E65100' },
+        { name: 'מדין', lat: 28.750, lng: 36.500, desc: '"וַיֵּשֶׁב בְּאֶרֶץ מִדְיָן" — נשא את ציפורה', icon: '🐑', color: '#795548' },
+        { name: 'הר סיני', lat: 28.539, lng: 33.975, desc: 'מתן תורה — "וַיִּתֵּן אֶל מֹשֶׁה... שְׁנֵי לֻחֹת הָעֵדֻת"', icon: '🔥', color: '#D32F2F' },
+        { name: 'קדש ברנע', lat: 30.650, lng: 34.400, desc: 'שליחת המרגלים — "שְׁלַח לְךָ אֲנָשִׁים"', icon: '🏜️', color: '#BF360C' },
+        { name: 'הר נבו', lat: 31.767, lng: 35.726, desc: '"עֲלֵה אֶל הַר הָעֲבָרִים" — צפה אל הארץ ונפטר', icon: '⛰️', color: '#4A148C' }
+      ]
+    },
+    { id: 'yehoshua', name: 'יהושע בן נון', category: 'prophets', years: 'כיבוש הארץ', icon: '⚔️',
+      stations: [
+        { name: 'גלגל', lat: 31.850, lng: 35.440, desc: 'מחנה הבסיס הראשון — הקמת 12 אבנים אחרי חציית הירדן', icon: '🪨', color: '#795548' },
+        { name: 'יריחו', lat: 31.871, lng: 35.444, desc: '"וַתִּפֹּל הַחוֹמָה תַּחְתֶּיהָ" — כיבוש יריחו', icon: '🏰', color: '#B71C1C' },
+        { name: 'העי', lat: 31.920, lng: 35.260, desc: 'קרב העי — לאחר חטא עכן, כיבוש בתחבולה', icon: '⚔️', color: '#E65100' },
+        { name: 'הר עיבל', lat: 32.230, lng: 35.280, desc: 'ברכות וקללות — "אֶת הַבְּרָכָה עַל הַר גְּרִזִּים"', icon: '📜', color: '#1565C0' },
+        { name: 'גבעון', lat: 31.849, lng: 35.184, desc: '"שֶׁמֶשׁ בְּגִבְעוֹן דּוֹם" — קרב גבעון ועמק אילון', icon: '☀️', color: '#F57F17' },
+        { name: 'תמנת סרח', lat: 32.100, lng: 35.190, desc: 'נחלתו ומקום קבורתו — בהר אפרים', icon: '🪦', color: '#2E7D32' }
+      ]
+    },
+    { id: 'david', name: 'דוד המלך', category: 'kings', years: '2854-2924 לבריאה', icon: '👑',
+      stations: [
+        { name: 'בית לחם', lat: 31.704, lng: 35.206, desc: '"מִלֵּא קַרְנְךָ שֶׁמֶן וָלֵךְ... אֶל יִשַׁי בֵּית הַלַּחְמִי" — נמשח', icon: '🏠', color: '#795548' },
+        { name: 'עמק האלה', lat: 31.695, lng: 34.956, desc: 'הכרעת גולית — "בְּשֵׁם ה\' צְבָאוֹת אֱלֹהֵי מַעַרְכוֹת יִשְׂרָאֵל"', icon: '⚔️', color: '#B71C1C' },
+        { name: 'מדבר יהודה', lat: 31.500, lng: 35.250, desc: 'בריחה מפני שאול — עין גדי, מצדה, מדבר מעון', icon: '🏜️', color: '#BF360C' },
+        { name: 'חברון', lat: 31.524, lng: 35.111, desc: 'מלך על יהודה 7 שנים — "וַיִּמְלֹךְ בְּחֶבְרוֹן"', icon: '👑', color: '#4A148C' },
+        { name: 'ירושלים — עיר דוד', lat: 31.774, lng: 35.235, desc: 'כיבוש ירושלים — בירת ממלכת ישראל, העלאת הארון', icon: '🕍', color: '#0D47A1' }
+      ]
+    },
+    { id: 'shlomo', name: 'שלמה המלך', category: 'kings', years: '2924-2964 לבריאה', icon: '🏛️',
+      stations: [
+        { name: 'גבעון', lat: 31.849, lng: 35.184, desc: '"בְּגִבְעוֹן נִרְאָה ה\' אֶל שְׁלֹמֹה בַּחֲלוֹם" — בקשת החכמה', icon: '💡', color: '#F57F17' },
+        { name: 'ירושלים — בית המקדש', lat: 31.778, lng: 35.235, desc: 'בניית בית המקדש הראשון — "וַיִּבֶן שְׁלֹמֹה אֶת הַבַּיִת"', icon: '🕍', color: '#0D47A1' },
+        { name: 'חצור', lat: 33.017, lng: 35.568, desc: 'אחת מערי שלמה — ביצורים וערי מרכבות', icon: '🏰', color: '#795548' },
+        { name: 'מגידו', lat: 32.585, lng: 35.184, desc: 'עיר מרכבות שלמה — ביצורים ושערים', icon: '🐎', color: '#E65100' }
+      ]
+    },
+    { id: 'eliyahu', name: 'אליהו הנביא', category: 'prophets', years: 'תקופת בית ראשון', icon: '🔥',
+      stations: [
+        { name: 'גלעד', lat: 32.350, lng: 35.700, desc: '"אֵלִיָּהוּ הַתִּשְׁבִּי מִתֹּשָׁבֵי גִלְעָד" — מוצאו', icon: '🏔️', color: '#795548' },
+        { name: 'נחל כרית', lat: 32.200, lng: 35.500, desc: '"וְהָעֹרְבִים מְבִיאִים לוֹ לֶחֶם וּבָשָׂר" — ניזון בנס', icon: '🐦', color: '#0277BD' },
+        { name: 'הר הכרמל', lat: 32.735, lng: 34.980, desc: 'מעמד הר הכרמל — "ה\' הוּא הָאֱלֹהִים" — 450 נביאי הבעל', icon: '🔥', color: '#D32F2F' },
+        { name: 'באר שבע', lat: 31.252, lng: 34.791, desc: 'בריחה מאיזבל — "וַיֵּלֶךְ אֶל נַפְשׁוֹ" — 40 יום עד חורב', icon: '🏜️', color: '#BF360C' },
+        { name: 'הר חורב', lat: 28.539, lng: 33.975, desc: '"קוֹל דְּמָמָה דַקָּה" — ההתגלות במערה', icon: '⛰️', color: '#4A148C' }
+      ]
+    },
+    { id: 'yehuda_hamaccabi', name: 'יהודה המכבי', category: 'second_temple', years: '167-160 לפנה"ס', icon: '🕎',
+      stations: [
+        { name: 'מודיעין', lat: 31.893, lng: 35.013, desc: '"מִי לַה\' אֵלָי" — תחילת המרד', icon: '⚔️', color: '#B71C1C' },
+        { name: 'מעלה לבונה', lat: 31.950, lng: 35.200, desc: 'קרב ראשון — ניצחון על אפולוניוס', icon: '🗡️', color: '#E65100' },
+        { name: 'בית חורון', lat: 31.880, lng: 35.140, desc: 'קרב בית חורון — ניצחון על סרון', icon: '⚔️', color: '#D32F2F' },
+        { name: 'אמאוס', lat: 31.839, lng: 34.988, desc: 'קרב אמאוס — ניצחון מבריק על גורגיאס', icon: '🏆', color: '#2E7D32' },
+        { name: 'ירושלים — בית המקדש', lat: 31.778, lng: 35.235, desc: 'חנוכת המקדש — "ביום כ"ה בכסלו" — חג החנוכה', icon: '🕎', color: '#F57F17' }
+      ]
+    },
+    { id: 'rabi_akiva', name: 'רבי עקיבא', category: 'tanaim', years: '50-135 לספירה', icon: '📖',
+      stations: [
+        { name: 'לוד', lat: 31.951, lng: 34.889, desc: 'מקום לימודו הראשון — התחיל ללמוד תורה בגיל 40', icon: '📖', color: '#1565C0' },
+        { name: 'בני ברק', lat: 32.084, lng: 34.833, desc: 'ישיבתו — "וכולם היו מסובין בבני ברק" (הגדה של פסח)', icon: '🏛️', color: '#4A148C' },
+        { name: 'טבריה', lat: 32.795, lng: 35.530, desc: 'מרכז התורה — חבריו ר\' אלעזר, ר\' יהושע', icon: '📚', color: '#2E7D32' },
+        { name: 'קיסריה', lat: 32.500, lng: 34.890, desc: '"שמע ישראל" — הוצאתו להורג ע"י הרומאים', icon: '🪦', color: '#B71C1C' }
+      ]
+    },
+    { id: 'rambam', name: 'הרמב"ם', category: 'rishonim', years: '1138-1204', icon: '🏛️',
+      stations: [
+        { name: 'קורדובה, ספרד', lat: 37.888, lng: -4.779, desc: 'נולד — בתקופה הזהב של יהדות ספרד', icon: '🌍', color: '#795548' },
+        { name: 'פס, מרוקו', lat: 34.033, lng: -5.000, desc: 'למד תורה וכתב איגרת השמד', icon: '📖', color: '#1565C0' },
+        { name: 'ארץ ישראל — עכו', lat: 32.925, lng: 35.068, desc: '"ו-ט\' בחשון... הגעתי לעכו" — ביקור בארץ', icon: '🕍', color: '#0D47A1' },
+        { name: 'ירושלים — הר הבית', lat: 31.778, lng: 35.235, desc: 'התפלל בהר הבית — קבע יום זה ליום טוב', icon: '🙏', color: '#F57F17' },
+        { name: 'חברון — מערת המכפלה', lat: 31.524, lng: 35.111, desc: 'התפלל במערת המכפלה', icon: '🕍', color: '#4A148C' },
+        { name: 'מצרים — קהיר', lat: 30.044, lng: 31.235, desc: 'רופא החצר, מנהיג הקהילה, כתב משנה תורה ומורה נבוכים', icon: '📜', color: '#E65100' },
+        { name: 'טבריה', lat: 32.795, lng: 35.530, desc: 'מקום קבורתו — על שפת הכנרת', icon: '🪦', color: '#2E7D32' }
+      ]
+    },
+    { id: 'arizal', name: 'האר"י הקדוש', category: 'achronim', years: '1534-1572', icon: '✡️',
+      stations: [
+        { name: 'ירושלים', lat: 31.778, lng: 35.235, desc: 'נולד בירושלים', icon: '🏠', color: '#0D47A1' },
+        { name: 'מצרים — קהיר', lat: 30.044, lng: 31.235, desc: 'גדל ולמד תורה במצרים', icon: '📖', color: '#E65100' },
+        { name: 'צפת', lat: 32.966, lng: 35.496, desc: 'מרכז הקבלה — לימד את תורת הסוד, בית הכנסת האר"י', icon: '✡️', color: '#4A148C' },
+        { name: 'מירון', lat: 32.997, lng: 35.441, desc: 'עלייה לקבר רשב"י — מסורת ל"ג בעומר', icon: '🔥', color: '#D32F2F' }
+      ]
+    },
+    { id: 'baal_shem_tov', name: 'הבעל שם טוב', category: 'achronim', years: '1698-1760', icon: '💫',
+      stations: [
+        { name: 'אוקופ, אוקראינה', lat: 48.683, lng: 26.066, desc: 'נולד בעיירה קטנה בפודוליה', icon: '🏠', color: '#795548' },
+        { name: 'מעז\'יבוז\', אוקראינה', lat: 49.272, lng: 27.075, desc: 'מרכז פעילותו — ייסד את תנועת החסידות', icon: '✡️', color: '#4A148C' },
+        { name: 'ארץ ישראל', lat: 31.778, lng: 35.235, desc: 'ניסה לעלות לארץ ישראל ולא הצליח — "כשיפוצו מעיינותיך חוצה"', icon: '🕍', color: '#0D47A1' }
+      ]
+    },
+    { id: 'vilna_gaon', name: 'הגאון מוילנא', category: 'achronim', years: '1720-1797', icon: '📚',
+      stations: [
+        { name: 'וילנה, ליטא', lat: 54.687, lng: 25.280, desc: '"ירושלים דליטא" — מרכז תורה, בית מדרשו של הגר"א', icon: '📚', color: '#1565C0' },
+        { name: 'ארץ ישראל', lat: 31.778, lng: 35.235, desc: 'ניסה לעלות לארץ ישראל — תלמידיו עלו ב-1808', icon: '🕍', color: '#0D47A1' }
+      ]
+    },
+    { id: 'rav_kook', name: 'הרב קוק', category: 'modern', years: '1865-1935', icon: '🇮🇱',
+      stations: [
+        { name: 'גריבה, לטביה', lat: 56.947, lng: 24.318, desc: 'נולד — למד בוולוז\'ין', icon: '🏠', color: '#795548' },
+        { name: 'יפו', lat: 32.053, lng: 34.750, desc: 'רב העיר יפו — החל את פועלו בארץ ישראל', icon: '📜', color: '#1565C0' },
+        { name: 'ירושלים', lat: 31.778, lng: 35.235, desc: 'הרב הראשי לארץ ישראל — ייסד ישיבת מרכז הרב', icon: '🕍', color: '#0D47A1' }
+      ]
+    }
+];
+
+var gedolimDetailMap = null;
+var gedolimCurrentCategory = null;
+
+function gedolimRenderList() {
+    var catTabs = document.getElementById('gedolim-category-tabs');
+    var grid = document.getElementById('gedolim-figures-grid');
+    document.getElementById('gedolim-detail').style.display = 'none';
+
+    catTabs.innerHTML = '<button class="btn-primary btn-sm" style="font-size:0.78rem;'+(gedolimCurrentCategory===null?'':'background:var(--bg-secondary);color:var(--text-primary);')+'" onclick="gedolimCurrentCategory=null;gedolimRenderList();">הכל</button>' +
+        GEDOLIM_CATEGORIES.map(function(c) {
+            var isActive = gedolimCurrentCategory === c.id;
+            return '<button class="btn-primary btn-sm" style="font-size:0.78rem;'+(isActive?'':'background:var(--bg-secondary);color:var(--text-primary);')+'" onclick="gedolimCurrentCategory=\''+c.id+'\';gedolimRenderList();">'+c.icon+' '+c.name+'</button>';
+        }).join('');
+
+    var filtered = gedolimCurrentCategory
+        ? GEDOLIM_FIGURES.filter(function(f) { return f.category === gedolimCurrentCategory; })
+        : GEDOLIM_FIGURES;
+
+    grid.innerHTML = filtered.map(function(f) {
+        var idx = GEDOLIM_FIGURES.indexOf(f);
+        return '<div onclick="gedolimOpenDetail('+idx+')" style="cursor:pointer;background:var(--bg-secondary);border-radius:12px;padding:14px;text-align:center;transition:transform 0.2s,border-color 0.2s;border:2px solid transparent;" onmouseover="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-3px)\'" onmouseout="this.style.borderColor=\'transparent\';this.style.transform=\'\'">' +
+            '<div style="font-size:2rem;margin-bottom:6px;">'+f.icon+'</div>' +
+            '<div style="font-weight:700;font-size:0.88rem;color:var(--text-primary);">'+f.name+'</div>' +
+            '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">'+f.years+'</div>' +
+            '<div style="font-size:0.7rem;color:var(--primary);margin-top:4px;">'+f.stations.length+' תחנות</div>' +
+        '</div>';
+    }).join('');
+}
+
+function gedolimOpenDetail(idx) {
+    var f = GEDOLIM_FIGURES[idx];
+    if (!f) return;
+    document.getElementById('gedolim-category-tabs').style.display = 'none';
+    document.getElementById('gedolim-figures-grid').style.display = 'none';
+    document.getElementById('gedolim-detail').style.display = '';
+
+    document.getElementById('gedolim-detail-title').textContent = f.icon + ' ' + f.name;
+    document.getElementById('gedolim-detail-subtitle').textContent = f.years;
+
+    // Render stations list
+    var stationsHtml = f.stations.map(function(st, i) {
+        return '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;padding:12px;background:var(--bg-secondary);border-radius:10px;border-right:4px solid '+st.color+';">' +
+            '<div style="background:'+st.color+';color:#fff;border-radius:50%;min-width:36px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2);">'+st.icon+'</div>' +
+            '<div style="flex:1;">' +
+                '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin-bottom:2px;">'+(i+1)+'. '+st.name+'</div>' +
+                '<div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">'+st.desc+'</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+    document.getElementById('gedolim-detail-stations').innerHTML = stationsHtml;
+
+    // Initialize map
+    setTimeout(function() {
+        var mapEl = document.getElementById('gedolim-detail-map');
+        if (gedolimDetailMap) { gedolimDetailMap.remove(); gedolimDetailMap = null; }
+        gedolimDetailMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([31.5, 35.0], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(gedolimDetailMap);
+
+        var bounds = [];
+        f.stations.forEach(function(st, i) {
+            var marker = L.marker([st.lat, st.lng], {
+                icon: L.divIcon({
+                    className: 'gedolim-marker',
+                    html: '<div style="background:'+st.color+';color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-weight:700;">'+(i+1)+'</div>',
+                    iconSize: [32, 32], iconAnchor: [16, 16]
+                })
+            }).addTo(gedolimDetailMap);
+            marker.bindPopup('<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:180px;"><b style="color:'+st.color+';">'+st.icon+' '+st.name+'</b><br><span style="font-size:0.82rem;color:#555;">'+st.desc+'</span></div>');
+            bounds.push([st.lat, st.lng]);
+        });
+
+        // Draw route line
+        if (bounds.length > 1) {
+            L.polyline(bounds, { color: '#1976D2', weight: 3, opacity: 0.7, dashArray: '8,6' }).addTo(gedolimDetailMap);
+        }
+
+        if (bounds.length > 0) gedolimDetailMap.fitBounds(bounds, { padding: [40, 40] });
+        setTimeout(function() { try { gedolimDetailMap.invalidateSize(); } catch(e) {} }, 300);
+    }, 100);
+}
+
+function gedolimBackToList() {
+    document.getElementById('gedolim-detail').style.display = 'none';
+    document.getElementById('gedolim-category-tabs').style.display = '';
+    document.getElementById('gedolim-figures-grid').style.display = '';
+    if (gedolimDetailMap) { gedolimDetailMap.remove(); gedolimDetailMap = null; }
 }
 
 // ============================================================
