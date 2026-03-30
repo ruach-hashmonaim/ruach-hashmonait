@@ -1209,6 +1209,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <button class="geo-tab active" id="geo-tab-location" onclick="setGeoMode('location')">📍 המיקום שלי</button>
             <button class="geo-tab" id="geo-tab-search" onclick="setGeoMode('search')">🔍 חיפוש מקום</button>
             <button class="geo-tab" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מפה אילמת</button>
+            <button class="geo-tab" id="geo-tab-sakal" onclick="setGeoMode('sakal')">📋 תבנית נוף הכשרתו</button>
         </div>
         <div id="geo-mode-location">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -1238,6 +1239,55 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 </div>
                 <div id="mapquiz-question-area"></div>
                 <div id="mapquiz-result" style="display:none;text-align:center;padding:20px;"></div>
+            </div>
+        </div>
+        <!-- ====== תבנית נוף הכשרתו — סק"גים ====== -->
+        <div id="geo-mode-sakal" style="display:none;">
+            <!-- List View -->
+            <div id="sakal-list-view">
+                <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">סקירות גיאוגרפיות (סק"ג) לאזורי מסעות ופעילות — צפה בסק"גים קיימים או צור סק"ג חדש למרחב שלך.</p>
+                <div id="sakal-create-wrap" style="margin-bottom:14px;display:none;">
+                    <button class="btn-primary btn-sm" onclick="sakalStartCreate()" style="font-size:0.85rem;">➕ צור סק"ג חדש</button>
+                </div>
+                <div id="sakal-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+            </div>
+            <!-- Detail View -->
+            <div id="sakal-detail-view" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <button class="btn-primary btn-sm" onclick="sakalBackToList()" style="font-size:0.8rem;">← חזרה לרשימה</button>
+                    <a id="sakal-pdf-download" href="#" target="_blank" class="btn-primary btn-sm" style="font-size:0.8rem;text-decoration:none;background:#E65100;">📥 הורד PDF</a>
+                </div>
+                <h3 id="sakal-detail-title" style="text-align:center;margin-bottom:4px;color:var(--primary);"></h3>
+                <p id="sakal-detail-subtitle" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></p>
+                <div id="sakal-detail-map" style="height:350px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;z-index:0;"></div>
+                <div id="sakal-detail-sections"></div>
+                <div id="sakal-pdf-embed-wrap" style="margin-top:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'; this.querySelector('.sakal-chevron').textContent=this.nextElementSibling.style.display==='none'?'◀':'▼'">
+                        <span class="sakal-chevron" style="font-size:0.8rem;color:var(--primary);">▼</span>
+                        <span style="font-weight:700;color:var(--primary);font-size:0.95rem;">📄 צפייה במסמך המלא</span>
+                    </div>
+                    <div>
+                        <iframe id="sakal-pdf-iframe" style="width:100%;height:600px;border:2px solid var(--border);border-radius:12px;" src=""></iframe>
+                    </div>
+                </div>
+            </div>
+            <!-- Create View -->
+            <div id="sakal-create-view" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <button class="btn-primary btn-sm" onclick="sakalBackToList()" style="font-size:0.8rem;">← חזרה לרשימה</button>
+                </div>
+                <h3 style="text-align:center;margin-bottom:10px;color:var(--primary);">📋 יצירת סק"ג חדש</h3>
+                <p style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">בחר מיקום — הסק"ג ייווצר אוטומטית על בסיס המרחב שנבחר</p>
+                <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
+                    <button class="btn-primary btn-sm" onclick="sakalCreateFromLocation()" id="sakal-create-locate-btn">📍 המיקום שלי</button>
+                    <div style="display:flex;gap:6px;">
+                        <input type="text" id="sakal-create-search" placeholder="חפש מקום..." style="padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;width:180px;" onkeydown="if(event.key==='Enter')sakalCreateFromSearch()">
+                        <button class="btn-primary btn-sm" onclick="sakalCreateFromSearch()">🔍 חפש</button>
+                    </div>
+                </div>
+                <div id="sakal-create-status" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></div>
+                <div id="sakal-create-map" style="height:300px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;display:none;z-index:0;"></div>
+                <div id="sakal-create-template" style="display:none;"></div>
             </div>
         </div>
     </div>
@@ -11363,14 +11413,19 @@ function setGeoMode(mode) {
     document.getElementById('geo-tab-location').classList.toggle('active', mode === 'location');
     document.getElementById('geo-tab-search').classList.toggle('active', mode === 'search');
     document.getElementById('geo-tab-mapquiz').classList.toggle('active', mode === 'mapquiz');
+    document.getElementById('geo-tab-sakal').classList.toggle('active', mode === 'sakal');
     document.getElementById('geo-mode-location').style.display = mode === 'location' ? '' : 'none';
     document.getElementById('geo-mode-search').style.display = mode === 'search' ? '' : 'none';
     document.getElementById('geo-mode-mapquiz').style.display = mode === 'mapquiz' ? '' : 'none';
-    // Hide map section when in quiz mode
+    document.getElementById('geo-mode-sakal').style.display = mode === 'sakal' ? '' : 'none';
+    // Hide map section when in quiz or sakal mode
     var mapSection = document.getElementById('geo-map-section');
     if (mode === 'mapquiz') {
         if (mapSection) mapSection.style.display = 'none';
         mqRenderQuizList();
+    } else if (mode === 'sakal') {
+        if (mapSection) mapSection.style.display = 'none';
+        sakalRenderList();
     } else {
         if (mapSection) mapSection.style.display = '';
         initGeoMap();
@@ -12346,6 +12401,296 @@ function mqShowResults() {
 function mqBackToList() {
     mqCurrentQuiz = null;
     mqRenderQuizList();
+}
+
+// ============================================================
+// תבנית נוף הכשרתו — סק"גים (סקירות גיאוגרפיות)
+// ============================================================
+var sakalDetailMap = null;
+var sakalCreateMap = null;
+
+const SAKAL_SURVEYS = [
+    {
+        id: 'maavar_yabok',
+        title: 'סק"ג מס\' 6 — מסע 7+1 ק"מ',
+        subtitle: 'מסע גבול מזרחי — מעבר יבוק',
+        icon: '🏞️',
+        journey: 'מסע 7+1',
+        difficulty: 'בינוני',
+        pdfUrl: 'https://hamatzpen.io/sakal/sakal-maavar-yabok.pdf',
+        center: [32.20, 35.60],
+        zoom: 12,
+        locations: [
+            { name: 'סוכות', lat: 32.194, lng: 35.567, icon: '🏕️', color: '#2E7D32', desc: 'יישוב ישראלי קדום — מוזכר בבראשית ובשופטים' },
+            { name: 'פנואל', lat: 32.192, lng: 35.640, icon: '⭐', color: '#F57F17', desc: 'מקום מאבק יעקב עם המלאך — "כי ראיתי אלהים פנים אל פנים"' },
+            { name: 'מעבר יבוק', lat: 32.205, lng: 35.655, icon: '🌊', color: '#0277BD', desc: 'מקטע בנחל יבוק דרכו עברה דרך עתיקה — חציית יעקב בלילה' },
+            { name: 'ציר המסע', lat: 32.15, lng: 35.55, icon: '🛤️', color: '#E65100', desc: 'ציר המסע — בין כביש 90 לגדר המערכת' },
+            { name: 'מרחב מפגש יעקב ועשיו', lat: 32.18, lng: 35.58, icon: '🤝', color: '#6A1B9A', desc: 'התקיים בין סוכות לפנואל — "וַיָּרָץ עֵשָׂו לִקְרָאתוֹ"' }
+        ],
+        routes: [
+            { name: 'ציר מסע — כביש 90 לגדר', points: [[32.12, 35.52],[32.15, 35.55],[32.18, 35.58],[32.194, 35.567]], color: '#E65100' },
+            { name: 'מסלול מעבר יבוק', points: [[32.194, 35.567],[32.192, 35.640],[32.205, 35.655]], color: '#0277BD' }
+        ],
+        sections: [
+            {
+                title: '1. רציונל',
+                icon: '🎯',
+                content: '<p>המסעות הרגליים מהווים רכיב חשוב בבניית כשירותו הפיזית-מנטלית של הלוחם. <b>בחטיבת החשמונאים, המסע הרגלי יהווה אמצעי מרכזי לבניית החיבור של הלוחם החשמונאי לארץ ישראל ולאבותינו.</b></p><p>במהלך הכשרת הלוחם החשמונאי, צפוי הלוחם לצעוד במרחבים המחוברים בקשר עמוק להיסטוריה — עלינו המפקדים מוטלת החובה להפנות את תשומת ליבו של הלוחם להיבטים התנ"כיים או ההיסטוריים של עם ישראל אשר מתקיימים במרחב בו אנו נמצאים.</p><p><b>במסע זה חשוב להדגיש ללוחמים כי הם צועדים במרחב בו התקיים מפגש יעקב ועשיו.</b></p>'
+            },
+            {
+                title: '2. מרחב המסע — נחל יבוק ומעבר יבוק',
+                icon: '🏔️',
+                content: '<p>• <b>נחל יבוק</b> הוא נחל הזורם כל ימות השנה (נחל איתן) והוא מנקז את הרי הגלעד מזרחה. תחילת הנחל מצפון מזרח לעמאן (בירת ירדן) וסופו בנהר הירדן — סה"כ 105 ק"מ.</p><p>• נחל היבוק מהווה גבול בין נחלת שבט גד לנחלת חצי שבט המנשה.</p><p>• <b>מעבר יבוק</b> הוא מקטע בנחל אשר מהווה למעשה שטח מדובר במקטע נחל אשר מהווה נחות (שטח השמדה) — דרך עתיקה שחיברה בין חרן לארץ ישראל.</p>'
+            },
+            {
+                title: '3. מעבר יבוק בסיפור חזרתו של יעקב',
+                icon: '📖',
+                content: '<p>• לאחר המפגש של יעקב אבינו עם לבן שהתרחש בהר הגלעד — <b>"וַיַּגֵּד לְלָבָן בַּיּוֹם הַשְּׁלִישִׁי כִּי בָרַח יַעֲקֹב"</b> — באזור שבהמשך יעקב קורא לו חנים.</p><p>• יעקב אבינו ממשיך את המסע לארץ ישראל ובמקביל מבין שעשיו נמצא בדרכו אליו עם צבא של 400 איש.</p><p>• <b>ההערכות למפגש עם עשיו</b> — רש"י על פרשת וישלח מסביר את כיצד נערך יעקב למאבק בעשיו: <b>"הִתְקִין עַצְמוֹ לִשְׁלֹשָׁה דְבָרִים, לְדוֹרוֹן, לִתְפִלָּה וּלְמִלְחָמָה"</b></p><p>• <b>התפילה</b> — בתיאור ההיערכות של יעקב למפגש עם עשיו: פנייה חופשית לתפילה וכיצד לאחר התפילה פעולותיו הופכות להיות מדויקות.</p>'
+            },
+            {
+                title: '4. חציית מעבר יבוק',
+                icon: '🌙',
+                content: '<p>• לאחר שיעקב מסיים את ההערכות למפגש עם עשיו הוא קם באמצע הלילה ויחד עם כל משפחתו חוצה במהירות את מעבר יבוק.</p><p>• יעקב אבינו נמצא בשטח נחות והוא מבין שאם הוא לא יצא במהירות מהשטח — עשיו יוכל לחסות לו בשטחים שעל מוצא הנחל.</p><p>• <b>מאבק יעקב עם המלאך</b> — "וַיִּוָּתֵר יַעֲקֹב לְבַדּוֹ וַיֵּאָבֵק אִישׁ עִמּוֹ עַד עֲלוֹת הַשָּׁחַר" — כפי שמופיע בברכת יעקב ליוסף: "קַשְׁתּוֹ נָצָצ לְרָעֵ יְדוּ מִשָּׁם לְעֵצָה אֶבֶן יִשְׂרָאֵל"</p>'
+            },
+            {
+                title: '5. אתרים נוספים במרחב',
+                icon: '📍',
+                content: '<p><b>פנואל</b> — יישוב ישראלי קדום הנמצא בנחלת שבט גד שבעבר הירדן המזרחי, 8 ק"מ מזרחית ליישוב המקראי סוכות. שמו ניתן ע"י יעקב אבינו מיד לאחר סיום המאבק עם המלאך — <b>"כִּי רָאִיתִי אֱלֹהִים פָּנִים אֶל פָּנִים"</b>. לכל אורך התנ"ך מופיע בהקשר לפנואל ולסוכות.</p><p><b>סוכות</b> — יישוב ישראלי קדום הנמצא בעבר הירדן המזרחי סמוך לנהר הירדן. היישוב מוזכר לראשונה בספר בראשית — <b>"וְיַעֲקֹב נָסַע סֻכֹּתָה וַיִּבֶן לוֹ בַּיִת וּלְמִקְנֵהוּ עָשָׂה סֻכֹּת"</b></p>'
+            },
+            {
+                title: '6. ערכים לציון',
+                icon: '💡',
+                content: '<p><b>1. אחריות</b> — כלל פעולותיו של יעקב אבינו נעשות מתוך אחריות עמוקה למשפחתו ולאנשים שצועדים איתו.</p><p><b>2. מקצועיות</b> — יעקב מתכנן את המפגש עם עשיו לפרטי פרטים תוך התחשבות במאפיינים של המרחב ושל אנשיו.</p><p><b>3. דוגמא אישית</b> — "והוא עבר לפניהם", יעקב אבינו בעמידתו מול עשיו — מראה דוגמא אישית למחנה כולו.</p><p><b>מסיפור המפגש של יעקב ועשיו ניתן ללמוד על כך שעניין המאבק בין ישראל לאומות העולם הוא ברוחניות, בבית המדרש. והתפקיד שלנו בצבא הוא להגן על מקיימי התורה ולומדיה.</b></p>'
+            }
+        ]
+    }
+];
+
+function sakalCanCreate() {
+    if (!currentUser) return false;
+    var role = ROLES[currentUser.role];
+    return role && role.level >= 2;
+}
+
+function sakalRenderList() {
+    var grid = document.getElementById('sakal-cards-grid');
+    var createWrap = document.getElementById('sakal-create-wrap');
+    if (sakalCanCreate()) createWrap.style.display = '';
+    else createWrap.style.display = 'none';
+
+    if (SAKAL_SURVEYS.length === 0) {
+        grid.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">אין סק"גים זמינים כרגע.</p>';
+        return;
+    }
+    grid.innerHTML = SAKAL_SURVEYS.map(function(s, idx) {
+        return '<div class="sakal-card" onclick="sakalOpenDetail('+idx+')" style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.12)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">' +
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+                '<span style="font-size:2rem;">'+s.icon+'</span>' +
+                '<div>' +
+                    '<div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);">'+s.title+'</div>' +
+                    '<div style="font-size:0.82rem;color:var(--text-secondary);">'+s.subtitle+'</div>' +
+                '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">' +
+                '<span style="font-size:0.72rem;background:var(--primary-lighter);color:var(--primary);padding:3px 10px;border-radius:10px;font-weight:600;">'+s.journey+'</span>' +
+                '<span style="font-size:0.72rem;background:#FFF3E0;color:#E65100;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.difficulty+'</span>' +
+                '<span style="font-size:0.72rem;background:#E8F5E9;color:#2E7D32;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.locations.length+' נקודות עניין</span>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function sakalOpenDetail(idx) {
+    var s = SAKAL_SURVEYS[idx];
+    if (!s) return;
+    document.getElementById('sakal-list-view').style.display = 'none';
+    document.getElementById('sakal-create-view').style.display = 'none';
+    document.getElementById('sakal-detail-view').style.display = '';
+
+    document.getElementById('sakal-detail-title').textContent = s.title;
+    document.getElementById('sakal-detail-subtitle').textContent = s.subtitle;
+    document.getElementById('sakal-pdf-download').href = s.pdfUrl;
+
+    // Render sections as accordion
+    var sectionsHtml = s.sections.map(function(sec, i) {
+        return '<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;">' +
+            '<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'\':\'none\'; this.querySelector(\'.sk-chev\').textContent=this.nextElementSibling.style.display===\'none\'?\'◀\':\'▼\'" style="display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;background:var(--bg-secondary);font-weight:700;font-size:0.9rem;color:var(--text-primary);">' +
+                '<span class="sk-chev" style="font-size:0.75rem;color:var(--primary);">'+(i===0?'▼':'◀')+'</span>' +
+                '<span>'+sec.icon+' '+sec.title+'</span>' +
+            '</div>' +
+            '<div style="padding:12px 16px;font-size:0.85rem;line-height:1.7;color:var(--text-primary);direction:rtl;'+(i===0?'':'display:none;')+'">' + sec.content + '</div>' +
+        '</div>';
+    }).join('');
+    document.getElementById('sakal-detail-sections').innerHTML = sectionsHtml;
+
+    // PDF embed
+    document.getElementById('sakal-pdf-iframe').src = s.pdfUrl;
+
+    // Initialize map
+    setTimeout(function() {
+        var mapEl = document.getElementById('sakal-detail-map');
+        if (sakalDetailMap) { sakalDetailMap.remove(); sakalDetailMap = null; }
+        sakalDetailMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView(s.center, s.zoom || 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(sakalDetailMap);
+
+        // Add location markers
+        var bounds = [];
+        s.locations.forEach(function(loc) {
+            var marker = L.marker([loc.lat, loc.lng], {
+                icon: L.divIcon({
+                    className: 'sakal-marker',
+                    html: '<div style="background:'+loc.color+';color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">'+loc.icon+'</div>',
+                    iconSize: [32, 32], iconAnchor: [16, 16]
+                })
+            }).addTo(sakalDetailMap);
+            marker.bindPopup('<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px;"><b style="color:'+loc.color+';">'+loc.name+'</b><br><span style="font-size:0.82rem;color:#555;">'+loc.desc+'</span></div>');
+            bounds.push([loc.lat, loc.lng]);
+        });
+
+        // Add routes
+        if (s.routes && s.routes.length > 0) {
+            s.routes.forEach(function(route) {
+                L.polyline(route.points, { color: route.color, weight: 3, opacity: 0.8, dashArray: '8,6' }).addTo(sakalDetailMap);
+            });
+        }
+
+        if (bounds.length > 0) sakalDetailMap.fitBounds(bounds, { padding: [30, 30] });
+        setTimeout(function() { try { sakalDetailMap.invalidateSize(); } catch(e) {} }, 300);
+    }, 100);
+}
+
+function sakalBackToList() {
+    document.getElementById('sakal-detail-view').style.display = 'none';
+    document.getElementById('sakal-create-view').style.display = 'none';
+    document.getElementById('sakal-list-view').style.display = '';
+    if (sakalDetailMap) { sakalDetailMap.remove(); sakalDetailMap = null; }
+    if (sakalCreateMap) { sakalCreateMap.remove(); sakalCreateMap = null; }
+}
+
+function sakalStartCreate() {
+    document.getElementById('sakal-list-view').style.display = 'none';
+    document.getElementById('sakal-detail-view').style.display = 'none';
+    document.getElementById('sakal-create-view').style.display = '';
+    document.getElementById('sakal-create-status').textContent = '';
+    document.getElementById('sakal-create-template').style.display = 'none';
+    document.getElementById('sakal-create-map').style.display = 'none';
+}
+
+function sakalCreateFromLocation() {
+    var statusEl = document.getElementById('sakal-create-status');
+    statusEl.innerHTML = '<span style="color:var(--primary);">📍 מאתר מיקום...</span>';
+    if (!navigator.geolocation) {
+        statusEl.innerHTML = '<span style="color:#d32f2f;">הדפדפן לא תומך באיתור מיקום</span>';
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        sakalBuildTemplate(pos.coords.latitude, pos.coords.longitude, 'המיקום שלי');
+    }, function(err) {
+        statusEl.innerHTML = '<span style="color:#d32f2f;">לא ניתן לאתר מיקום: '+err.message+'</span>';
+    }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+function sakalCreateFromSearch() {
+    var q = document.getElementById('sakal-create-search').value.trim();
+    if (!q) return;
+    var statusEl = document.getElementById('sakal-create-status');
+    statusEl.innerHTML = '<span style="color:var(--primary);">🔍 מחפש "'+q+'"...</span>';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&limit=1&countrycodes=il,ps,jo')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        if(data.length===0){ statusEl.innerHTML='<span style="color:#d32f2f;">לא נמצא — נסה שם אחר</span>'; return; }
+        var lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+        sakalBuildTemplate(lat, lng, data[0].display_name.split(',')[0]);
+    }).catch(function(e){ statusEl.innerHTML='<span style="color:#d32f2f;">שגיאה בחיפוש</span>'; });
+}
+
+function sakalBuildTemplate(lat, lng, placeName) {
+    var statusEl = document.getElementById('sakal-create-status');
+    statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>'+placeName+'</b> ('+lat.toFixed(4)+', '+lng.toFixed(4)+')</span>';
+
+    // Show map
+    var mapEl = document.getElementById('sakal-create-map');
+    mapEl.style.display = '';
+    if (sakalCreateMap) { sakalCreateMap.remove(); sakalCreateMap = null; }
+    sakalCreateMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(sakalCreateMap);
+    L.marker([lat, lng], {
+        icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[36,36], iconAnchor:[18,18] })
+    }).addTo(sakalCreateMap);
+
+    // Find nearby GEO_SITES
+    var nearbySites = GEO_SITES.map(function(s){ return {name:s.name, dist:haversine(lat,lng,s.lat,s.lng), desc:s.desc, icon:s.icon}; })
+        .filter(function(s){ return s.dist <= 10000; })
+        .sort(function(a,b){ return a.dist - b.dist; })
+        .slice(0, 8);
+
+    var nearbyHtml = nearbySites.length > 0
+        ? '<ul style="margin:8px 0;padding-right:20px;">' + nearbySites.map(function(s){ return '<li style="margin-bottom:4px;">'+s.icon+' <b>'+s.name+'</b> ('+Math.round(s.dist)+'מ\') — '+s.desc+'</li>'; }).join('') + '</ul>'
+        : '<p style="color:var(--text-secondary);">לא נמצאו אתרים מוכרים ברדיוס 10 ק"מ</p>';
+
+    // Build template
+    var templateEl = document.getElementById('sakal-create-template');
+    templateEl.style.display = '';
+    templateEl.innerHTML = '<div style="border:2px solid var(--primary);border-radius:14px;overflow:hidden;">' +
+        '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;">📋 תבנית סק"ג — '+placeName+'</div>' +
+        '<div style="padding:16px;">' +
+            // Section 1
+            '<div style="margin-bottom:16px;">' +
+                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">🎯 1. רציונל</div>' +
+                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
+                    '<p>המסע הרגלי מהווה אמצעי מרכזי לבניית החיבור של הלוחם החשמונאי לארץ ישראל. במסע זה חשוב להדגיש ללוחמים את:</p>' +
+                    '<p>• ערך הרציונל של המסע</p>' +
+                    '<p>• <b>במסע זה נצעד במרחב של '+placeName+'</b></p>' +
+                    '<p>• קשר המרחב להיסטוריה המקראית/יהודית</p>' +
+                '</div>' +
+            '</div>' +
+            // Section 2
+            '<div style="margin-bottom:16px;">' +
+                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">🏔️ 2. מרחב המסע — תיאור גיאוגרפי</div>' +
+                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
+                    '<p>• מיקום: <b>'+lat.toFixed(4)+'°N, '+lng.toFixed(4)+'°E</b></p>' +
+                    '<p>• תיאור הטופוגרפיה, הנחלים, ההרים וציוני הדרך</p>' +
+                    '<p>• גבולות שבטים / חלוקה היסטורית של האזור</p>' +
+                '</div>' +
+            '</div>' +
+            // Section 3
+            '<div style="margin-bottom:16px;">' +
+                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">📖 3. רקע היסטורי ומקראי</div>' +
+                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
+                    '<p>• אירועים מקראיים שהתרחשו במרחב</p>' +
+                    '<p>• פסוקים רלוונטיים עם ביאור</p>' +
+                    '<p>• חיבור לתקופת החשמונאים</p>' +
+                '</div>' +
+            '</div>' +
+            // Section 4 — nearby sites
+            '<div style="margin-bottom:16px;">' +
+                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">📍 4. אתרים במרחב</div>' +
+                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
+                    nearbyHtml +
+                '</div>' +
+            '</div>' +
+            // Section 5
+            '<div style="margin-bottom:16px;">' +
+                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">💡 5. ערכים לציון</div>' +
+                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
+                    '<p>• <b>אחריות</b> — </p>' +
+                    '<p>• <b>מקצועיות</b> — </p>' +
+                    '<p>• <b>דוגמא אישית</b> — </p>' +
+                '</div>' +
+            '</div>' +
+            // Section 6
+            '<div>' +
+                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">❓ 6. שאלות לדיון</div>' +
+                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
+                    '<p>• מה מיוחד במרחב הזה?</p>' +
+                    '<p>• מה ניתן ללמוד מהאירועים ההיסטוריים שהתרחשו כאן?</p>' +
+                    '<p>• כיצד הערכים שעלו רלוונטיים לשירות שלנו?</p>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+
+    setTimeout(function() { try { sakalCreateMap.invalidateSize(); } catch(e) {} }, 300);
 }
 
 // ============================================================
