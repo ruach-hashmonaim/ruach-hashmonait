@@ -1226,24 +1226,18 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             </div>
         </div>
     </div>
-    <div class="geo-category-filter" id="geo-categories">
-        <button class="geo-cat-btn active" onclick="filterGeoCategory('all')">הכל</button>
-        <button class="geo-cat-btn" onclick="filterGeoCategory('holy')">🕍 מקומות קדושים</button>
-        <button class="geo-cat-btn" onclick="filterGeoCategory('battle')">⚔️ קרבות ומערכות</button>
-        <button class="geo-cat-btn" onclick="filterGeoCategory('historical')">🏛️ אתרים היסטוריים</button>
-        <button class="geo-cat-btn" onclick="filterGeoCategory('nature')">🌿 טבע ונוף</button>
-        <button class="geo-cat-btn" onclick="filterGeoCategory('tanach')">📜 מקומות תנ״כיים</button>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;" id="geo-raster-bar">
-        <button class="geo-tab active" onclick="geoSwitchRaster('hebrew',this)">🗺️ מפה</button>
-        <button class="geo-tab" onclick="geoSwitchRaster('satellite',this)">🛰️ לוויין</button>
-        <button class="geo-tab" onclick="geoSwitchRaster('topo',this)">⛰️ טופו</button>
-        <button class="geo-tab" onclick="geoSwitchRaster('terrain',this)">🏔️ שטח</button>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden;"><div id="geo-map"></div></div>
-    <div class="card geo-results" id="geo-results-container" style="display:none;">
-        <div class="card-title"><div class="icon">📌</div> אתרים בקרבת מקום</div>
-        <div id="geo-results-list"></div>
+    <div id="geo-map-section">
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;" id="geo-raster-bar">
+            <button class="geo-tab active" onclick="geoSwitchRaster('hebrew',this)">🗺️ מפה</button>
+            <button class="geo-tab" onclick="geoSwitchRaster('satellite',this)">🛰️ לוויין</button>
+            <button class="geo-tab" onclick="geoSwitchRaster('topo',this)">⛰️ טופו</button>
+            <button class="geo-tab" onclick="geoSwitchRaster('terrain',this)">🏔️ שטח</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;"><div id="geo-map"></div></div>
+        <div class="card geo-results" id="geo-results-container" style="display:none;">
+            <div class="card-title"><div class="icon">📌</div> אתרים בקרבת מקום</div>
+            <div id="geo-results-list"></div>
+        </div>
     </div>
 </div>
 
@@ -11305,21 +11299,13 @@ function setGeoMode(mode) {
     document.getElementById('geo-mode-location').style.display = mode === 'location' ? '' : 'none';
     document.getElementById('geo-mode-search').style.display = mode === 'search' ? '' : 'none';
     document.getElementById('geo-mode-mapquiz').style.display = mode === 'mapquiz' ? '' : 'none';
-    // Hide map and categories when in quiz mode
-    const mapCard = document.getElementById('geo-map') ? document.getElementById('geo-map').parentElement : null;
-    const catFilter = document.getElementById('geo-categories');
-    const resultsContainer = document.getElementById('geo-results-container');
-    const rasterBar = document.getElementById('geo-raster-bar');
+    // Hide map section when in quiz mode
+    var mapSection = document.getElementById('geo-map-section');
     if (mode === 'mapquiz') {
-        if (mapCard) mapCard.style.display = 'none';
-        if (catFilter) catFilter.style.display = 'none';
-        if (resultsContainer) resultsContainer.style.display = 'none';
-        if (rasterBar) rasterBar.style.display = 'none';
+        if (mapSection) mapSection.style.display = 'none';
         mqRenderQuizList();
     } else {
-        if (mapCard) mapCard.style.display = '';
-        if (catFilter) catFilter.style.display = '';
-        if (rasterBar) rasterBar.style.display = '';
+        if (mapSection) mapSection.style.display = '';
         initGeoMap();
     }
 }
@@ -11390,6 +11376,7 @@ const MAP_QUIZZES = [
         icon: '🐫',
         desc: 'מסעות אברהם, יצחק ויעקב — מיקומים ומסלולים',
         difficulty: 'בינוני',
+        mapImage: 'maps/avot_map.jpg',
         questions: [
             {
                 type: 'location',
@@ -11519,6 +11506,8 @@ function mqStartQuiz(quizIndex) {
     document.getElementById('mapquiz-result').style.display = 'none';
     document.getElementById('mapquiz-question-area').style.display = '';
     mqRenderQuestion();
+    // Scroll to top
+    document.getElementById('mapquiz-active').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function mqRenderQuestion() {
@@ -11531,7 +11520,19 @@ function mqRenderQuestion() {
     document.getElementById('mapquiz-progress-bar').style.width = ((mqCurrentQ / total) * 100) + '%';
     const typeIcon = q.type === 'location' ? '📍' : q.type === 'route' ? '🛤️' : '📚';
     const typeLabel = q.type === 'location' ? 'זיהוי מיקום' : q.type === 'route' ? 'זיהוי מסלול' : 'ידע כללי';
-    let html = '<div style="margin-bottom:16px;">' +
+    // Map image (toggleable)
+    var mapHtml = '';
+    if (quiz.mapImage) {
+        var mapId = 'mq-map-img-' + mqCurrentQ;
+        mapHtml = '<div style="margin-bottom:14px;border:2px solid var(--primary);border-radius:10px;overflow:hidden;">' +
+            '<div id="mq-map-toggle" onclick="var img=document.getElementById(\'' + mapId + '\');var show=img.style.display===\'none\';img.style.display=show?\'\':\'none\';this.querySelector(\'.mq-toggle-txt\').textContent=show?\'▲ הסתר מפה\':\'▼ הצג מפה\'" style="cursor:pointer;padding:8px 14px;background:rgba(212,168,67,0.1);display:flex;align-items:center;justify-content:space-between;">' +
+                '<span class="mq-toggle-txt" style="font-size:0.85rem;font-weight:600;color:var(--primary);">▲ הסתר מפה</span>' +
+                '<span style="font-size:0.75rem;color:var(--text-secondary);">🗺️ מפה אילמת</span>' +
+            '</div>' +
+            '<img id="' + mapId + '" src="' + quiz.mapImage + '" alt="מפה אילמת" style="width:100%;display:block;" />' +
+        '</div>';
+    }
+    let html = mapHtml + '<div style="margin-bottom:16px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
             '<span style="font-size:0.78rem;color:var(--text-secondary);">שאלה ' + (mqCurrentQ + 1) + ' מתוך ' + total + '</span>' +
             '<span style="font-size:0.75rem;background:var(--bg-secondary);padding:2px 10px;border-radius:10px;">' + typeIcon + ' ' + typeLabel + '</span>' +
