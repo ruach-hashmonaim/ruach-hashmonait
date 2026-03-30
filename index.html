@@ -11357,13 +11357,13 @@ const MAP_QUIZZES = [
             { num: 2, name: 'בית אל', lat: 31.9430, lng: 35.2200, icon: '🪜', color: '#4A148C', desc: 'מקום חלום הסולם של יעקב' },
             { num: 3, name: 'חברון', lat: 31.5243, lng: 35.1108, icon: '🕍', color: '#1B5E20', desc: 'מערת המכפלה — קבורת האבות והאמהות' },
             { num: 4, name: 'באר שבע', lat: 31.2518, lng: 34.7913, icon: '💧', color: '#0D47A1', desc: 'מרכז חיי יצחק — עיר הבארות והשבועות' },
-            { num: 5, name: 'ארץ גרר', lat: 31.3900, lng: 34.4700, icon: '🌾', color: '#BF360C', desc: 'אברהם ויצחק ירדו לכאן בשנות רעב' }
+            { num: 5, name: 'ארץ גרר', lat: 31.3900, lng: 34.4700, icon: '🌾', color: '#BF360C', desc: 'אברהם ויצחק ירדו לכאן בשנות רעב', area: true }
         ],
         routes: [
             { id: 'א', name: 'מסע אברהם', color: '#E74C3C', points: [[32.2132,35.2852],[31.9430,35.2200],[31.5243,35.1108],[31.3900,34.4700],[31.5243,35.1108]], desc: 'שכם → בית אל → חברון → גרר → חברון' },
             { id: 'ב', name: 'מסע יצחק', color: '#3498DB', points: [[31.5243,35.1108],[31.2518,34.7913],[31.3900,34.4700],[31.2518,34.7913]], desc: 'חברון → באר שבע → גרר — נשאר בדרום הארץ' },
-            { id: 'ג1', name: 'בריחת יעקב', color: '#27AE60', points: [[31.2518,34.7913],[31.9430,35.2200],[32.85,35.53]], desc: 'באר שבע → בית אל → חרן — בריחה מעשיו' },
-            { id: 'ג2', name: 'חזרת יעקב', color: '#8E44AD', points: [[32.85,35.53],[32.2132,35.2852],[31.9430,35.2200],[31.5243,35.1108]], desc: 'חרן → שכם → בית אל → חברון — חזרה אחרי 20 שנה' }
+            { id: 'ג1', name: 'בריחת יעקב לחרן', color: '#27AE60', points: [[31.2518,34.7913],[31.9430,35.2200],[32.2132,35.2852],[32.56,35.36],[32.85,35.53],[33.51,36.29]], desc: 'באר שבע → בית אל → שכם → עמק יזרעאל → דמשק → חרן (ארם נהריים)' },
+            { id: 'ג2', name: 'חזרת יעקב', color: '#8E44AD', points: [[33.51,36.29],[32.85,35.53],[32.60,35.63],[32.2132,35.2852],[31.9430,35.2200],[31.5243,35.1108]], desc: 'חרן → דמשק → מחניים/פנואל → שכם → בית אל → חברון — חזרה אחרי 20 שנה' }
         ],
         questions: [
             {
@@ -11488,11 +11488,11 @@ const MAP_QUIZZES = [
             { num: 6, name: 'דן (ליש)', lat: 33.2487, lng: 35.6519, icon: '⚔️', color: '#1565C0', desc: 'כאן אברהם תפס את ארבעת המלכים בהתקפת לילה' }
         ],
         routes: [
-            { id: 'א', name: 'אמרפל מלך שנער', color: '#8B0000', points: [[33.60,36.30],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'פלישה ממסופוטמיה — הוא נמרוד לפי חז"ל' },
-            { id: 'ב', name: 'כדרלעומר מלך עילם', color: '#B22222', points: [[33.55,36.50],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'המנהיג — 12 שנה שלט בערי הככר' },
-            { id: 'ג', name: 'תדעל מלך גויים', color: '#A52A2A', points: [[33.70,36.20],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'מלך הגויים — בעל ברית כדרלעומר' },
-            { id: 'ד', name: 'אריוך מלך אלסר', color: '#CD5C5C', points: [[33.50,36.40],[33.25,35.65],[31.76,35.23],[31.20,35.40]], desc: 'בעל ברית נוסף מהצפון-מזרח' },
-            { id: 'אברהם', name: 'מרדף אברהם', color: '#DAA520', points: [[31.52,35.11],[32.21,35.29],[33.25,35.65]], desc: 'חברון → דן — 318 חניכים במרדף של 200 ק"מ!' }
+            { id: 'א', name: 'אמרפל מלך שנער', color: '#8B0000', points: [[33.60,36.30],[33.51,36.29],[32.63,35.85],[32.00,35.88],[31.50,35.55],[31.20,35.40]], desc: 'ממסופוטמיה בדרך המלך — הכו רפאים, זוזים, אימים עד ערי הככר' },
+            { id: 'ב', name: 'כדרלעומר מלך עילם', color: '#B22222', points: [[33.55,36.50],[33.51,36.29],[32.63,35.85],[32.00,35.88],[31.50,35.55],[31.20,35.40]], desc: 'המנהיג — ירד בדרך המלך מעילם (פרס) דרך עשתרות קרנים' },
+            { id: 'ג', name: 'תדעל מלך גויים', color: '#A52A2A', points: [[33.70,36.20],[33.51,36.29],[32.63,35.85],[32.00,35.88],[31.50,35.55],[31.20,35.40]], desc: 'מלך הגויים — בדרך המלך דרך עבר הירדן' },
+            { id: 'ד', name: 'אריוך מלך אלסר', color: '#CD5C5C', points: [[33.50,36.40],[33.51,36.29],[32.63,35.85],[32.00,35.88],[31.50,35.55],[31.20,35.40]], desc: 'בעל ברית — הצטרף בדרך המלך מצפון-מזרח' },
+            { id: 'אברהם', name: 'מרדף אברהם', color: '#DAA520', points: [[31.52,35.11],[32.21,35.29],[32.56,35.36],[33.25,35.65]], desc: 'חברון → שכם → עמק יזרעאל → דן — 318 חניכים במרדף דרך רכס ההר!' }
         ],
         questions: [
             {
@@ -11578,8 +11578,8 @@ const MAP_QUIZZES = [
             { num: 2, name: 'חצור', lat: 33.02, lng: 35.57, icon: '🏰', color: '#1A237E', desc: 'יבין מלך חצור — שלח 900 רכב ברזל' },
             { num: 3, name: 'עין חרוד / הר תבור', lat: 32.56, lng: 35.36, icon: '🏔️', color: '#2E7D32', desc: 'דבורה וברק / גדעון עם 300 לוחמים' },
             { num: 4, name: 'מצפה גלעד', lat: 32.30, lng: 35.80, icon: '⚔️', color: '#37474F', desc: 'יפתח יצא מכאן נגד עמון' },
-            { num: 5, name: 'אזור דן — שפלת יהודה', lat: 31.73, lng: 34.85, icon: '🦁', color: '#E65100', desc: 'שמשון נלחם בפלישתים' },
-            { num: 6, name: 'אזור העמלקים — הנגב', lat: 30.80, lng: 34.50, icon: '🏜️', color: '#33691E', desc: 'אויב מר מימי יציאת מצרים' }
+            { num: 5, name: 'אזור דן — שפלת יהודה', lat: 31.73, lng: 34.85, icon: '🦁', color: '#E65100', desc: 'שמשון נלחם בפלישתים', area: true },
+            { num: 6, name: 'אזור העמלקים — הנגב', lat: 30.80, lng: 34.50, icon: '🏜️', color: '#33691E', desc: 'אויב מר מימי יציאת מצרים', area: true }
         ],
         routes: [
             { id: 'א', name: 'פשיטת מואב', color: '#E74C3C', points: [[31.60,35.80],[31.87,35.45]], desc: 'עגלון מלך מואב כבש את עיר התמרים' },
@@ -11780,24 +11780,38 @@ function mqRenderQuestion() {
                 if (showLocs !== null && showLocs.indexOf(loc.num) === -1) return;
                 var pinColor = loc.color || '#D4A843';
                 var pinEmoji = loc.icon || '📌';
-                var icon = L.divIcon({
-                    className: 'mq-marker',
-                    html: '<div style="position:relative;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.4));cursor:pointer;">' +
+                var isArea = loc.area || false;
+                var markerHtml, mIconSize, mIconAnchor, mPopupAnchor;
+                if (isArea) {
+                    // Area marker: larger dashed-border circle with "מרחב" label
+                    markerHtml = '<div style="position:relative;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.3));cursor:pointer;">' +
+                        '<div style="width:46px;height:46px;border-radius:50%;background:'+pinColor+'22;display:flex;align-items:center;justify-content:center;font-size:1.3rem;border:3px dashed '+pinColor+';box-shadow:0 0 0 4px '+pinColor+'15;">'+pinEmoji+'</div>' +
+                        '<div style="font-size:0.55rem;color:#fff;background:'+pinColor+';padding:1px 6px;border-radius:6px;margin-top:2px;font-weight:700;font-family:Heebo,sans-serif;">מרחב</div>' +
+                    '</div>';
+                    mIconSize = [46, 64]; mIconAnchor = [23, 32]; mPopupAnchor = [0, -32];
+                } else {
+                    // Point marker: solid pin with emoji
+                    markerHtml = '<div style="position:relative;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.4));cursor:pointer;">' +
                         '<div style="width:36px;height:36px;border-radius:50%;background:'+pinColor+';display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:3px solid #fff;box-shadow:inset 0 -2px 4px rgba(0,0,0,0.15);">'+pinEmoji+'</div>' +
                         '<div style="width:3px;height:10px;background:'+pinColor+';border-radius:0 0 2px 2px;"></div>' +
                         '<div style="width:8px;height:4px;background:rgba(0,0,0,0.2);border-radius:50%;margin-top:1px;"></div>' +
-                    '</div>',
-                    iconSize: [36, 52],
-                    iconAnchor: [18, 52],
-                    popupAnchor: [0, -52]
+                    '</div>';
+                    mIconSize = [36, 52]; mIconAnchor = [18, 52]; mPopupAnchor = [0, -52];
+                }
+                var icon = L.divIcon({
+                    className: 'mq-marker',
+                    html: markerHtml,
+                    iconSize: mIconSize,
+                    iconAnchor: mIconAnchor,
+                    popupAnchor: mPopupAnchor
                 });
                 var marker = L.marker([loc.lat, loc.lng], { icon: icon }).addTo(qmap);
-                // Rich popup with name and description
-                var popupContent = '<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px;text-align:center;padding:4px;">' +
-                    '<div style="font-size:1.1rem;margin-bottom:3px;">'+pinEmoji+'</div>' +
-                    '<b style="color:#1B4332;font-size:0.9rem;">' + loc.name + '</b>';
+                // Popup shows hint/desc only (not name — this is a quiz!)
+                var areaTag = loc.area ? '<div style="font-size:0.65rem;color:#fff;background:'+pinColor+';padding:1px 8px;border-radius:8px;display:inline-block;margin-bottom:3px;">מרחב</div>' : '';
+                var popupContent = '<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:140px;text-align:center;padding:4px;">' +
+                    '<div style="font-size:1.1rem;margin-bottom:3px;">'+pinEmoji+'</div>' + areaTag;
                 if (loc.desc) {
-                    popupContent += '<br><span style="font-size:0.78rem;color:#555;line-height:1.4;">' + loc.desc + '</span>';
+                    popupContent += '<span style="font-size:0.8rem;color:#444;line-height:1.5;">' + loc.desc + '</span>';
                 }
                 popupContent += '</div>';
                 marker.bindPopup(popupContent, { maxWidth: 250, className: 'mq-popup' });
@@ -11815,18 +11829,21 @@ function mqRenderQuestion() {
                         color: rc, weight: 4.5, opacity: 0.9,
                         lineCap: 'round', lineJoin: 'round'
                     }).addTo(qmap);
-                    // Add arrowheads along the route at intervals
+                    // Add SVG arrowheads along the route
                     for (var ai = 0; ai < pts.length - 1; ai++) {
                         var p1 = pts[ai], p2 = pts[ai + 1];
-                        // Place arrow at 70% of each segment
-                        var arrowLat = p1[0] + (p2[0] - p1[0]) * 0.7;
-                        var arrowLng = p1[1] + (p2[1] - p1[1]) * 0.7;
+                        // Place arrow at 60% of each segment
+                        var arrowLat = p1[0] + (p2[0] - p1[0]) * 0.6;
+                        var arrowLng = p1[1] + (p2[1] - p1[1]) * 0.6;
                         var angle = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * (180 / Math.PI);
+                        var svgArrow = '<svg width="22" height="22" viewBox="0 0 22 22" style="transform:rotate('+(90+angle)+'deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4));">' +
+                            '<polygon points="11,2 20,18 11,14 2,18" fill="'+rc+'" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>' +
+                        '</svg>';
                         var arrowIcon = L.divIcon({
                             className: 'mq-arrow',
-                            html: '<div style="font-size:18px;color:'+rc+';transform:rotate('+(90 - angle)+'deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));line-height:1;">▼</div>',
-                            iconSize: [18, 18],
-                            iconAnchor: [9, 9]
+                            html: svgArrow,
+                            iconSize: [22, 22],
+                            iconAnchor: [11, 11]
                         });
                         L.marker([arrowLat, arrowLng], { icon: arrowIcon, interactive: false }).addTo(qmap);
                     }
