@@ -11426,7 +11426,8 @@ const MAP_QUIZZES = [
         questions: [
             {
                 type: 'location',
-                text: 'מהו המקום המסומן כנקודה 1 במפה?',
+                showLocations: [1], showRoutes: [],
+                text: 'מהו המקום המסומן במפה?',
                 hint: 'זוהי התחנה הראשונה של אברהם אבינו כשנכנס לארץ כנען.',
                 options: ['ירושלים', 'שכם — אלון מורה', 'חברון', 'באר שבע'],
                 correct: 1,
@@ -11435,7 +11436,8 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'location',
-                text: 'מהו המקום המסומן כנקודה 2 במפה?',
+                showLocations: [2], showRoutes: [],
+                text: 'מהו המקום המסומן במפה?',
                 hint: 'אברהם בנה כאן מזבח לה׳, ובהמשך — יעקב חלם כאן חלום מפורסם.',
                 options: ['בית אל', 'שילה', 'גלגל', 'הר גריזים'],
                 correct: 0,
@@ -11444,7 +11446,8 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'location',
-                text: 'מהו המקום המסומן כנקודה 3 במפה?',
+                showLocations: [3], showRoutes: [],
+                text: 'מהו המקום המסומן במפה?',
                 hint: 'כאן התגוררו שלושת האבות, וכאן קנה אברהם אחוזת קבר.',
                 options: ['ירושלים', 'באר שבע', 'חברון', 'בית לחם'],
                 correct: 2,
@@ -11453,7 +11456,8 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'location',
-                text: 'מהו המקום המסומן כנקודה 4 במפה?',
+                showLocations: [4], showRoutes: [],
+                text: 'מהו המקום המסומן במפה?',
                 hint: 'מרכז חייו של יצחק אבינו, ומכאן יצא יעקב בבריחתו צפונה.',
                 options: ['יריחו', 'שכם', 'חברון', 'באר שבע'],
                 correct: 3,
@@ -11462,7 +11466,8 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'location',
-                text: 'מהו המקום המסומן כנקודה 5 במפה?',
+                showLocations: [5], showRoutes: [],
+                text: 'מהו המקום המסומן במפה?',
                 hint: 'אזור בדרום-מערב הארץ, ששני אבות ירדו אליו בשנות רעב.',
                 options: ['אשקלון', 'ארץ גרר', 'עזה', 'אשדוד'],
                 correct: 1,
@@ -11471,7 +11476,8 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'route',
-                text: 'איזה אב מייצג המסלול האדום (א) במפה?',
+                showLocations: [], showRoutes: ['א'],
+                text: 'איזה אב מייצג המסלול המוצג במפה?',
                 hint: 'מסלול ארוך שעובר כמעט בכל הנקודות — מצפון לדרום וחזרה.',
                 options: ['יעקב אבינו', 'אברהם אבינו', 'יצחק אבינו', 'משה רבנו'],
                 correct: 1,
@@ -11480,7 +11486,8 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'route',
-                text: 'איזה אב מייצג המסלול הכחול (ב) במפה?',
+                showLocations: [], showRoutes: ['ב'],
+                text: 'איזה אב מייצג המסלול המוצג במפה?',
                 hint: 'מסלול קצר יחסית, מרוכז באזור הדרום בלבד.',
                 options: ['אברהם אבינו', 'משה רבנו', 'יצחק אבינו', 'יהושע בן נון'],
                 correct: 2,
@@ -11489,7 +11496,8 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'route',
-                text: 'מה מייצגים שני המסלולים ג1 (ירוק) ו-ג2 (סגול) במפה?',
+                showLocations: [], showRoutes: ['ג1','ג2'],
+                text: 'מה מייצגים שני המסלולים המוצגים במפה?',
                 hint: 'שני מסלולים של אותו אב — אחד צפונה ואחד בחזרה דרומה, בהפרש של כ-20 שנה.',
                 options: [
                     'בריחת יעקב מעשיו + חזרת יעקב לארץ',
@@ -11503,6 +11511,7 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'knowledge',
+                showLocations: [3,4,5], showRoutes: ['ב'],
                 text: 'מי מבין האבות לא יצא מארץ ישראל לאורך כל חייו?',
                 hint: 'ה׳ ציווה עליו במפורש להישאר בארץ ולא לרדת למצרים.',
                 options: ['אברהם אבינו', 'יצחק אבינו', 'יעקב אבינו', 'כולם יצאו מהארץ'],
@@ -11512,6 +11521,7 @@ const MAP_QUIZZES = [
             },
             {
                 type: 'knowledge',
+                showLocations: [1,2,3,4,5], showRoutes: [],
                 text: 'באיזה מקום במפה התרחש חלום הסולם של יעקב אבינו?',
                 hint: 'יעקב ישן שם בדרכו צפונה, ולמחרת קרא למקום שם חדש.',
                 options: ['נקודה 3', 'נקודה 1', 'נקודה 2', 'נקודה 4'],
@@ -11612,36 +11622,60 @@ function mqRenderQuestion() {
         '</button></div>';
     document.getElementById('mapquiz-question-area').innerHTML = html;
 
-    // Initialize quiz map if locations exist
+    // Initialize quiz map — show only elements relevant to this question
     if (quiz.locations) {
         setTimeout(function() {
             var mapDiv = document.getElementById('mq-leaflet-map-' + mqCurrentQ);
             if (!mapDiv) return;
             if (window.mqQuizMap) { window.mqQuizMap.remove(); window.mqQuizMap = null; }
-            // Ensure the div has explicit dimensions before Leaflet init (critical for mobile)
             var mapH = Math.min(350, window.innerHeight * 0.45);
             mapDiv.style.height = mapH + 'px';
-            var qmap = L.map(mapDiv, { zoomControl: true, attributionControl: false, tap: true, dragging: true, touchZoom: true }).setView([31.7, 35.0], 8);
+
+            // Determine which locations/routes to show for this question
+            var showLocs = q.showLocations || [];
+            var showRts = q.showRoutes || [];
+            // If no filter defined, show all (backward compat)
+            var filterLocs = showLocs.length > 0;
+            var filterRts = showRts.length > 0 || q.type === 'route';
+
+            // Collect visible points for auto-zoom
+            var bounds = [];
+
+            var qmap = L.map(mapDiv, { zoomControl: true, attributionControl: false, tap: true, dragging: true, touchZoom: true });
             L.tileLayer(GEO_TILE_LAYERS['hebrew'].url, GEO_TILE_LAYERS['hebrew'].opts).addTo(qmap);
-            // Add numbered markers for locations — only show numbers, NOT names (quiz!)
+
+            // Add only relevant markers
             quiz.locations.forEach(function(loc) {
+                if (filterLocs && showLocs.indexOf(loc.num) === -1) return;
                 var icon = L.divIcon({
                     className: 'mq-marker',
-                    html: '<div style="width:30px;height:30px;border-radius:50%;background:#D4A843;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">' + loc.num + '</div>',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
+                    html: '<div style="width:32px;height:32px;border-radius:50%;background:#D4A843;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.95rem;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);">' + loc.num + '</div>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
                 });
                 L.marker([loc.lat, loc.lng], { icon: icon }).addTo(qmap);
+                bounds.push([loc.lat, loc.lng]);
             });
-            // Add route lines if present — only show letter IDs, not names
+
+            // Add only relevant routes
             if (quiz.routes) {
                 quiz.routes.forEach(function(route) {
-                    L.polyline(route.points, { color: route.color, weight: 3, opacity: 0.8, dashArray: '8 6' }).addTo(qmap)
-                        .bindTooltip('מסלול ' + route.id, { sticky: true });
+                    if (filterRts && showRts.indexOf(route.id) === -1) return;
+                    L.polyline(route.points, { color: route.color, weight: 3.5, opacity: 0.85, dashArray: '8 6' }).addTo(qmap);
+                    route.points.forEach(function(p) { bounds.push(p); });
                 });
             }
+
+            // Auto-zoom to fit visible elements
+            if (bounds.length > 1) {
+                qmap.fitBounds(bounds, { padding: [30, 30], maxZoom: 11 });
+            } else if (bounds.length === 1) {
+                qmap.setView(bounds[0], 10);
+            } else {
+                qmap.setView([31.7, 35.0], 8);
+            }
+
             window.mqQuizMap = qmap;
-            // Multiple invalidateSize calls to handle mobile rendering delays
             qmap.invalidateSize();
             setTimeout(function() { qmap.invalidateSize(); }, 300);
             setTimeout(function() { qmap.invalidateSize(); }, 800);
