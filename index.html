@@ -11632,11 +11632,11 @@ function mqRenderQuestion() {
             mapDiv.style.height = mapH + 'px';
 
             // Determine which locations/routes to show for this question
-            var showLocs = q.showLocations || [];
-            var showRts = q.showRoutes || [];
-            // If no filter defined, show all (backward compat)
-            var filterLocs = showLocs.length > 0;
-            var filterRts = showRts.length > 0 || q.type === 'route';
+            // If showLocations/showRoutes is defined (even empty), use as filter; if undefined, show all
+            var hasLocFilter = q.hasOwnProperty('showLocations');
+            var hasRtFilter = q.hasOwnProperty('showRoutes');
+            var showLocs = hasLocFilter ? q.showLocations : null;
+            var showRts = hasRtFilter ? q.showRoutes : null;
 
             // Collect visible points for auto-zoom
             var bounds = [];
@@ -11644,9 +11644,9 @@ function mqRenderQuestion() {
             var qmap = L.map(mapDiv, { zoomControl: true, attributionControl: false, tap: true, dragging: true, touchZoom: true });
             L.tileLayer(GEO_TILE_LAYERS['hebrew'].url, GEO_TILE_LAYERS['hebrew'].opts).addTo(qmap);
 
-            // Add only relevant markers
+            // Add only relevant markers (showLocs=null means show all, showLocs=[] means show none)
             quiz.locations.forEach(function(loc) {
-                if (filterLocs && showLocs.indexOf(loc.num) === -1) return;
+                if (showLocs !== null && showLocs.indexOf(loc.num) === -1) return;
                 var icon = L.divIcon({
                     className: 'mq-marker',
                     html: '<div style="width:32px;height:32px;border-radius:50%;background:#D4A843;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.95rem;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);">' + loc.num + '</div>',
@@ -11657,10 +11657,10 @@ function mqRenderQuestion() {
                 bounds.push([loc.lat, loc.lng]);
             });
 
-            // Add only relevant routes
+            // Add only relevant routes (showRts=null means show all, showRts=[] means show none)
             if (quiz.routes) {
                 quiz.routes.forEach(function(route) {
-                    if (filterRts && showRts.indexOf(route.id) === -1) return;
+                    if (showRts !== null && showRts.indexOf(route.id) === -1) return;
                     L.polyline(route.points, { color: route.color, weight: 3.5, opacity: 0.85, dashArray: '8 6' }).addTo(qmap);
                     route.points.forEach(function(p) { bounds.push(p); });
                 });
