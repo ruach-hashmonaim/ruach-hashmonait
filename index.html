@@ -1194,7 +1194,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
             <button class="geo-tab active" id="geo-tab-location" onclick="setGeoMode('location')">📍 המיקום שלי</button>
             <button class="geo-tab" id="geo-tab-search" onclick="setGeoMode('search')">🔍 חיפוש מקום</button>
-            <button class="geo-tab" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מבחני מפה</button>
+            <button class="geo-tab" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מפה אילמת</button>
         </div>
         <div id="geo-mode-location">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -1212,7 +1212,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </div>
         <!-- Map Quiz Mode -->
         <div id="geo-mode-mapquiz" style="display:none;">
-            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">בחר מבחן מפה ובחן את הידע שלך! ענה על השאלות וגלה כמה אתה מכיר את ארץ ישראל.</p>
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">בחר מפה אילמת ובחן את הידע שלך! ענה על השאלות וגלה כמה אתה מכיר את ארץ ישראל.</p>
             <div id="mapquiz-list" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
             <div id="mapquiz-active" style="display:none;">
                 <div id="mapquiz-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -1231,8 +1231,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;" id="geo-raster-bar">
             <button class="geo-tab active" onclick="geoSwitchRaster('hebrew',this)">🗺️ מפה</button>
             <button class="geo-tab" onclick="geoSwitchRaster('satellite',this)">🛰️ לוויין</button>
-            <button class="geo-tab" onclick="geoSwitchRaster('topo',this)">⛰️ טופו</button>
-            <button class="geo-tab" onclick="geoSwitchRaster('terrain',this)">🏔️ שטח</button>
+            <button class="geo-tab" onclick="geoSwitchRaster('topo',this)">⛰️ טופו 1:25K</button>
+            <button class="geo-tab" onclick="geoSwitchRaster('historic',this)">📜 היסטורית</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;"><div id="geo-map"></div></div>
         <div class="card geo-results" id="geo-results-container" style="display:none;">
@@ -11186,10 +11186,10 @@ let geoMap = null; let geoMarkers = []; let geoUserMarker = null; let geoCircle 
 let geoCurrentMode = 'location'; let geoCurrentCategory = 'all';
 let geoCurrentLayer = null;
 const GEO_TILE_LAYERS = {
-    'hebrew': { name: 'עברית (OSM)', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; OpenStreetMap', maxZoom: 19 }, transformUrl: function(z,x,y){ return 'https://tile.openstreetmap.org/' + z + '/' + x + '/' + y + '.png'; } },
-    'satellite': { name: 'לוויין', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri', maxZoom: 18 } },
-    'topo': { name: 'טופוגרפית', url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; OpenTopoMap', maxZoom: 17 } },
-    'terrain': { name: 'שטח', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri', maxZoom: 18 } }
+    'hebrew': { name: 'מפה', url: 'https://basemaps.govmap.gov.il/backgroundMaps/streets_and_buildings_6_2025/{z}/{x}/{y}.png', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 19, minZoom: 7 } },
+    'satellite': { name: 'לוויין', url: 'https://basemaps.govmap.gov.il/tms/orto2025me/{z}/{x}/{y}.jpg', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 20, minZoom: 4 } },
+    'topo': { name: 'טופו 1:25K', url: 'https://basemaps.govmap.gov.il/cachetiles/Topo25k/{z}/{x}/{y}.png', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 18, minZoom: 14 } },
+    'historic': { name: 'היסטורית 1935', url: 'https://basemaps.govmap.gov.il/cachetiles/historical/Israel_1935/{z}/{x}/{y}.png', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 15, minZoom: 9 } }
 };
 
 const GEO_SITES = [
@@ -11362,7 +11362,7 @@ function formatDist(m){return m>=1000?(m/1000).toFixed(1)+' ק"מ':Math.round(m)
 function catColor(cat){return{holy:'#7B68EE',battle:'#C0392B',historical:'#2D6A4F',nature:'#40916C',tanach:'#D4A843'}[cat]||'#1B4332';}
 
 // ============================================================
-// MAP QUIZZES — מבחני מפה אינטראקטיביים
+// MAP QUIZZES — מפה אילמת
 // ============================================================
 let mqCurrentQuiz = null;
 let mqCurrentQ = 0;
@@ -11474,7 +11474,7 @@ function mqRenderQuizList() {
     activeArea.style.display = 'none';
     container.style.display = 'flex';
     if (MAP_QUIZZES.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary);width:100%;">מבחני מפה בקרוב...</div>';
+        container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary);width:100%;">מפות אילמות בקרוב...</div>';
         return;
     }
     // Load saved scores from localStorage
