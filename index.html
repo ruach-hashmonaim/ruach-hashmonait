@@ -2818,6 +2818,33 @@ const CONTENT_RESPONSIBILITY = {
     'other':    'אחר'
 };
 const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
+
+const TRAINING_WEEK_NAMES = {
+    'basic': {
+        // הכשרת יסוד — שבועות עם שמות מיוחדים
+    },
+    'nco': {
+        // קורס מ"כים — שבועות עם שמות מיוחדים
+    },
+    'officer': {
+        // קורס קצינים — שבועות עם שמות מיוחדים
+    }
+};
+
+const TRAINING_SPECIAL_WEEKS = {
+    'basic': [
+        { name: 'מסע שרשרת הדורות א׳ (סד"ח)', icon: '🚶' }
+    ],
+    'nco': [
+        { name: 'מסע פיקוד — שרשרת הדורות ב׳', icon: '🗡️' }
+    ],
+    'officer': [
+        { name: 'בעקבות מנהיגים במדבר — שרשרת הדורות ג׳', icon: '🏜️' },
+        { name: 'שבוע אתרי קרבות', icon: '⚔️' },
+        { name: 'שבוע זהות', icon: '🔯' }
+    ]
+};
+
 let currentTrainingProgram = 'basic';
 let currentOfficerTrack = 'sade';
 let currentOfficerPluga = 'pluga_a'; // separate platoon state for officer course
@@ -2981,6 +3008,16 @@ async function loadTrainingPage(program) {
             weekHtml += `<button class="week-btn ${isActive ? 'active' : ''}" onclick="selectTrainingWeek('${program}',${w})">${w}</button>`;
         }
         weekHtml += '</div>';
+        // Add special weeks/events for this program
+        var specWeeks = TRAINING_SPECIAL_WEEKS[program];
+        if (specWeeks && specWeeks.length > 0) {
+            weekHtml += '<div style="margin-top:10px;padding:10px 14px;background:rgba(212,168,67,0.08);border-radius:10px;border-right:3px solid var(--primary);">';
+            weekHtml += '<div style="font-size:0.82rem;font-weight:700;color:var(--primary);margin-bottom:6px;">🗓️ שבועות הכשרה מיוחדים:</div>';
+            specWeeks.forEach(function(sw) {
+                weekHtml += '<div style="font-size:0.82rem;color:var(--text-primary);padding:3px 0;">' + (sw.icon||'') + ' ' + sw.name + '</div>';
+            });
+            weekHtml += '</div>';
+        }
         controls.innerHTML = weekHtml;
     }
 
@@ -12411,19 +12448,45 @@ const MAP_QUIZZES = [
         icon: '🗺️',
         desc: '12 נחלות שבטי ישראל — מברכת יעקב ועד חלוקת הארץ ביהושע',
         difficulty: 'בינוני',
+        usePolygons: true,
         locations: [
-            { num: 1, name: 'שמעון (ולוי)', lat: 31.25, lng: 34.80, icon: '🔴', color: '#E91E63', desc: 'ללא נחלה עצמאית — שמעון בתוך נחלת יהודה, לוי מפוזר בערי מקלט' },
-            { num: 2, name: 'יהודה', lat: 31.50, lng: 35.00, icon: '🦁', color: '#7B1FA2', desc: 'הנחלה הגדולה ביותר — מהנגב ועד ירושלים, אזור גיאוגרפי וגידולי חקלאות' },
-            { num: 3, name: 'בנימין', lat: 31.85, lng: 35.20, icon: '🐺', color: '#F57C00', desc: 'הנחלה הקטנה ביותר — אך לא ניתנה לפספס: ירושלים בגבולה' },
-            { num: 4, name: 'דן', lat: 31.95, lng: 34.78, icon: '🐍', color: '#0288D1', desc: 'נחלה במישור החוף המרכזי — אנשי דן נדדו צפונה למיקום העיר ליש (דן)' },
-            { num: 5, name: 'יוסף — אפרים', lat: 32.10, lng: 35.15, icon: '🌾', color: '#388E3C', desc: 'ברכת יוסף מתאימה מאוד לשפע המעיינות וגידולי הקמה והדגן במרחב השומרון' },
-            { num: 6, name: 'מנשה', lat: 32.40, lng: 35.40, icon: '🐂', color: '#689F38', desc: 'שבט גדול עם שתי נחלות — מערב ומזרח הירדן' },
-            { num: 7, name: 'ראובן', lat: 31.60, lng: 35.70, icon: '💧', color: '#5C6BC0', desc: 'נחלתו מעבר לים המלח שלא הוא גם נקרא "ים המוות" — מנגד ברכתו "ראובן בכורי אתה"' },
-            { num: 8, name: 'גד', lat: 32.00, lng: 35.80, icon: '⚔️', color: '#F4511E', desc: 'מיקומו מזרח למדבר ממזרח הירדן — "גד גדוד יגודנו והוא יגוד עקב"' },
-            { num: 9, name: 'זבולון', lat: 32.72, lng: 35.20, icon: '⚓', color: '#00897B', desc: 'נחלתו במערב עמק יזרעאל כמעט עד למפרץ חיפה — "זבולון לחוף ימים ישכון"' },
-            { num: 10, name: 'יששכר', lat: 32.55, lng: 35.40, icon: '📚', color: '#8D6E63', desc: 'נחלתו באזור פורה בין 3 הרים: הגלבוע, גבעת המורה והר תבור' },
-            { num: 11, name: 'נפתלי', lat: 33.00, lng: 35.50, icon: '🦌', color: '#5E35B1', desc: 'מנחלתי נפתלי הצפונית נהדרת דרומה ומכל עבר — "נפתלי שבע רצון ומלא ברכת ה\'"' },
-            { num: 12, name: 'אשר', lat: 33.00, lng: 35.10, icon: '🫒', color: '#43A047', desc: 'נחלת אשר מתוארת כאזור עם שפע של שמן — "מאשר שמנה לחמו והוא יתן מעדני מלך"' }
+            { num: 1, name: 'שמעון (ולוי)', lat: 31.25, lng: 34.80, icon: '🔴', color: '#E91E63', desc: 'ללא נחלה עצמאית — שמעון בתוך נחלת יהודה, לוי מפוזר בערי מקלט',
+              polygon: [[31.45,34.45],[31.45,34.95],[31.10,34.95],[31.10,34.45]]
+            },
+            { num: 2, name: 'יהודה', lat: 31.50, lng: 35.00, icon: '🦁', color: '#7B1FA2', desc: 'הנחלה הגדולה ביותר — מהנגב ועד ירושלים, אזור גיאוגרפי וגידולי חקלאות',
+              polygon: [[31.85,34.30],[31.85,35.40],[31.75,35.45],[31.60,35.50],[31.40,35.50],[30.80,35.30],[30.50,35.00],[30.50,34.30],[31.00,34.20],[31.45,34.25]]
+            },
+            { num: 3, name: 'בנימין', lat: 31.85, lng: 35.20, icon: '🐺', color: '#F57C00', desc: 'הנחלה הקטנה ביותר — אך לא ניתנה לפספס: ירושלים בגבולה',
+              polygon: [[31.92,35.05],[31.92,35.40],[31.75,35.40],[31.75,35.05]]
+            },
+            { num: 4, name: 'דן', lat: 31.95, lng: 34.78, icon: '🐍', color: '#0288D1', desc: 'נחלה במישור החוף המרכזי — אנשי דן נדדו צפונה למיקום העיר ליש (דן)',
+              polygon: [[32.10,34.55],[32.10,34.95],[31.85,34.95],[31.85,34.55]]
+            },
+            { num: 5, name: 'יוסף — אפרים', lat: 32.10, lng: 35.15, icon: '🌾', color: '#388E3C', desc: 'ברכת יוסף מתאימה מאוד לשפע המעיינות וגידולי הקמה והדגן במרחב השומרון',
+              polygon: [[32.28,34.95],[32.28,35.45],[31.92,35.45],[31.92,34.95]]
+            },
+            { num: 6, name: 'מנשה', lat: 32.40, lng: 35.40, icon: '🐂', color: '#689F38', desc: 'שבט גדול עם שתי נחלות — מערב ומזרח הירדן',
+              polygon: [[32.70,34.85],[32.70,35.55],[32.55,35.65],[32.28,35.65],[32.28,34.85]],
+              polygon2: [[32.70,35.60],[32.70,36.00],[32.28,36.00],[32.28,35.60]]
+            },
+            { num: 7, name: 'ראובן', lat: 31.60, lng: 35.70, icon: '💧', color: '#5C6BC0', desc: 'נחלתו מעבר לים המלח שלא הוא גם נקרא "ים המוות" — מנגד ברכתו "ראובן בכורי אתה"',
+              polygon: [[31.85,35.50],[31.85,36.00],[31.20,36.00],[31.20,35.50]]
+            },
+            { num: 8, name: 'גד', lat: 32.00, lng: 35.80, icon: '⚔️', color: '#F4511E', desc: 'מיקומו מזרח למדבר ממזרח הירדן — "גד גדוד יגודנו והוא יגוד עקב"',
+              polygon: [[32.28,35.55],[32.28,36.00],[31.85,36.00],[31.85,35.55]]
+            },
+            { num: 9, name: 'זבולון', lat: 32.72, lng: 35.20, icon: '⚓', color: '#00897B', desc: 'נחלתו במערב עמק יזרעאל כמעט עד למפרץ חיפה — "זבולון לחוף ימים ישכון"',
+              polygon: [[32.82,35.00],[32.82,35.35],[32.62,35.35],[32.62,35.00]]
+            },
+            { num: 10, name: 'יששכר', lat: 32.55, lng: 35.40, icon: '📚', color: '#8D6E63', desc: 'נחלתו באזור פורה בין 3 הרים: הגלבוע, גבעת המורה והר תבור',
+              polygon: [[32.70,35.25],[32.70,35.60],[32.42,35.60],[32.42,35.25]]
+            },
+            { num: 11, name: 'נפתלי', lat: 33.00, lng: 35.50, icon: '🦌', color: '#5E35B1', desc: 'מנחלתי נפתלי הצפונית נהדרת דרומה ומכל עבר — "נפתלי שבע רצון ומלא ברכת ה\'"',
+              polygon: [[33.30,35.35],[33.30,35.75],[32.82,35.75],[32.82,35.35]]
+            },
+            { num: 12, name: 'אשר', lat: 33.00, lng: 35.10, icon: '🫒', color: '#43A047', desc: 'נחלת אשר מתוארת כאזור עם שפע של שמן — "מאשר שמנה לחמו והוא יתן מעדני מלך"',
+              polygon: [[33.30,34.85],[33.30,35.35],[32.82,35.35],[32.82,34.85]]
+            }
         ],
         questions: [
             {
@@ -12665,6 +12728,7 @@ function mqRenderQuestion() {
             // Add only relevant markers with styled pin icons + popup
             quiz.locations.forEach(function(loc) {
                 if (showLocs !== null && showLocs.indexOf(loc.num) === -1) return;
+                if (quiz.usePolygons && loc.polygon) return; // Skip pin for polygon quizzes
                 var pinColor = loc.color || '#D4A843';
                 var pinEmoji = loc.icon || '📌';
                 // All locations use the same point-pin style
@@ -12692,7 +12756,47 @@ function mqRenderQuestion() {
                 bounds.push([loc.lat, loc.lng]);
             });
 
-            // Add only relevant routes: circle at start, arrowhead at end, smooth line
+            
+            // Add polygons if quiz uses them (e.g., tribal territories)
+            if (quiz.usePolygons) {
+                quiz.locations.forEach(function(loc) {
+                    if (showLocs !== null && showLocs.indexOf(loc.num) === -1) return;
+                    if (loc.polygon) {
+                        var polyColor = loc.color || '#666';
+                        var poly = L.polygon(loc.polygon, {
+                            color: polyColor, weight: 2.5, opacity: 0.9,
+                            fillColor: polyColor, fillOpacity: 0.25,
+                            dashArray: '6,4'
+                        }).addTo(qmap);
+                        var popupContent = '<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:140px;text-align:center;padding:4px;">' +
+                            '<div style="font-size:1.1rem;margin-bottom:3px;">'+(loc.icon||'')+'</div>';
+                        if (loc.desc) popupContent += '<span style="font-size:0.8rem;color:#444;line-height:1.5;">' + loc.desc + '</span>';
+                        popupContent += '</div>';
+                        poly.bindPopup(popupContent, { maxWidth: 250, className: 'mq-popup' });
+                        // Add label at center
+                        var labelIcon = L.divIcon({
+                            className: 'mq-poly-label',
+                            html: '<div style="background:'+polyColor+';color:#fff;padding:3px 10px;border-radius:12px;font-size:0.78rem;font-weight:700;font-family:Heebo,sans-serif;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:1.5px solid rgba(255,255,255,0.6);direction:rtl;">'+(loc.num)+'</div>',
+                            iconSize: [0, 0], iconAnchor: [0, 10]
+                        });
+                        L.marker([loc.lat, loc.lng], { icon: labelIcon, interactive: false }).addTo(qmap);
+                        loc.polygon.forEach(function(p) { bounds.push(p); });
+                    }
+                    // Second polygon (e.g., Menashe east)
+                    if (loc.polygon2) {
+                        var polyColor2 = loc.color || '#666';
+                        var poly2 = L.polygon(loc.polygon2, {
+                            color: polyColor2, weight: 2.5, opacity: 0.9,
+                            fillColor: polyColor2, fillOpacity: 0.25,
+                            dashArray: '6,4'
+                        }).addTo(qmap);
+                        poly2.bindPopup(poly.getPopup() ? poly.getPopup().getContent() : '', { maxWidth: 250 });
+                        loc.polygon2.forEach(function(p) { bounds.push(p); });
+                    }
+                });
+            }
+
+// Add only relevant routes: circle at start, arrowhead at end, smooth line
             if (quiz.routes) {
                 quiz.routes.forEach(function(route) {
                     if (showRts !== null && showRts.indexOf(route.id) === -1) return;
