@@ -12011,9 +12011,9 @@ function mqRenderQuestion() {
             }
 
             window.mqQuizMap = qmap;
-            qmap.invalidateSize();
-            setTimeout(function() { qmap.invalidateSize(); }, 300);
-            setTimeout(function() { qmap.invalidateSize(); }, 800);
+            try { qmap.invalidateSize(); } catch(e) {}
+            setTimeout(function() { if (window.mqQuizMap === qmap) try { qmap.invalidateSize(); } catch(e) {} }, 300);
+            setTimeout(function() { if (window.mqQuizMap === qmap) try { qmap.invalidateSize(); } catch(e) {} }, 800);
         }, 200);
     }
 }
