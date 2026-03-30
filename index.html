@@ -13600,9 +13600,16 @@ function mqRenderQuestion() {
             // Determine which locations/routes to show for this question
             // If showLocations/showRoutes is defined (even empty), use as filter; if undefined, show all
             var hasLocFilter = q.hasOwnProperty('showLocations');
-            var hasRtFilter = q.hasOwnProperty('showRoutes');
+            var hasRtFilter = q.hasOwnProperty('showRoutes') || q.hasOwnProperty('routeId');
             var showLocs = hasLocFilter ? q.showLocations : null;
-            var showRts = hasRtFilter ? q.showRoutes : null;
+            var showRts;
+            if (q.hasOwnProperty('showRoutes')) {
+                showRts = q.showRoutes;
+            } else if (q.hasOwnProperty('routeId')) {
+                showRts = [q.routeId];
+            } else {
+                showRts = null;
+            }
 
             // Collect visible points for auto-zoom
             var bounds = [];
