@@ -11186,10 +11186,10 @@ let geoMap = null; let geoMarkers = []; let geoUserMarker = null; let geoCircle 
 let geoCurrentMode = 'location'; let geoCurrentCategory = 'all';
 let geoCurrentLayer = null;
 const GEO_TILE_LAYERS = {
-    'hebrew': { name: 'מפה', url: 'https://basemaps.govmap.gov.il/backgroundMaps/streets_and_buildings_6_2025/{z}/{x}/{y}.png', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 19, minZoom: 7 } },
-    'satellite': { name: 'לוויין', url: 'https://basemaps.govmap.gov.il/tms/orto2025me/{z}/{x}/{y}.jpg', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 20, minZoom: 4 } },
-    'topo': { name: 'טופו 1:25K', url: 'https://basemaps.govmap.gov.il/cachetiles/Topo25k/{z}/{x}/{y}.png', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 18, minZoom: 14 } },
-    'historic': { name: 'היסטורית 1935', url: 'https://basemaps.govmap.gov.il/cachetiles/historical/Israel_1935/{z}/{x}/{y}.png', opts: { attribution: '&copy; govmap.gov.il', maxZoom: 15, minZoom: 9 } }
+    'hebrew': { name: 'מפה', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom: 19, minZoom: 3, subdomains: 'abc' } },
+    'satellite': { name: 'לוויין', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, Maxar, Earthstar', maxZoom: 19, minZoom: 3 } },
+    'topo': { name: 'טופו', url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, minZoom: 3 } },
+    'historic': { name: 'היסטורית', url: 'https://nls-{s}.tileserver.com/fpsUZba7ERPD/{z}/{x}/{y}.jpg', opts: { attribution: '&copy; NLS Historical Maps', maxZoom: 15, minZoom: 3, subdomains: '0123' } }
 };
 
 const GEO_SITES = [
@@ -12783,7 +12783,7 @@ const CW_STREAK_BADGES = [
 ];
 
 // --- Tracking State ---
-let cwTrackingActive = false;
+var cwTrackingActive = false;
 let cwSessionStart = null;
 let cwSessionSeconds = 0;      // cumulative seconds for TODAY (loaded from storage + current session)
 let cwLastSavedSecond = 0;     // last saved checkpoint (to compute delta)
