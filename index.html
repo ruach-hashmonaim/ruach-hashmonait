@@ -2048,7 +2048,7 @@ function activatePage(page) {
 
     if (page === 'learning') loadLearningPrograms();
     if (page === 'hebrew') loadHebrewPage();
-    if (page === 'geography') initGeoMap();
+    if (page === 'geography') { initGeoMap(); setGeoMode('mapquiz'); }
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
