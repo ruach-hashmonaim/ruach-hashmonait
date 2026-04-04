@@ -2006,6 +2006,37 @@ function activatePage(page) {
         if (goingTo !== 'internet-safety') cwStopTracking();
     }
 
+    // Handle deep links: #geography/quiz/ID or #geography/sakal/ID
+    if (page.startsWith('geography/quiz/') || page.startsWith('geography/sakal/')) {
+        const parts = page.split('/');
+        const geoType = parts[1]; // 'quiz' or 'sakal'
+        const geoId = parts[2];
+        page = 'geography';
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        const el = document.getElementById('page-geography');
+        if (el) el.classList.add('active');
+        const navLink = document.querySelector('.sidebar-nav a[data-page="geography"]');
+        if (navLink) navLink.classList.add('active');
+        document.getElementById('page-title').textContent = PAGE_TITLES['geography'] || 'גיאוגרפיה';
+        document.getElementById('page-breadcrumb').textContent = 'המצפן / ' + (PAGE_TITLES['geography'] || 'גיאוגרפיה');
+        initGeoMap();
+        if (geoType === 'quiz') {
+            setGeoMode('mapquiz');
+            setTimeout(function() {
+                var idx = MAP_QUIZZES.findIndex(function(q) { return q.id === geoId; });
+                if (idx >= 0) mqStartQuiz(idx);
+            }, 200);
+        } else if (geoType === 'sakal') {
+            setGeoMode('sakal');
+            setTimeout(function() {
+                var idx = SAKAL_SURVEYS.findIndex(function(s) { return s.id === geoId; });
+                if (idx >= 0) sakalOpenDetail(idx);
+            }, 200);
+        }
+        return;
+    }
+
     // Handle deep links: #survey/DOCID
     if (page.startsWith('survey/')) {
         const surveyId = page.split('/')[1];
@@ -13525,15 +13556,21 @@ function mqRenderQuizList() {
     container.innerHTML = MAP_QUIZZES.map((quiz, idx) => {
         const saved = savedScores[quiz.id];
         const scoreLabel = saved ? '<span style="font-size:0.75rem;color:var(--primary);font-weight:700;">✓ ' + saved.score + '/' + saved.total + '</span>' : '';
-        return '<div onclick="mqStartQuiz(' + idx + ')" style="cursor:pointer;background:var(--bg-secondary);border-radius:12px;padding:14px;min-width:140px;flex:1;max-width:200px;transition:transform 0.2s;border:2px solid transparent;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'transparent\'">' +
-            '<div style="font-size:2rem;text-align:center;margin-bottom:6px;">' + quiz.icon + '</div>' +
-            '<div style="font-size:0.88rem;font-weight:600;text-align:center;color:var(--text-primary);margin-bottom:4px;">' + quiz.title + '</div>' +
-            '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center;margin-bottom:4px;">' + quiz.desc + '</div>' +
-            '<div style="display:flex;justify-content:center;gap:8px;align-items:center;">' +
-                '<span style="font-size:0.72rem;background:var(--primary);color:#fff;padding:2px 8px;border-radius:10px;">' + quiz.difficulty + '</span>' +
-                '<span style="font-size:0.72rem;color:var(--text-secondary);">' + quiz.questions.length + ' שאלות</span>' +
+        const shareUrl = window.location.origin + window.location.pathname + '#geography/quiz/' + quiz.id;
+        const waText = encodeURIComponent(quiz.icon + ' ' + quiz.title + ' — מבחן מפה אילמת\n' + quiz.desc + '\n\n👉 ' + shareUrl);
+        const waLink = 'https://wa.me/?text=' + waText;
+        return '<div style="cursor:pointer;background:var(--bg-secondary);border-radius:12px;padding:14px;min-width:140px;flex:1;max-width:200px;transition:transform 0.2s;border:2px solid transparent;display:flex;flex-direction:column;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'transparent\'">' +
+            '<div onclick="mqStartQuiz(' + idx + ')">' +
+                '<div style="font-size:2rem;text-align:center;margin-bottom:6px;">' + quiz.icon + '</div>' +
+                '<div style="font-size:0.88rem;font-weight:600;text-align:center;color:var(--text-primary);margin-bottom:4px;">' + quiz.title + '</div>' +
+                '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center;margin-bottom:4px;">' + quiz.desc + '</div>' +
+                '<div style="display:flex;justify-content:center;gap:8px;align-items:center;">' +
+                    '<span style="font-size:0.72rem;background:var(--primary);color:#fff;padding:2px 8px;border-radius:10px;">' + quiz.difficulty + '</span>' +
+                    '<span style="font-size:0.72rem;color:var(--text-secondary);">' + quiz.questions.length + ' שאלות</span>' +
+                '</div>' +
+                (scoreLabel ? '<div style="text-align:center;margin-top:6px;">' + scoreLabel + '</div>' : '') +
             '</div>' +
-            (scoreLabel ? '<div style="text-align:center;margin-top:6px;">' + scoreLabel + '</div>' : '') +
+            '<a href="' + waLink + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;padding:5px 0;background:#25D366;color:#fff;border-radius:8px;font-size:0.72rem;font-weight:600;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">📲 שתף בווצאפ</a>' +
         '</div>';
     }).join('');
 }
@@ -14192,19 +14229,25 @@ function sakalRenderList() {
         return;
     }
     grid.innerHTML = SAKAL_SURVEYS.map(function(s, idx) {
-        return '<div class="sakal-card" onclick="sakalOpenDetail('+idx+')" style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;min-height:140px;" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.12)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">' +
-            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
-                '<span style="font-size:2rem;">'+s.icon+'</span>' +
-                '<div>' +
-                    '<div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);">'+s.title+'</div>' +
-                    '<div style="font-size:0.82rem;color:var(--text-secondary);">'+s.subtitle+'</div>' +
+        var shareUrl = window.location.origin + window.location.pathname + '#geography/sakal/' + s.id;
+        var waText = encodeURIComponent(s.icon + ' ' + s.title + ' — סק"ג\n' + s.subtitle + '\n\n👉 ' + shareUrl);
+        var waLink = 'https://wa.me/?text=' + waText;
+        return '<div class="sakal-card" style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;min-height:140px;" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.12)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">' +
+            '<div onclick="sakalOpenDetail('+idx+')">' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+                    '<span style="font-size:2rem;">'+s.icon+'</span>' +
+                    '<div>' +
+                        '<div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);">'+s.title+'</div>' +
+                        '<div style="font-size:0.82rem;color:var(--text-secondary);">'+s.subtitle+'</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:10px;">' +
+                    '<span style="font-size:0.72rem;background:var(--primary-lighter);color:var(--primary);padding:3px 10px;border-radius:10px;font-weight:600;">'+s.journey+'</span>' +
+                    '<span style="font-size:0.72rem;background:#FFF3E0;color:#E65100;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.difficulty+'</span>' +
+                    '<span style="font-size:0.72rem;background:#E8F5E9;color:#2E7D32;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.locations.length+' נקודות עניין</span>' +
                 '</div>' +
             '</div>' +
-            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:10px;">' +
-                '<span style="font-size:0.72rem;background:var(--primary-lighter);color:var(--primary);padding:3px 10px;border-radius:10px;font-weight:600;">'+s.journey+'</span>' +
-                '<span style="font-size:0.72rem;background:#FFF3E0;color:#E65100;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.difficulty+'</span>' +
-                '<span style="font-size:0.72rem;background:#E8F5E9;color:#2E7D32;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.locations.length+' נקודות עניין</span>' +
-            '</div>' +
+            '<a href="' + waLink + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;padding:5px 0;background:#25D366;color:#fff;border-radius:8px;font-size:0.72rem;font-weight:600;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">📲 שתף בווצאפ</a>' +
         '</div>';
     }).join('');
 }
