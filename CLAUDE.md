@@ -119,6 +119,34 @@ The app has anti-devtools detection (debugger-based timing check). This will tri
 - **URL**: https://github.com/ruach-hashmonaim/ruach-hashmonait
 - **Live site**: https://hamatzpen.io
 
+## Map Quiz Content Guidelines (מבחני מפה)
+
+When creating or editing map quizzes:
+
+### Questions
+- Questions must **tell the story** of each point — NOT generic "what is the point on the map" questions
+- Good: "המקום בו התקיים הקרב הראשון של שאול המלך", "מכובדי העיר הניפו דגל לבן — איזו עיר?"
+- Bad: "מה הנקודה המופיעה במפה?", "מהו מוקד הקרב מספר 5?"
+- Each question should include historical/narrative context from the source material
+- The `expansion` field must contain the **full content** from the original PDF source — including quotes, verses, and background
+
+### Arrows (Routes)
+- Arrows must be **geographically accurate** — verify coordinates match real-world locations
+- Arrow direction must show the **actual military movement direction** (e.g., IDF advancing INTO enemy territory, not starting from the target)
+- Use Google Maps or known coordinates to verify lat/lng accuracy
+- Each numbered point on the source PDF map must have a corresponding arrow
+
+### Location Pins (showLocations)
+- Pins must be placed on **target/destination** locations, NOT on departure points
+- For battles: pin goes on the battle site or conquered location
+- Departure points (like Jerusalem/Hebron for David's conquests) should be labeled as "נק' מוצא" (departure point)
+
+### Expansion Content
+- Must include the full narrative from the source PDF
+- Biblical quizzes: include the full verse in Hebrew with nikud
+- Modern quizzes: include unit names, commanders, tactical details from the source
+- Always reference the arrow/point number: "חץ/נקודה מספר X במפה"
+
 ## Recent Changes (March 2026)
 - Fixed map quiz filtering: markers and routes now show only the relevant data per question
 - Fixed `loc.num` vs `loc.id` inconsistency in filter code
