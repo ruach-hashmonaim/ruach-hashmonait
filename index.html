@@ -2806,28 +2806,22 @@ const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
 
 const TRAINING_WEEK_NAMES = {
     'basic': {
-        // הכשרת יסוד — שבועות עם שמות מיוחדים
+        15: { name: 'שרשרת הדורות א׳ (סד"ח)', icon: '🚶' }
     },
     'nco': {
-        // קורס מ"כים — שבועות עם שמות מיוחדים
+        12: { name: 'מסע פיקוד — שרשרת הדורות ב׳', icon: '🗡️' }
     },
     'officer': {
-        // קורס קצינים — שבועות עם שמות מיוחדים
+        7:  { name: 'שבוע אתרי קרבות', icon: '⚔️', track: 'sade' },
+        14: { name: 'שרשרת הדורות ג׳', icon: '🏜️', track: 'sade' },
+        15: { name: 'שבוע זהות', icon: '🔯', track: 'sade' }
     }
 };
 
 const TRAINING_SPECIAL_WEEKS = {
-    'basic': [
-        { name: 'מסע שרשרת הדורות א׳ (סד"ח)', icon: '🚶', weekNum: 101 }
-    ],
-    'nco': [
-        { name: 'מסע פיקוד — שרשרת הדורות ב׳', icon: '🗡️', weekNum: 101 }
-    ],
-    'officer': [
-        { name: 'בעקבות מנהיגים במדבר — שרשרת הדורות ג׳', icon: '🏜️', weekNum: 101 },
-        { name: 'שבוע אתרי קרבות', icon: '⚔️', weekNum: 102 },
-        { name: 'שבוע זהות', icon: '🔯', weekNum: 103 }
-    ]
+    'basic': [],
+    'nco': [],
+    'officer': []
 };
 
 let currentTrainingProgram = 'basic';
@@ -2988,22 +2982,18 @@ async function loadTrainingPage(program) {
     // Build week navigation
     if (controls) {
         let weekHtml = '<div class="week-nav">';
+        const weekNames = TRAINING_WEEK_NAMES[program] || {};
         for (let w = 1; w <= totalWeeks; w++) {
             const isActive = (currentTrainingWeek[program] || 1) === w;
-            weekHtml += `<button class="week-btn ${isActive ? 'active' : ''}" onclick="selectTrainingWeek('${program}',${w})">${w}</button>`;
+            const wInfo = weekNames[w];
+            // Show special name if exists and track matches (or no track restriction)
+            if (wInfo && (!wInfo.track || wInfo.track === track)) {
+                weekHtml += `<button class="week-btn ${isActive ? 'active' : ''}" style="display:block;width:100%;text-align:right;margin:4px 0;padding:6px 10px;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="selectTrainingWeek('${program}',${w})" title="${wInfo.icon||''} שבוע ${w} — ${wInfo.name}">${wInfo.icon||''} ${w} — ${wInfo.name}</button>`;
+            } else {
+                weekHtml += `<button class="week-btn ${isActive ? 'active' : ''}" onclick="selectTrainingWeek('${program}',${w})">${w}</button>`;
+            }
         }
         weekHtml += '</div>';
-        // Add special education weeks for this program (clickable, editable like regular weeks)
-        var specWeeks = TRAINING_SPECIAL_WEEKS[program];
-        if (specWeeks && specWeeks.length > 0) {
-            weekHtml += '<div style="margin-top:10px;padding:10px 14px;background:rgba(212,168,67,0.08);border-radius:10px;border-right:3px solid var(--primary);">';
-            weekHtml += '<div style="font-size:0.82rem;font-weight:700;color:var(--primary);margin-bottom:6px;">🗓️ שבועות חינוך בהכשרה:</div>';
-            specWeeks.forEach(function(sw) {
-                var isActiveSpec = (currentTrainingWeek[program] === sw.weekNum);
-                weekHtml += '<button class="week-btn ' + (isActiveSpec ? 'active' : '') + '" style="display:block;width:100%;text-align:right;margin:4px 0;padding:6px 10px;font-size:0.82rem;" onclick="selectTrainingWeek(\'' + program + '\',' + sw.weekNum + ')">' + (sw.icon||'') + ' ' + sw.name + '</button>';
-            });
-            weekHtml += '</div>';
-        }
         controls.innerHTML = weekHtml;
     }
 
@@ -3043,11 +3033,9 @@ async function loadTrainingPage(program) {
         const plugaLabel = hasPluga ? (TRAINING_TRACKS[plugaTrack] || '') : '';
         const headerParts = [trackLabel, plugaLabel].filter(Boolean).join(' — ');
 
-        // Check if this is a special education week
-        var specWeekName = '';
-        var specWeeksForProgram = TRAINING_SPECIAL_WEEKS[program] || [];
-        specWeeksForProgram.forEach(function(sw) { if (sw.weekNum === week) specWeekName = (sw.icon||'') + ' ' + sw.name; });
-        var weekTitle = specWeekName || ('שבוע ' + week);
+        // Check if this week has a special name
+        var wNameInfo = (TRAINING_WEEK_NAMES[program] || {})[week];
+        var weekTitle = (wNameInfo && (!wNameInfo.track || wNameInfo.track === track)) ? ((wNameInfo.icon||'') + ' שבוע ' + week + ' — ' + wNameInfo.name) : ('שבוע ' + week);
 
         let html = `<div style="margin-bottom:14px;">
             <h3 style="color:var(--primary);font-size:1.1rem;">${weekTitle}${headerParts ? ' — ' + headerParts : ''}</h3>
@@ -11275,14 +11263,13 @@ function adminTrainingChanged() {
     trackSelect.style.display = prog === 'officer' ? '' : 'none';
     // Build week options (regular + special weeks)
     const config = TRAINING_CONFIG[prog];
+    const wNames = TRAINING_WEEK_NAMES[prog] || {};
+    const selectedTrack = prog === 'officer' ? trackSelect.value : null;
     let weekHtml = '';
     for (let w = 1; w <= config.weeks; w++) {
-        weekHtml += `<option value="${w}">שבוע ${w}</option>`;
-    }
-    // Add special training weeks
-    const specialWeeks = TRAINING_SPECIAL_WEEKS[prog] || [];
-    for (const sw of specialWeeks) {
-        weekHtml += `<option value="${sw.weekNum}">${sw.icon} ${sw.name}</option>`;
+        const wI = wNames[w];
+        const label = (wI && (!wI.track || wI.track === selectedTrack)) ? `${wI.icon||''} שבוע ${w} — ${wI.name}` : `שבוע ${w}`;
+        weekHtml += `<option value="${w}">${label}</option>`;
     }
     weekSelect.innerHTML = weekHtml;
     loadAdminTrainingContent();
