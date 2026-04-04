@@ -927,7 +927,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> לימוד עברית</a>
         <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> בעקבות הנצח</a>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת הפנימית</a>
-        <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> תוכנית הרוח והחינוך של בה״ד מכבים</a>
+        <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי — תוכנית הרוח והחינוך</a>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
 
         <!-- Staff-only sections -->
@@ -997,8 +997,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </a>
         <a class="home-tile tile-training" style="display:none;" onclick="navigate('training')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
-            <div class="tile-title">תוכנית הרוח והחינוך של בה״ד מכבים</div>
-            <div class="tile-desc">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</div>
+            <div class="tile-title">רוח מכבי</div>
+            <div class="tile-desc">תוכנית הרוח והחינוך של בה״ד מכבים — קורס קצינים, מ״כים, הכשרת יסוד</div>
         </a>
         <a class="home-tile" onclick="navigate('hebrew')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0891B2,#22D3EE);"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75l11-11.03-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
@@ -1057,11 +1057,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 
-<!-- ====== TRAINING — תוכנית הרוח והחינוך של בה״ד מכבים (unified) ====== -->
+<!-- ====== TRAINING — רוח מכבי — תוכנית הרוח והחינוך של בה״ד מכבים ====== -->
 <div class="page-section" id="page-training">
     <div class="card">
-        <div class="card-title">תוכנית הרוח והחינוך של בה״ד מכבים</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">תכני הכשרה — קורס קצינים, מ״כים, הכשרת יסוד</p>
+        <div class="card-title">רוח מכבי</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">תוכנית הרוח והחינוך של בה״ד מכבים — תכני הכשרה לקורס קצינים, מ״כים, והכשרת יסוד</p>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <button class="track-tab active" id="training-prog-basic" onclick="switchTrainingProgram('basic')">הכשרת יסוד</button>
             <button class="track-tab" id="training-prog-nco" onclick="switchTrainingProgram('nco')">קורס מ״כים</button>
@@ -1514,7 +1514,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- Users management -->
     <div class="admin-panel" id="admin-users">
         <div class="card">
-            <h3 style="margin-bottom:14px;">ניהול משתמשים</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><h3 style="margin:0;">ניהול משתמשים</h3><button class="btn-primary btn-sm" onclick="exportUsersToExcel()" style="font-size:0.82rem;">📥 ייצוא לאקסל</button></div>
             <div id="admin-users-list"></div>
             <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
                 <h4 style="margin-bottom:8px;">הוספת משתמש חדש</h4>
@@ -14758,6 +14758,35 @@ async function loadAdminUsers() {
         html += '</tbody></table>';
         container.innerHTML = html;
     } catch(e) { container.innerHTML = 'שגיאה בטעינת משתמשים'; }
+}
+
+async function exportUsersToExcel() {
+    showLoading(true);
+    if (typeof XLSX === 'undefined') await new Promise((r,j) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = r; s.onerror = j; document.head.appendChild(s); });
+    try {
+        const snap = await db.collection('users').get();
+        const headers = ['שם', 'אימייל', 'טלפון', 'תפקיד', 'מסגרת', 'פלוגה'];
+        const rows = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            rows.push([
+                d.name || '',
+                d.email || doc.id,
+                d.phone || '',
+                ROLES[d.role]?.label || d.role || '',
+                getFrameworkLabel(d.framework) || '',
+                d.pluga ? 'פלוגה ' + d.pluga + '׳' : ''
+            ]);
+        });
+        rows.sort((a, b) => a[0].localeCompare(b[0], 'he'));
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        ws['!cols'] = [{ wch: 22 }, { wch: 28 }, { wch: 16 }, { wch: 18 }, { wch: 16 }, { wch: 12 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'משתמשים');
+        XLSX.writeFile(wb, 'משתמשים — המצפן.xlsx');
+        showToast('הקובץ יורד...');
+    } catch(e) { showToast('שגיאה בייצוא'); }
+    showLoading(false);
 }
 
 async function addUser() {
