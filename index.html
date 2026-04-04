@@ -14192,7 +14192,7 @@ function sakalRenderList() {
         return;
     }
     grid.innerHTML = SAKAL_SURVEYS.map(function(s, idx) {
-        return '<div class="sakal-card" onclick="sakalOpenDetail('+idx+')" style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.12)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">' +
+        return '<div class="sakal-card" onclick="sakalOpenDetail('+idx+')" style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;min-height:140px;" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.12)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">' +
             '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
                 '<span style="font-size:2rem;">'+s.icon+'</span>' +
                 '<div>' +
@@ -14200,7 +14200,7 @@ function sakalRenderList() {
                     '<div style="font-size:0.82rem;color:var(--text-secondary);">'+s.subtitle+'</div>' +
                 '</div>' +
             '</div>' +
-            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">' +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:10px;">' +
                 '<span style="font-size:0.72rem;background:var(--primary-lighter);color:var(--primary);padding:3px 10px;border-radius:10px;font-weight:600;">'+s.journey+'</span>' +
                 '<span style="font-size:0.72rem;background:#FFF3E0;color:#E65100;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.difficulty+'</span>' +
                 '<span style="font-size:0.72rem;background:#E8F5E9;color:#2E7D32;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.locations.length+' נקודות עניין</span>' +
