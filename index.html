@@ -15682,7 +15682,13 @@ async function waitForFirebase(retries) {
 function splashEnter() {
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('app-layout').style.display = '';
-    navigate('home');
+    // Preserve deep link if present (e.g. #geography/quiz/david_battles)
+    var hash = window.location.hash.slice(1);
+    if (hash && hash !== 'home') {
+        activatePage(hash);
+    } else {
+        navigate('home');
+    }
 }
 
 async function initApp() {
@@ -15752,7 +15758,14 @@ initApp().then(() => {
     if (savedUser) {
         document.getElementById('splash-screen').style.display = 'none';
         document.getElementById('app-layout').style.display = '';
-        setTimeout(tryAutoLogin, 300);
+        setTimeout(function() {
+            tryAutoLogin();
+            // After auto-login, navigate to deep link if present
+            var hash = window.location.hash.slice(1);
+            if (hash && hash !== 'home') {
+                activatePage(hash);
+            }
+        }, 300);
     }
     // Otherwise: splash screen stays visible, user clicks "כניסה לאתר"
 });
