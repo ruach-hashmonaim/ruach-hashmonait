@@ -1465,11 +1465,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <option value="nco">קורס מ״כים</option>
                 <option value="officer">קורס קצינים</option>
             </select>
-            <select id="cmgmt-track" style="width:140px;display:none;" onchange="loadCmgmtContent()">
+            <select id="cmgmt-track" style="width:140px;display:none;" onchange="cmgmtProgramChanged()">
                 <option value="sade">מסלול שדה</option>
                 <option value="gefen">מסלול גפן</option>
             </select>
-            <select id="cmgmt-week" onchange="loadCmgmtContent()" style="width:100px;"></select>
+            <select id="cmgmt-week" onchange="loadCmgmtContent()" style="min-width:100px;max-width:300px;"></select>
         </div>
         <div id="cmgmt-list"></div>
         <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
@@ -11081,8 +11081,14 @@ function cmgmtProgramChanged() {
     const weekSelect = document.getElementById('cmgmt-week');
     trackSelect.style.display = prog === 'officer' ? '' : 'none';
     const config = TRAINING_CONFIG[prog];
+    const wNames = TRAINING_WEEK_NAMES[prog] || {};
+    const selectedTrack = prog === 'officer' ? trackSelect.value : null;
     let weekHtml = '';
-    for (let w = 1; w <= config.weeks; w++) weekHtml += `<option value="${w}">שבוע ${w}</option>`;
+    for (let w = 1; w <= config.weeks; w++) {
+        const wI = wNames[w];
+        const label = (wI && (!wI.track || wI.track === selectedTrack)) ? `${wI.icon||''} שבוע ${w} — ${wI.name}` : `שבוע ${w}`;
+        weekHtml += `<option value="${w}">${label}</option>`;
+    }
     weekSelect.innerHTML = weekHtml;
     loadCmgmtContent();
 }
