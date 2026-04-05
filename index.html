@@ -3109,8 +3109,9 @@ async function loadTrainingPage(program) {
             <h3 style="color:var(--primary);font-size:1.1rem;">${weekTitle}${headerParts ? ' — ' + headerParts : ''}</h3>
         </div>`;
 
-        // Collect EMET (אמת מארץ תצמח) items for this program+week
-        const emetItems = (EMET_CURRICULUM[program] && EMET_CURRICULUM[program][week]) || [];
+        // Collect EMET (אמת מארץ תצמח) items for this program+week — visible to admin only
+        const isAdmin = userLevel() >= 6;
+        const emetItems = isAdmin ? ((EMET_CURRICULUM[program] && EMET_CURRICULUM[program][week]) || []) : [];
         const totalItems = lessons.length + emetItems.length;
 
         if (totalItems === 0) {
@@ -3247,10 +3248,12 @@ async function loadTrainingPage(program) {
                 const d = doc.data();
                 if (!contentTrackForWeeks || d.track === contentTrackForWeeks) weeksWithContent.add(d.week);
             });
-            // Also mark weeks that have EMET curriculum items
-            const emetWeeks = EMET_CURRICULUM[program] || {};
-            for (const w of Object.keys(emetWeeks)) {
-                if (emetWeeks[w] && emetWeeks[w].length > 0) weeksWithContent.add(parseInt(w));
+            // Also mark weeks that have EMET curriculum items (admin only)
+            if (isAdmin) {
+                const emetWeeks = EMET_CURRICULUM[program] || {};
+                for (const w of Object.keys(emetWeeks)) {
+                    if (emetWeeks[w] && emetWeeks[w].length > 0) weeksWithContent.add(parseInt(w));
+                }
             }
             controls.querySelectorAll('.week-btn').forEach(btn => {
                 const w = parseInt(btn.textContent);
@@ -11239,32 +11242,56 @@ async function loadCmgmtContent() {
         let query = db.collection('training_content').where('program','==',prog).where('week','==',week);
         if (track) query = query.where('track','==',track);
         const snap = await query.orderBy('order').get();
-        if (snap.empty) {
+        const emetCheck = (EMET_CURRICULUM[prog] && EMET_CURRICULUM[prog][week]) || [];
+        if (snap.empty && emetCheck.length === 0) {
             container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
             return;
         }
         const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
-        let html = '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור / קובץ</th><th>פעולות</th></tr></thead><tbody>';
-        snap.forEach(doc => {
-            const d = doc.data();
-            const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
-            const color = catColors[d.category] || '#666';
-            let linkHtml = '—';
-            if (d.fileUrl) linkHtml = `<a href="${d.fileUrl}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName || 'קובץ'}</a>`;
-            if (d.url) linkHtml += (d.fileUrl ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
-            html += `<tr>
-                <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
-                <td>${d.title}</td>
-                <td>${d.instructor || '—'}</td>
-                <td>${d.hours || '—'}</td>
-                <td>${linkHtml}</td>
-                <td style="white-space:nowrap;">
-                    <button class="btn-sm btn-secondary" onclick="openEditLesson('${doc.id}','cmgmt')">ערוך</button>
-                    <button class="btn-sm btn-danger" onclick="cmgmtDeleteLesson('${doc.id}')">מחק</button>
-                </td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
+        let html = '';
+        if (!snap.empty) {
+            html += '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור / קובץ</th><th>פעולות</th></tr></thead><tbody>';
+            snap.forEach(doc => {
+                const d = doc.data();
+                const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
+                const color = catColors[d.category] || '#666';
+                let linkHtml = '—';
+                if (d.fileUrl) linkHtml = `<a href="${d.fileUrl}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName || 'קובץ'}</a>`;
+                if (d.url) linkHtml += (d.fileUrl ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
+                html += `<tr>
+                    <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
+                    <td>${d.title}</td>
+                    <td>${d.instructor || '—'}</td>
+                    <td>${d.hours || '—'}</td>
+                    <td>${linkHtml}</td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn-sm btn-secondary" onclick="openEditLesson('${doc.id}','cmgmt')">ערוך</button>
+                        <button class="btn-sm btn-danger" onclick="cmgmtDeleteLesson('${doc.id}')">מחק</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+        }
+        // Append EMET (אמת מארץ תצמח) items as read-only rows
+        const emetItems = (EMET_CURRICULUM[prog] && EMET_CURRICULUM[prog][week]) || [];
+        if (emetItems.length > 0) {
+            html += `<div style="margin-top:14px;border-top:1.5px dashed #D97706;padding-top:10px;">
+                <div style="font-weight:700;font-size:0.88rem;color:#B45309;margin-bottom:8px;">📍 אמת מארץ תצמח (מוטמע בקוד — קריאה בלבד)</div>
+                <table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>סטטוס</th></tr></thead><tbody>`;
+            for (const item of emetItems) {
+                const deepLink = item.type === 'sakal' ? '#geography/sakal/' + item.id : '#geography/quiz/' + item.id;
+                const typeLabel = item.type === 'sakal' ? '📍 סק"ג' : '🗺️ מפה אילמת';
+                html += `<tr style="background:rgba(217,119,6,0.05);">
+                    <td><span style="color:#D97706;font-weight:600;">חינוך</span></td>
+                    <td>${item.icon} ${item.title}</td>
+                    <td>מ"כ/מ"מ</td>
+                    <td>0.5</td>
+                    <td><a href="${deepLink}" style="color:var(--primary-lighter);font-size:0.8rem;">${typeLabel}</a></td>
+                    <td style="font-size:0.78rem;color:#B45309;">🔒 מוטמע</td>
+                </tr>`;
+            }
+            html += '</tbody></table></div>';
+        }
         container.innerHTML = html;
     } catch(e) { container.innerHTML = '<p style="color:var(--danger);">שגיאה: ' + e.message + '</p>'; }
 }
