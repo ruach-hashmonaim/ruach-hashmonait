@@ -3232,7 +3232,7 @@ async function loadTrainingPage(program) {
                 const waText = encodeURIComponent(item.icon + ' ' + item.title + ' — אמת מארץ תצמח\n' + typeLabel + ' | הכשרת יסוד שבוע ' + week + '\n\n👉 ' + fullUrl);
                 const waLink = 'https://wa.me/?text=' + waText;
 
-                // Completion tracking for EMET items
+                // Completion tracking for EMET items — full UI with notes + file
                 let emetCompletionHtml = '';
                 if (hasPluga && plugaLetter) {
                     const key = `emet_${item.id}_${plugaLetter}`;
@@ -3241,9 +3241,28 @@ async function loadTrainingPage(program) {
                     const doneClass = done ? 'done' : '';
                     const clickHandler = canMark ? `onclick="togglePlatoonStatus('emet_${item.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}',${!done})"` : '';
                     const tooltip = done ? `title="סומן ע״י ${rec.markedBy||'—'}"` : '';
-                    emetCompletionHtml = `<span class="completion-badge ${doneClass}" ${canMark ? 'style="cursor:pointer;"' : ''} ${clickHandler} ${tooltip}>
-                        ${done ? '✓ בוצע' : '○ לא בוצע'}
-                    </span>`;
+                    emetCompletionHtml = `<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                        <span class="completion-badge ${doneClass}" ${canMark ? 'style="cursor:pointer;"' : ''} ${clickHandler} ${tooltip}>
+                            ${done ? '✓ בוצע' : '○ לא בוצע'}
+                        </span>
+                        ${rec.notes ? `<div style="font-size:0.78rem;color:var(--text-secondary);max-width:200px;text-align:left;">💬 ${rec.notes}</div>` : ''}
+                        ${rec.fileUrl ? `<a href="${rec.fileUrl}" target="_blank" style="font-size:0.78rem;color:var(--primary-lighter);">📄 קובץ מצורף</a>` : ''}
+                        ${canMark ? `<button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionDetails('emet_${item.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}')">📝 פרטי ביצוע</button>` : ''}
+                    </div>`;
+                } else {
+                    // No specific platoon selected — show all platoons overview
+                    emetCompletionHtml = `<div class="training-col-platoons" style="margin-top:8px;">
+                        ${PLATOONS.map(p => {
+                            const key = `emet_${item.id}_${p}`;
+                            const rec = statusMap[key] || {};
+                            const done = rec.completed;
+                            const doneClass = done ? 'done' : '';
+                            const clickHandler = canMark ? `onclick="togglePlatoonStatus('emet_${item.id}','${program}',${week},'${plugaTrack||''}','${p}',${!done})"` : '';
+                            const tooltip = done ? `title="${rec.markedBy||'—'}${rec.notes ? ' | ' + rec.notes : ''}"` : '';
+                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳${rec.fileUrl ? '📎' : ''}</span>`;
+                        }).join('')}
+                    </div>
+                    ${canMark ? `<div style="margin-top:4px;text-align:left;"><button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionOverview('emet_${item.id}','${program}',${week},'${plugaTrack||''}')">📋 סקירת ביצוע</button></div>` : ''}`;
                 }
 
                 html += `<div class="card" style="border-right:4px solid ${emetColor};padding:16px;background:linear-gradient(135deg, rgba(217,119,6,0.03) 0%, transparent 100%);">
