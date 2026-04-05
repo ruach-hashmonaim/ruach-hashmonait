@@ -15142,12 +15142,18 @@ function modalSakagRenderResult(sakagData, lat, lng, placeName) {
 }
 
 async function modalSakagSaveAndPDF() {
-    if (!window._modalSakagData || !currentUser) return;
+    if (!window._modalSakagData) { showToast('❌ אין נתוני סק"ג לשמירה'); return; }
+    if (!currentUser) { showToast('❌ יש להתחבר למערכת כדי לשמור'); return; }
     var d = window._modalSakagData;
 
+    // Disable button while processing
+    var btns = document.querySelectorAll('#modal-sakag-content .btn-primary');
+    btns.forEach(function(b) { b.disabled = true; b.textContent = '⏳ שומר...'; });
+
+    var saved = false;
     try {
         // Save to Firestore
-        var docRef = await db.collection('user_sakag').add({
+        await db.collection('user_sakag').add({
             title: d.data.title || 'סק"ג — ' + d.placeName,
             subtitle: d.data.subtitle || '',
             placeName: d.placeName,
@@ -15158,22 +15164,39 @@ async function modalSakagSaveAndPDF() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
+        saved = true;
+    } catch(err) {
+        console.error('Firestore save error:', err);
+        showToast('⚠️ השמירה נכשלה, מנסה להוריד PDF בכל זאת...');
+    }
 
-        // Generate PDF
+    try {
+        // Generate PDF regardless of save status
         await generateSakagPDF(d.data, d.placeName);
-
-        showToast('✅ הסק"ג נשמר והורד כ-PDF!');
+        showToast(saved ? '✅ הסק"ג נשמר והורד כ-PDF!' : '✅ ה-PDF הורד (השמירה נכשלה)');
 
         // Close modal after short delay
         setTimeout(function() {
             var modal = document.getElementById('sakag-creator-modal');
             if (modal) modal.remove();
         }, 1500);
-
-    } catch(err) { showToast('❌ שגיאה: ' + err.message); }
+    } catch(err) {
+        console.error('PDF generation error:', err);
+        showToast('❌ שגיאה ביצירת PDF: ' + err.message);
+        btns.forEach(function(b) { b.disabled = false; b.textContent = '📥 שמור והורד PDF'; });
+    }
 }
 
 async function generateSakagPDF(sakagData, placeName) {
+    // Load html2canvas if not loaded
+    if (typeof html2canvas === 'undefined') {
+        await new Promise(function(resolve, reject) {
+            var s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
     // Load jsPDF if not loaded
     if (typeof jspdf === 'undefined' && typeof jsPDF === 'undefined') {
         await new Promise(function(resolve, reject) {
@@ -15183,81 +15206,76 @@ async function generateSakagPDF(sakagData, placeName) {
             document.head.appendChild(s);
         });
     }
-    var PDF = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
-    var doc = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    // Load Amiri font for Hebrew/RTL (from Google Fonts CDN)
-    // Fallback: use built-in Helvetica for now (Hebrew may not render perfectly)
-    doc.setR2L(true);
-
-    var pageW = 210, margin = 15, contentW = pageW - 2 * margin;
-    var y = 20;
-
-    // Title
-    doc.setFontSize(18);
-    doc.setFont('Helvetica', 'bold');
+    // Build styled HTML container for rendering
     var title = sakagData.title || 'סק"ג — ' + placeName;
-    doc.text(title, pageW - margin, y, { align: 'right' });
-    y += 8;
+    var sectionsHtml = (sakagData.sections || []).map(function(sec) {
+        return '<div style="margin-bottom:14px;">' +
+            '<div style="font-weight:700;color:#00695C;font-size:14px;margin-bottom:4px;">' + (sec.icon || '📌') + ' ' + sec.title + '</div>' +
+            '<div style="background:#f5f5f5;border-radius:8px;padding:10px;font-size:11px;line-height:1.7;">' + sec.content + '</div>' +
+        '</div>';
+    }).join('');
 
-    if (sakagData.subtitle) {
-        doc.setFontSize(11);
-        doc.setFont('Helvetica', 'normal');
-        doc.text(sakagData.subtitle, pageW - margin, y, { align: 'right' });
-        y += 6;
+    var container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:-9999px;left:0;width:595px;padding:30px 35px;background:#fff;direction:rtl;font-family:Arial,sans-serif;color:#222;box-sizing:border-box;';
+    container.innerHTML =
+        '<div style="text-align:center;margin-bottom:6px;">' +
+            '<div style="font-size:20px;font-weight:700;color:#00695C;">' + title + '</div>' +
+            (sakagData.subtitle ? '<div style="font-size:12px;color:#666;margin-top:3px;">' + sakagData.subtitle + '</div>' : '') +
+        '</div>' +
+        '<hr style="border:none;border-top:2px solid #00695C;margin:10px 0 14px;">' +
+        '<div style="font-size:9px;color:#999;text-align:center;margin-bottom:14px;">נוצר באמצעות סוכן AI — אמת מארץ תצמח — חטיבת החשמונאים</div>' +
+        sectionsHtml +
+        '<div style="margin-top:20px;text-align:center;font-size:8px;color:#aaa;border-top:1px solid #ddd;padding-top:8px;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</div>';
+    document.body.appendChild(container);
+
+    try {
+        var canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        var imgData = canvas.toDataURL('image/jpeg', 0.92);
+        var PDF = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
+
+        // A4 dimensions in mm
+        var pageW = 210, pageH = 297, margin = 10;
+        var contentW = pageW - 2 * margin;
+        var imgRatio = canvas.height / canvas.width;
+        var imgH = contentW * imgRatio;
+
+        var doc = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var y = margin;
+        var pageContentH = pageH - 2 * margin;
+
+        if (imgH <= pageContentH) {
+            // Fits on one page
+            doc.addImage(imgData, 'JPEG', margin, y, contentW, imgH);
+        } else {
+            // Split across pages using source-y slicing
+            var pxPerMm = canvas.width / contentW;
+            var sliceHpx = pageContentH * pxPerMm;
+            var totalPx = canvas.height;
+            var offsetPx = 0;
+            var pageNum = 0;
+            while (offsetPx < totalPx) {
+                if (pageNum > 0) doc.addPage();
+                var thisSlice = Math.min(sliceHpx, totalPx - offsetPx);
+                // Create a slice canvas
+                var sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width = canvas.width;
+                sliceCanvas.height = thisSlice;
+                var ctx = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSlice, 0, 0, canvas.width, thisSlice);
+                var sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.92);
+                var sliceHmm = thisSlice / pxPerMm;
+                doc.addImage(sliceImg, 'JPEG', margin, margin, contentW, sliceHmm);
+                offsetPx += thisSlice;
+                pageNum++;
+            }
+        }
+
+        var filename = 'sakag-' + (placeName || 'new').replace(/[^א-תa-zA-Z0-9]/g, '-') + '.pdf';
+        doc.save(filename);
+    } finally {
+        document.body.removeChild(container);
     }
-
-    // Divider line
-    doc.setDrawColor(0, 128, 128);
-    doc.setLineWidth(0.5);
-    doc.line(margin, y, pageW - margin, y);
-    y += 8;
-
-    // Intro line
-    doc.setFontSize(8);
-    doc.setFont('Helvetica', 'italic');
-    doc.text('נוצר באמצעות סוכן AI — אמת מארץ תצמח — חטיבת החשמונאים', pageW - margin, y, { align: 'right' });
-    y += 10;
-
-    // Sections
-    (sakagData.sections || []).forEach(function(sec) {
-        if (y > 260) { doc.addPage(); y = 20; }
-
-        // Section title
-        doc.setFontSize(13);
-        doc.setFont('Helvetica', 'bold');
-        doc.text((sec.icon || '') + ' ' + sec.title, pageW - margin, y, { align: 'right' });
-        y += 7;
-
-        // Section content — strip HTML and split into lines
-        var text = (sec.content || '')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<\/p>/gi, '\n')
-            .replace(/<[^>]+>/g, '')
-            .replace(/&amp;/g, '&')
-            .replace(/&quot;/g, '"')
-            .replace(/&#x?\d+;/g, '')
-            .trim();
-
-        doc.setFontSize(10);
-        doc.setFont('Helvetica', 'normal');
-        var lines = doc.splitTextToSize(text, contentW);
-        lines.forEach(function(line) {
-            if (y > 275) { doc.addPage(); y = 20; }
-            doc.text(line, pageW - margin, y, { align: 'right' });
-            y += 5;
-        });
-        y += 6;
-    });
-
-    // Footer
-    doc.setFontSize(7);
-    doc.setFont('Helvetica', 'italic');
-    doc.text('המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים', pageW / 2, 290, { align: 'center' });
-
-    // Download
-    var filename = 'sakag-' + (placeName || 'new').replace(/[^א-תa-zA-Z0-9]/g, '-') + '.pdf';
-    doc.save(filename);
 }
 
 // === AI סק"ג Generator ===
@@ -15266,14 +15284,22 @@ const SAKAG_AI_PROMPT = `אתה משמש כיועץ תוכן והיסטוריה 
 הסק"ג מיועדת ללוחמים חרדים ולכן יש להישען קודם כל על התורה, התנ"ך, המשנה והמדרש, ולאחר מכן על מקורות היסטוריים-ארכיאולוגיים.
 הסגנון צריך להיות בהיר, מכבד, ענייני-ומכוון לחיבור זהותי-תורני-ערכי בין הלוחם, המקום והמשימה.
 
+הרוח המנחה:
+לוחם בחטיבת חשמונאים צועד המון — באימונים, במסעות, בסיורים ובפעילות מבצעית. הרוב הזמן הראש עסוק בפק"ל, בקצב, בניווט. אבל המרחבים שבהם אנחנו פועלים אינם ריקים ממשמעות. אלו אותם ואדיות, רכסים ושבילים שעליהם עברו דורות של עם ישראל — אבות האומה, לוחמים, גולים, עולים לרגל, אבות אבותינו.
+הנביא חבקוק מתאר: "כִּי אֶבֶן מִקִּיר תִּזְעָק". הגמרא (תענית יא.) מסבירה שהדומם נוצר בקרבו זכרונות — "אבני ביתו של אדם... מעידים בו". כל מרחב שבו אדם פועל נושא עמו את רישום מעשיו. האדמה משמרת את זיכרון ההתרחשויות שחיו עליה.
+כשלוחם חשמונאי צועד בוואדי שבו לפני אלפיים שנה הסתתרו אבותינו, הוא מטביע חותם בהיסטוריה כולה. במקום שבו הייתה חולשה — הוא מביא עוצמה. במקום שבו נכח פחד — הוא מנכיח ביטחון. לא כי הוא "חייל גיבור" אלא פשוט כי הוא שם, חייל בצבא עברי ריבוני בארץ ישראל.
+הבעל שם טוב (מאור עיניים, ויקהל) מגלה שעצם הנוכחות של אדם במקום מסוים פועלת עליו — הקב"ה מוליך אותנו לנקודות שבהן משהו בנו צריך להיסגר, להתברר או להבשיל. יש התאמה פנימית בין הנשמה לבין המרחב. ההליכה, השהות והעמידה במקום אינן רק תנועה פיזית — הן משלימות תהליך תיקון הדדי. האדם פועל על המרחב בנוכחותו, והמרחב, בשקט, פועל עליו חזרה.
+
 עקרונות מנחים:
 - קדימות לתורה ולהלכה: קודם מקורות תנ"ך וחז"ל, אחר כך היסטוריה מודרנית.
 - מעשה אבות סימן לבנים: הדגש כיצד האירועים הקדומים במרחב "מכשירים" את המקום לדורות.
 - רצף הדורות: חבר בין תנ"ך → בית ראשון ושני → חשמונאים → שיבת ציון → מלחמות ישראל → ימינו.
+- הנוכחות היא התיקון: הצעידה במרחב היא מעשה של תיקון. הלוחם מחזיר נוכחות יהודית למקום שבו נקטע משהו, ומשלים את מסע הדורות.
+- נשמה ומרחב: יש מקומות שממתינים לדור מסוים, ויש מקומות שממתינים לאדם מסוים. הנשמה חוזרת למקום שבו נדרש תיקון.
 - זהות ושליחות — מטרת הסק"ג: לחזק שייכות, משמעות, שליחות ואחריות.
 - שפה מותאמת ללוחם החרדי — בלי זלזול, בלי פאתוס מוגזם, ועם חיבור תורני מכבד.
 
-כתוב סקירה מסודרת בפורמט JSON בדיוק כך (ללא markdown, רק JSON תקין):
+כתוב סקירה מסודרת בפורמט JSON בדיוק כך:
 {
   "title": "סקירה גיאוגרפית — [שם המקום]",
   "subtitle": "[תיאור קצר של המרחב]",
@@ -15281,35 +15307,35 @@ const SAKAG_AI_PROMPT = `אתה משמש כיועץ תוכן והיסטוריה 
     {
       "title": "1. הקרקע והמרחב",
       "icon": "🏔️",
-      "content": "[תיאור פיזי-גיאוגרפי: טופוגרפיה, קרקע, נחלים/הרים/עמקים, אזורים שולטים, אקלים וצמחייה, משמעות מבצעית, יישובים סמוכים בסמיכות. השתמש בתגיות HTML: <p> ו-<b>]"
+      "content": "[תיאור פיזי-גיאוגרפי: טופוגרפיה, קרקע, נחלים/הרים/עמקים, אזורים שולטים, אקלים וצמחייה, משמעות מבצעית, יישובים סמוכים. השתמש בתגיות HTML: <p> ו-<b>]"
     },
     {
       "title": "2. ההקשר התורני",
       "icon": "📖",
-      "content": "[פסוקים מן התנ"ך הקשורים למקום, מקורות מן המשנה/מדרש/חז\"ל, סיפורי אבות/נביאים/חשמונאים, משמעות רוחנית-ערכית. הקפד לציין מקור פרק ופסוק. השתמש בתגיות HTML]"
+      "content": "[פסוקים מן התנ"ך הקשורים למקום, מקורות מן המשנה/מדרש/חז\"ל, סיפורי אבות/נביאים/חשמונאים, משמעות רוחנית-ערכית. הקפד לציין מקור פרק ופסוק. שלב את הרעיון שהאדמה משמרת זכרונות (חבקוק ב:יא, תענית יא.) ואת רעיון התיקון ההדדי בין הלוחם למרחב. השתמש בתגיות HTML]"
     },
     {
       "title": "3. גבורה במרחב",
       "icon": "⚔️",
-      "content": "[סיפור גבורה יהודי: תנ\"כי/חז\"לי/חשמונאי/לוחמי מלחמות ישראל. הדגש דבקות במשימה, אומץ, מסירות, אחריות ואחדות. השתמש בתגיות HTML]"
+      "content": "[סיפור גבורה יהודי: תנ\"כי/חז\"לי/חשמונאי/לוחמי מלחמות ישראל. הדגש דבקות במשימה, אומץ, מסירות, אחריות ואחדות. חבר לרעיון שהנוכחות היא התיקון — במקום שהייתה חולשה הלוחם מביא עוצמה. השתמש בתגיות HTML]"
     },
     {
       "title": "4. ערך להפנמה",
       "icon": "💡",
-      "content": "[ערך נפשי-תורני שהלוחמים צריכים לקחת מהמקום: ענווה, דבקות במשימה, אומץ, ערבות הדדית, שליחות, נאמנות, חיבור לתורה ולארץ. השתמש בתגיות HTML]"
+      "content": "[ערך נפשי-תורני שהלוחמים צריכים לקחת מהמקום. שלב את רעיון הבעש\"ט שהקב\"ה מוליך אדם למקום שבו נשמתו נדרשת. הנוכחות עצמה היא תיקון — האדם פועל על המרחב והמרחב פועל עליו חזרה. משהו נאסף, מתיישב, מוצא את מקומו. השתמש בתגיות HTML]"
     },
     {
       "title": "5. סיכום מפקד ושאלה פתוחה",
       "icon": "❓",
-      "content": "[פסקה שמחברת בין המקום, התורה והשליחות + שאלה למחשבה. השתמש בתגיות HTML]"
+      "content": "[פסקת סיכום שמחברת בין המקום, התורה, רעיון התיקון והשליחות + שאלה למחשבה שנוגעת לחיבור האישי של הלוחם למרחב ולשליחותו. השתמש בתגיות HTML]"
     }
   ]
 }
 
 חשוב: התחל את תוכן הסעיף הראשון בפסקת הפתיח הקבועה:
-"מטרת הסק"ג היא לחבר אותנו — לוחמי חטיבת 'חשמונאים' — לתורת ישראל, למורשת אבותינו ולארץ שבה אנו פועלים. מתוך הצעידה בשטח, הלימוד כאן מאפשר לנו לבנות זהות, שליחות וחיבור עמוק לשורשינו ולמשימה."
+"לוחמים יקרים, אנחנו עומדים על אדמה שספוגה בהיסטוריה, באמונה ובגבורה. המרחבים שבהם אנחנו פועלים אינם ריקים ממשמעות — אלו אותם שבילים שעליהם הלכו אבות האומה, לוחמים וגולים. עצם הנוכחות שלנו כאן, כחיילים בצבא עברי ריבוני, היא מעשה של תיקון והשלמה. מטרת הסק\\"ג היא לחבר אותנו לתורת ישראל, למורשת אבותינו ולארץ שבה אנו פועלים."
 
-דרישות: כתיבה בהירה ומכבדת. סדר לוגי. הימנע ממידע שאינו ודאי. אם יש מחלוקת על זיהוי — פרט בקצרה. החזר JSON בלבד ללא שום טקסט מסביב.`;
+דרישות: כתיבה בהירה ומכבדת. סדר לוגי. הימנע ממידע שאינו ודאי. אם יש מחלוקת על זיהוי — פרט בקצרה.`;
 
 var sakalAiGenerating = false;
 
