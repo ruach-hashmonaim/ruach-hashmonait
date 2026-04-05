@@ -15164,6 +15164,7 @@ function openStandaloneSakagCreator() {
                         </div>
                     </div>
                     <div id="standalone-sakag-status" style="text-align:center;font-size:0.88rem;color:#777;margin-bottom:14px;"></div>
+                    ` + sakagContextFieldsHtml('standalone-sakag') + `
                     <div id="standalone-sakag-content"></div>
                 </div>
             </div>`;
@@ -15245,6 +15246,7 @@ function standaloneSakagFromSearch() {
 }
 
 async function standaloneSakagGenerate(lat, lng, placeName) {
+    var _standaloneCtx = getSakagContext('standalone-sakag');
     var contentEl = document.getElementById('standalone-sakag-content');
     contentEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
         '<div style="font-size:2.5rem;margin-bottom:12px;" class="spin-icon">🌍</div>' +
@@ -15296,6 +15298,7 @@ async function standaloneSakagGenerate(lat, lng, placeName) {
         if (progressEl) { progressEl.style.animation = 'none'; progressEl.style.width = '60%'; }
 
         var buildPrompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4))
+            + buildSakagContextPrompt(_standaloneCtx)
             + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
 
         var response = await fetch(geminiUrl, {
@@ -15369,6 +15372,71 @@ function getStandaloneSakagShareUrl() {
     return window.location.origin + window.location.pathname + '#sakag-create';
 }
 
+// ============================================================
+// Shared Sakag Context Fields (used in all 3 creation flows)
+// ============================================================
+const SAKAG_ACTIVITY_OPTIONS = [
+    'מסע', 'שבוע שטח', 'תצפית', 'סיור שטח', 'פעילות מבצעית',
+    'כיבוש שטח', 'השמדת אויב', 'מארב', 'פשיטה', 'התקפה', 'אחר'
+];
+
+function sakagContextFieldsHtml(prefix) {
+    var optionsHtml = SAKAG_ACTIVITY_OPTIONS.map(function(o) {
+        return '<option value="' + o + '">' + o + '</option>';
+    }).join('');
+    return '<div style="margin-top:14px;padding:14px;background:rgba(14,116,144,0.04);border:1.5px solid rgba(14,116,144,0.15);border-radius:12px;">' +
+        '<div style="font-weight:700;font-size:0.85rem;color:var(--primary,#0E7490);margin-bottom:10px;">🎯 הקשר לסק"ג</div>' +
+        '<div style="margin-bottom:10px;">' +
+            '<label style="font-size:0.82rem;font-weight:600;color:var(--text-primary,#333);display:block;margin-bottom:4px;">הקשר לפעילות</label>' +
+            '<select id="' + prefix + '-activity" style="width:100%;padding:9px 12px;border:2px solid var(--border,#e0e0e0);border-radius:10px;font-size:0.85rem;font-family:inherit;background:#fff;appearance:auto;" onchange="sakagActivityChanged(\'' + prefix + '\')">' +
+                '<option value="">— בחר סוג פעילות —</option>' +
+                optionsHtml +
+            '</select>' +
+            '<input type="text" id="' + prefix + '-activity-other" placeholder="תאר את הפעילות בכמה מילים..." style="display:none;width:100%;padding:9px 12px;border:2px solid var(--border,#e0e0e0);border-radius:10px;font-size:0.85rem;font-family:inherit;margin-top:6px;box-sizing:border-box;">' +
+        '</div>' +
+        '<div>' +
+            '<label style="font-size:0.82rem;font-weight:600;color:var(--text-primary,#333);display:block;margin-bottom:4px;">הקשר למשימה</label>' +
+            '<textarea id="' + prefix + '-mission" rows="3" placeholder="מה חשוב לך כמפקד להעביר לחיילים? אילו ערכים, מסרים, ונקודות מרכזיות?" style="width:100%;padding:9px 12px;border:2px solid var(--border,#e0e0e0);border-radius:10px;font-size:0.85rem;font-family:inherit;resize:vertical;line-height:1.5;box-sizing:border-box;"></textarea>' +
+        '</div>' +
+    '</div>';
+}
+
+function sakagActivityChanged(prefix) {
+    var sel = document.getElementById(prefix + '-activity');
+    var otherInput = document.getElementById(prefix + '-activity-other');
+    if (sel && otherInput) {
+        otherInput.style.display = sel.value === 'אחר' ? '' : 'none';
+        if (sel.value !== 'אחר') otherInput.value = '';
+    }
+}
+
+function getSakagContext(prefix) {
+    var activitySel = document.getElementById(prefix + '-activity');
+    var activityOther = document.getElementById(prefix + '-activity-other');
+    var missionEl = document.getElementById(prefix + '-mission');
+    var activity = '';
+    if (activitySel) {
+        activity = activitySel.value || '';
+        if (activity === 'אחר' && activityOther) activity = activityOther.value.trim() || 'פעילות אחרת';
+    }
+    var mission = missionEl ? missionEl.value.trim() : '';
+    return { activity: activity, mission: mission };
+}
+
+function buildSakagContextPrompt(ctx) {
+    var parts = [];
+    if (ctx.activity) parts.push('סוג הפעילות: ' + ctx.activity);
+    if (ctx.mission) parts.push('הקשר למשימה (מה המפקד רוצה להעביר): ' + ctx.mission);
+    if (parts.length === 0) return '';
+    return '\n\n=== הקשר מבצעי-חינוכי (חשוב! התאם את הסק"ג להקשר הזה) ===\n' + parts.join('\n') +
+        '\n\nהנחיות חשובות בהתאם להקשר:\n' +
+        '- התאם את הטון, הדגשים והתובנות הערכיות לסוג הפעילות שהוגדר.\n' +
+        '- שלב את המסרים והערכים שהמפקד ציין בתוך החיבור התורני-ערכי ובסיכום.\n' +
+        '- אם זו פעילות מבצעית (מארב, פשיטה, התקפה, כיבוש וכו\') — הדגש את האומץ, המסירות והאחריות של הלוחם, וקשר לאירועים היסטוריים של לחימה במרחב.\n' +
+        '- אם זה מסע או סיור — הדגש את הקשר לארץ, לנוף ולזיכרון.\n' +
+        '- אם זו תצפית — הדגש את היכולת לראות את המרחב, להבין אותו ולדעת את ההיסטוריה שלו.';
+}
+
 function openSakagCreatorModal() {
     // Remove existing modal if any
     var existing = document.getElementById('sakag-creator-modal');
@@ -15393,6 +15461,7 @@ function openSakagCreatorModal() {
                 </div>
             </div>
             <div id="modal-sakag-status" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></div>
+            ${sakagContextFieldsHtml('modal-sakag')}
             <div id="modal-sakag-content"></div>
         </div>
     </div>`;
@@ -15484,6 +15553,7 @@ function modalSakagFromSearch() {
 }
 
 async function modalSakagGenerate(lat, lng, placeName) {
+    var _modalCtx = getSakagContext('modal-sakag');
     var contentEl = document.getElementById('modal-sakag-content');
     contentEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
         '<div style="font-size:2rem;margin-bottom:10px;animation:spin-slow 2s linear infinite;display:inline-block;">🤖</div>' +
@@ -15538,6 +15608,7 @@ async function modalSakagGenerate(lat, lng, placeName) {
         if (progressEl) { progressEl.style.animation = 'none'; progressEl.style.width = '60%'; }
 
         var buildPrompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4))
+            + buildSakagContextPrompt(_modalCtx)
             + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
 
         var response = await fetch(geminiUrl, {
@@ -15890,9 +15961,12 @@ async function sakalBuildTemplate(lat, lng, placeName) {
     // Show generate button
     var templateEl = document.getElementById('sakal-create-template');
     templateEl.style.display = '';
-    templateEl.innerHTML = '<div style="text-align:center;padding:20px;">' +
-        '<p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:14px;">הסק"ג ייבנה אוטומטית על ידי סוכן AI על בסיס העקרונות של "אמת מארץ תצמח"</p>' +
-        '<button class="btn-primary" onclick="sakalGenerateAI('+lat+','+lng+',\''+placeName.replace(/'/g,"\\'")+'\')" style="font-size:1rem;padding:12px 28px;" id="sakal-generate-btn">🤖 צור סק"ג עכשיו</button>' +
+    templateEl.innerHTML = '<div style="padding:20px;">' +
+        '<p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:14px;text-align:center;">הסק"ג ייבנה אוטומטית על ידי סוכן AI על בסיס העקרונות של "אמת מארץ תצמח"</p>' +
+        sakagContextFieldsHtml('sakal') +
+        '<div style="text-align:center;margin-top:14px;">' +
+            '<button class="btn-primary" onclick="sakalGenerateAI('+lat+','+lng+',\''+placeName.replace(/'/g,"\\'")+'\')" style="font-size:1rem;padding:12px 28px;" id="sakal-generate-btn">🤖 צור סק"ג עכשיו</button>' +
+        '</div>' +
     '</div>';
 
     setTimeout(function() { try { sakalCreateMap.invalidateSize(); } catch(e) {} }, 300);
@@ -15900,6 +15974,7 @@ async function sakalBuildTemplate(lat, lng, placeName) {
 
 async function sakalGenerateAI(lat, lng, placeName) {
     if (sakalAiGenerating) return;
+    var _sakalCtx = getSakagContext('sakal');
     sakalAiGenerating = true;
     var templateEl = document.getElementById('sakal-create-template');
     var btn = document.getElementById('sakal-generate-btn');
@@ -15956,6 +16031,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
         if (progressBar) { progressBar.style.animation = 'none'; progressBar.style.width = '60%'; }
 
         var prompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4))
+            + buildSakagContextPrompt(_sakalCtx)
             + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
 
         var response = await fetch(geminiUrl, {
