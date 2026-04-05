@@ -1508,6 +1508,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('surveys-mgmt')">סקרים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">ניהול תכנים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('cw-videos')">סרטוני מרחב</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('user-sakag')">סק"גים עצמאיים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('ai-config')">הגדרות AI</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
     </div>
 
@@ -1706,6 +1708,30 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <button class="btn-primary btn-sm" onclick="cwAdminAddVideo()">+ הוסף סרטון</button>
         </div>
         <div id="cw-admin-videos-list" style="margin-top:16px;"></div>
+    </div>
+
+    <!-- User-generated סק"גים management -->
+    <div class="admin-panel" id="admin-user-sakag" style="display:none;">
+        <div class="card">
+            <div class="card-title"><div class="icon">🤖</div> סק"גים עצמאיים שנוצרו</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">סק"גים שנוצרו על ידי מפקדים באמצעות סוכן ה-AI</p>
+            <div id="admin-user-sakag-list">טוען...</div>
+        </div>
+    </div>
+
+    <!-- AI Configuration -->
+    <div class="admin-panel" id="admin-ai-config" style="display:none;">
+        <div class="card">
+            <div class="card-title"><div class="icon">⚙️</div> הגדרות AI</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הגדרת מפתח Gemini API ליצירת סק"גים אוטומטיים</p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <label style="font-weight:600;font-size:0.88rem;">מפתח Gemini API:</label>
+                <input type="password" id="ai-gemini-key-input" placeholder="AIza..." style="flex:1;min-width:250px;direction:ltr;text-align:left;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;">
+                <button class="btn-primary btn-sm" onclick="saveGeminiKey()">💾 שמור</button>
+                <button class="btn-secondary btn-sm" onclick="testGeminiKey()">🧪 בדוק חיבור</button>
+            </div>
+            <div id="ai-config-status" style="margin-top:8px;font-size:0.85rem;"></div>
+        </div>
     </div>
 
     <!-- Admin dashboard -->
@@ -11612,6 +11638,7 @@ function setGeoMode(mode) {
         mqRenderQuizList();
     } else if (mode === 'sakal') {
         sakalRenderList();
+        sakalLoadUserCreated();
     } else if (mode === 'gedolim') {
         gedolimRenderList();
     }
@@ -14966,7 +14993,60 @@ function sakalCreateFromSearch() {
     }).catch(function(e){ statusEl.innerHTML='<span style="color:#d32f2f;">שגיאה בחיפוש</span>'; });
 }
 
-function sakalBuildTemplate(lat, lng, placeName) {
+// === AI סק"ג Generator ===
+const SAKAG_AI_PROMPT = `אתה משמש כיועץ תוכן והיסטוריה עבור מפקד בחטיבת "חשמונאים" (לוחמים חרדים).
+עליך לבנות סקירה גיאוגרפית (סק"ג) תורנית מדויקת ותמציתית על המקום הבא: [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
+הסק"ג מיועדת ללוחמים חרדים ולכן יש להישען קודם כל על התורה, התנ"ך, המשנה והמדרש, ולאחר מכן על מקורות היסטוריים-ארכיאולוגיים.
+הסגנון צריך להיות בהיר, מכבד, ענייני-ומכוון לחיבור זהותי-תורני-ערכי בין הלוחם, המקום והמשימה.
+
+עקרונות מנחים:
+- קדימות לתורה ולהלכה: קודם מקורות תנ"ך וחז"ל, אחר כך היסטוריה מודרנית.
+- מעשה אבות סימן לבנים: הדגש כיצד האירועים הקדומים במרחב "מכשירים" את המקום לדורות.
+- רצף הדורות: חבר בין תנ"ך → בית ראשון ושני → חשמונאים → שיבת ציון → מלחמות ישראל → ימינו.
+- זהות ושליחות — מטרת הסק"ג: לחזק שייכות, משמעות, שליחות ואחריות.
+- שפה מותאמת ללוחם החרדי — בלי זלזול, בלי פאתוס מוגזם, ועם חיבור תורני מכבד.
+
+כתוב סקירה מסודרת בפורמט JSON בדיוק כך (ללא markdown, רק JSON תקין):
+{
+  "title": "סקירה גיאוגרפית — [שם המקום]",
+  "subtitle": "[תיאור קצר של המרחב]",
+  "sections": [
+    {
+      "title": "1. הקרקע והמרחב",
+      "icon": "🏔️",
+      "content": "[תיאור פיזי-גיאוגרפי: טופוגרפיה, קרקע, נחלים/הרים/עמקים, אזורים שולטים, אקלים וצמחייה, משמעות מבצעית, יישובים סמוכים בסמיכות. השתמש בתגיות HTML: <p> ו-<b>]"
+    },
+    {
+      "title": "2. ההקשר התורני",
+      "icon": "📖",
+      "content": "[פסוקים מן התנ"ך הקשורים למקום, מקורות מן המשנה/מדרש/חז\"ל, סיפורי אבות/נביאים/חשמונאים, משמעות רוחנית-ערכית. הקפד לציין מקור פרק ופסוק. השתמש בתגיות HTML]"
+    },
+    {
+      "title": "3. גבורה במרחב",
+      "icon": "⚔️",
+      "content": "[סיפור גבורה יהודי: תנ\"כי/חז\"לי/חשמונאי/לוחמי מלחמות ישראל. הדגש דבקות במשימה, אומץ, מסירות, אחריות ואחדות. השתמש בתגיות HTML]"
+    },
+    {
+      "title": "4. ערך להפנמה",
+      "icon": "💡",
+      "content": "[ערך נפשי-תורני שהלוחמים צריכים לקחת מהמקום: ענווה, דבקות במשימה, אומץ, ערבות הדדית, שליחות, נאמנות, חיבור לתורה ולארץ. השתמש בתגיות HTML]"
+    },
+    {
+      "title": "5. סיכום מפקד ושאלה פתוחה",
+      "icon": "❓",
+      "content": "[פסקה שמחברת בין המקום, התורה והשליחות + שאלה למחשבה. השתמש בתגיות HTML]"
+    }
+  ]
+}
+
+חשוב: התחל את תוכן הסעיף הראשון בפסקת הפתיח הקבועה:
+"מטרת הסק"ג היא לחבר אותנו — לוחמי חטיבת 'חשמונאים' — לתורת ישראל, למורשת אבותינו ולארץ שבה אנו פועלים. מתוך הצעידה בשטח, הלימוד כאן מאפשר לנו לבנות זהות, שליחות וחיבור עמוק לשורשינו ולמשימה."
+
+דרישות: כתיבה בהירה ומכבדת. סדר לוגי. הימנע ממידע שאינו ודאי. אם יש מחלוקת על זיהוי — פרט בקצרה. החזר JSON בלבד ללא שום טקסט מסביב.`;
+
+var sakalAiGenerating = false;
+
+async function sakalBuildTemplate(lat, lng, placeName) {
     var statusEl = document.getElementById('sakal-create-status');
     statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>'+placeName+'</b> ('+lat.toFixed(4)+', '+lng.toFixed(4)+')</span>';
 
@@ -14980,79 +15060,260 @@ function sakalBuildTemplate(lat, lng, placeName) {
         icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[36,36], iconAnchor:[18,18] })
     }).addTo(sakalCreateMap);
 
-    // Find nearby GEO_SITES
-    var nearbySites = GEO_SITES.map(function(s){ return {name:s.name, dist:haversine(lat,lng,s.lat,s.lng), desc:s.desc, icon:s.icon}; })
-        .filter(function(s){ return s.dist <= 10000; })
-        .sort(function(a,b){ return a.dist - b.dist; })
-        .slice(0, 8);
-
-    var nearbyHtml = nearbySites.length > 0
-        ? '<ul style="margin:8px 0;padding-right:20px;">' + nearbySites.map(function(s){ return '<li style="margin-bottom:4px;">'+s.icon+' <b>'+s.name+'</b> ('+Math.round(s.dist)+'מ\') — '+s.desc+'</li>'; }).join('') + '</ul>'
-        : '<p style="color:var(--text-secondary);">לא נמצאו אתרים מוכרים ברדיוס 10 ק"מ</p>';
-
-    // Build template
+    // Show generate button
     var templateEl = document.getElementById('sakal-create-template');
     templateEl.style.display = '';
-    templateEl.innerHTML = '<div style="border:2px solid var(--primary);border-radius:14px;overflow:hidden;">' +
-        '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;">📋 תבנית סק"ג — '+placeName+'</div>' +
-        '<div style="padding:16px;">' +
-            // Section 1
-            '<div style="margin-bottom:16px;">' +
-                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">🎯 1. רציונל</div>' +
-                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
-                    '<p>המסע הרגלי מהווה אמצעי מרכזי לבניית החיבור של הלוחם החשמונאי לארץ ישראל. במסע זה חשוב להדגיש ללוחמים את:</p>' +
-                    '<p>• ערך הרציונל של המסע</p>' +
-                    '<p>• <b>במסע זה נצעד במרחב של '+placeName+'</b></p>' +
-                    '<p>• קשר המרחב להיסטוריה המקראית/יהודית</p>' +
-                '</div>' +
-            '</div>' +
-            // Section 2
-            '<div style="margin-bottom:16px;">' +
-                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">🏔️ 2. מרחב המסע — תיאור גיאוגרפי</div>' +
-                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
-                    '<p>• מיקום: <b>'+lat.toFixed(4)+'°N, '+lng.toFixed(4)+'°E</b></p>' +
-                    '<p>• תיאור הטופוגרפיה, הנחלים, ההרים וציוני הדרך</p>' +
-                    '<p>• גבולות שבטים / חלוקה היסטורית של האזור</p>' +
-                '</div>' +
-            '</div>' +
-            // Section 3
-            '<div style="margin-bottom:16px;">' +
-                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">📖 3. רקע היסטורי ומקראי</div>' +
-                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
-                    '<p>• אירועים מקראיים שהתרחשו במרחב</p>' +
-                    '<p>• פסוקים רלוונטיים עם ביאור</p>' +
-                    '<p>• חיבור לתקופת החשמונאים</p>' +
-                '</div>' +
-            '</div>' +
-            // Section 4 — nearby sites
-            '<div style="margin-bottom:16px;">' +
-                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">📍 4. אתרים במרחב</div>' +
-                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
-                    nearbyHtml +
-                '</div>' +
-            '</div>' +
-            // Section 5
-            '<div style="margin-bottom:16px;">' +
-                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">💡 5. ערכים לציון</div>' +
-                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
-                    '<p>• <b>אחריות</b> — </p>' +
-                    '<p>• <b>מקצועיות</b> — </p>' +
-                    '<p>• <b>דוגמא אישית</b> — </p>' +
-                '</div>' +
-            '</div>' +
-            // Section 6
-            '<div>' +
-                '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">❓ 6. שאלות לדיון</div>' +
-                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.6;">' +
-                    '<p>• מה מיוחד במרחב הזה?</p>' +
-                    '<p>• מה ניתן ללמוד מהאירועים ההיסטוריים שהתרחשו כאן?</p>' +
-                    '<p>• כיצד הערכים שעלו רלוונטיים לשירות שלנו?</p>' +
-                '</div>' +
-            '</div>' +
-        '</div>' +
+    templateEl.innerHTML = '<div style="text-align:center;padding:20px;">' +
+        '<p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:14px;">הסק"ג ייבנה אוטומטית על ידי סוכן AI על בסיס העקרונות של "אמת מארץ תצמח"</p>' +
+        '<button class="btn-primary" onclick="sakalGenerateAI('+lat+','+lng+',\''+placeName.replace(/'/g,"\\'")+'\')" style="font-size:1rem;padding:12px 28px;" id="sakal-generate-btn">🤖 צור סק"ג עכשיו</button>' +
     '</div>';
 
     setTimeout(function() { try { sakalCreateMap.invalidateSize(); } catch(e) {} }, 300);
+}
+
+async function sakalGenerateAI(lat, lng, placeName) {
+    if (sakalAiGenerating) return;
+    sakalAiGenerating = true;
+    var templateEl = document.getElementById('sakal-create-template');
+    var btn = document.getElementById('sakal-generate-btn');
+    if (btn) btn.disabled = true;
+
+    templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
+        '<div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
+        '<p style="font-weight:700;color:var(--primary);font-size:1rem;">מייצר סק"ג עבור '+placeName+'...</p>' +
+        '<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">הסוכן חוקר מקורות תורניים, היסטוריים וגיאוגרפיים</p>' +
+        '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
+            '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 25s ease-out forwards;"></div>' +
+        '</div>' +
+    '</div>';
+
+    // Add progress animation
+    if (!document.getElementById('sakag-anim-style')) {
+        var style = document.createElement('style');
+        style.id = 'sakag-anim-style';
+        style.textContent = '@keyframes sakagProgress{0%{width:0%}50%{width:60%}80%{width:85%}100%{width:95%}} @keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} .spin-icon{animation:spin-slow 2s linear infinite;display:inline-block;}';
+        document.head.appendChild(style);
+    }
+
+    try {
+        // Get Gemini API key from Firestore
+        var configDoc = await db.collection('config').doc('ai').get();
+        if (!configDoc.exists || !configDoc.data().geminiKey) {
+            throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
+        }
+        var apiKey = configDoc.data().geminiKey;
+
+        // Build prompt
+        var prompt = SAKAG_AI_PROMPT
+            .replace('[PLACE_NAME]', placeName)
+            .replace('[LAT]', lat.toFixed(4))
+            .replace('[LNG]', lng.toFixed(4));
+
+        // Call Gemini API
+        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+            })
+        });
+
+        if (!response.ok) {
+            var errText = await response.text();
+            throw new Error('שגיאת Gemini API: ' + response.status + ' — ' + errText.substring(0, 200));
+        }
+
+        var data = await response.json();
+        var aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        // Parse JSON from AI response (handle markdown code blocks)
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        var sakagData;
+        try {
+            sakagData = JSON.parse(aiText);
+        } catch(parseErr) {
+            // Try to extract JSON from response
+            var jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) sakagData = JSON.parse(jsonMatch[0]);
+            else throw new Error('לא ניתן לנתח את התשובה מה-AI');
+        }
+
+        // Render the generated סק"ג
+        sakalRenderGenerated(sakagData, lat, lng, placeName);
+
+    } catch(err) {
+        templateEl.innerHTML = '<div style="padding:20px;text-align:center;">' +
+            '<p style="color:#d32f2f;font-weight:700;margin-bottom:10px;">⚠️ שגיאה ביצירת הסק"ג</p>' +
+            '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">'+err.message+'</p>' +
+            '<button class="btn-primary btn-sm" onclick="sakalGenerateAI('+lat+','+lng+',\''+placeName.replace(/'/g,"\\'")+'\')" style="font-size:0.85rem;">🔄 נסה שוב</button>' +
+        '</div>';
+    } finally {
+        sakalAiGenerating = false;
+    }
+}
+
+var sakalLastGenerated = null;
+
+function sakalRenderGenerated(sakagData, lat, lng, placeName) {
+    sakalLastGenerated = { data: sakagData, lat: lat, lng: lng, placeName: placeName };
+    var templateEl = document.getElementById('sakal-create-template');
+    var sectionsHtml = (sakagData.sections || []).map(function(sec, i) {
+        return '<div style="margin-bottom:16px;">' +
+            '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">' + (sec.icon||'📌') + ' ' + sec.title + '</div>' +
+            '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.7;direction:rtl;">' + sec.content + '</div>' +
+        '</div>';
+    }).join('');
+
+    templateEl.innerHTML = '<div style="border:2px solid var(--primary);border-radius:14px;overflow:hidden;">' +
+        '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;">📋 ' + sakagData.title + '</div>' +
+        '<div style="padding:4px 16px 0;text-align:center;font-size:0.85rem;color:var(--text-secondary);">' + (sakagData.subtitle||'') + '</div>' +
+        '<div style="padding:16px;">' + sectionsHtml + '</div>' +
+        '<div style="padding:0 16px 8px;font-size:0.72rem;color:#999;text-align:center;">⚠️ תוכן זה נוצר באמצעות AI ועשוי לכלול אי-דיוקים — יש לבדוק ולוודא את התוכן</div>' +
+        '<div style="padding:12px 16px 16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;border-top:1px solid var(--border);">' +
+            '<button class="btn-primary" onclick="sakalSaveGenerated()" style="font-size:0.9rem;padding:10px 24px;">💾 שמור סק"ג</button>' +
+            '<button class="btn-secondary" onclick="sakalGenerateAI('+lat+','+lng+',\''+placeName.replace(/'/g,"\\'")+'\')" style="font-size:0.9rem;padding:10px 24px;">🔄 צור מחדש</button>' +
+        '</div>' +
+    '</div>';
+}
+
+async function sakalSaveGenerated() {
+    if (!sakalLastGenerated || !currentUser) return;
+    var d = sakalLastGenerated;
+
+    try {
+        var docRef = await db.collection('user_sakag').add({
+            title: d.data.title || 'סק"ג — ' + d.placeName,
+            subtitle: d.data.subtitle || '',
+            placeName: d.placeName,
+            lat: d.lat,
+            lng: d.lng,
+            sections: d.data.sections || [],
+            createdBy: currentUser.uid,
+            createdByName: currentUser.name || currentUser.email || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'active'
+        });
+
+        showToast('✅ הסק"ג נשמר בהצלחה!');
+
+        // Auto-mark training completion if applicable
+        var program = currentTrainingProgram || 'basic';
+        var week = currentTrainingWeek[program] || 1;
+        var plugaTrack = currentTrainingTrack[program] || '';
+        var plugaLetter = TRAINING_TRACKS[plugaTrack]?.replace('פלוגה ','').replace('׳','') || '';
+
+        if (plugaLetter) {
+            var completionId = program + '_' + week + '_' + (plugaTrack||'none') + '_emet_user_sakag_' + plugaLetter;
+            await db.collection('training_completion').doc(completionId).set({
+                program: program,
+                week: week,
+                track: plugaTrack || '',
+                lessonId: 'emet_user_sakag',
+                platoon: plugaLetter,
+                completed: true,
+                markedBy: currentUser.name || currentUser.email || '',
+                markedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                notes: 'סק"ג עצמאי: ' + d.placeName,
+                sakagDocId: docRef.id
+            }, { merge: true });
+        }
+
+        // Show saved confirmation
+        var templateEl = document.getElementById('sakal-create-template');
+        templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
+            '<div style="font-size:3rem;margin-bottom:10px;">✅</div>' +
+            '<p style="font-weight:700;color:#2E7D32;font-size:1.1rem;margin-bottom:6px;">הסק"ג נשמר בהצלחה!</p>' +
+            '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">"' + (d.data.title||d.placeName) + '" נוסף לאוסף הסק"גים שנוצרו</p>' +
+            '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn-primary btn-sm" onclick="sakalViewUserSakag(\''+docRef.id+'\')">👁️ צפה בסק"ג</button>' +
+                '<button class="btn-secondary btn-sm" onclick="sakalStartCreate()">➕ צור סק"ג נוסף</button>' +
+                '<button class="btn-secondary btn-sm" onclick="sakalBackToList()">← חזרה לרשימה</button>' +
+            '</div>' +
+        '</div>';
+
+    } catch(err) {
+        showToast('❌ שגיאה בשמירה: ' + err.message);
+    }
+}
+
+// View a user-generated סק"ג
+async function sakalViewUserSakag(docId) {
+    try {
+        var doc = await db.collection('user_sakag').doc(docId).get();
+        if (!doc.exists) { showToast('סק"ג לא נמצא'); return; }
+        var s = doc.data();
+
+        document.getElementById('sakal-list-view').style.display = 'none';
+        document.getElementById('sakal-create-view').style.display = 'none';
+        document.getElementById('sakal-detail-view').style.display = '';
+
+        document.getElementById('sakal-detail-title').textContent = s.title;
+        document.getElementById('sakal-detail-subtitle').textContent = s.subtitle || s.placeName || '';
+        document.getElementById('sakal-pdf-download').style.display = 'none';
+
+        // Render sections
+        var sectionsHtml = (s.sections || []).map(function(sec, i) {
+            return '<div style="margin-bottom:2px;">' +
+                '<div style="cursor:pointer;background:var(--bg-secondary);padding:12px 14px;border-radius:' + (i===0?'10px 10px ':'') + '0 0;border-bottom:1px solid var(--border);font-weight:700;color:var(--primary);display:flex;justify-content:space-between;align-items:center;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'\':\'none\';this.querySelector(\'.chev\').textContent=this.nextElementSibling.style.display===\'none\'?\'◀\':\'▼\'">' +
+                    '<span>' + (sec.icon||'📌') + ' ' + sec.title + '</span><span class="chev" style="font-size:0.8rem;">▼</span>' +
+                '</div>' +
+                '<div style="padding:14px;font-size:0.88rem;line-height:1.7;background:var(--card-bg);direction:rtl;">' + sec.content + '</div>' +
+            '</div>';
+        }).join('');
+
+        document.getElementById('sakal-detail-sections').innerHTML = sectionsHtml +
+            '<div style="margin-top:12px;padding:10px;background:rgba(217,119,6,0.08);border-radius:10px;text-align:center;font-size:0.78rem;color:#B45309;">' +
+                '🤖 סק"ג זה נוצר באמצעות AI על ידי ' + (s.createdByName || 'משתמש') +
+                (s.createdAt ? ' · ' + (s.createdAt.toDate ? s.createdAt.toDate().toLocaleDateString('he-IL') : '') : '') +
+            '</div>';
+
+        // Show map if coordinates exist
+        document.getElementById('sakal-pdf-embed-wrap').style.display = 'none';
+        if (s.lat && s.lng) {
+            var mapContainer = document.getElementById('sakal-detail-map');
+            if (mapContainer) {
+                mapContainer.style.display = '';
+                if (sakalDetailMap) { sakalDetailMap.remove(); sakalDetailMap = null; }
+                sakalDetailMap = L.map(mapContainer, { zoomControl: true, attributionControl: false }).setView([s.lat, s.lng], 13);
+                L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123', attribution: '&copy; Google Maps' }).addTo(sakalDetailMap);
+                L.marker([s.lat, s.lng]).addTo(sakalDetailMap);
+            }
+        }
+    } catch(err) {
+        showToast('שגיאה: ' + err.message);
+    }
+}
+
+// Load user-created סק"גים into the main list alongside built-in ones
+async function sakalLoadUserCreated() {
+    try {
+        var snap = await db.collection('user_sakag').where('status','==','active').orderBy('createdAt','desc').get();
+        var grid = document.getElementById('sakal-cards-grid');
+        if (!grid || snap.empty) return;
+        snap.forEach(function(doc) {
+            var s = doc.data();
+            var card = document.createElement('div');
+            card.className = 'sakal-card';
+            card.style.cssText = 'background:#fff;border:2px solid #D97706;border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;min-height:140px;';
+            card.onmouseenter = function() { this.style.borderColor='var(--primary)'; this.style.transform='translateY(-2px)'; };
+            card.onmouseleave = function() { this.style.borderColor='#D97706'; this.style.transform=''; };
+            card.innerHTML = '<div onclick="sakalViewUserSakag(\''+doc.id+'\')" style="flex:1;display:flex;flex-direction:column;">' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+                    '<span style="font-size:2rem;">🤖</span>' +
+                    '<div>' +
+                        '<div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);">' + (s.title||s.placeName) + '</div>' +
+                        '<div style="font-size:0.82rem;color:var(--text-secondary);">' + (s.subtitle||'') + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:10px;">' +
+                    '<span style="font-size:0.72rem;background:rgba(217,119,6,0.12);color:#B45309;padding:3px 10px;border-radius:10px;font-weight:600;">סק"ג עצמאי</span>' +
+                    '<span style="font-size:0.72rem;background:#E8F5E9;color:#2E7D32;padding:3px 10px;border-radius:10px;font-weight:600;">נוצר ע"י ' + (s.createdByName||'משתמש') + '</span>' +
+                '</div>' +
+            '</div>';
+            grid.appendChild(card);
+        });
+    } catch(e) { console.error('Error loading user sakag:', e); }
 }
 
 // ============================================================
@@ -15384,10 +15645,99 @@ function showAdminTab(tab) {
     if (tab === 'surveys-mgmt') loadAdminSurveys();
     if (tab === 'training-mgmt') { adminTrainingChanged(); }
     if (tab === 'cw-videos') cwAdminLoadVideos();
+    if (tab === 'user-sakag') loadAdminUserSakag();
+    if (tab === 'ai-config') loadAiConfig();
     if (tab === 'dashboard') loadAdminDashboard();
 }
 
 function loadAdminPage() { if (!hasPermission('admin')) return; loadAdminUsers(); }
+
+// === Admin: User-generated סק"גים ===
+async function loadAdminUserSakag() {
+    var listEl = document.getElementById('admin-user-sakag-list');
+    if (!listEl) return;
+    listEl.innerHTML = 'טוען...';
+    try {
+        var snap = await db.collection('user_sakag').orderBy('createdAt','desc').get();
+        if (snap.empty) { listEl.innerHTML = '<p style="color:var(--text-secondary);">לא נוצרו סק"גים עצמאיים עדיין</p>'; return; }
+        var html = '<table class="admin-table"><thead><tr><th>שם</th><th>מרחב</th><th>נוצר ע"י</th><th>תאריך</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>';
+        snap.forEach(function(doc) {
+            var d = doc.data();
+            var date = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
+            var statusBadge = d.status === 'active'
+                ? '<span style="color:#2E7D32;font-weight:600;">פעיל</span>'
+                : '<span style="color:#999;">מושבת</span>';
+            html += '<tr>' +
+                '<td style="font-weight:600;">' + (d.title||'—') + '</td>' +
+                '<td>' + (d.placeName||'—') + '</td>' +
+                '<td>' + (d.createdByName||'—') + '</td>' +
+                '<td>' + date + '</td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td style="white-space:nowrap;">' +
+                    '<button class="btn-sm btn-secondary" onclick="sakalViewUserSakag(\''+doc.id+'\');navigate(\'geography\');switchGeoMode(\'sakal\');">👁️</button> ' +
+                    '<button class="btn-sm btn-danger" onclick="adminDeleteUserSakag(\''+doc.id+'\')">🗑️</button>' +
+                '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<p style="margin-top:8px;font-size:0.82rem;color:var(--text-secondary);">סה"כ: ' + snap.size + ' סק"גים</p>';
+        listEl.innerHTML = html;
+    } catch(e) { listEl.innerHTML = '<p style="color:var(--danger);">שגיאה: '+e.message+'</p>'; }
+}
+
+async function adminDeleteUserSakag(docId) {
+    if (!confirm('למחוק סק"ג זה?')) return;
+    try {
+        await db.collection('user_sakag').doc(docId).update({ status: 'deleted' });
+        showToast('הסק"ג הוסר');
+        loadAdminUserSakag();
+    } catch(e) { showToast('שגיאה: ' + e.message); }
+}
+
+// === Admin: AI Configuration ===
+async function loadAiConfig() {
+    try {
+        var doc = await db.collection('config').doc('ai').get();
+        var key = doc.exists ? (doc.data().geminiKey || '') : '';
+        var input = document.getElementById('ai-gemini-key-input');
+        if (input && key) input.value = key;
+        var statusEl = document.getElementById('ai-config-status');
+        if (statusEl) statusEl.innerHTML = key
+            ? '<span style="color:#2E7D32;">✅ מפתח מוגדר (' + key.substring(0,8) + '...)</span>'
+            : '<span style="color:#B45309;">⚠️ מפתח לא מוגדר — סוכן AI לא יעבוד</span>';
+    } catch(e) { console.error('AI config error:', e); }
+}
+
+async function saveGeminiKey() {
+    var key = document.getElementById('ai-gemini-key-input').value.trim();
+    if (!key) { showToast('הזן מפתח'); return; }
+    try {
+        await db.collection('config').doc('ai').set({ geminiKey: key }, { merge: true });
+        showToast('✅ מפתח נשמר');
+        loadAiConfig();
+    } catch(e) { showToast('שגיאה: ' + e.message); }
+}
+
+async function testGeminiKey() {
+    var statusEl = document.getElementById('ai-config-status');
+    statusEl.innerHTML = '<span style="color:var(--primary);">🔄 בודק חיבור...</span>';
+    try {
+        var doc = await db.collection('config').doc('ai').get();
+        var key = doc.exists ? doc.data().geminiKey : '';
+        if (!key) { statusEl.innerHTML = '<span style="color:#d32f2f;">❌ מפתח לא מוגדר</span>'; return; }
+        var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'אמור "שלום" בעברית בלבד.' }] }], generationConfig: { maxOutputTokens: 50 } })
+        });
+        if (resp.ok) {
+            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ החיבור תקין! Gemini API פעיל.</span>';
+        } else {
+            var err = await resp.text();
+            statusEl.innerHTML = '<span style="color:#d32f2f;">❌ שגיאה: ' + resp.status + ' — ' + err.substring(0,100) + '</span>';
+        }
+    } catch(e) { statusEl.innerHTML = '<span style="color:#d32f2f;">❌ שגיאת רשת: ' + e.message + '</span>'; }
+}
 
 async function loadAdminParticipants() {
     const statsEl = document.getElementById('admin-participants-stats');
