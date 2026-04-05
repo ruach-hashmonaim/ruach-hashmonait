@@ -3294,8 +3294,8 @@ async function loadTrainingPage(program) {
                 const d = doc.data();
                 if (!contentTrackForWeeks || d.track === contentTrackForWeeks) weeksWithContent.add(d.week);
             });
-            // Also mark weeks that have EMET curriculum items (admin only)
-            if (isAdmin) {
+            // Also mark weeks that have EMET curriculum items
+            if (canSeeEmet) {
                 const emetWeeks = EMET_CURRICULUM[program] || {};
                 for (const w of Object.keys(emetWeeks)) {
                     if (emetWeeks[w] && emetWeeks[w].length > 0) weeksWithContent.add(parseInt(w));
