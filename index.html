@@ -2972,18 +2972,19 @@ function canGiveFeedback(plugaLetter) {
     const lvl = userLevel();
     const role = currentUser.role || '';
     const userPluga = currentUser.pluga || '';
+    const roleObj = ROLES[role] || {};
 
     // Level 4+ (קצין חינוך, מג"ד, מנהל, etc.) can give feedback for any platoon
     if (lvl >= 4) return true;
 
-    // מ"פ (company commander) - only for their own platoon
-    if ((role === 'mefaked_pluga' || role === 'mefaked_pluga_yonatan') && userPluga === plugaLetter) return true;
-
-    // קמב"ץ - only for their own platoon
-    if (role === 'kambatz' && userPluga === plugaLetter) return true;
-
-    // מש"ק חינוך - can mark for all platoons in their בה"ד
-    if (role === 'mashak_chinuch') return true;
+    // Any role with canMarkCompletion flag can give feedback
+    // מ"פ/קמב"ץ with pluga set: only for their own platoon
+    // מ"פ/קמב"ץ without pluga set: can mark for the currently viewed platoon
+    if (roleObj.canMarkCompletion) {
+        // If user has a specific platoon assigned, only allow for that platoon
+        if (userPluga && plugaLetter && userPluga !== plugaLetter) return false;
+        return true;
+    }
 
     // מנהל-level roles in ROLES
     if (role === 'menahel' || role === 'admin_system' || role === 'segel') return true;
