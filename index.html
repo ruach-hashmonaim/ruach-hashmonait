@@ -2855,6 +2855,20 @@ const TRAINING_SPECIAL_WEEKS = {
     'officer': []
 };
 
+// אמת מארץ תצמח — תכני גאוגרפיה משולבים בהכשרת יסוד
+const EMET_CURRICULUM = {
+    'basic': {
+        1: [{ type: 'sakal', id: 'nesiya_rishona', title: 'סק"ג נסיעה ראשונה לבא"ח', icon: '🚌' }],
+        2: [
+            { type: 'sakal', id: 'thebez_sakal', title: 'סק"ג מרחב תבץ', icon: '🏰' },
+            { type: 'quiz', id: 'thebez_area', title: 'מפה אילמת — מרחב תבץ', icon: '🗺️' }
+        ],
+        3: [{ type: 'sakal', id: 'masa_3km', title: 'סק"ג אבל מחולה ואגן נחל תרצה', icon: '🏞️' }],
+        4: [{ type: 'quiz', id: 'avot_journeys', title: 'מפה אילמת — מסעות האבות', icon: '🗺️' }],
+        5: [{ type: 'sakal', id: 'yavesh_gilad', title: 'סק"ג יבש גלעד ובקעת בזק', icon: '⚔️' }]
+    }
+};
+
 let currentTrainingProgram = 'basic';
 let currentOfficerTrack = 'sade';
 let currentOfficerPluga = 'pluga_a'; // separate platoon state for officer course
@@ -3072,13 +3086,18 @@ async function loadTrainingPage(program) {
             <h3 style="color:var(--primary);font-size:1.1rem;">${weekTitle}${headerParts ? ' — ' + headerParts : ''}</h3>
         </div>`;
 
-        if (lessons.length === 0) {
+        // Collect EMET (אמת מארץ תצמח) items for this program+week
+        const emetItems = (EMET_CURRICULUM[program] && EMET_CURRICULUM[program][week]) || [];
+        const totalItems = lessons.length + emetItems.length;
+
+        if (totalItems === 0) {
             html += `<div class="card" style="padding:30px;text-align:center;">
                 <p style="color:var(--text-secondary);font-size:0.9rem;">אין תכנים לשבוע זה</p>
                 ${canUserAddContent() ? `<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:8px;">ניתן להוסיף תוכן דרך ניהול תכנים</p>` : ''}
             </div>`;
         } else {
             html += '<div style="display:flex;flex-direction:column;gap:12px;">';
+            // --- Render Firestore lessons ---
             for (const lesson of lessons) {
                 const catLabel = CONTENT_RESPONSIBILITY[lesson.category] || lesson.category || '';
                 const color = catColors[lesson.category] || '#666';
@@ -3133,12 +3152,70 @@ async function loadTrainingPage(program) {
                     ${lesson.url ? renderContentLink(lesson.url) : ''}
                 </div>`;
             }
+
+            // --- Render EMET (אמת מארץ תצמח) items ---
+            for (const item of emetItems) {
+                const emetColor = '#D97706'; // chinuch color
+                const deepLink = item.type === 'sakal' ? '#geography/sakal/' + item.id : '#geography/quiz/' + item.id;
+                const fullUrl = window.location.origin + window.location.pathname + deepLink;
+                const typeLabel = item.type === 'sakal' ? 'סק"ג' : 'מפה אילמת';
+                const waText = encodeURIComponent(item.icon + ' ' + item.title + ' — אמת מארץ תצמח\n' + typeLabel + ' | הכשרת יסוד שבוע ' + week + '\n\n👉 ' + fullUrl);
+                const waLink = 'https://wa.me/?text=' + waText;
+
+                // Completion tracking for EMET items
+                let emetCompletionHtml = '';
+                if (hasPluga && plugaLetter) {
+                    const key = `emet_${item.id}_${plugaLetter}`;
+                    const rec = statusMap[key] || {};
+                    const done = rec.completed;
+                    const doneClass = done ? 'done' : '';
+                    const clickHandler = canMark ? `onclick="togglePlatoonStatus('emet_${item.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}',${!done})"` : '';
+                    const tooltip = done ? `title="סומן ע״י ${rec.markedBy||'—'}"` : '';
+                    emetCompletionHtml = `<span class="completion-badge ${doneClass}" ${canMark ? 'style="cursor:pointer;"' : ''} ${clickHandler} ${tooltip}>
+                        ${done ? '✓ בוצע' : '○ לא בוצע'}
+                    </span>`;
+                }
+
+                html += `<div class="card" style="border-right:4px solid ${emetColor};padding:16px;background:linear-gradient(135deg, rgba(217,119,6,0.03) 0%, transparent 100%);">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+                        <div style="flex:1;min-width:200px;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                <span style="font-size:1.4rem;">${item.icon}</span>
+                                <div>
+                                    <div style="font-weight:700;font-size:1rem;color:var(--text);">${item.title}</div>
+                                    <div style="font-size:0.78rem;color:#B45309;font-weight:600;">אמת מארץ תצמח</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:0.85rem;color:var(--text-secondary);">
+                                <span>📋 מעביר: <b>מ"כ/מ"מ</b></span>
+                                <span>⏱ חצי שעה</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                            <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.78rem;font-weight:600;color:#fff;background:${emetColor};">אחריות: חינוך</span>
+                            ${emetCompletionHtml}
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+                        <a href="${deepLink}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;color:#fff;background:var(--primary);text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                            ${item.type === 'sakal' ? '📍 פתח סק"ג' : '🗺️ פתח מפה אילמת'}
+                        </a>
+                        <a href="${waLink}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;color:#fff;background:#25D366;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                            📤 שתף לחיילים בווצאפ
+                        </a>
+                        ${item.type === 'sakal' ? `<a href="#geography" onclick="setTimeout(()=>{var b=document.getElementById('sakal-create-wrap');if(b)b.style.display='';var sv=document.getElementById('sakal-create-view');if(sv)sv.style.display='';},300)" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;color:#B45309;background:rgba(217,119,6,0.12);text-decoration:none;border:1.5px solid rgba(217,119,6,0.3);transition:all 0.2s;" onmouseover="this.style.background='rgba(217,119,6,0.2)'" onmouseout="this.style.background='rgba(217,119,6,0.12)'">
+                            ✏️ יצירת סק"ג עצמאי
+                        </a>` : ''}
+                    </div>
+                </div>`;
+            }
+
             html += '</div>';
         }
 
         container.innerHTML = html;
 
-        // Mark week buttons that have content
+        // Mark week buttons that have content (Firestore + EMET)
         if (controls) {
             const contentTrackForWeeks = track; // sade/gefen for officer, null for basic/nco
             const allSnap = await db.collection('training_content').where('program','==',program).get();
@@ -3147,6 +3224,11 @@ async function loadTrainingPage(program) {
                 const d = doc.data();
                 if (!contentTrackForWeeks || d.track === contentTrackForWeeks) weeksWithContent.add(d.week);
             });
+            // Also mark weeks that have EMET curriculum items
+            const emetWeeks = EMET_CURRICULUM[program] || {};
+            for (const w of Object.keys(emetWeeks)) {
+                if (emetWeeks[w] && emetWeeks[w].length > 0) weeksWithContent.add(parseInt(w));
+            }
             controls.querySelectorAll('.week-btn').forEach(btn => {
                 const w = parseInt(btn.textContent);
                 if (weeksWithContent.has(w)) btn.classList.add('has-content');
