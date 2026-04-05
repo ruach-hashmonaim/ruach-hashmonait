@@ -1723,12 +1723,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="admin-panel" id="admin-ai-config" style="display:none;">
         <div class="card">
             <div class="card-title"><div class="icon">⚙️</div> הגדרות AI</div>
-            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הגדרת מפתח Claude API (Anthropic) ליצירת סק"גים אוטומטיים</p>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הגדרת מפתח Gemini API (Google) ליצירת סק"גים אוטומטיים</p>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <label style="font-weight:600;font-size:0.88rem;">מפתח Claude API:</label>
-                <input type="password" id="ai-claude-key-input" placeholder="sk-ant-..." style="flex:1;min-width:250px;direction:ltr;text-align:left;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;">
-                <button class="btn-primary btn-sm" onclick="saveClaudeKey()">💾 שמור</button>
-                <button class="btn-secondary btn-sm" onclick="testClaudeKey()">🧪 בדוק חיבור</button>
+                <label style="font-weight:600;font-size:0.88rem;">מפתח Gemini API:</label>
+                <input type="password" id="ai-gemini-key-input" placeholder="AIza..." style="flex:1;min-width:250px;direction:ltr;text-align:left;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;">
+                <button class="btn-primary btn-sm" onclick="saveGeminiKey()">💾 שמור</button>
+                <button class="btn-secondary btn-sm" onclick="testGeminiKey()">🧪 בדוק חיבור</button>
             </div>
             <div id="ai-config-status" style="margin-top:8px;font-size:0.85rem;"></div>
         </div>
@@ -15071,35 +15071,29 @@ async function modalSakagGenerate(lat, lng, placeName) {
     }
 
     try {
-        // Get Claude API key from Firestore
+        // Get Gemini API key from Firestore
         var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().claudeKey || configDoc.data().geminiKey || '') : '';
-        if (!apiKey) throw new Error('מפתח API לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
 
         var prompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4));
 
-        var response = await fetch('https://api.anthropic.com/v1/messages', {
+        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 4096,
-                messages: [{ role: 'user', content: prompt }]
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
             })
         });
 
         if (!response.ok) {
             var errText = await response.text();
-            throw new Error('שגיאת Claude API: ' + response.status);
+            throw new Error('שגיאת Gemini API: ' + response.status);
         }
 
         var data = await response.json();
-        var aiText = (data.content?.[0]?.text || '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        var aiText = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         var sakagData;
         try { sakagData = JSON.parse(aiText); } catch(e) {
             var m = aiText.match(/\{[\s\S]*\}/);
@@ -15362,11 +15356,11 @@ async function sakalGenerateAI(lat, lng, placeName) {
     }
 
     try {
-        // Get Claude API key from Firestore
+        // Get Gemini API key from Firestore
         var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().claudeKey || '') : '';
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
         if (!apiKey) {
-            throw new Error('מפתח Claude לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
+            throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
         }
 
         // Build prompt
@@ -15375,29 +15369,23 @@ async function sakalGenerateAI(lat, lng, placeName) {
             .replace('[LAT]', lat.toFixed(4))
             .replace('[LNG]', lng.toFixed(4));
 
-        // Call Claude API (Anthropic)
-        var response = await fetch('https://api.anthropic.com/v1/messages', {
+        // Call Gemini API (Google)
+        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 4096,
-                messages: [{ role: 'user', content: prompt }]
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
             })
         });
 
         if (!response.ok) {
             var errText = await response.text();
-            throw new Error('שגיאת Claude API: ' + response.status + ' — ' + errText.substring(0, 200));
+            throw new Error('שגיאת Gemini API: ' + response.status + ' — ' + errText.substring(0, 200));
         }
 
         var data = await response.json();
-        var aiText = data.content?.[0]?.text || '';
+        var aiText = (data.candidates?.[0]?.content?.parts?.[0]?.text || '');
 
         // Parse JSON from AI response (handle markdown code blocks)
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -15971,49 +15959,43 @@ async function loadAiConfig() {
     try {
         var doc = await db.collection('config').doc('ai').get();
         var data = doc.exists ? doc.data() : {};
-        var key = data.claudeKey || '';
-        var input = document.getElementById('ai-claude-key-input');
+        var key = data.geminiKey || '';
+        var input = document.getElementById('ai-gemini-key-input');
         if (input && key) input.value = key;
         var statusEl = document.getElementById('ai-config-status');
         if (statusEl) statusEl.innerHTML = key
-            ? '<span style="color:#2E7D32;">✅ מפתח Claude מוגדר (' + key.substring(0,10) + '...)</span>'
+            ? '<span style="color:#2E7D32;">✅ מפתח Gemini מוגדר (' + key.substring(0,10) + '...)</span>'
             : '<span style="color:#B45309;">⚠️ מפתח לא מוגדר — סוכן AI לא יעבוד</span>';
     } catch(e) { console.error('AI config error:', e); }
 }
 
-async function saveClaudeKey() {
-    var key = document.getElementById('ai-claude-key-input').value.trim();
+async function saveGeminiKey() {
+    var key = document.getElementById('ai-gemini-key-input').value.trim();
     if (!key) { showToast('הזן מפתח'); return; }
     try {
-        await db.collection('config').doc('ai').set({ claudeKey: key }, { merge: true });
-        showToast('✅ מפתח Claude נשמר');
+        await db.collection('config').doc('ai').set({ geminiKey: key }, { merge: true });
+        showToast('✅ מפתח Gemini נשמר');
         loadAiConfig();
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
 
-async function testClaudeKey() {
+async function testGeminiKey() {
     var statusEl = document.getElementById('ai-config-status');
-    statusEl.innerHTML = '<span style="color:var(--primary);">🔄 בודק חיבור ל-Claude...</span>';
+    statusEl.innerHTML = '<span style="color:var(--primary);">🔄 בודק חיבור ל-Gemini...</span>';
     try {
         var doc = await db.collection('config').doc('ai').get();
-        var key = doc.exists ? doc.data().claudeKey : '';
+        var key = doc.exists ? doc.data().geminiKey : '';
         if (!key) { statusEl.innerHTML = '<span style="color:#d32f2f;">❌ מפתח לא מוגדר</span>'; return; }
-        var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': key,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 50,
-                messages: [{ role: 'user', content: 'אמור "שלום" בעברית בלבד.' }]
+                contents: [{ parts: [{ text: 'אמור "שלום" בעברית בלבד.' }] }],
+                generationConfig: { maxOutputTokens: 50 }
             })
         });
         if (resp.ok) {
-            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ החיבור תקין! Claude API פעיל.</span>';
+            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ החיבור תקין! Gemini API פעיל.</span>';
         } else {
             var err = await resp.text();
             statusEl.innerHTML = '<span style="color:#d32f2f;">❌ שגיאה: ' + resp.status + ' — ' + err.substring(0,100) + '</span>';
