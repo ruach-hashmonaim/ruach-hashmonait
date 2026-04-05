@@ -15376,7 +15376,7 @@ function getStandaloneSakagShareUrl() {
 // Shared Sakag Context Fields (used in all 3 creation flows)
 // ============================================================
 const SAKAG_ACTIVITY_OPTIONS = [
-    'מסע', 'שבוע שטח', 'תצפית', 'סיור שטח', 'פעילות מבצעית',
+    'מסע', 'שבוע שטח', 'תצפית', 'סיור שטח', 'ניווטים', 'פעילות מבצעית',
     'כיבוש שטח', 'השמדת אויב', 'מארב', 'פשיטה', 'התקפה', 'אחר'
 ];
 
@@ -15387,16 +15387,16 @@ function sakagContextFieldsHtml(prefix) {
     return '<div style="margin-top:14px;padding:14px;background:rgba(14,116,144,0.04);border:1.5px solid rgba(14,116,144,0.15);border-radius:12px;">' +
         '<div style="font-weight:700;font-size:0.85rem;color:var(--primary,#0E7490);margin-bottom:10px;">🎯 הקשר לסק"ג</div>' +
         '<div style="margin-bottom:10px;">' +
+            '<label style="font-size:0.82rem;font-weight:600;color:var(--text-primary,#333);display:block;margin-bottom:4px;">הקשר למשימה</label>' +
+            '<textarea id="' + prefix + '-mission" rows="3" placeholder="מה חשוב לך כמפקד להעביר לחיילים? אילו ערכים, מסרים, ונקודות מרכזיות?" style="width:100%;padding:9px 12px;border:2px solid var(--border,#e0e0e0);border-radius:10px;font-size:0.85rem;font-family:inherit;resize:vertical;line-height:1.5;box-sizing:border-box;"></textarea>' +
+        '</div>' +
+        '<div>' +
             '<label style="font-size:0.82rem;font-weight:600;color:var(--text-primary,#333);display:block;margin-bottom:4px;">הקשר לפעילות</label>' +
             '<select id="' + prefix + '-activity" style="width:100%;padding:9px 12px;border:2px solid var(--border,#e0e0e0);border-radius:10px;font-size:0.85rem;font-family:inherit;background:#fff;appearance:auto;" onchange="sakagActivityChanged(\'' + prefix + '\')">' +
                 '<option value="">— בחר סוג פעילות —</option>' +
                 optionsHtml +
             '</select>' +
             '<input type="text" id="' + prefix + '-activity-other" placeholder="תאר את הפעילות בכמה מילים..." style="display:none;width:100%;padding:9px 12px;border:2px solid var(--border,#e0e0e0);border-radius:10px;font-size:0.85rem;font-family:inherit;margin-top:6px;box-sizing:border-box;">' +
-        '</div>' +
-        '<div>' +
-            '<label style="font-size:0.82rem;font-weight:600;color:var(--text-primary,#333);display:block;margin-bottom:4px;">הקשר למשימה</label>' +
-            '<textarea id="' + prefix + '-mission" rows="3" placeholder="מה חשוב לך כמפקד להעביר לחיילים? אילו ערכים, מסרים, ונקודות מרכזיות?" style="width:100%;padding:9px 12px;border:2px solid var(--border,#e0e0e0);border-radius:10px;font-size:0.85rem;font-family:inherit;resize:vertical;line-height:1.5;box-sizing:border-box;"></textarea>' +
         '</div>' +
     '</div>';
 }
