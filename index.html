@@ -15012,27 +15012,69 @@ function openSakagCreatorModal() {
     var modal = document.createElement('div');
     modal.id = 'sakag-creator-modal';
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
-    modal.innerHTML = `<div style="background:var(--card-bg,#fff);border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+    modal.innerHTML = `<div style="background:var(--card-bg,#fff);border-radius:16px;max-width:650px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
         <div style="background:var(--primary);color:#fff;padding:16px 20px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:700;font-size:1.05rem;">✏️ יצירת סק"ג עצמאי</span>
             <button onclick="document.getElementById('sakag-creator-modal').remove()" style="background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">✕</button>
         </div>
         <div style="padding:20px;">
-            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">בחר מיקום — הסק"ג ייבנה אוטומטית על ידי סוכן AI לפי עקרונות "אמת מארץ תצמח"</p>
-            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
-                <button class="btn-primary btn-sm" onclick="modalSakagFromLocation()" id="modal-sakag-locate-btn" style="font-size:0.88rem;">📍 המיקום שלי</button>
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">בחר מיקום — לחץ על המפה, חפש שם מקום, או השתמש במיקום שלך</p>
+            <div id="modal-sakag-map" style="height:220px;border-radius:12px;border:2px solid var(--border);margin-bottom:12px;"></div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;flex-wrap:wrap;">
+                <button class="btn-primary btn-sm" onclick="modalSakagFromLocation()" id="modal-sakag-locate-btn" style="font-size:0.85rem;">📍 המיקום שלי</button>
                 <div style="display:flex;gap:6px;">
-                    <input type="text" id="modal-sakag-search" placeholder="חפש מקום..." style="padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;width:180px;" onkeydown="if(event.key==='Enter')modalSakagFromSearch()">
-                    <button class="btn-primary btn-sm" onclick="modalSakagFromSearch()" style="font-size:0.88rem;">🔍 חפש</button>
+                    <input type="text" id="modal-sakag-search" placeholder="חפש מקום..." style="padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;width:170px;" onkeydown="if(event.key==='Enter')modalSakagFromSearch()">
+                    <button class="btn-primary btn-sm" onclick="modalSakagFromSearch()" style="font-size:0.85rem;">🔍 חפש</button>
                 </div>
             </div>
             <div id="modal-sakag-status" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></div>
             <div id="modal-sakag-content"></div>
         </div>
     </div>`;
+    // Initialize interactive map
+    setTimeout(function() { modalSakagInitMap(); }, 100);
     document.body.appendChild(modal);
     // Close on backdrop click
     modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+}
+
+var _modalSakagMap = null;
+var _modalSakagMarker = null;
+
+function modalSakagInitMap() {
+    var mapEl = document.getElementById('modal-sakag-map');
+    if (!mapEl) return;
+    // Default center: center of Israel
+    _modalSakagMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([31.77, 35.21], 8);
+    L.tileLayer('https://mt{s}.google.com/vt/lyrs=p&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(_modalSakagMap);
+    // Click to drop pin
+    _modalSakagMap.on('click', function(e) {
+        var lat = e.latlng.lat, lng = e.latlng.lng;
+        if (_modalSakagMarker) _modalSakagMap.removeLayer(_modalSakagMarker);
+        _modalSakagMarker = L.marker([lat, lng], {
+            icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[32,32], iconAnchor:[16,16] })
+        }).addTo(_modalSakagMap);
+        // Reverse geocode the clicked point
+        var statusEl = document.getElementById('modal-sakag-status');
+        statusEl.innerHTML = '<span style="color:var(--primary);">📍 מזהה מיקום...</span>';
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=14&accept-language=he')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var name = (data.address && (data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.suburb)) || data.display_name?.split(',')[0] || 'נקודה נבחרת';
+            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום: <b>' + name + '</b> — <a href="#" onclick="modalSakagGenerate(' + lat + ',' + lng + ',\'' + name.replace(/'/g,"\\'") + '\');return false;" style="color:var(--primary);font-weight:700;">צור סק"ג</a></span>';
+        }).catch(function() {
+            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ נקודה נבחרת — <a href="#" onclick="modalSakagGenerate(' + lat.toFixed(4) + ',' + lng.toFixed(4) + ',\'נקודה נבחרת\');return false;" style="color:var(--primary);font-weight:700;">צור סק"ג</a></span>';
+        });
+    });
+}
+
+function modalSakagUpdateMapPin(lat, lng) {
+    if (!_modalSakagMap) return;
+    if (_modalSakagMarker) _modalSakagMap.removeLayer(_modalSakagMarker);
+    _modalSakagMarker = L.marker([lat, lng], {
+        icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[32,32], iconAnchor:[16,16] })
+    }).addTo(_modalSakagMap);
+    _modalSakagMap.setView([lat, lng], 13);
 }
 
 function modalSakagFromLocation() {
@@ -15048,8 +15090,10 @@ function modalSakagFromLocation() {
         .then(function(data) {
             var name = (data.address && (data.address.city || data.address.town || data.address.village || data.address.hamlet)) || data.display_name?.split(',')[0] || 'המיקום שלי';
             statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>' + name + '</b></span>';
+            modalSakagUpdateMapPin(lat, lng);
             modalSakagGenerate(lat, lng, name);
         }).catch(function() {
+            modalSakagUpdateMapPin(lat, lng);
             modalSakagGenerate(lat, lng, 'המיקום שלי');
         });
     }, function(err) {
@@ -15069,6 +15113,7 @@ function modalSakagFromSearch() {
         var lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
         var name = data[0].display_name.split(',')[0];
         statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>' + name + '</b></span>';
+        modalSakagUpdateMapPin(lat, lng);
         modalSakagGenerate(lat, lng, name);
     }).catch(function() { statusEl.innerHTML = '<span style="color:#d32f2f;">שגיאה בחיפוש</span>'; });
 }
@@ -15077,17 +15122,17 @@ async function modalSakagGenerate(lat, lng, placeName) {
     var contentEl = document.getElementById('modal-sakag-content');
     contentEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
         '<div style="font-size:2rem;margin-bottom:10px;animation:spin-slow 2s linear infinite;display:inline-block;">🤖</div>' +
-        '<p style="font-weight:700;color:var(--primary);font-size:1rem;">מייצר סק"ג עבור ' + placeName + '...</p>' +
-        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">הסוכן חוקר מקורות תורניים, היסטוריים וגיאוגרפיים — זה עשוי לקחת כחצי דקה</p>' +
+        '<p id="modal-sakag-step" style="font-weight:700;color:var(--primary);font-size:1rem;">שלב 1/2 — חוקר את המרחב סביב ' + placeName + '...</p>' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">הסוכן מחפש אתרים, שבילים ומקומות מעניינים ברדיוס 5 ק"מ</p>' +
         '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
-            '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 30s ease-out forwards;"></div>' +
+            '<div id="modal-sakag-progress" style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
         '</div></div>';
 
     // Ensure animation styles exist
     if (!document.getElementById('sakag-anim-style')) {
         var style = document.createElement('style');
         style.id = 'sakag-anim-style';
-        style.textContent = '@keyframes sakagProgress{0%{width:0%}50%{width:60%}80%{width:85%}100%{width:95%}} @keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}';
+        style.textContent = '@keyframes sakagProgress{0%{width:0%}30%{width:40%}60%{width:65%}80%{width:80%}100%{width:95%}} @keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}';
         document.head.appendChild(style);
     }
 
@@ -15097,24 +15142,51 @@ async function modalSakagGenerate(lat, lng, placeName) {
         var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
         if (!apiKey) throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
 
-        var prompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4));
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
 
-        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
+        // === STEP 1: Research the area with Google Search grounding ===
+        var researchPrompt = SAKAG_RESEARCH_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4));
+
+        var researchResponse = await fetch(geminiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
+                contents: [{ parts: [{ text: researchPrompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
+            })
+        });
+
+        if (!researchResponse.ok) throw new Error('שגיאה בשלב המחקר: ' + researchResponse.status);
+        var researchData = await researchResponse.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) {
+            if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; }
+        }
+        if (!researchText && researchParts.length) researchText = researchParts[researchParts.length - 1].text || '';
+
+        // === STEP 2: Generate structured סק"ג using research data ===
+        var stepEl = document.getElementById('modal-sakag-step');
+        if (stepEl) stepEl.textContent = 'שלב 2/2 — מארגן את הסק"ג...';
+        var progressEl = document.getElementById('modal-sakag-progress');
+        if (progressEl) { progressEl.style.animation = 'none'; progressEl.style.width = '60%'; }
+
+        var buildPrompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4))
+            + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
+
+        var response = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: buildPrompt }] }],
                 generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
             })
         });
 
-        if (!response.ok) {
-            var errText = await response.text();
-            throw new Error('שגיאת Gemini API: ' + response.status);
-        }
+        if (!response.ok) throw new Error('שגיאת Gemini API: ' + response.status);
 
         var data = await response.json();
-        // Gemini 2.5 may return thinking parts — get last non-thought text part
         var parts = data.candidates?.[0]?.content?.parts || [];
         var aiText = '';
         for (var pi = parts.length - 1; pi >= 0; pi--) {
@@ -15321,6 +15393,25 @@ async function generateSakagPDF(sakagData, placeName) {
 }
 
 // === AI סק"ג Generator ===
+
+// Step 1: Research prompt — uses Google Search grounding to find real places
+const SAKAG_RESEARCH_PROMPT = `אתה חוקר שטח ישראלי. חקור את המרחב ברדיוס 5 ק"מ סביב הנקודה [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
+
+חפש באינטרנט ומצא:
+1. אתרי טיול, שבילים מסומנים ונקודות עניין בטבע באזור (חפש באתרים כמו עמוד ענן, שביל ישראל, רשות הטבע והגנים)
+2. אתרים ארכיאולוגיים, תלים, חורבות, מבצרים או שרידים היסטוריים באזור
+3. מקומות בעלי משמעות תורנית-יהודית: קברי צדיקים, בתי כנסת עתיקים, מקוואות, מערות
+4. אירועים היסטוריים שהתרחשו באזור הספציפי הזה (תקופת המקרא, בית שני, חשמונאים, מלחמות ישראל)
+5. מקורות תורניים (תנ"ך, משנה, תלמוד, מדרש) שמזכירים את המקום הזה או אזור זה
+
+עבור כל ממצא ציין:
+- שם המקום/האתר
+- מרחק משוער מהנקודה הנתונה
+- תיאור קצר
+- מקור המידע
+
+כתוב בעברית. היה מדויק — הבא רק מידע שמצאת בחיפוש, אל תמציא. אם לא מצאת מידע על נושא מסוים, ציין זאת.`;
+
 const SAKAG_AI_PROMPT = `אתה חוקר גיאוגרפיה היסטורית ותורנית עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
 משימתך: לבנות סקירה גיאוגרפית (סק"ג) מדויקת, אינפורמטיבית ותמציתית עבור המרחב סביב [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
 
@@ -15407,10 +15498,10 @@ async function sakalGenerateAI(lat, lng, placeName) {
 
     templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
         '<div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
-        '<p style="font-weight:700;color:var(--primary);font-size:1rem;">מייצר סק"ג עבור '+placeName+'...</p>' +
-        '<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">הסוכן חוקר מקורות תורניים, היסטוריים וגיאוגרפיים</p>' +
+        '<p id="sakal-step-label" style="font-weight:700;color:var(--primary);font-size:1rem;">שלב 1/2 — חוקר את המרחב סביב '+placeName+'...</p>' +
+        '<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">הסוכן מחפש אתרים, שבילים ומקומות מעניינים ברדיוס 5 ק"מ</p>' +
         '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
-            '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 25s ease-out forwards;"></div>' +
+            '<div id="sakal-progress-bar" style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
         '</div>' +
     '</div>';
 
@@ -15418,26 +15509,47 @@ async function sakalGenerateAI(lat, lng, placeName) {
     if (!document.getElementById('sakag-anim-style')) {
         var style = document.createElement('style');
         style.id = 'sakag-anim-style';
-        style.textContent = '@keyframes sakagProgress{0%{width:0%}50%{width:60%}80%{width:85%}100%{width:95%}} @keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} .spin-icon{animation:spin-slow 2s linear infinite;display:inline-block;}';
+        style.textContent = '@keyframes sakagProgress{0%{width:0%}30%{width:40%}60%{width:65%}80%{width:80%}100%{width:95%}} @keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} .spin-icon{animation:spin-slow 2s linear infinite;display:inline-block;}';
         document.head.appendChild(style);
     }
 
     try {
-        // Get Gemini API key from Firestore
         var configDoc = await db.collection('config').doc('ai').get();
         var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
-        if (!apiKey) {
-            throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
+
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
+        // Step 1: Research with Google Search grounding
+        var researchPrompt = SAKAG_RESEARCH_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4));
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: researchPrompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
+            })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר: ' + researchResp.status);
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) {
+            if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; }
         }
+        if (!researchText && researchParts.length) researchText = researchParts[researchParts.length - 1].text || '';
 
-        // Build prompt
-        var prompt = SAKAG_AI_PROMPT
-            .replace('[PLACE_NAME]', placeName)
-            .replace('[LAT]', lat.toFixed(4))
-            .replace('[LNG]', lng.toFixed(4));
+        // Step 2: Generate structured סק"ג
+        var stepLabel = document.getElementById('sakal-step-label');
+        if (stepLabel) stepLabel.textContent = 'שלב 2/2 — מארגן את הסק"ג...';
+        var progressBar = document.getElementById('sakal-progress-bar');
+        if (progressBar) { progressBar.style.animation = 'none'; progressBar.style.width = '60%'; }
 
-        // Call Gemini API (Google)
-        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
+        var prompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4))
+            + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
+
+        var response = await fetch(geminiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
