@@ -925,7 +925,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <a onclick="navigate('learning')" data-page="learning"><span class="nav-icon">&#9702;</span> והגית בו — למידה יומית</a>
         <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> לימוד עברית</a>
-        <a onclick="navigate('geography')" data-page="geography"><span class="nav-icon">&#9702;</span> אמת מארץ תצמח</a>
+        <a onclick="navigate('geography')" data-page="geography" class="nav-geography" style="display:none;"><span class="nav-icon">&#9702;</span> אמת מארץ תצמח</a>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת הפנימית</a>
         <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי — תוכנית הרוח והחינוך</a>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
@@ -990,7 +990,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="tile-title">והגית בו</div>
             <div class="tile-desc">למידה יומית — תוכניות לימוד וקביעויות</div>
         </a>
-        <a class="home-tile" onclick="navigate('geography')">
+        <a class="home-tile tile-geography" style="display:none;" onclick="navigate('geography')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0369A1,#0891B2);"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
             <div class="tile-title">אמת מארץ תצמח</div>
             <div class="tile-desc">מפה אינטראקטיבית, היסטוריה ומקורות</div>
@@ -1233,7 +1233,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <!-- List View -->
             <div id="sakal-list-view">
                 <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">סקירות גיאוגרפיות (סק"ג) לאזורי מסעות ופעילות — צפה בסק"גים קיימים או צור סק"ג חדש למרחב שלך.</p>
-                <div id="sakal-overview-map" style="height:280px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;"></div>
+                <!-- overview map moved to admin panel -->
                 <div id="sakal-create-wrap" style="margin-bottom:14px;display:none;">
                     <button class="btn-primary btn-sm" onclick="sakalStartCreate()" style="font-size:0.85rem;">➕ צור סק"ג חדש</button>
                 </div>
@@ -1713,6 +1713,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
     <!-- User-generated סק"גים management -->
     <div class="admin-panel" id="admin-user-sakag" style="display:none;">
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-title"><div class="icon">🗺️</div> מפת סק"גים</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:10px;">סק"גים מובנים (כחול) וסק"גים שנוצרו ע"י מפקדים (כתום)</p>
+            <div id="admin-sakag-overview-map" style="height:350px;border-radius:12px;border:2px solid var(--border);"></div>
+        </div>
         <div class="card">
             <div class="card-title"><div class="icon">🤖</div> סק"גים עצמאיים שנוצרו</div>
             <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">סק"גים שנוצרו על ידי מפקדים באמצעות סוכן ה-AI</p>
@@ -1848,30 +1853,32 @@ const PERMISSIONS = {
     'export-data':          { label:'ייצוא נתונים',            cat:'ניהול',    icon:'📤' },
     'manage-hebrew':        { label:'ניהול לימוד עברית',       cat:'תכנים',    icon:'🔤' },
     'manage-surveys':       { label:'ניהול סקרים',             cat:'ניהול',    icon:'📋' },
-    'view-dashboard':       { label:'צפייה בדשבורד',           cat:'ניהול',    icon:'📊' }
+    'view-dashboard':       { label:'צפייה בדשבורד',           cat:'ניהול',    icon:'📊' },
+    'create-sakag':         { label:'יצירת סק"ג',              cat:'תכנים',    icon:'🗺️' },
+    'view-geography':       { label:'גישה לאמת מארץ תצמח',     cat:'תכנים',    icon:'🌍' }
 };
 
 // Default permissions per role (based on role level and existing flags)
 const ROLE_PERMISSIONS = {
     'admin_system':     Object.keys(PERMISSIONS),
-    'menahel':          ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','manage-surveys','view-dashboard'],
-    'mhat':             ['weekly-report-view','weekly-report-all','training-mark','training-mark-all','admin-panel','view-dashboard'],
-    'raan_mediniyut':   ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','view-dashboard'],
-    'rav_hativa':       ['weekly-report-view','weekly-report-all','training-mark','admin-panel','view-dashboard'],
-    'katzin_chinuch_hativa': ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','manage-surveys','view-dashboard'],
-    'ruach_menahel':    ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','manage-surveys','view-dashboard'],
-    'ruach_manheh':     ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard'],
-    'ruach_ram':        ['weekly-report-fill','training-content-add','training-content-edit','training-mark'],
-    'magad':            ['weekly-report-view','training-mark','training-mark-all','view-dashboard'],
-    'katzin_chinuch':   ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard'],
-    'mashak_chinuch':   ['weekly-report-fill','training-content-add','training-content-edit','training-mark'],
-    'mashak_ivrit':     ['training-content-add','training-content-edit','training-mark','manage-hebrew'],
-    'ramad_hadraha':    ['weekly-report-view','training-mark','training-mark-all'],
+    'menahel':          ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','manage-surveys','view-dashboard','create-sakag','view-geography'],
+    'mhat':             ['weekly-report-view','weekly-report-all','training-mark','training-mark-all','admin-panel','view-dashboard','view-geography'],
+    'raan_mediniyut':   ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','view-dashboard','create-sakag','view-geography'],
+    'rav_hativa':       ['weekly-report-view','weekly-report-all','training-mark','admin-panel','view-dashboard','view-geography'],
+    'katzin_chinuch_hativa': ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','manage-surveys','view-dashboard','create-sakag','view-geography'],
+    'ruach_menahel':    ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','manage-surveys','view-dashboard','create-sakag','view-geography'],
+    'ruach_manheh':     ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
+    'ruach_ram':        ['weekly-report-fill','training-content-add','training-content-edit','training-mark','create-sakag','view-geography'],
+    'magad':            ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
+    'katzin_chinuch':   ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
+    'mashak_chinuch':   ['weekly-report-fill','training-content-add','training-content-edit','training-mark','create-sakag','view-geography'],
+    'mashak_ivrit':     ['training-content-add','training-content-edit','training-mark','manage-hebrew','view-geography'],
+    'ramad_hadraha':    ['weekly-report-view','training-mark','training-mark-all','view-geography'],
     'mashak_hadraha':   ['training-mark'],
-    'rav':              ['weekly-report-view','training-mark'],
+    'rav':              ['weekly-report-view','training-mark','view-geography'],
     'sgan_rav':         ['training-mark'],
-    'katzin_mediniyut': ['weekly-report-view','training-mark','training-mark-all'],
-    'magad_yonatan':    ['weekly-report-view','training-mark','training-mark-all','view-dashboard'],
+    'katzin_mediniyut': ['weekly-report-view','training-mark','training-mark-all','view-geography'],
+    'magad_yonatan':    ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
     'sgan_magad_yonatan':['training-mark'],
     'mefaked_pluga_yonatan':['training-mark'],
     'mefaked_pluga':    ['weekly-report-fill','training-mark'],
@@ -1883,7 +1890,7 @@ const ROLE_PERMISSIONS = {
     'lohem':            [],
     'mefaked_zater':    [],
     'katzin_bachir':    ['training-mark'],
-    'segel':            ['weekly-report-fill','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard']
+    'segel':            ['weekly-report-fill','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography']
 };
 
 function userLevel() { return ROLES[currentUser?.role]?.level || 0; }
@@ -1905,7 +1912,7 @@ function hasPermission(action) {
     // Map legacy action names to new permission keys
     const legacyMap = {
         'learning':          null,   // always allowed
-        'geography':         null,   // always allowed
+        'geography':         'view-geography',   // restricted — AI agent active
         'view-training':     null,   // level >= 1
         'mark-training':     'training-mark',
         'add-content':       'training-content-add',
@@ -1920,7 +1927,7 @@ function hasPermission(action) {
     if (action in legacyMap) {
         if (legacyMap[action] === null) {
             // Always-allowed or level-based
-            if (action === 'learning' || action === 'geography') return true;
+            if (action === 'learning') return true;
             if (action === 'view-training') return userLevel() >= 1;
             return true;
         }
@@ -1999,7 +2006,7 @@ const PAGE_TITLES = {
 };
 
 // Public pages — accessible to everyone without login
-const PUBLIC_PAGES = ['home', 'learning', 'hebrew', 'geography', 'internet-safety', 'surveys'];
+const PUBLIC_PAGES = ['home', 'learning', 'hebrew', 'internet-safety', 'surveys'];
 
 // Participant user (self-registered)
 let currentParticipant = null;
@@ -2009,7 +2016,8 @@ const PAGE_PERMISSIONS = {
     'training': 'view-training',
     'content-mgmt': 'add-content',
     'reports': 'weekly-reports',
-    'admin': 'admin'
+    'admin': 'admin',
+    'geography': 'geography'
 };
 
 function navigate(page) {
@@ -2512,6 +2520,12 @@ function updateUIForRole() {
     document.querySelectorAll('.nav-admin, .tile-admin').forEach(el => {
         el.style.display = lvl >= 5 ? '' : 'none';
     });
+
+    // Geography — אמת מארץ תצמח (restricted: has active AI agent)
+    const canGeo = hasPermission('geography');
+    document.querySelectorAll('.nav-geography, .tile-geography').forEach(el => {
+        el.style.display = canGeo ? '' : 'none';
+    });
 }
 
 function logout() {
@@ -2528,6 +2542,7 @@ function logout() {
     document.querySelectorAll('.nav-content-mgmt').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-reports, .nav-reports-section, .tile-reports').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-admin, .tile-admin').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-geography, .tile-geography').forEach(el => el.style.display = 'none');
 
     // Stay in the app — just go to home (no splash needed)
     navigate('home');
@@ -2967,6 +2982,9 @@ function canGiveFeedback(plugaLetter) {
     // קמב"ץ - only for their own platoon
     if (role === 'kambatz' && userPluga === plugaLetter) return true;
 
+    // מש"ק חינוך - can mark for all platoons in their בה"ד
+    if (role === 'mashak_chinuch') return true;
+
     // מנהל-level roles in ROLES
     if (role === 'menahel' || role === 'admin_system' || role === 'segel') return true;
 
@@ -3003,8 +3021,8 @@ function buildPlugaTabs(prog) {
     const getCurrentPluga = () => prog === 'officer' ? currentOfficerPluga : currentTrainingTrack[prog];
     const setCurrentPluga = (t) => { if (prog === 'officer') { currentOfficerPluga = t; } else { currentTrainingTrack[prog] = t; } };
 
-    if (lvl >= 4) {
-        // בה"ד/מפח"ט level: show all 8 platoon tabs
+    if (lvl >= 3) {
+        // מ"פ/קמב"ץ/מש"ק חינוך/בה"ד/מפח"ט level: show all 8 platoon tabs
         let html = '';
         const allTracks = ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'];
         const current = getCurrentPluga() || 'pluga_a';
@@ -3183,7 +3201,7 @@ async function loadTrainingPage(program) {
                             return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳${rec.fileUrl ? '📎' : ''}</span>`;
                         }).join('')}
                     </div>
-                    ${canMark && lvl >= 4 ? `<div style="margin-top:4px;text-align:left;"><button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionOverview('${lesson.id}','${program}',${week},'${plugaTrack||''}')">📋 סקירת ביצוע</button></div>` : ''}`;
+                    ${canMark ? `<div style="margin-top:4px;text-align:left;"><button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionOverview('${lesson.id}','${program}',${week},'${plugaTrack||''}')">📋 סקירת ביצוע</button></div>` : ''}`;
                 }
 
                 html += `<div class="card" style="border-right:4px solid ${color};padding:16px;">
@@ -14885,13 +14903,13 @@ const SAKAL_SURVEYS = [
 
 function sakalCanCreate() {
     if (!currentUser) return false;
-    var role = ROLES[currentUser.role];
-    return role && role.level >= 2;
+    return hasPermission('create-sakag');
 }
 
 var _sakalOverviewMap = null;
 function sakalInitOverviewMap() {
-    var mapEl = document.getElementById('sakal-overview-map');
+    // Map lives in admin panel now
+    var mapEl = document.getElementById('admin-sakag-overview-map');
     if (!mapEl || _sakalOverviewMap) return;
     _sakalOverviewMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([31.77, 35.21], 8);
     L.tileLayer('https://mt{s}.google.com/vt/lyrs=p&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(_sakalOverviewMap);
@@ -14903,7 +14921,7 @@ function sakalInitOverviewMap() {
             L.marker([loc.lat, loc.lng], {
                 icon: L.divIcon({ className:'', html:'<div style="background:#1565C0;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">📌</div>', iconSize:[28,28], iconAnchor:[14,14] })
             }).addTo(_sakalOverviewMap)
-              .bindPopup('<div style="direction:rtl;text-align:right;min-width:150px;"><b>' + s.title + '</b><br><span style="font-size:0.82rem;color:#666;">' + s.subtitle + '</span><br><a href="#" onclick="sakalOpenDetail('+idx+');return false;" style="color:var(--primary);font-weight:600;font-size:0.85rem;">👁️ צפה בסק"ג</a></div>');
+              .bindPopup('<div style="direction:rtl;text-align:right;min-width:150px;"><b>' + s.title + '</b><br><span style="font-size:0.82rem;color:#666;">' + s.subtitle + '</span></div>');
         }
     });
 }
@@ -14921,8 +14939,6 @@ function sakalRenderList() {
     var createWrap = document.getElementById('sakal-create-wrap');
     if (sakalCanCreate()) createWrap.style.display = '';
     else createWrap.style.display = 'none';
-    // Initialize overview map
-    setTimeout(sakalInitOverviewMap, 200);
 
     if (SAKAL_SURVEYS.length === 0) {
         grid.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">אין סק"גים זמינים כרגע.</p>';
@@ -16141,6 +16157,13 @@ async function loadAdminUserSakag() {
     var listEl = document.getElementById('admin-user-sakag-list');
     if (!listEl) return;
     listEl.innerHTML = 'טוען...';
+
+    // Initialize overview map in admin panel
+    setTimeout(function() {
+        sakalInitOverviewMap();
+        if (_sakalOverviewMap) setTimeout(function(){ _sakalOverviewMap.invalidateSize(); }, 300);
+    }, 200);
+
     try {
         var snap = await db.collection('user_sakag').orderBy('createdAt','desc').get();
         if (snap.empty) { listEl.innerHTML = '<p style="color:var(--text-secondary);">לא נוצרו סק"גים עצמאיים עדיין</p>'; return; }
@@ -16158,15 +16181,30 @@ async function loadAdminUserSakag() {
                 '<td>' + date + '</td>' +
                 '<td>' + statusBadge + '</td>' +
                 '<td style="white-space:nowrap;">' +
-                    '<button class="btn-sm btn-secondary" onclick="sakalViewUserSakag(\''+doc.id+'\');navigate(\'geography\');switchGeoMode(\'sakal\');">👁️</button> ' +
+                    '<button class="btn-sm btn-secondary" onclick="adminViewUserSakag(\''+doc.id+'\')">👁️ צפייה</button> ' +
                     '<button class="btn-sm btn-danger" onclick="adminDeleteUserSakag(\''+doc.id+'\')">🗑️</button>' +
                 '</td>' +
             '</tr>';
+            // Add to overview map
+            if (d.status !== 'deleted') sakalAddUserSakagToMap(doc.id, d);
         });
         html += '</tbody></table>';
         html += '<p style="margin-top:8px;font-size:0.82rem;color:var(--text-secondary);">סה"כ: ' + snap.size + ' סק"גים</p>';
         listEl.innerHTML = html;
     } catch(e) { listEl.innerHTML = '<p style="color:var(--danger);">שגיאה: '+e.message+'</p>'; }
+}
+
+// View a user sakag from admin panel — open in a modal
+async function adminViewUserSakag(docId) {
+    try {
+        var doc = await db.collection('user_sakag').doc(docId).get();
+        if (!doc.exists) { showToast('סק"ג לא נמצא'); return; }
+        var d = doc.data();
+        // Open sakag detail view
+        sakalViewUserSakag(docId);
+        navigate('geography');
+        switchGeoMode('sakal');
+    } catch(e) { showToast('שגיאה: ' + e.message); }
 }
 
 async function adminDeleteUserSakag(docId) {
