@@ -15278,10 +15278,48 @@ async function modalSakagGenerate(lat, lng, placeName) {
         }
         if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        // Strip BOM and zero-width characters
+        aiText = aiText.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '');
         var sakagData;
         try { sakagData = JSON.parse(aiText); } catch(e) {
-            var m = aiText.match(/\{[\s\S]*\}/);
-            if (m) sakagData = JSON.parse(m[0]); else throw new Error('לא ניתן לנתח את תשובת ה-AI');
+            // Try to extract JSON object from mixed text
+            var braceStart = aiText.indexOf('{');
+            var braceEnd = aiText.lastIndexOf('}');
+            if (braceStart !== -1 && braceEnd > braceStart) {
+                try { sakagData = JSON.parse(aiText.substring(braceStart, braceEnd + 1)); } catch(e2) {
+                    // Try nested match for valid JSON
+                    var m = aiText.match(/\{[^{}]*"title"[\s\S]*"sections"[\s\S]*\}/);
+                    if (m) { try { sakagData = JSON.parse(m[0]); } catch(e3) {} }
+                }
+            }
+            if (!sakagData) {
+                // Retry once with explicit JSON-only instruction
+                console.warn('Sakag AI: first parse failed, retrying with stricter prompt...');
+                var retryPrompt = 'RESPOND WITH ONLY A VALID JSON OBJECT. No text before or after. No markdown. Just the JSON.\n\n' + buildPrompt;
+                var retryResp = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: retryPrompt }] }],
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+                    })
+                });
+                if (retryResp.ok) {
+                    var retryData = await retryResp.json();
+                    var retryParts = retryData.candidates?.[0]?.content?.parts || [];
+                    var retryText = '';
+                    for (var rpi = retryParts.length - 1; rpi >= 0; rpi--) {
+                        if (!retryParts[rpi].thought && retryParts[rpi].text) { retryText = retryParts[rpi].text; break; }
+                    }
+                    if (!retryText && retryParts.length) retryText = retryParts[retryParts.length - 1].text || '';
+                    retryText = retryText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                    try { sakagData = JSON.parse(retryText); } catch(e4) {
+                        var bs = retryText.indexOf('{'), be = retryText.lastIndexOf('}');
+                        if (bs !== -1 && be > bs) { try { sakagData = JSON.parse(retryText.substring(bs, be + 1)); } catch(e5) {} }
+                    }
+                }
+                if (!sakagData) throw new Error('לא ניתן לנתח את תשובת ה-AI. נסה שוב או בחר מיקום אחר.');
+            }
         }
 
         // Render result in modal
@@ -15548,7 +15586,9 @@ const SAKAG_AI_PROMPT = `אתה חוקר גיאוגרפיה היסטורית ו�
 - כתיבה בהירה, עובדתית ומכבדת. הימנע מפסקאות פתיחה גנריות.
 - כל סעיף צריך להכיל מידע ספציפי למרחב ולא ניסוחים כלליים.
 - אם אין מספיק מידע תורני ישיר על השם הנוכחי של המקום — חפש בשמות העתיקים (ארמיים/יווניים/רומיים/ערביים), ובנחלת השבט. כתוב את מה שכן ידוע. אל תמציא מקורות — עדיף פחות מידע אמיתי מהמצאות.
-- סה"כ אורך: 600-900 מילים. לא יותר.`;
+- סה"כ אורך: 600-900 מילים. לא יותר.
+
+חשוב מאוד: החזר אך ורק אובייקט JSON תקני. אין להוסיף טקסט, הסברים או הקדמות לפני או אחרי ה-JSON. התשובה חייבת להתחיל ב-{ ולהסתיים ב-}.`;
 
 var sakalAiGenerating = false;
 
@@ -15661,15 +15701,47 @@ async function sakalGenerateAI(lat, lng, placeName) {
         if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
 
         // Parse JSON from AI response (handle markdown code blocks)
-        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
         var sakagData;
         try {
             sakagData = JSON.parse(aiText);
         } catch(parseErr) {
-            // Try to extract JSON from response
-            var jsonMatch = aiText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) sakagData = JSON.parse(jsonMatch[0]);
-            else throw new Error('לא ניתן לנתח את התשובה מה-AI');
+            // Try to extract JSON object from mixed text
+            var bs2 = aiText.indexOf('{'), be2 = aiText.lastIndexOf('}');
+            if (bs2 !== -1 && be2 > bs2) {
+                try { sakagData = JSON.parse(aiText.substring(bs2, be2 + 1)); } catch(e2) {
+                    var m2 = aiText.match(/\{[^{}]*"title"[\s\S]*"sections"[\s\S]*\}/);
+                    if (m2) { try { sakagData = JSON.parse(m2[0]); } catch(e3) {} }
+                }
+            }
+            if (!sakagData) {
+                // Retry with stricter prompt
+                console.warn('Sakag AI: first parse failed, retrying...');
+                var retryPrompt2 = 'RESPOND WITH ONLY A VALID JSON OBJECT. No text before or after. No markdown. Just the JSON.\n\n' + prompt;
+                var retryResp2 = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: retryPrompt2 }] }],
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+                    })
+                });
+                if (retryResp2.ok) {
+                    var rd2 = await retryResp2.json();
+                    var rp2 = rd2.candidates?.[0]?.content?.parts || [];
+                    var rt2 = '';
+                    for (var rpi2 = rp2.length - 1; rpi2 >= 0; rpi2--) {
+                        if (!rp2[rpi2].thought && rp2[rpi2].text) { rt2 = rp2[rpi2].text; break; }
+                    }
+                    if (!rt2 && rp2.length) rt2 = rp2[rp2.length - 1].text || '';
+                    rt2 = rt2.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                    try { sakagData = JSON.parse(rt2); } catch(e4) {
+                        var bs3 = rt2.indexOf('{'), be3 = rt2.lastIndexOf('}');
+                        if (bs3 !== -1 && be3 > bs3) { try { sakagData = JSON.parse(rt2.substring(bs3, be3 + 1)); } catch(e5) {} }
+                    }
+                }
+                if (!sakagData) throw new Error('לא ניתן לנתח את תשובת ה-AI. נסה שוב או בחר מיקום אחר.');
+            }
         }
 
         // Render the generated סק"ג
