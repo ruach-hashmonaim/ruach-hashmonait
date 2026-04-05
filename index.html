@@ -3155,9 +3155,9 @@ async function loadTrainingPage(program) {
             <h3 style="color:var(--primary);font-size:1.1rem;">${weekTitle}${headerParts ? ' — ' + headerParts : ''}</h3>
         </div>`;
 
-        // Collect EMET (אמת מארץ תצמח) items for this program+week — visible to admin only
-        const isAdmin = userLevel() >= 6;
-        const emetItems = isAdmin ? ((EMET_CURRICULUM[program] && EMET_CURRICULUM[program][week]) || []) : [];
+        // Collect EMET (אמת מארץ תצמח) items for this program+week — visible to all logged-in staff
+        const canSeeEmet = currentUser && userLevel() >= 1;
+        const emetItems = canSeeEmet ? ((EMET_CURRICULUM[program] && EMET_CURRICULUM[program][week]) || []) : [];
         const totalItems = lessons.length + emetItems.length;
 
         if (totalItems === 0) {
