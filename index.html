@@ -3253,9 +3253,9 @@ async function loadTrainingPage(program) {
                         <a href="${waLink}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;color:#fff;background:#25D366;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                             📤 שתף לחיילים בווצאפ
                         </a>
-                        ${item.type === 'sakal' ? `<a href="#geography" onclick="event.preventDefault();navigate('geography');setTimeout(()=>{switchGeoMode('sakal');setTimeout(()=>{sakalStartCreate();},200);},200);" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;color:#B45309;background:rgba(217,119,6,0.12);text-decoration:none;border:1.5px solid rgba(217,119,6,0.3);transition:all 0.2s;cursor:pointer;" onmouseover="this.style.background='rgba(217,119,6,0.2)'" onmouseout="this.style.background='rgba(217,119,6,0.12)'">
+                        ${item.type === 'sakal' ? `<button onclick="openSakagCreatorModal()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;color:#B45309;background:rgba(217,119,6,0.12);border:1.5px solid rgba(217,119,6,0.3);cursor:pointer;transition:all 0.2s;font-family:inherit;" onmouseover="this.style.background='rgba(217,119,6,0.2)'" onmouseout="this.style.background='rgba(217,119,6,0.12)'">
                             ✏️ יצירת סק"ג עצמאי
-                        </a>` : ''}
+                        </button>` : ''}
                     </div>
                 </div>`;
             }
@@ -14993,6 +14993,272 @@ function sakalCreateFromSearch() {
     }).catch(function(e){ statusEl.innerHTML='<span style="color:#d32f2f;">שגיאה בחיפוש</span>'; });
 }
 
+// === Inline סק"ג Creator Modal (works from within רוח מכבי) ===
+function openSakagCreatorModal() {
+    // Remove existing modal if any
+    var existing = document.getElementById('sakag-creator-modal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'sakag-creator-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `<div style="background:var(--card-bg,#fff);border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+        <div style="background:var(--primary);color:#fff;padding:16px 20px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;font-size:1.05rem;">✏️ יצירת סק"ג עצמאי</span>
+            <button onclick="document.getElementById('sakag-creator-modal').remove()" style="background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:20px;">
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">בחר מיקום — הסק"ג ייבנה אוטומטית על ידי סוכן AI לפי עקרונות "אמת מארץ תצמח"</p>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
+                <button class="btn-primary btn-sm" onclick="modalSakagFromLocation()" id="modal-sakag-locate-btn" style="font-size:0.88rem;">📍 המיקום שלי</button>
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="modal-sakag-search" placeholder="חפש מקום..." style="padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;width:180px;" onkeydown="if(event.key==='Enter')modalSakagFromSearch()">
+                    <button class="btn-primary btn-sm" onclick="modalSakagFromSearch()" style="font-size:0.88rem;">🔍 חפש</button>
+                </div>
+            </div>
+            <div id="modal-sakag-status" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></div>
+            <div id="modal-sakag-content"></div>
+        </div>
+    </div>`;
+    document.body.appendChild(modal);
+    // Close on backdrop click
+    modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+}
+
+function modalSakagFromLocation() {
+    var statusEl = document.getElementById('modal-sakag-status');
+    statusEl.innerHTML = '<span style="color:var(--primary);">📍 מאתר מיקום...</span>';
+    if (!navigator.geolocation) { statusEl.innerHTML = '<span style="color:#d32f2f;">הדפדפן לא תומך באיתור מיקום</span>'; return; }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        modalSakagGenerate(pos.coords.latitude, pos.coords.longitude, 'המיקום שלי');
+    }, function(err) {
+        statusEl.innerHTML = '<span style="color:#d32f2f;">לא ניתן לאתר מיקום: ' + err.message + '</span>';
+    }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+function modalSakagFromSearch() {
+    var q = document.getElementById('modal-sakag-search').value.trim();
+    if (!q) return;
+    var statusEl = document.getElementById('modal-sakag-status');
+    statusEl.innerHTML = '<span style="color:var(--primary);">🔍 מחפש "' + q + '"...</span>';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1&countrycodes=il,ps,jo')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.length === 0) { statusEl.innerHTML = '<span style="color:#d32f2f;">לא נמצא — נסה שם אחר</span>'; return; }
+        var lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+        var name = data[0].display_name.split(',')[0];
+        statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>' + name + '</b></span>';
+        modalSakagGenerate(lat, lng, name);
+    }).catch(function() { statusEl.innerHTML = '<span style="color:#d32f2f;">שגיאה בחיפוש</span>'; });
+}
+
+async function modalSakagGenerate(lat, lng, placeName) {
+    var contentEl = document.getElementById('modal-sakag-content');
+    contentEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
+        '<div style="font-size:2rem;margin-bottom:10px;animation:spin-slow 2s linear infinite;display:inline-block;">🤖</div>' +
+        '<p style="font-weight:700;color:var(--primary);font-size:1rem;">מייצר סק"ג עבור ' + placeName + '...</p>' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">הסוכן חוקר מקורות תורניים, היסטוריים וגיאוגרפיים — זה עשוי לקחת כחצי דקה</p>' +
+        '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
+            '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 30s ease-out forwards;"></div>' +
+        '</div></div>';
+
+    // Ensure animation styles exist
+    if (!document.getElementById('sakag-anim-style')) {
+        var style = document.createElement('style');
+        style.id = 'sakag-anim-style';
+        style.textContent = '@keyframes sakagProgress{0%{width:0%}50%{width:60%}80%{width:85%}100%{width:95%}} @keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}';
+        document.head.appendChild(style);
+    }
+
+    try {
+        // Get Claude API key from Firestore
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().claudeKey || configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח API לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
+
+        var prompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4));
+
+        var response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 4096,
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+
+        if (!response.ok) {
+            var errText = await response.text();
+            throw new Error('שגיאת Claude API: ' + response.status);
+        }
+
+        var data = await response.json();
+        var aiText = (data.content?.[0]?.text || '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        var sakagData;
+        try { sakagData = JSON.parse(aiText); } catch(e) {
+            var m = aiText.match(/\{[\s\S]*\}/);
+            if (m) sakagData = JSON.parse(m[0]); else throw new Error('לא ניתן לנתח את תשובת ה-AI');
+        }
+
+        // Render result in modal
+        modalSakagRenderResult(sakagData, lat, lng, placeName);
+
+    } catch(err) {
+        contentEl.innerHTML = '<div style="padding:20px;text-align:center;">' +
+            '<p style="color:#d32f2f;font-weight:700;">⚠️ ' + err.message + '</p>' +
+            '<button class="btn-primary btn-sm" onclick="modalSakagGenerate(' + lat + ',' + lng + ',\'' + placeName.replace(/'/g, "\\'") + '\')" style="margin-top:10px;">🔄 נסה שוב</button></div>';
+    }
+}
+
+function modalSakagRenderResult(sakagData, lat, lng, placeName) {
+    var contentEl = document.getElementById('modal-sakag-content');
+    var sectionsHtml = (sakagData.sections || []).map(function(sec) {
+        return '<div style="margin-bottom:12px;">' +
+            '<div style="font-weight:700;color:var(--primary);margin-bottom:4px;font-size:0.9rem;">' + (sec.icon || '📌') + ' ' + sec.title + '</div>' +
+            '<div style="background:#f8f8f8;border-radius:8px;padding:10px;font-size:0.83rem;line-height:1.65;">' + sec.content + '</div>' +
+        '</div>';
+    }).join('');
+
+    // Store for save/PDF
+    window._modalSakagData = { data: sakagData, lat: lat, lng: lng, placeName: placeName };
+
+    contentEl.innerHTML = '<div style="border:2px solid var(--primary);border-radius:12px;overflow:hidden;">' +
+        '<div style="background:var(--primary);color:#fff;padding:10px 16px;font-weight:700;text-align:center;font-size:0.95rem;">📋 ' + sakagData.title + '</div>' +
+        (sakagData.subtitle ? '<div style="padding:4px 16px 0;text-align:center;font-size:0.82rem;color:var(--text-secondary);">' + sakagData.subtitle + '</div>' : '') +
+        '<div style="padding:14px;">' + sectionsHtml + '</div>' +
+        '<div style="padding:4px 14px 6px;font-size:0.7rem;color:#999;text-align:center;">⚠️ תוכן זה נוצר באמצעות AI — יש לבדוק ולוודא</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;">' +
+        '<button class="btn-primary" onclick="modalSakagSaveAndPDF()" style="font-size:0.9rem;padding:10px 20px;">📥 שמור והורד PDF</button>' +
+        '<button class="btn-secondary" onclick="modalSakagGenerate(' + lat + ',' + lng + ',\'' + placeName.replace(/'/g, "\\'") + '\')" style="font-size:0.9rem;padding:10px 20px;">🔄 צור מחדש</button>' +
+    '</div>';
+}
+
+async function modalSakagSaveAndPDF() {
+    if (!window._modalSakagData || !currentUser) return;
+    var d = window._modalSakagData;
+
+    try {
+        // Save to Firestore
+        var docRef = await db.collection('user_sakag').add({
+            title: d.data.title || 'סק"ג — ' + d.placeName,
+            subtitle: d.data.subtitle || '',
+            placeName: d.placeName,
+            lat: d.lat, lng: d.lng,
+            sections: d.data.sections || [],
+            createdBy: currentUser.uid,
+            createdByName: currentUser.name || currentUser.email || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'active'
+        });
+
+        // Generate PDF
+        await generateSakagPDF(d.data, d.placeName);
+
+        showToast('✅ הסק"ג נשמר והורד כ-PDF!');
+
+        // Close modal after short delay
+        setTimeout(function() {
+            var modal = document.getElementById('sakag-creator-modal');
+            if (modal) modal.remove();
+        }, 1500);
+
+    } catch(err) { showToast('❌ שגיאה: ' + err.message); }
+}
+
+async function generateSakagPDF(sakagData, placeName) {
+    // Load jsPDF if not loaded
+    if (typeof jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+        await new Promise(function(resolve, reject) {
+            var s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+    var PDF = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
+    var doc = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Load Amiri font for Hebrew/RTL (from Google Fonts CDN)
+    // Fallback: use built-in Helvetica for now (Hebrew may not render perfectly)
+    doc.setR2L(true);
+
+    var pageW = 210, margin = 15, contentW = pageW - 2 * margin;
+    var y = 20;
+
+    // Title
+    doc.setFontSize(18);
+    doc.setFont('Helvetica', 'bold');
+    var title = sakagData.title || 'סק"ג — ' + placeName;
+    doc.text(title, pageW - margin, y, { align: 'right' });
+    y += 8;
+
+    if (sakagData.subtitle) {
+        doc.setFontSize(11);
+        doc.setFont('Helvetica', 'normal');
+        doc.text(sakagData.subtitle, pageW - margin, y, { align: 'right' });
+        y += 6;
+    }
+
+    // Divider line
+    doc.setDrawColor(0, 128, 128);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 8;
+
+    // Intro line
+    doc.setFontSize(8);
+    doc.setFont('Helvetica', 'italic');
+    doc.text('נוצר באמצעות סוכן AI — אמת מארץ תצמח — חטיבת החשמונאים', pageW - margin, y, { align: 'right' });
+    y += 10;
+
+    // Sections
+    (sakagData.sections || []).forEach(function(sec) {
+        if (y > 260) { doc.addPage(); y = 20; }
+
+        // Section title
+        doc.setFontSize(13);
+        doc.setFont('Helvetica', 'bold');
+        doc.text((sec.icon || '') + ' ' + sec.title, pageW - margin, y, { align: 'right' });
+        y += 7;
+
+        // Section content — strip HTML and split into lines
+        var text = (sec.content || '')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#x?\d+;/g, '')
+            .trim();
+
+        doc.setFontSize(10);
+        doc.setFont('Helvetica', 'normal');
+        var lines = doc.splitTextToSize(text, contentW);
+        lines.forEach(function(line) {
+            if (y > 275) { doc.addPage(); y = 20; }
+            doc.text(line, pageW - margin, y, { align: 'right' });
+            y += 5;
+        });
+        y += 6;
+    });
+
+    // Footer
+    doc.setFontSize(7);
+    doc.setFont('Helvetica', 'italic');
+    doc.text('המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים', pageW / 2, 290, { align: 'center' });
+
+    // Download
+    var filename = 'sakag-' + (placeName || 'new').replace(/[^א-תa-zA-Z0-9]/g, '-') + '.pdf';
+    doc.save(filename);
+}
+
 // === AI סק"ג Generator ===
 const SAKAG_AI_PROMPT = `אתה משמש כיועץ תוכן והיסטוריה עבור מפקד בחטיבת "חשמונאים" (לוחמים חרדים).
 עליך לבנות סקירה גיאוגרפית (סק"ג) תורנית מדויקת ותמציתית על המקום הבא: [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
@@ -15098,10 +15364,10 @@ async function sakalGenerateAI(lat, lng, placeName) {
     try {
         // Get Claude API key from Firestore
         var configDoc = await db.collection('config').doc('ai').get();
-        if (!configDoc.exists || !configDoc.data().claudeKey) {
+        var apiKey = configDoc.exists ? (configDoc.data().claudeKey || '') : '';
+        if (!apiKey) {
             throw new Error('מפתח Claude לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
         }
-        var apiKey = configDoc.data().claudeKey;
 
         // Build prompt
         var prompt = SAKAG_AI_PROMPT
@@ -15704,7 +15970,8 @@ async function adminDeleteUserSakag(docId) {
 async function loadAiConfig() {
     try {
         var doc = await db.collection('config').doc('ai').get();
-        var key = doc.exists ? (doc.data().claudeKey || '') : '';
+        var data = doc.exists ? doc.data() : {};
+        var key = data.claudeKey || '';
         var input = document.getElementById('ai-claude-key-input');
         if (input && key) input.value = key;
         var statusEl = document.getElementById('ai-config-status');
