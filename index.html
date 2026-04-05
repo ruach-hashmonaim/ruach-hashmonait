@@ -15159,7 +15159,7 @@ async function modalSakagSaveAndPDF() {
             placeName: d.placeName,
             lat: d.lat, lng: d.lng,
             sections: d.data.sections || [],
-            createdBy: currentUser.uid,
+            createdBy: currentUser.id || currentUser.uid || currentUser.email,
             createdByName: currentUser.name || currentUser.email || '',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
@@ -15488,7 +15488,7 @@ async function sakalSaveGenerated() {
             lat: d.lat,
             lng: d.lng,
             sections: d.data.sections || [],
-            createdBy: currentUser.uid,
+            createdBy: currentUser.id || currentUser.uid || currentUser.email,
             createdByName: currentUser.name || currentUser.email || '',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
