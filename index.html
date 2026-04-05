@@ -1061,20 +1061,30 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <div class="page-section" id="page-training">
     <div class="card">
         <div class="card-title">רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:12px;">תוכנית הרוח והחינוך של בה״ד מכבים — תכני הכשרה לקורס קצינים, מ״כים, והכשרת יסוד</p>
-        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-            <button class="track-tab active" id="training-prog-basic" onclick="switchTrainingProgram('basic')">הכשרת יסוד</button>
-            <button class="track-tab" id="training-prog-nco" onclick="switchTrainingProgram('nco')">קורס מ״כים</button>
-            <button class="track-tab" id="training-prog-officer" onclick="switchTrainingProgram('officer')">קורס קצינים</button>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">תוכנית הרוח והחינוך של בה״ד מכבים — תכני הכשרה לקורס קצינים, מ״כים, והכשרת יסוד</p>
+        <div style="margin-bottom:14px;">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">הכשרה</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="track-tab active" id="training-prog-basic" onclick="switchTrainingProgram('basic')">הכשרת יסוד</button>
+                <button class="track-tab" id="training-prog-nco" onclick="switchTrainingProgram('nco')">קורס מ״כים</button>
+                <button class="track-tab" id="training-prog-officer" onclick="switchTrainingProgram('officer')">קורס קצינים</button>
+            </div>
         </div>
-        <div id="training-officer-subtracks" style="display:none;margin-bottom:8px;">
+        <div id="training-officer-subtracks" style="display:none;margin-bottom:14px;">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">מסלול</div>
             <div style="display:flex;gap:8px;">
                 <button class="track-tab active" id="officer-track-sade" data-track="sade" onclick="switchOfficerTrackTab('sade')">מסלול שדה</button>
                 <button class="track-tab" id="officer-track-gefen" data-track="gefen" onclick="switchOfficerTrackTab('gefen')">מסלול גפן</button>
             </div>
         </div>
-        <div class="track-tabs-wrap" id="training-tracks"></div>
-        <div class="training-controls" id="training-controls"></div>
+        <div style="margin-bottom:14px;">
+            <div id="training-tracks-label" style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">מסגרת</div>
+            <div class="track-tabs-wrap" id="training-tracks" style="margin-bottom:0;"></div>
+        </div>
+        <div style="margin-bottom:4px;">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">שבוע הכשרה</div>
+            <div class="training-controls" id="training-controls"></div>
+        </div>
     </div>
     <div id="training-content"></div>
 </div>
@@ -2056,6 +2066,24 @@ function activatePage(page) {
         if (goingTo !== 'internet-safety') cwStopTracking();
     }
 
+    // Cleanup standalone sakag creator when navigating away
+    if (page !== 'sakag-create') {
+        var standalonePage = document.getElementById('standalone-sakag-page');
+        if (standalonePage) standalonePage.style.display = 'none';
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar) sidebar.style.display = '';
+        var header = document.querySelector('.header');
+        if (header) header.style.display = '';
+        var mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.style.marginRight = '';
+    }
+
+    // Handle standalone sakag creator: #sakag-create
+    if (page === 'sakag-create') {
+        openStandaloneSakagCreator();
+        return;
+    }
+
     // Handle deep links: #geography/quiz/ID or #geography/sakal/ID
     if (page.startsWith('geography/quiz/') || page.startsWith('geography/sakal/')) {
         const parts = page.split('/');
@@ -2075,7 +2103,10 @@ function activatePage(page) {
             setGeoMode('mapquiz');
             setTimeout(function() {
                 var idx = MAP_QUIZZES.findIndex(function(q) { return q.id === geoId; });
-                if (idx >= 0) mqStartQuiz(idx);
+                if (idx >= 0) {
+                    window._mqDeepLink = true;
+                    mqStartQuiz(idx);
+                }
             }, 200);
         } else if (geoType === 'sakal') {
             setGeoMode('sakal');
@@ -2140,6 +2171,8 @@ function activatePage(page) {
 
 window.addEventListener('hashchange', () => {
     const page = window.location.hash.slice(1) || 'home';
+    // Standalone sakag creator is public — no permission needed
+    if (page === 'sakag-create') { activatePage(page); return; }
     const basePage = page.split('/')[0];
     const requiredPerm = PAGE_PERMISSIONS[basePage];
     if (requiredPerm && !currentUser) { openLoginModal(basePage); return; }
@@ -13853,6 +13886,9 @@ function mqStartQuiz(quizIndex) {
     document.getElementById('mapquiz-result').style.display = 'none';
     document.getElementById('mapquiz-question-area').style.display = '';
     document.getElementById('mapquiz-quiz-title').textContent = mqCurrentQuiz.icon + ' ' + mqCurrentQuiz.title;
+    // Hide back-to-list button if opened via deep link (shared quiz)
+    var backBtn = document.querySelector('#mapquiz-header .btn-primary');
+    if (backBtn) backBtn.style.display = window._mqDeepLink ? 'none' : '';
     mqRenderQuestion();
     // Scroll to top
     document.getElementById('mapquiz-active').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -14179,7 +14215,7 @@ function mqShowResults() {
     html += '</div>';
     html += '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
         '<button class="btn-primary" onclick="mqStartQuiz(MAP_QUIZZES.indexOf(mqCurrentQuiz))" style="min-width:120px;">🔄 נסה שוב</button>' +
-        '<button class="btn-primary" onclick="mqBackToList()" style="min-width:120px;background:var(--bg-secondary);color:var(--text-primary);">← חזרה לרשימה</button>' +
+        (window._mqDeepLink ? '' : '<button class="btn-primary" onclick="mqBackToList()" style="min-width:120px;background:var(--bg-secondary);color:var(--text-primary);">← חזרה לרשימה</button>') +
     '</div>';
     document.getElementById('mapquiz-result').innerHTML = html;
     // Save score
@@ -14194,6 +14230,7 @@ function mqShowResults() {
 }
 
 function mqBackToList() {
+    window._mqDeepLink = false;
     mqCurrentQuiz = null;
     mqRenderQuizList();
 }
@@ -14980,11 +15017,8 @@ function sakalRenderList() {
         return;
     }
     grid.innerHTML = SAKAL_SURVEYS.map(function(s, idx) {
-        var shareUrl = window.location.origin + window.location.pathname + '#geography/sakal/' + s.id;
-        var waText = encodeURIComponent(s.icon + ' ' + s.title + ' — סק"ג\n' + s.subtitle + '\n\n👉 ' + shareUrl);
-        var waLink = 'https://wa.me/?text=' + waText;
-        return '<div class="sakal-card" style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;min-height:140px;" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.12)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">' +
-            '<div onclick="sakalOpenDetail('+idx+')" style="flex:1;display:flex;flex-direction:column;">' +
+        return '<div class="sakal-card" style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;min-height:140px;" onclick="sakalOpenDetail('+idx+')" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.12)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">' +
+            '<div style="flex:1;display:flex;flex-direction:column;">' +
                 '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
                     '<span style="font-size:2rem;">'+s.icon+'</span>' +
                     '<div>' +
@@ -14998,7 +15032,6 @@ function sakalRenderList() {
                     '<span style="font-size:0.72rem;background:#E8F5E9;color:#2E7D32;padding:3px 10px;border-radius:10px;font-weight:600;">'+s.locations.length+' נקודות עניין</span>' +
                 '</div>' +
             '</div>' +
-            '<a href="' + waLink + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px;padding:5px 0;background:#25D366;color:#fff;border-radius:8px;font-size:0.72rem;font-weight:600;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">📲 שתף בווצאפ</a>' +
         '</div>';
     }).join('');
 }
@@ -15088,6 +15121,254 @@ function sakalCreateFromSearch() {
 }
 
 // === Inline סק"ג Creator Modal (works from within רוח מכבי) ===
+// ============================================================
+// Standalone Sakag Creator (shareable via #sakag-create)
+// ============================================================
+function openStandaloneSakagCreator() {
+    // Hide all normal page UI
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.style.display = 'none';
+    var header = document.querySelector('.header');
+    if (header) header.style.display = 'none';
+    var mainContent = document.querySelector('.main-content');
+    if (mainContent) mainContent.style.marginRight = '0';
+
+    // Create or show standalone container
+    var container = document.getElementById('standalone-sakag-page');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'standalone-sakag-page';
+        container.style.cssText = 'direction:rtl;min-height:100vh;background:linear-gradient(135deg,#f5f7fa 0%,#e8ecf1 100%);padding:0;';
+        container.innerHTML = `
+            <div style="background:var(--primary,#0E7490);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,0.15);">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="font-size:1.8rem;">🗺️</span>
+                    <div>
+                        <div style="font-weight:700;font-size:1.15rem;">יצירת סק"ג — סקירה גיאוגרפית</div>
+                        <div style="font-size:0.82rem;opacity:0.85;">חטיבת חשמונאים | אמת מארץ תצמח</div>
+                    </div>
+                </div>
+                <a href="${window.location.origin + window.location.pathname}" style="color:#fff;text-decoration:none;font-size:0.82rem;opacity:0.8;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;">← לאתר המצפן</a>
+            </div>
+            <div style="max-width:700px;margin:20px auto;padding:0 16px;">
+                <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid rgba(0,0,0,0.06);">
+                    <p style="font-size:0.92rem;color:#555;margin-bottom:16px;line-height:1.6;text-align:center;">בחר מיקום על המפה, חפש שם מקום, או השתמש במיקום שלך. סוכן AI יבנה עבורך סקירה גיאוגרפית מקיפה.</p>
+                    <div id="standalone-sakag-map" style="height:280px;border-radius:12px;border:2px solid #e0e0e0;margin-bottom:16px;"></div>
+                    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">
+                        <button class="btn-primary btn-sm" onclick="standaloneSakagFromLocation()" id="standalone-sakag-locate-btn" style="font-size:0.88rem;padding:10px 18px;">📍 המיקום שלי</button>
+                        <div style="display:flex;gap:6px;">
+                            <input type="text" id="standalone-sakag-search" placeholder="חפש מקום..." style="padding:10px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.88rem;font-family:inherit;width:200px;" onkeydown="if(event.key==='Enter')standaloneSakagFromSearch()">
+                            <button class="btn-primary btn-sm" onclick="standaloneSakagFromSearch()" style="font-size:0.88rem;padding:10px 14px;">🔍</button>
+                        </div>
+                    </div>
+                    <div id="standalone-sakag-status" style="text-align:center;font-size:0.88rem;color:#777;margin-bottom:14px;"></div>
+                    <div id="standalone-sakag-content"></div>
+                </div>
+            </div>`;
+        document.body.appendChild(container);
+        // Init map
+        setTimeout(function() { standaloneSakagInitMap(); }, 150);
+    }
+    container.style.display = '';
+}
+
+var _standaloneSakagMap = null, _standaloneSakagMarker = null;
+
+function standaloneSakagInitMap() {
+    var mapEl = document.getElementById('standalone-sakag-map');
+    if (!mapEl || _standaloneSakagMap) return;
+    _standaloneSakagMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([31.77, 35.21], 8);
+    L.tileLayer('https://mt{s}.google.com/vt/lyrs=p&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(_standaloneSakagMap);
+    _standaloneSakagMap.on('click', function(e) {
+        var lat = e.latlng.lat, lng = e.latlng.lng;
+        if (_standaloneSakagMarker) _standaloneSakagMap.removeLayer(_standaloneSakagMarker);
+        _standaloneSakagMarker = L.marker([lat, lng], {
+            icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[32,32], iconAnchor:[16,16] })
+        }).addTo(_standaloneSakagMap);
+        // Reverse geocode
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&accept-language=he')
+            .then(r => r.json()).then(d => {
+                var name = d.name || d.display_name?.split(',')[0] || 'נקודה נבחרת';
+                document.getElementById('standalone-sakag-status').innerHTML = '<span style="color:#2E7D32;font-weight:600;">📍 ' + name + '</span>';
+                standaloneSakagGenerate(lat, lng, name);
+            }).catch(function() { standaloneSakagGenerate(lat, lng, 'נקודה נבחרת'); });
+    });
+}
+
+function standaloneSakagFromLocation() {
+    var btn = document.getElementById('standalone-sakag-locate-btn');
+    btn.textContent = '⏳ מאתר...';
+    btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        var lat = pos.coords.latitude, lng = pos.coords.longitude;
+        btn.textContent = '📍 המיקום שלי';
+        btn.disabled = false;
+        if (_standaloneSakagMarker) _standaloneSakagMap.removeLayer(_standaloneSakagMarker);
+        _standaloneSakagMarker = L.marker([lat, lng], {
+            icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[32,32], iconAnchor:[16,16] })
+        }).addTo(_standaloneSakagMap);
+        _standaloneSakagMap.setView([lat, lng], 13);
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&accept-language=he')
+            .then(r => r.json()).then(d => {
+                var name = d.name || d.display_name?.split(',')[0] || 'המיקום שלי';
+                document.getElementById('standalone-sakag-status').innerHTML = '<span style="color:#2E7D32;font-weight:600;">📍 ' + name + '</span>';
+                standaloneSakagGenerate(lat, lng, name);
+            }).catch(function() { standaloneSakagGenerate(lat, lng, 'המיקום שלי'); });
+    }, function() {
+        btn.textContent = '📍 המיקום שלי';
+        btn.disabled = false;
+        document.getElementById('standalone-sakag-status').innerHTML = '<span style="color:#d32f2f;">לא ניתן לאתר מיקום</span>';
+    }, { enableHighAccuracy: true });
+}
+
+function standaloneSakagFromSearch() {
+    var q = document.getElementById('standalone-sakag-search').value.trim();
+    if (!q) return;
+    var statusEl = document.getElementById('standalone-sakag-status');
+    statusEl.innerHTML = '🔍 מחפש...';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&countrycodes=il,ps&limit=1&accept-language=he')
+        .then(r => r.json()).then(results => {
+            if (!results.length) { statusEl.innerHTML = '<span style="color:#d32f2f;">לא נמצא מקום</span>'; return; }
+            var r = results[0];
+            var lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+            var name = r.display_name?.split(',')[0] || q;
+            if (_standaloneSakagMarker) _standaloneSakagMap.removeLayer(_standaloneSakagMarker);
+            _standaloneSakagMarker = L.marker([lat, lng], {
+                icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[32,32], iconAnchor:[16,16] })
+            }).addTo(_standaloneSakagMap);
+            _standaloneSakagMap.setView([lat, lng], 13);
+            statusEl.innerHTML = '<span style="color:#2E7D32;font-weight:600;">📍 ' + name + '</span>';
+            standaloneSakagGenerate(lat, lng, name);
+        }).catch(function() { statusEl.innerHTML = '<span style="color:#d32f2f;">שגיאה בחיפוש</span>'; });
+}
+
+async function standaloneSakagGenerate(lat, lng, placeName) {
+    var contentEl = document.getElementById('standalone-sakag-content');
+    contentEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
+        '<div style="font-size:2.5rem;margin-bottom:12px;" class="spin-icon">🌍</div>' +
+        '<p style="font-weight:700;color:var(--primary,#0E7490);font-size:1rem;" id="standalone-sakag-step">שלב 1/2 — חוקר את המרחב סביב ' + placeName + '...</p>' +
+        '<div style="margin-top:14px;width:250px;height:5px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
+            '<div id="standalone-sakag-progress" style="width:0%;height:100%;background:var(--primary,#0E7490);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
+        '</div>' +
+    '</div>';
+
+    // Ensure animation style exists
+    if (!document.getElementById('sakag-anim-style')) {
+        var style = document.createElement('style');
+        style.id = 'sakag-anim-style';
+        style.textContent = '@keyframes sakagProgress{0%{width:0%}30%{width:40%}60%{width:65%}80%{width:80%}100%{width:95%}} @keyframes spin-slow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} .spin-icon{animation:spin-slow 2s linear infinite;display:inline-block;}';
+        document.head.appendChild(style);
+    }
+
+    try {
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח AI לא הוגדר');
+
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
+        // Step 1: Research
+        var researchPrompt = SAKAG_RESEARCH_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4));
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: researchPrompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
+            })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) {
+            if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; }
+        }
+        if (!researchText && researchParts.length) researchText = researchParts[researchParts.length - 1].text || '';
+
+        // Step 2: Generate JSON
+        var stepEl = document.getElementById('standalone-sakag-step');
+        if (stepEl) stepEl.textContent = 'שלב 2/2 — מארגן את הסק"ג...';
+        var progressEl = document.getElementById('standalone-sakag-progress');
+        if (progressEl) { progressEl.style.animation = 'none'; progressEl.style.width = '60%'; }
+
+        var buildPrompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4))
+            + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
+
+        var response = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: buildPrompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+            })
+        });
+        if (!response.ok) throw new Error('שגיאת API');
+
+        var data = await response.json();
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) {
+            if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; }
+        }
+        if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+
+        var sakagData;
+        try { sakagData = JSON.parse(aiText); } catch(e) {
+            var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
+            if (bs !== -1 && be > bs) { try { sakagData = JSON.parse(aiText.substring(bs, be + 1)); } catch(e2) {} }
+            if (!sakagData) {
+                // Retry
+                var retryResp = await fetch(geminiUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: 'RESPOND WITH ONLY A VALID JSON OBJECT.\n\n' + buildPrompt }] }],
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+                });
+                if (retryResp.ok) {
+                    var rd = await retryResp.json();
+                    var rp = rd.candidates?.[0]?.content?.parts || [];
+                    var rt = ''; for (var rpi = rp.length - 1; rpi >= 0; rpi--) { if (!rp[rpi].thought && rp[rpi].text) { rt = rp[rpi].text; break; } }
+                    if (!rt && rp.length) rt = rp[rp.length - 1].text || '';
+                    rt = rt.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                    try { sakagData = JSON.parse(rt); } catch(e3) { var bs2 = rt.indexOf('{'), be2 = rt.lastIndexOf('}'); if (bs2!==-1&&be2>bs2) try { sakagData = JSON.parse(rt.substring(bs2,be2+1)); } catch(e4){} }
+                }
+                if (!sakagData) throw new Error('לא ניתן לנתח את התשובה. נסה שוב.');
+            }
+        }
+
+        // Render result
+        var sectionsHtml = (sakagData.sections || []).map(function(sec) {
+            return '<div style="margin-bottom:14px;">' +
+                '<div style="font-weight:700;color:var(--primary,#0E7490);margin-bottom:5px;font-size:0.92rem;">' + (sec.icon || '📌') + ' ' + sec.title + '</div>' +
+                '<div style="background:#f8f9fa;border-radius:10px;padding:12px;font-size:0.85rem;line-height:1.7;">' + sec.content + '</div>' +
+            '</div>';
+        }).join('');
+
+        contentEl.innerHTML = '<div style="border:2px solid var(--primary,#0E7490);border-radius:14px;overflow:hidden;margin-bottom:16px;">' +
+            '<div style="background:var(--primary,#0E7490);color:#fff;padding:12px 18px;font-weight:700;text-align:center;font-size:1rem;">📋 ' + sakagData.title + '</div>' +
+            (sakagData.subtitle ? '<div style="padding:6px 18px 0;text-align:center;font-size:0.85rem;color:#777;">' + sakagData.subtitle + '</div>' : '') +
+            '<div style="padding:16px;">' + sectionsHtml + '</div>' +
+            '<div style="padding:6px 16px 8px;font-size:0.72rem;color:#aaa;text-align:center;">⚠️ תוכן זה נוצר באמצעות AI — יש לבדוק ולוודא</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
+            '<button class="btn-primary" onclick="standaloneSakagGenerate(' + lat + ',' + lng + ',\'' + placeName.replace(/'/g, "\\'") + '\')" style="font-size:0.9rem;padding:10px 22px;">🔄 צור מחדש</button>' +
+        '</div>';
+
+    } catch(err) {
+        contentEl.innerHTML = '<div style="padding:24px;text-align:center;">' +
+            '<p style="color:#d32f2f;font-weight:700;margin-bottom:10px;">⚠️ ' + err.message + '</p>' +
+            '<button class="btn-primary btn-sm" onclick="standaloneSakagGenerate(' + lat + ',' + lng + ',\'' + placeName.replace(/'/g, "\\'") + '\')" style="margin-top:8px;">🔄 נסה שוב</button></div>';
+    }
+}
+
+function getStandaloneSakagShareUrl() {
+    return window.location.origin + window.location.pathname + '#sakag-create';
+}
+
 function openSakagCreatorModal() {
     // Remove existing modal if any
     var existing = document.getElementById('sakag-creator-modal');
@@ -17594,6 +17875,11 @@ function splashEnter() {
 
 async function initApp() {
     const page = window.location.hash.slice(1) || 'home';
+    // For standalone sakag creator — skip splash and show immediately after Firebase is ready
+    if (page === 'sakag-create') {
+        document.getElementById('splash-screen').style.display = 'none';
+        document.getElementById('app-layout').style.display = '';
+    }
     if (!PAGE_PERMISSIONS[page]) activatePage(page);
 
     try {
@@ -17603,6 +17889,8 @@ async function initApp() {
         db = firebase.firestore();
         if (firebase.storage) storage = firebase.storage();
         analyticsInit();
+        // If standalone sakag, re-activate now that Firebase is ready
+        if (page === 'sakag-create') activatePage(page);
     } catch(e) { console.error('Init error:', e); }
 }
 
