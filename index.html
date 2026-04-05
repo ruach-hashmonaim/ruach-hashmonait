@@ -16194,17 +16194,69 @@ async function loadAdminUserSakag() {
     } catch(e) { listEl.innerHTML = '<p style="color:var(--danger);">שגיאה: '+e.message+'</p>'; }
 }
 
-// View a user sakag from admin panel — open in a modal
+// View a user sakag from admin panel — open in a fullscreen modal
+var _adminSakagModalMap = null;
 async function adminViewUserSakag(docId) {
     try {
         var doc = await db.collection('user_sakag').doc(docId).get();
         if (!doc.exists) { showToast('סק"ג לא נמצא'); return; }
-        var d = doc.data();
-        // Open sakag detail view
-        sakalViewUserSakag(docId);
-        navigate('geography');
-        switchGeoMode('sakal');
+        var s = doc.data();
+
+        // Build sections HTML
+        var sectionsHtml = (s.sections || []).map(function(sec, i) {
+            return '<div style="margin-bottom:2px;">' +
+                '<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'\':\'none\';this.querySelector(\'.chev\').textContent=this.nextElementSibling.style.display===\'none\'?\'▶\':\'▼\';" ' +
+                    'style="padding:12px 14px;background:var(--bg);border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:0.95rem;">' +
+                    '<span>' + (sec.icon||'📌') + ' ' + sec.title + '</span><span class="chev" style="font-size:0.8rem;">▼</span>' +
+                '</div>' +
+                '<div style="padding:14px;font-size:0.88rem;line-height:1.7;background:var(--card-bg);direction:rtl;">' + sec.content + '</div>' +
+            '</div>';
+        }).join('');
+
+        var createdInfo = '🤖 נוצר באמצעות AI על ידי ' + (s.createdByName || 'משתמש') +
+            (s.createdAt ? ' · ' + (s.createdAt.toDate ? s.createdAt.toDate().toLocaleDateString('he-IL') : '') : '');
+
+        // Create modal
+        var modal = document.createElement('div');
+        modal.id = 'admin-sakag-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+        modal.innerHTML = '<div style="background:var(--card-bg);border-radius:16px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card-bg);z-index:1;border-radius:16px 16px 0 0;">' +
+                '<div>' +
+                    '<h2 style="font-size:1.2rem;color:var(--primary);margin:0;">' + (s.title || s.placeName || 'סק"ג') + '</h2>' +
+                    '<p style="font-size:0.85rem;color:var(--text-secondary);margin:4px 0 0;">' + (s.subtitle || s.placeName || '') + '</p>' +
+                '</div>' +
+                '<button onclick="closeAdminSakagModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-secondary);padding:4px 8px;">✕</button>' +
+            '</div>' +
+            (s.lat && s.lng ? '<div id="admin-sakag-modal-map" style="height:250px;"></div>' : '') +
+            '<div style="padding:20px 24px;">' +
+                sectionsHtml +
+                '<div style="margin-top:16px;padding:10px;background:rgba(217,119,6,0.08);border-radius:10px;text-align:center;font-size:0.78rem;color:#B45309;">' + createdInfo + '</div>' +
+            '</div>' +
+        '</div>';
+
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) closeAdminSakagModal(); });
+
+        // Init map inside modal
+        if (s.lat && s.lng) {
+            setTimeout(function() {
+                var mapEl = document.getElementById('admin-sakag-modal-map');
+                if (!mapEl) return;
+                if (_adminSakagModalMap) { _adminSakagModalMap.remove(); _adminSakagModalMap = null; }
+                _adminSakagModalMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([s.lat, s.lng], 13);
+                L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123' }).addTo(_adminSakagModalMap);
+                L.marker([s.lat, s.lng]).addTo(_adminSakagModalMap);
+                setTimeout(function(){ _adminSakagModalMap.invalidateSize(); }, 200);
+            }, 100);
+        }
     } catch(e) { showToast('שגיאה: ' + e.message); }
+}
+
+function closeAdminSakagModal() {
+    if (_adminSakagModalMap) { _adminSakagModalMap.remove(); _adminSakagModalMap = null; }
+    var modal = document.getElementById('admin-sakag-modal');
+    if (modal) modal.remove();
 }
 
 async function adminDeleteUserSakag(docId) {
