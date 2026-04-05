@@ -15093,7 +15093,14 @@ async function modalSakagGenerate(lat, lng, placeName) {
         }
 
         var data = await response.json();
-        var aiText = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        // Gemini 2.5 may return thinking parts — get last non-thought text part
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) {
+            if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; }
+        }
+        if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         var sakagData;
         try { sakagData = JSON.parse(aiText); } catch(e) {
             var m = aiText.match(/\{[\s\S]*\}/);
@@ -15385,7 +15392,13 @@ async function sakalGenerateAI(lat, lng, placeName) {
         }
 
         var data = await response.json();
-        var aiText = (data.candidates?.[0]?.content?.parts?.[0]?.text || '');
+        // Gemini 2.5 may return thinking parts — get last non-thought text part
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) {
+            if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; }
+        }
+        if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
 
         // Parse JSON from AI response (handle markdown code blocks)
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
