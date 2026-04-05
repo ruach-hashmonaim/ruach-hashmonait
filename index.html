@@ -15078,7 +15078,7 @@ async function modalSakagGenerate(lat, lng, placeName) {
 
         var prompt = SAKAG_AI_PROMPT.replace('[PLACE_NAME]', placeName).replace('[LAT]', lat.toFixed(4)).replace('[LNG]', lng.toFixed(4));
 
-        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -15370,7 +15370,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
             .replace('[LNG]', lng.toFixed(4));
 
         // Call Gemini API (Google)
-        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+        var response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -15986,7 +15986,7 @@ async function testGeminiKey() {
         var doc = await db.collection('config').doc('ai').get();
         var key = doc.exists ? doc.data().geminiKey : '';
         if (!key) { statusEl.innerHTML = '<span style="color:#d32f2f;">❌ מפתח לא מוגדר</span>'; return; }
-        var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
+        var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
