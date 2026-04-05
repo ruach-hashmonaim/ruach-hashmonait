@@ -1510,6 +1510,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('training-mgmt')">ניהול תכנים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('cw-videos')">סרטוני מרחב</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('user-sakag')">סק"גים עצמאיים</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('completion')">📋 מעקב ביצוע</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('ai-config')">הגדרות AI</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
     </div>
@@ -1737,6 +1738,20 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <button class="btn-secondary btn-sm" onclick="testGeminiKey()">🧪 בדוק חיבור</button>
             </div>
             <div id="ai-config-status" style="margin-top:8px;font-size:0.85rem;"></div>
+        </div>
+    </div>
+
+    <!-- Completion tracking dashboard -->
+    <div class="admin-panel" id="admin-completion" style="display:none;">
+        <div class="card">
+            <div class="card-title"><div class="icon">📋</div> מעקב ביצוע — רוח מכבי</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">מעקב אחרי ביצוע תכנים בכל פלוגה ובכל שבוע לפי מסגרת</p>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                <button class="btn-primary btn-sm" id="admin-comp-basic" onclick="loadAdminCompletion('basic')">הכשרת יסוד</button>
+                <button class="btn-secondary btn-sm" id="admin-comp-nco" onclick="loadAdminCompletion('nco')">קורס מ"כים</button>
+                <button class="btn-secondary btn-sm" id="admin-comp-officer" onclick="loadAdminCompletion('officer')">קורס קצינים</button>
+            </div>
+            <div id="admin-completion-content">טוען...</div>
         </div>
     </div>
 
@@ -16166,6 +16181,7 @@ function showAdminTab(tab) {
     if (tab === 'training-mgmt') { adminTrainingChanged(); }
     if (tab === 'cw-videos') cwAdminLoadVideos();
     if (tab === 'user-sakag') loadAdminUserSakag();
+    if (tab === 'completion') loadAdminCompletion('basic');
     if (tab === 'ai-config') loadAiConfig();
     if (tab === 'dashboard') loadAdminDashboard();
 }
@@ -16285,6 +16301,235 @@ async function adminDeleteUserSakag(docId) {
         await db.collection('user_sakag').doc(docId).update({ status: 'deleted' });
         showToast('הסק"ג הוסר');
         loadAdminUserSakag();
+    } catch(e) { showToast('שגיאה: ' + e.message); }
+}
+
+// === Admin: Completion Tracking Dashboard ===
+async function loadAdminCompletion(program) {
+    // Update tab buttons
+    ['basic','nco','officer'].forEach(p => {
+        const btn = document.getElementById('admin-comp-' + p);
+        if (btn) { btn.className = p === program ? 'btn-primary btn-sm' : 'btn-secondary btn-sm'; }
+    });
+
+    const container = document.getElementById('admin-completion-content');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">טוען נתוני ביצוע...</p>';
+
+    const config = TRAINING_CONFIG[program];
+    if (!config) { container.innerHTML = '<p>תוכנית לא נמצאה</p>'; return; }
+
+    try {
+        // Load all completion records for this program
+        const compSnap = await db.collection('training_completion').where('program','==',program).get();
+        const completionData = {};
+        compSnap.forEach(doc => {
+            const d = doc.data();
+            const key = `${d.week}_${d.platoon}`;
+            if (!completionData[key]) completionData[key] = { total: 0, done: 0, lessons: [] };
+            completionData[key].total++;
+            if (d.completed) completionData[key].done++;
+            completionData[key].lessons.push(d);
+        });
+
+        // Load content to know how many items per week
+        const contentSnap = await db.collection('training_content').where('program','==',program).get();
+        const weekContent = {};
+        contentSnap.forEach(doc => {
+            const d = doc.data();
+            if (!weekContent[d.week]) weekContent[d.week] = 0;
+            weekContent[d.week]++;
+        });
+
+        // Also count EMET items per week
+        const emetWeeks = EMET_CURRICULUM[program] || {};
+        for (const w of Object.keys(emetWeeks)) {
+            const count = (emetWeeks[w] || []).length;
+            if (count > 0) weekContent[parseInt(w)] = (weekContent[parseInt(w)] || 0) + count;
+        }
+
+        // Find weeks that actually have content
+        const weeksWithContent = Object.keys(weekContent).map(Number).sort((a,b) => a - b);
+
+        if (weeksWithContent.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center;padding:30px;"><p style="color:var(--text-secondary);">אין תכנים מוגדרים לתוכנית זו</p></div>';
+            return;
+        }
+
+        const weekNames = TRAINING_WEEK_NAMES[program] || {};
+        const platoons = PLATOONS; // ['א','ב',...]
+
+        // Build summary stats
+        let totalItems = 0, totalDone = 0;
+        platoons.forEach(p => {
+            weeksWithContent.forEach(w => {
+                const key = `${w}_${p}`;
+                const rec = completionData[key];
+                if (rec) { totalDone += rec.done; }
+                totalItems += (weekContent[w] || 0);
+            });
+        });
+        const overallPct = totalItems > 0 ? Math.round(totalDone / totalItems * 100) : 0;
+
+        let html = `<div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+            <div style="background:var(--bg);border-radius:12px;padding:14px 20px;text-align:center;min-width:120px;">
+                <div style="font-size:2rem;font-weight:700;color:var(--primary);">${overallPct}%</div>
+                <div style="font-size:0.82rem;color:var(--text-secondary);">ביצוע כולל</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:14px 20px;text-align:center;min-width:120px;">
+                <div style="font-size:2rem;font-weight:700;color:#059669;">${totalDone}</div>
+                <div style="font-size:0.82rem;color:var(--text-secondary);">פריטים בוצעו</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:14px 20px;text-align:center;min-width:120px;">
+                <div style="font-size:2rem;font-weight:700;color:var(--text);">${totalItems}</div>
+                <div style="font-size:0.82rem;color:var(--text-secondary);">סה"כ פריטים</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:14px 20px;text-align:center;min-width:120px;">
+                <div style="font-size:2rem;font-weight:700;color:var(--text);">${weeksWithContent.length}</div>
+                <div style="font-size:0.82rem;color:var(--text-secondary);">שבועות עם תוכן</div>
+            </div>
+        </div>`;
+
+        // Build table: rows = weeks, columns = platoons
+        html += `<div style="overflow-x:auto;">
+        <table class="admin-table" style="font-size:0.82rem;min-width:600px;">
+            <thead><tr>
+                <th style="position:sticky;right:0;background:var(--card-bg);z-index:1;">שבוע</th>
+                ${platoons.map(p => `<th style="text-align:center;">פלוגה ${p}׳</th>`).join('')}
+                <th style="text-align:center;">סה"כ</th>
+            </tr></thead><tbody>`;
+
+        for (const w of weeksWithContent) {
+            const wInfo = weekNames[w];
+            const weekLabel = wInfo ? `${wInfo.icon||''} ${w} — ${wInfo.name}` : `שבוע ${w}`;
+            const itemCount = weekContent[w] || 0;
+            let weekTotal = 0, weekDone = 0;
+
+            html += `<tr><td style="font-weight:600;white-space:nowrap;position:sticky;right:0;background:var(--card-bg);z-index:1;">${weekLabel}<br><span style="font-size:0.72rem;color:var(--text-secondary);">${itemCount} פריטים</span></td>`;
+
+            for (const p of platoons) {
+                const key = `${w}_${p}`;
+                const rec = completionData[key];
+                const done = rec ? rec.done : 0;
+                const total = itemCount;
+                weekTotal += total;
+                weekDone += done;
+                const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+                let bgColor, textColor;
+                if (pct === 0) { bgColor = '#FEE2E2'; textColor = '#991B1B'; }
+                else if (pct < 50) { bgColor = '#FEF3C7'; textColor = '#92400E'; }
+                else if (pct < 100) { bgColor = '#D1FAE5'; textColor = '#065F46'; }
+                else { bgColor = '#059669'; textColor = '#fff'; }
+
+                const hasNotes = rec && rec.lessons.some(l => l.notes);
+                const hasFiles = rec && rec.lessons.some(l => l.fileUrl);
+
+                html += `<td style="text-align:center;background:${bgColor};color:${textColor};font-weight:600;cursor:pointer;position:relative;" onclick="adminCompletionDrilldown('${program}',${w},'${p}')" title="לחץ לפירוט">
+                    ${done}/${total}
+                    <div style="font-size:0.7rem;font-weight:400;">${pct}%</div>
+                    ${hasNotes ? '<span style="position:absolute;top:2px;left:2px;font-size:0.65rem;">💬</span>' : ''}
+                    ${hasFiles ? '<span style="position:absolute;top:2px;right:2px;font-size:0.65rem;">📎</span>' : ''}
+                </td>`;
+            }
+
+            const weekPct = weekTotal > 0 ? Math.round(weekDone / weekTotal * 100) : 0;
+            html += `<td style="text-align:center;font-weight:700;">${weekDone}/${weekTotal}<br><span style="font-size:0.72rem;">${weekPct}%</span></td></tr>`;
+        }
+
+        // Totals row
+        html += '<tr style="background:var(--bg);font-weight:700;"><td style="position:sticky;right:0;background:var(--bg);z-index:1;">סה"כ</td>';
+        for (const p of platoons) {
+            let pDone = 0, pTotal = 0;
+            weeksWithContent.forEach(w => {
+                const key = `${w}_${p}`;
+                const rec = completionData[key];
+                pDone += rec ? rec.done : 0;
+                pTotal += weekContent[w] || 0;
+            });
+            const pPct = pTotal > 0 ? Math.round(pDone / pTotal * 100) : 0;
+            html += `<td style="text-align:center;">${pDone}/${pTotal}<br><span style="font-size:0.72rem;">${pPct}%</span></td>`;
+        }
+        html += `<td style="text-align:center;">${totalDone}/${totalItems}<br><span style="font-size:0.72rem;">${overallPct}%</span></td></tr>`;
+
+        html += '</tbody></table></div>';
+
+        // Legend
+        html += `<div style="display:flex;gap:12px;margin-top:12px;font-size:0.78rem;color:var(--text-secondary);flex-wrap:wrap;">
+            <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#FEE2E2;margin-left:4px;"></span> 0%</span>
+            <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#FEF3C7;margin-left:4px;"></span> 1-49%</span>
+            <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#D1FAE5;margin-left:4px;"></span> 50-99%</span>
+            <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#059669;margin-left:4px;"></span> 100%</span>
+            <span>💬 הערות</span>
+            <span>📎 קבצים מצורפים</span>
+            <span style="margin-right:8px;">לחץ על תא לפירוט</span>
+        </div>`;
+
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = '<p style="color:var(--danger);">שגיאה: ' + e.message + '</p>';
+        console.error(e);
+    }
+}
+
+// Drill-down: show details for a specific week + platoon
+async function adminCompletionDrilldown(program, week, platoon) {
+    try {
+        // Load completion records
+        const snap = await db.collection('training_completion')
+            .where('program','==',program).where('week','==',parseInt(week)).get();
+        const records = {};
+        snap.forEach(doc => { const d = doc.data(); if (d.platoon === platoon) records[d.lessonId] = d; });
+
+        // Load content titles
+        const contentSnap = await db.collection('training_content')
+            .where('program','==',program).where('week','==',parseInt(week)).get();
+        const lessons = [];
+        contentSnap.forEach(doc => lessons.push({ id: doc.id, ...doc.data() }));
+
+        // Also get EMET items
+        const emetItems = (EMET_CURRICULUM[program] && EMET_CURRICULUM[program][week]) || [];
+        emetItems.forEach(item => {
+            lessons.push({ id: 'emet_' + item.id, title: item.icon + ' ' + item.title, category: 'chinuch', _isEmet: true });
+        });
+
+        // Build modal
+        const modal = document.createElement('div');
+        modal.id = 'comp-drill-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+        let rows = lessons.map(lesson => {
+            const rec = records[lesson.id] || {};
+            const status = rec.completed ? '<span style="color:#059669;font-weight:700;">✓ בוצע</span>' : '<span style="color:#DC2626;">✗ לא בוצע</span>';
+            const marker = rec.markedBy ? `<span style="font-size:0.78rem;color:var(--text-secondary);">סומן ע"י ${rec.markedBy}</span>` : '';
+            return `<tr>
+                <td style="font-weight:600;">${lesson.title}${lesson._isEmet ? ' <span style="font-size:0.72rem;color:#B45309;">(אמת מארץ תצמח)</span>' : ''}</td>
+                <td style="text-align:center;">${status}</td>
+                <td style="font-size:0.82rem;">${rec.notes || '—'}</td>
+                <td>${rec.fileUrl ? `<a href="${rec.fileUrl}" target="_blank" style="font-size:0.8rem;">📄 ${rec.fileName || 'קובץ'}</a>` : '—'}</td>
+                <td style="font-size:0.78rem;">${marker}</td>
+            </tr>`;
+        }).join('');
+
+        if (lessons.length === 0) rows = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">אין תכנים לשבוע זה</td></tr>';
+
+        const weekNames = TRAINING_WEEK_NAMES[program] || {};
+        const wInfo = weekNames[week];
+        const weekLabel = wInfo ? `${wInfo.icon||''} שבוע ${week} — ${wInfo.name}` : `שבוע ${week}`;
+
+        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:750px;width:95%;direction:rtl;max-height:80vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <h3 style="color:var(--primary);margin:0;">${weekLabel} — פלוגה ${platoon}׳</h3>
+                <button onclick="document.getElementById('comp-drill-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);">✕</button>
+            </div>
+            <table class="admin-table" style="font-size:0.85rem;">
+                <thead><tr><th>תוכן</th><th>סטטוס</th><th>הערות</th><th>קובץ</th><th>סומן</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
 
