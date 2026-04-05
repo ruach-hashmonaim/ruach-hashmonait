@@ -14973,7 +14973,17 @@ function sakalCreateFromLocation() {
         return;
     }
     navigator.geolocation.getCurrentPosition(function(pos) {
-        sakalBuildTemplate(pos.coords.latitude, pos.coords.longitude, 'המיקום שלי');
+        var lat = pos.coords.latitude, lng = pos.coords.longitude;
+        statusEl.innerHTML = '<span style="color:var(--primary);">📍 מזהה את שם המקום...</span>';
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=14&accept-language=he')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var name = (data.address && (data.address.city || data.address.town || data.address.village || data.address.hamlet)) || data.display_name?.split(',')[0] || 'המיקום שלי';
+            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>' + name + '</b></span>';
+            sakalBuildTemplate(lat, lng, name);
+        }).catch(function() {
+            sakalBuildTemplate(lat, lng, 'המיקום שלי');
+        });
     }, function(err) {
         statusEl.innerHTML = '<span style="color:#d32f2f;">לא ניתן לאתר מיקום: '+err.message+'</span>';
     }, { enableHighAccuracy: true, timeout: 10000 });
@@ -15030,7 +15040,18 @@ function modalSakagFromLocation() {
     statusEl.innerHTML = '<span style="color:var(--primary);">📍 מאתר מיקום...</span>';
     if (!navigator.geolocation) { statusEl.innerHTML = '<span style="color:#d32f2f;">הדפדפן לא תומך באיתור מיקום</span>'; return; }
     navigator.geolocation.getCurrentPosition(function(pos) {
-        modalSakagGenerate(pos.coords.latitude, pos.coords.longitude, 'המיקום שלי');
+        var lat = pos.coords.latitude, lng = pos.coords.longitude;
+        statusEl.innerHTML = '<span style="color:var(--primary);">📍 מזהה את שם המקום...</span>';
+        // Reverse geocode to get actual place name
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=14&accept-language=he')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var name = (data.address && (data.address.city || data.address.town || data.address.village || data.address.hamlet)) || data.display_name?.split(',')[0] || 'המיקום שלי';
+            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>' + name + '</b></span>';
+            modalSakagGenerate(lat, lng, name);
+        }).catch(function() {
+            modalSakagGenerate(lat, lng, 'המיקום שלי');
+        });
     }, function(err) {
         statusEl.innerHTML = '<span style="color:#d32f2f;">לא ניתן לאתר מיקום: ' + err.message + '</span>';
     }, { enableHighAccuracy: true, timeout: 10000 });
@@ -15207,135 +15228,148 @@ async function generateSakagPDF(sakagData, placeName) {
         });
     }
 
-    // Build styled HTML container for rendering
-    var title = sakagData.title || 'סק"ג — ' + placeName;
-    var sectionsHtml = (sakagData.sections || []).map(function(sec) {
-        return '<div style="margin-bottom:14px;">' +
-            '<div style="font-weight:700;color:#00695C;font-size:14px;margin-bottom:4px;">' + (sec.icon || '📌') + ' ' + sec.title + '</div>' +
-            '<div style="background:#f5f5f5;border-radius:8px;padding:10px;font-size:11px;line-height:1.7;">' + sec.content + '</div>' +
-        '</div>';
-    }).join('');
+    var PDF = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
+    var doc = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var pageW = 210, pageH = 297, margin = 12;
+    var contentW = pageW - 2 * margin;
+    var pageContentH = pageH - 2 * margin;
+    var y = margin;
 
-    var container = document.createElement('div');
-    container.style.cssText = 'position:fixed;top:-9999px;left:0;width:595px;padding:30px 35px;background:#fff;direction:rtl;font-family:Arial,sans-serif;color:#222;box-sizing:border-box;';
-    container.innerHTML =
-        '<div style="text-align:center;margin-bottom:6px;">' +
-            '<div style="font-size:20px;font-weight:700;color:#00695C;">' + title + '</div>' +
-            (sakagData.subtitle ? '<div style="font-size:12px;color:#666;margin-top:3px;">' + sakagData.subtitle + '</div>' : '') +
-        '</div>' +
-        '<hr style="border:none;border-top:2px solid #00695C;margin:10px 0 14px;">' +
-        '<div style="font-size:9px;color:#999;text-align:center;margin-bottom:14px;">נוצר באמצעות סוכן AI — אמת מארץ תצמח — חטיבת החשמונאים</div>' +
-        sectionsHtml +
-        '<div style="margin-top:20px;text-align:center;font-size:8px;color:#aaa;border-top:1px solid #ddd;padding-top:8px;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</div>';
-    document.body.appendChild(container);
-
-    try {
-        var canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-        var imgData = canvas.toDataURL('image/jpeg', 0.92);
-        var PDF = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
-
-        // A4 dimensions in mm
-        var pageW = 210, pageH = 297, margin = 10;
-        var contentW = pageW - 2 * margin;
-        var imgRatio = canvas.height / canvas.width;
-        var imgH = contentW * imgRatio;
-
-        var doc = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        var y = margin;
-        var pageContentH = pageH - 2 * margin;
-
-        if (imgH <= pageContentH) {
-            // Fits on one page
-            doc.addImage(imgData, 'JPEG', margin, y, contentW, imgH);
-        } else {
-            // Split across pages using source-y slicing
+    // Helper: render an HTML block to canvas and add to PDF with page-break awareness
+    async function addBlock(htmlContent, blockWidth) {
+        var el = document.createElement('div');
+        el.style.cssText = 'position:fixed;top:-9999px;left:0;width:' + (blockWidth || 571) + 'px;padding:0;background:#fff;direction:rtl;font-family:Arial,sans-serif;color:#222;box-sizing:border-box;';
+        el.innerHTML = htmlContent;
+        document.body.appendChild(el);
+        try {
+            var canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
             var pxPerMm = canvas.width / contentW;
-            var sliceHpx = pageContentH * pxPerMm;
-            var totalPx = canvas.height;
-            var offsetPx = 0;
-            var pageNum = 0;
-            while (offsetPx < totalPx) {
-                if (pageNum > 0) doc.addPage();
-                var thisSlice = Math.min(sliceHpx, totalPx - offsetPx);
-                // Create a slice canvas
-                var sliceCanvas = document.createElement('canvas');
-                sliceCanvas.width = canvas.width;
-                sliceCanvas.height = thisSlice;
-                var ctx = sliceCanvas.getContext('2d');
-                ctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSlice, 0, 0, canvas.width, thisSlice);
-                var sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.92);
-                var sliceHmm = thisSlice / pxPerMm;
-                doc.addImage(sliceImg, 'JPEG', margin, margin, contentW, sliceHmm);
-                offsetPx += thisSlice;
-                pageNum++;
-            }
-        }
+            var blockHmm = canvas.height / pxPerMm;
 
-        var filename = 'sakag-' + (placeName || 'new').replace(/[^א-תa-zA-Z0-9]/g, '-') + '.pdf';
-        doc.save(filename);
-    } finally {
-        document.body.removeChild(container);
+            // If block fits on remaining page, add it
+            if (y + blockHmm <= pageH - margin) {
+                doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, y, contentW, blockHmm);
+                y += blockHmm + 2;
+            }
+            // If block fits on a full page, start new page
+            else if (blockHmm <= pageContentH) {
+                doc.addPage();
+                y = margin;
+                doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, y, contentW, blockHmm);
+                y += blockHmm + 2;
+            }
+            // Block is too tall — split it across pages at safe points
+            else {
+                var sliceHpx = pageContentH * pxPerMm;
+                var remainH = (pageH - margin - y) * pxPerMm; // remaining space on current page in px
+                var offsetPx = 0;
+                var firstSlice = true;
+                while (offsetPx < canvas.height) {
+                    var availPx = firstSlice ? remainH : sliceHpx;
+                    if (!firstSlice) { doc.addPage(); y = margin; }
+                    var thisSlice = Math.min(availPx, canvas.height - offsetPx);
+                    var sliceCanvas = document.createElement('canvas');
+                    sliceCanvas.width = canvas.width;
+                    sliceCanvas.height = thisSlice;
+                    var ctx = sliceCanvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                    ctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSlice, 0, 0, canvas.width, thisSlice);
+                    var sliceHmm = thisSlice / pxPerMm;
+                    doc.addImage(sliceCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, y, contentW, sliceHmm);
+                    y += sliceHmm + 2;
+                    offsetPx += thisSlice;
+                    firstSlice = false;
+                }
+            }
+        } finally {
+            document.body.removeChild(el);
+        }
     }
+
+    var title = sakagData.title || 'סק"ג — ' + placeName;
+
+    // Header block
+    await addBlock(
+        '<div style="text-align:center;padding:10px 20px;">' +
+            '<div style="font-size:20px;font-weight:700;color:#00695C;">' + title + '</div>' +
+            (sakagData.subtitle ? '<div style="font-size:12px;color:#666;margin-top:4px;">' + sakagData.subtitle + '</div>' : '') +
+            '<hr style="border:none;border-top:2px solid #00695C;margin:10px 0 6px;">' +
+            '<div style="font-size:9px;color:#999;">נוצר באמצעות סוכן AI — אמת מארץ תצמח — חטיבת החשמונאים</div>' +
+        '</div>'
+    );
+
+    // Each section as a separate block — page breaks happen between sections
+    var sections = sakagData.sections || [];
+    for (var i = 0; i < sections.length; i++) {
+        var sec = sections[i];
+        await addBlock(
+            '<div style="padding:6px 20px 10px;">' +
+                '<div style="font-weight:700;color:#00695C;font-size:14px;margin-bottom:4px;">' + (sec.icon || '📌') + ' ' + sec.title + '</div>' +
+                '<div style="background:#f5f5f5;border-radius:8px;padding:10px;font-size:11px;line-height:1.8;">' + sec.content + '</div>' +
+            '</div>'
+        );
+    }
+
+    // Footer
+    await addBlock(
+        '<div style="text-align:center;padding:8px 20px;font-size:8px;color:#aaa;border-top:1px solid #ddd;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</div>'
+    );
+
+    var filename = 'sakag-' + (placeName || 'new').replace(/[^א-תa-zA-Z0-9]/g, '-') + '.pdf';
+    doc.save(filename);
 }
 
 // === AI סק"ג Generator ===
-const SAKAG_AI_PROMPT = `אתה משמש כיועץ תוכן והיסטוריה עבור מפקד בחטיבת "חשמונאים" (לוחמים חרדים).
-עליך לבנות סקירה גיאוגרפית (סק"ג) תורנית מדויקת ותמציתית על המקום הבא: [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
-הסק"ג מיועדת ללוחמים חרדים ולכן יש להישען קודם כל על התורה, התנ"ך, המשנה והמדרש, ולאחר מכן על מקורות היסטוריים-ארכיאולוגיים.
-הסגנון צריך להיות בהיר, מכבד, ענייני-ומכוון לחיבור זהותי-תורני-ערכי בין הלוחם, המקום והמשימה.
+const SAKAG_AI_PROMPT = `אתה חוקר גיאוגרפיה היסטורית ותורנית עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
+משימתך: לבנות סקירה גיאוגרפית (סק"ג) מדויקת, אינפורמטיבית ותמציתית עבור המרחב סביב [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
 
-הרוח המנחה:
-לוחם בחטיבת חשמונאים צועד המון — באימונים, במסעות, בסיורים ובפעילות מבצעית. הרוב הזמן הראש עסוק בפק"ל, בקצב, בניווט. אבל המרחבים שבהם אנחנו פועלים אינם ריקים ממשמעות. אלו אותם ואדיות, רכסים ושבילים שעליהם עברו דורות של עם ישראל — אבות האומה, לוחמים, גולים, עולים לרגל, אבות אבותינו.
-הנביא חבקוק מתאר: "כִּי אֶבֶן מִקִּיר תִּזְעָק". הגמרא (תענית יא.) מסבירה שהדומם נוצר בקרבו זכרונות — "אבני ביתו של אדם... מעידים בו". כל מרחב שבו אדם פועל נושא עמו את רישום מעשיו. האדמה משמרת את זיכרון ההתרחשויות שחיו עליה.
-כשלוחם חשמונאי צועד בוואדי שבו לפני אלפיים שנה הסתתרו אבותינו, הוא מטביע חותם בהיסטוריה כולה. במקום שבו הייתה חולשה — הוא מביא עוצמה. במקום שבו נכח פחד — הוא מנכיח ביטחון. לא כי הוא "חייל גיבור" אלא פשוט כי הוא שם, חייל בצבא עברי ריבוני בארץ ישראל.
-הבעל שם טוב (מאור עיניים, ויקהל) מגלה שעצם הנוכחות של אדם במקום מסוים פועלת עליו — הקב"ה מוליך אותנו לנקודות שבהן משהו בנו צריך להיסגר, להתברר או להבשיל. יש התאמה פנימית בין הנשמה לבין המרחב. ההליכה, השהות והעמידה במקום אינן רק תנועה פיזית — הן משלימות תהליך תיקון הדדי. האדם פועל על המרחב בנוכחותו, והמרחב, בשקט, פועל עליו חזרה.
+כללים קריטיים:
+1. מיקוד גיאוגרפי: התמקד אך ורק במרחב של עד 5 ק"מ מהנקודה הנתונה. כל אתר, אירוע או מקור שאתה מזכיר חייב להיות ממוקם בתוך רדיוס זה. אל תזכיר אתרים מרוחקים גם אם הם מפורסמים יותר.
+2. אמינות מידע: הבא רק עובדות היסטוריות שאתה בטוח בנכונותן. אם יש מחלוקת חוקרים על זיהוי מקום — ציין את המחלוקת בקצרה. עדיף פחות עובדות ודאיות מאשר הרבה השערות.
+3. ייחודיות: כל סק"ג חייב להיות ייחודי למרחב הספציפי. כתוב מידע קונקרטי שעולה מהמקום עצמו — שמות גיאוגרפיים מקומיים, אתרים ספציפיים, אירועים שהתרחשו כאן, מקורות תורניים שמתייחסים ישירות לאזור הזה. הימנע מניסוחים כלליים שיכולים להתאים לכל מקום.
+4. סגנון: כתיבה עניינית, אינפורמטיבית ומכבדת. כמו מסמך מודיעיני-תורני — עובדות, מקורות, תובנות. ללא לשון שלילה, ללא פאתוס מוגזם, ללא ניסוחים ריקים. תן לעובדות לדבר.
+5. מקורות תורניים: כשמצטט תנ"ך — ציין ספר, פרק ופסוק. כשמצטט חז"ל — ציין מסכת ודף. כשמזכיר מדרש — ציין שם המדרש ופרשה. רק מקורות שקשורים ישירות למרחב הזה.
+6. שפה: בלי ביטויים כמו "לא סתם", "לא ריק ממשמעות", "לא במקרה". כתוב בחיוב — מה הדבר כן, לא מה הוא לא.
 
-עקרונות מנחים:
-- קדימות לתורה ולהלכה: קודם מקורות תנ"ך וחז"ל, אחר כך היסטוריה מודרנית.
-- מעשה אבות סימן לבנים: הדגש כיצד האירועים הקדומים במרחב "מכשירים" את המקום לדורות.
-- רצף הדורות: חבר בין תנ"ך → בית ראשון ושני → חשמונאים → שיבת ציון → מלחמות ישראל → ימינו.
-- הנוכחות היא התיקון: הצעידה במרחב היא מעשה של תיקון. הלוחם מחזיר נוכחות יהודית למקום שבו נקטע משהו, ומשלים את מסע הדורות.
-- נשמה ומרחב: יש מקומות שממתינים לדור מסוים, ויש מקומות שממתינים לאדם מסוים. הנשמה חוזרת למקום שבו נדרש תיקון.
-- זהות ושליחות — מטרת הסק"ג: לחזק שייכות, משמעות, שליחות ואחריות.
-- שפה מותאמת ללוחם החרדי — בלי זלזול, בלי פאתוס מוגזם, ועם חיבור תורני מכבד.
-
-כתוב סקירה מסודרת בפורמט JSON בדיוק כך:
+פורמט JSON:
 {
-  "title": "סקירה גיאוגרפית — [שם המקום]",
-  "subtitle": "[תיאור קצר של המרחב]",
+  "title": "סקירה גיאוגרפית — [שם המקום/האזור המדויק]",
+  "subtitle": "[משפט תיאורי קצר וקונקרטי על המרחב]",
   "sections": [
     {
-      "title": "1. הקרקע והמרחב",
+      "title": "1. המרחב הגיאוגרפי",
       "icon": "🏔️",
-      "content": "[תיאור פיזי-גיאוגרפי: טופוגרפיה, קרקע, נחלים/הרים/עמקים, אזורים שולטים, אקלים וצמחייה, משמעות מבצעית, יישובים סמוכים. השתמש בתגיות HTML: <p> ו-<b>]"
+      "content": "[תיאור פיזי מדויק של הסביבה ברדיוס 5 ק\\"מ: טופוגרפיה, גבהים, נחלים, שבילים, צמחייה, אקלים, יישובים סמוכים, אתרים ונקודות ציון. כתוב כך שלוחם שמגיע למקום יוכל לזהות את הסביבה. השתמש בתגיות HTML: <p> ו-<b>]"
     },
     {
-      "title": "2. ההקשר התורני",
+      "title": "2. שורשים תורניים",
       "icon": "📖",
-      "content": "[פסוקים מן התנ"ך הקשורים למקום, מקורות מן המשנה/מדרש/חז\"ל, סיפורי אבות/נביאים/חשמונאים, משמעות רוחנית-ערכית. הקפד לציין מקור פרק ופסוק. שלב את הרעיון שהאדמה משמרת זכרונות (חבקוק ב:יא, תענית יא.) ואת רעיון התיקון ההדדי בין הלוחם למרחב. השתמש בתגיות HTML]"
+      "content": "[מקורות תנ\\"ך, משנה, מדרש וחז\\"ל שמתייחסים ישירות למקום הזה או לאזור הזה. ציין מקורות מדויקים. אם אין מקורות ישירים — הבא מקורות הקשורים לנחלת השבט שהאזור שייך לה, או לאירועים שהתרחשו באזור הגיאוגרפי. השתמש בתגיות HTML]"
     },
     {
-      "title": "3. גבורה במרחב",
+      "title": "3. ציר היסטורי",
       "icon": "⚔️",
-      "content": "[סיפור גבורה יהודי: תנ\"כי/חז\"לי/חשמונאי/לוחמי מלחמות ישראל. הדגש דבקות במשימה, אומץ, מסירות, אחריות ואחדות. חבר לרעיון שהנוכחות היא התיקון — במקום שהייתה חולשה הלוחם מביא עוצמה. השתמש בתגיות HTML]"
+      "content": "[אירועים היסטוריים שהתרחשו במרחב הזה ברדיוס 5 ק\\"מ — מתקופת התנ\\"ך ועד ימינו. סדר כרונולוגי. כלול: תקופת המקרא, בית שני, חשמונאים (אם רלוונטי), תקופות מאוחרות, מלחמות ישראל, ימינו. רק אירועים שהתרחשו כאן. השתמש בתגיות HTML]"
     },
     {
-      "title": "4. ערך להפנמה",
+      "title": "4. חיבור תורני-ערכי",
       "icon": "💡",
-      "content": "[ערך נפשי-תורני שהלוחמים צריכים לקחת מהמקום. שלב את רעיון הבעש\"ט שהקב\"ה מוליך אדם למקום שבו נשמתו נדרשת. הנוכחות עצמה היא תיקון — האדם פועל על המרחב והמרחב פועל עליו חזרה. משהו נאסף, מתיישב, מוצא את מקומו. השתמש בתגיות HTML]"
+      "content": "[תובנה תורנית אחת מרכזית שעולה מהמקום הזה — קשר בין ההיסטוריה המקומית לערך תורני. חבר בין מה שקרה כאן בעבר לבין המשמעות של הנוכחות הצבאית היום. הרעיון המנחה: כל מקום בארץ ישראל נושא זיכרון (חבקוק ב:יא), והנוכחות במקום היא המשך של שרשרת הדורות. השתמש בתגיות HTML]"
     },
     {
-      "title": "5. סיכום מפקד ושאלה פתוחה",
+      "title": "5. סיכום ושאלה למחשבה",
       "icon": "❓",
-      "content": "[פסקת סיכום שמחברת בין המקום, התורה, רעיון התיקון והשליחות + שאלה למחשבה שנוגעת לחיבור האישי של הלוחם למרחב ולשליחותו. השתמש בתגיות HTML]"
+      "content": "[סיכום קצר של הנקודות המרכזיות + שאלה פתוחה ספציפית הנוגעת למה שקרה במרחב הזה — שאלה שמזמינה את הלוחם לחשוב על הקשר בינו לבין ההיסטוריה המקומית. השתמש בתגיות HTML]"
     }
   ]
 }
 
-חשוב: התחל את תוכן הסעיף הראשון בפסקת הפתיח הקבועה:
-"לוחמים יקרים, אנחנו עומדים על אדמה שספוגה בהיסטוריה, באמונה ובגבורה. המרחבים שבהם אנחנו פועלים אינם ריקים ממשמעות — אלו אותם שבילים שעליהם הלכו אבות האומה, לוחמים וגולים. עצם הנוכחות שלנו כאן, כחיילים בצבא עברי ריבוני, היא מעשה של תיקון והשלמה. מטרת הסק\\"ג היא לחבר אותנו לתורת ישראל, למורשת אבותינו ולארץ שבה אנו פועלים."
-
-דרישות: כתיבה בהירה ומכבדת. סדר לוגי. הימנע ממידע שאינו ודאי. אם יש מחלוקת על זיהוי — פרט בקצרה.`;
+דרישות נוספות:
+- כתיבה בהירה, עובדתית ומכבדת. הימנע מפסקאות פתיחה גנריות.
+- כל סעיף צריך להכיל מידע ספציפי למרחב ולא ניסוחים כלליים.
+- אם אין מספיק מידע תורני ישיר על המקום — ציין זאת בכנות וכתוב את מה שכן ידוע.
+- סה"כ אורך: 600-900 מילים. לא יותר.`;
 
 var sakalAiGenerating = false;
 
