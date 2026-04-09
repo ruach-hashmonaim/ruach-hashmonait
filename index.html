@@ -11213,7 +11213,7 @@ function openExecutionDetails(lessonId, program, week, track, platoon) {
         const modal = document.createElement('div');
         modal.id = 'exec-modal';
         modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
-        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:420px;width:90%;direction:rtl;max-height:80vh;overflow-y:auto;">
+        modal.innerHTML = `<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:420px;width:90%;direction:rtl;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
             <h3 style="margin-bottom:14px;color:var(--primary);">📋 תכנון מול ביצוע — פלוגה ${platoon}׳</h3>
             <div style="display:flex;flex-direction:column;gap:12px;">
                 <div>
@@ -11294,7 +11294,7 @@ function openExecutionOverview(lessonId, program, week, track) {
                 <td style="font-size:0.78rem;color:var(--text-secondary);">${d.markedBy || '—'}</td>
             </tr>`;
         }).join('');
-        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:600px;width:95%;direction:rtl;max-height:80vh;overflow-y:auto;">
+        modal.innerHTML = `<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:600px;width:95%;direction:rtl;max-height:80vh;overflow-y:auto;">
             <h3 style="margin-bottom:14px;color:var(--primary);">📋 סקירת ביצוע — כל הפלוגות</h3>
             <table class="admin-table" style="font-size:0.85rem;">
                 <thead><tr><th>פלוגה</th><th>סטטוס</th><th>הערות</th><th>קובץ</th><th>סומן ע״י</th></tr></thead>
@@ -11421,7 +11421,7 @@ function openEditLesson(docId, source) {
         const modal = document.createElement('div');
         modal.id = 'edit-lesson-modal';
         modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
-        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:480px;width:92%;direction:rtl;max-height:85vh;overflow-y:auto;">
+        modal.innerHTML = `<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:480px;width:92%;direction:rtl;max-height:85vh;overflow-y:auto;">
             <h3 style="margin-bottom:16px;color:var(--primary);">✏️ עריכת תוכן</h3>
             <div style="display:flex;flex-direction:column;gap:12px;">
                 <div>
@@ -16840,7 +16840,7 @@ async function loadAdminCompletion(program) {
         html += `<div style="overflow-x:auto;">
         <table class="admin-table" style="font-size:0.82rem;min-width:600px;">
             <thead><tr>
-                <th style="position:sticky;right:0;background:var(--card-bg);z-index:1;">שבוע</th>
+                <th style="position:sticky;right:0;background:#ffffff;z-index:1;">שבוע</th>
                 ${platoons.map(p => `<th style="text-align:center;">פלוגה ${p}׳</th>`).join('')}
                 <th style="text-align:center;">סה"כ</th>
             </tr></thead><tbody>`;
@@ -16851,7 +16851,7 @@ async function loadAdminCompletion(program) {
             const itemCount = weekContent[w] || 0;
             let weekTotal = 0, weekDone = 0;
 
-            html += `<tr><td style="font-weight:600;white-space:nowrap;position:sticky;right:0;background:var(--card-bg);z-index:1;">${weekLabel}<br><span style="font-size:0.72rem;color:var(--text-secondary);">${itemCount} פריטים</span></td>`;
+            html += `<tr><td style="font-weight:600;white-space:nowrap;position:sticky;right:0;background:#ffffff;z-index:1;">${weekLabel}<br><span style="font-size:0.72rem;color:var(--text-secondary);">${itemCount} פריטים</span></td>`;
 
             for (const p of platoons) {
                 const key = `${w}_${p}`;
@@ -16963,7 +16963,7 @@ async function adminCompletionDrilldown(program, week, platoon) {
         const wInfo = weekNames[week];
         const weekLabel = wInfo ? `${wInfo.icon||''} שבוע ${week} — ${wInfo.name}` : `שבוע ${week}`;
 
-        modal.innerHTML = `<div style="background:var(--card-bg);border-radius:14px;padding:24px;max-width:750px;width:95%;direction:rtl;max-height:80vh;overflow-y:auto;">
+        modal.innerHTML = `<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:750px;width:95%;direction:rtl;max-height:80vh;overflow-y:auto;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
                 <h3 style="color:var(--primary);margin:0;">${weekLabel} — פלוגה ${platoon}׳</h3>
                 <button onclick="document.getElementById('comp-drill-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);">✕</button>
