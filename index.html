@@ -11484,60 +11484,71 @@ async function loadCmgmtContent() {
 
 // --- Edit existing lesson modal ---
 function openEditLesson(docId, source) {
+    // Remove any leftover modals
+    var old = document.getElementById('edit-lesson-modal');
+    if (old) old.remove();
+
     db.collection('training_content').doc(docId).get().then(function(doc) {
         if (!doc.exists) { showToast('תוכן לא נמצא'); return; }
         var d = doc.data();
+
+        // Store data globally so save function can access it
+        window._editLessonDocId = docId;
+        window._editLessonSource = source;
+
         var catOptions = Object.entries(CONTENT_RESPONSIBILITY).map(function(entry) {
             return '<option value="' + entry[0] + '"' + (entry[0] === d.category ? ' selected' : '') + '>' + entry[1] + '</option>';
         }).join('');
 
-        // Sanitize values for safe HTML attribute insertion
         function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-        var modal = document.createElement('div');
-        modal.id = 'edit-lesson-modal';
-        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
-
-        var fileInfo = '';
         var existingFile = d.fileUrl || d.fileData || '';
-        if (existingFile) fileInfo = '<div style="margin-top:4px;"><a href="' + esc(existingFile) + '" ' + (d.fileData ? 'download="' + esc(d.fileName||'file') + '"' : 'target="_blank"') + ' style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ נוכחי: ' + esc(d.fileName || 'הורד') + '</a></div>';
+        var fileInfo = '';
+        if (existingFile) {
+            var fName = esc(d.fileName || 'הורד');
+            fileInfo = '<div style="margin-top:4px;"><a href="' + esc(d.fileUrl || '#') + '" target="_blank" style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ נוכחי: ' + fName + '</a></div>';
+        }
 
-        modal.innerHTML = '<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:480px;width:92%;direction:rtl;max-height:85vh;overflow-y:auto;">' +
+        var modalHtml = '<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:480px;width:92%;direction:rtl;max-height:85vh;overflow-y:auto;" onclick="event.stopPropagation()">' +
             '<h3 style="margin-bottom:16px;color:var(--primary);">✏️ עריכת תוכן</h3>' +
             '<div style="display:flex;flex-direction:column;gap:12px;">' +
                 '<div><label style="font-weight:600;font-size:0.88rem;">שם יחידת לימוד:</label>' +
-                '<input type="text" id="edit-title" value="' + esc(d.title) + '" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;"></div>' +
+                '<input type="text" id="edit-title" value="' + esc(d.title) + '" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;box-sizing:border-box;"></div>' +
                 '<div style="display:flex;gap:10px;">' +
                     '<div style="flex:1;"><label style="font-weight:600;font-size:0.88rem;">מעביר:</label>' +
-                    '<input type="text" id="edit-instructor" value="' + esc(d.instructor) + '" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;"></div>' +
+                    '<input type="text" id="edit-instructor" value="' + esc(d.instructor) + '" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;box-sizing:border-box;"></div>' +
                     '<div style="width:80px;"><label style="font-weight:600;font-size:0.88rem;">שעות:</label>' +
-                    '<input type="number" id="edit-hours" value="' + (d.hours||'') + '" step="0.5" min="0" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;"></div>' +
+                    '<input type="number" id="edit-hours" value="' + (d.hours||'') + '" step="0.5" min="0" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;box-sizing:border-box;"></div>' +
                 '</div>' +
                 '<div><label style="font-weight:600;font-size:0.88rem;">אחריות:</label>' +
                 '<select id="edit-category" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;">' + catOptions + '</select></div>' +
                 '<div><label style="font-weight:600;font-size:0.88rem;">קישור:</label>' +
-                '<input type="text" id="edit-url" value="' + esc(d.url) + '" placeholder="https://..." style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;direction:ltr;text-align:left;"></div>' +
+                '<input type="text" id="edit-url" value="' + esc(d.url) + '" placeholder="https://..." style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;direction:ltr;text-align:left;box-sizing:border-box;"></div>' +
                 '<div><label style="font-weight:600;font-size:0.88rem;">העלאת / החלפת קובץ:</label>' +
                 '<input type="file" id="edit-file" style="margin-top:4px;font-size:0.85rem;">' +
                 fileInfo + '</div>' +
                 '<div style="display:flex;gap:8px;justify-content:flex-start;margin-top:10px;">' +
-                    '<button class="btn-primary btn-sm" id="edit-lesson-save-btn">שמור</button>' +
-                    '<button class="btn-secondary btn-sm" id="edit-lesson-cancel-btn">ביטול</button>' +
+                    '<button type="button" class="btn-primary btn-sm" onclick="window._doSaveEditLesson()">שמור</button>' +
+                    '<button type="button" class="btn-secondary btn-sm" onclick="var m=document.getElementById(\'edit-lesson-modal\');if(m)m.remove();">ביטול</button>' +
                 '</div>' +
             '</div></div>';
 
+        var modal = document.createElement('div');
+        modal.id = 'edit-lesson-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+        modal.innerHTML = modalHtml;
         document.body.appendChild(modal);
-
-        // Use addEventListener instead of inline onclick to avoid escaping issues
-        document.getElementById('edit-lesson-save-btn').addEventListener('click', function() {
-            saveEditLesson(docId, source);
-        });
-        document.getElementById('edit-lesson-cancel-btn').addEventListener('click', function() {
-            modal.remove();
-        });
-        modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
     }).catch(function(e) { showToast('שגיאה בטעינת תוכן'); console.error(e); });
 }
+
+// Global save handler — avoids any escaping/closure issues
+window._doSaveEditLesson = function() {
+    var docId = window._editLessonDocId;
+    var source = window._editLessonSource;
+    if (!docId) { alert('שגיאה: לא נמצא מזהה תוכן'); return; }
+    saveEditLesson(docId, source);
+};
 
 // Helper: upload file to Firebase Storage with timeout, fallback to base64 in Firestore
 async function uploadTrainingFile(file, pathPrefix) {
