@@ -1522,6 +1522,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('user-sakag')">סק"גים עצמאיים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('completion')">📋 מעקב ביצוע</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('duplicates')">🔄 כפילויות</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('rm-reports')">📋 דיווחי ר״מים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('export-reports')">📊 דוחות</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('ai-config')">הגדרות AI</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
@@ -1777,6 +1778,24 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             </div>
             <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הכלי מזהה משתמשים עם שם מלא זהה או אימייל זהה ומאפשר למזג אותם. המיזוג שומר את ההרשאות הרחבות ביותר מבין הכפילויות.</p>
             <div id="admin-duplicates-list"></div>
+        </div>
+    </div>
+
+    <!-- RM Reports Viewer -->
+    <div class="admin-panel" id="admin-rm-reports" style="display:none;">
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                <h3 style="margin:0;">📋 דיווחי ר״מים פלוגתיים</h3>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <label style="font-size:0.82rem;font-weight:600;">חודש:</label>
+                    <input type="month" id="rm-reports-month" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;" onchange="loadRmReports()">
+                    <button class="btn-primary btn-sm" onclick="exportRmMonthlyReport()" style="font-size:0.82rem;">📥 דוח חודשי לתשלום</button>
+                </div>
+            </div>
+            <div id="rm-reports-summary" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;"></div>
+            <div id="rm-reports-list" style="overflow-x:auto;">
+                <p style="text-align:center;color:var(--text-secondary);padding:20px;">בחר חודש כדי לצפות בדיווחים</p>
+            </div>
         </div>
     </div>
 
@@ -16654,6 +16673,7 @@ function showAdminTab(tab) {
     if (tab === 'user-sakag') loadAdminUserSakag();
     if (tab === 'completion') loadAdminCompletion('basic');
     if (tab === 'duplicates') scanDuplicateUsers();
+    if (tab === 'rm-reports') initRmReportsTab();
     if (tab === 'ai-config') loadAiConfig();
     if (tab === 'dashboard') loadAdminDashboard();
 }
@@ -17924,6 +17944,284 @@ async function cwAdminDeleteVideo(id) {
     if (!confirm('למחוק את הסרטון?')) return;
     try { await db.collection('cw_videos').doc(id).delete(); showToast('סרטון נמחק'); cwAdminLoadVideos(); }
     catch(e) { showToast('שגיאה: ' + e.message); }
+}
+
+// ============================================================
+// Admin: RM Reports Viewer — דיווחי ר״מים פלוגתיים
+// ============================================================
+function initRmReportsTab() {
+    var monthInput = document.getElementById('rm-reports-month');
+    if (!monthInput.value) {
+        // Default to current month
+        var now = new Date();
+        monthInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    }
+    loadRmReports();
+}
+
+async function loadRmReports() {
+    var monthInput = document.getElementById('rm-reports-month');
+    if (!monthInput || !monthInput.value) return;
+
+    var container = document.getElementById('rm-reports-list');
+    var summaryEl = document.getElementById('rm-reports-summary');
+    container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">⏳ טוען דיווחים...</p>';
+    summaryEl.innerHTML = '';
+
+    var parts = monthInput.value.split('-');
+    var year = parseInt(parts[0]);
+    var month = parseInt(parts[1]);
+    var monthStart = year + '-' + String(month).padStart(2, '0') + '-01';
+    var nextMonth = month === 12 ? (year + 1) + '-01-01' : year + '-' + String(month + 1).padStart(2, '0') + '-01';
+    var monthNames = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    var monthLabel = monthNames[month - 1] + ' ' + year;
+
+    try {
+        var snap = await db.collection('weekly-reports').where('weekStart', '>=', monthStart).where('weekStart', '<', nextMonth).get();
+        var allReports = [];
+        snap.forEach(function(doc) { var d = doc.data(); d._id = doc.id; allReports.push(d); });
+
+        // Filter only category 'a' (ר"מ פלוגתי)
+        var rmReports = allReports.filter(function(r) { return r.category === 'a'; });
+
+        // Store for export
+        window._rmReportsData = { all: allReports, rm: rmReports, monthLabel: monthLabel, monthStart: monthStart, nextMonth: nextMonth };
+
+        // Summary cards
+        var uniqueRms = {};
+        rmReports.forEach(function(r) { uniqueRms[r.person || 'לא ידוע'] = true; });
+        var totalHours = rmReports.reduce(function(s, r) { return s + parseFloat(r.totalHours || r.accompanyHours || 0); }, 0);
+        var totalDays = rmReports.reduce(function(s, r) { return s + (Array.isArray(r.presenceDays) ? r.presenceDays.length : (parseInt(r.presenceDays) || 0)); }, 0);
+
+        var summaryCards = [
+            { icon: '📋', value: rmReports.length, label: 'דיווחים', color: 'var(--primary)' },
+            { icon: '👤', value: Object.keys(uniqueRms).length, label: 'ר"מים מדווחים', color: '#2e8b57' },
+            { icon: '⏱️', value: totalHours.toFixed(1), label: 'שעות סה"כ', color: '#e8a838' },
+            { icon: '📅', value: totalDays, label: 'ימי נוכחות', color: '#5fa8d3' }
+        ];
+
+        var sh = '';
+        summaryCards.forEach(function(s) {
+            sh += '<div style="background:#ffffff;border:1.5px solid var(--border);border-radius:12px;padding:14px 20px;text-align:center;min-width:100px;">';
+            sh += '<div style="font-size:1.2rem;">' + s.icon + '</div>';
+            sh += '<div style="font-size:1.6rem;font-weight:800;color:' + s.color + ';">' + s.value + '</div>';
+            sh += '<div style="font-size:0.75rem;color:var(--text-secondary);">' + s.label + '</div>';
+            sh += '</div>';
+        });
+        summaryEl.innerHTML = sh;
+
+        if (rmReports.length === 0) {
+            container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">אין דיווחים של ר"מים פלוגתיים לחודש ' + monthLabel + '</p>';
+            return;
+        }
+
+        // Group by person
+        var byPerson = {};
+        rmReports.forEach(function(r) {
+            var name = r.person || 'לא ידוע';
+            if (!byPerson[name]) byPerson[name] = [];
+            byPerson[name].push(r);
+        });
+
+        // Sort each person's reports by weekStart
+        Object.keys(byPerson).forEach(function(name) {
+            byPerson[name].sort(function(a, b) { return (a.weekStart || '').localeCompare(b.weekStart || ''); });
+        });
+
+        var h = '';
+
+        // Table view: all reports
+        h += '<table class="admin-table" style="font-size:0.82rem;min-width:900px;">';
+        h += '<thead><tr>';
+        h += '<th>שם</th><th>שבוע</th><th>שעות</th><th>ימי נוכחות</th><th>שעות לימוד</th><th>שיחות אישיות</th>';
+        h += '<th>מצב רוח</th><th>אתגרים</th><th>תובנות</th><th>פעולות</th>';
+        h += '</tr></thead><tbody>';
+
+        Object.keys(byPerson).sort().forEach(function(name) {
+            var reports = byPerson[name];
+            reports.forEach(function(r, idx) {
+                var rowStyle = idx === 0 && reports.length > 1 ? 'border-top:2.5px solid var(--primary);' : '';
+                h += '<tr style="' + rowStyle + '">';
+                if (idx === 0) {
+                    h += '<td rowspan="' + reports.length + '" style="font-weight:700;vertical-align:top;background:#f8f9fa;border-left:3px solid var(--primary);">' + name + '</td>';
+                }
+                h += '<td>' + (r.weekDisplay || r.weekStart || '—') + '</td>';
+                h += '<td style="text-align:center;">' + (r.totalHours || r.accompanyHours || 0) + '</td>';
+                h += '<td style="text-align:center;">' + (Array.isArray(r.presenceDays) ? r.presenceDays.length : (r.presenceDays || 0)) + '</td>';
+                h += '<td style="text-align:center;">' + (r.teachingHours || r.lessonsCount || 0) + '</td>';
+                h += '<td style="text-align:center;">' + (r.personalConversations || 0) + '</td>';
+                h += '<td style="font-size:0.78rem;">' + (r.mood || '—') + '</td>';
+                h += '<td style="font-size:0.78rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (r.challenges || r.fieldChallenges || '').replace(/"/g, '&quot;') + '">' + (r.challenges || r.fieldChallenges || '—') + '</td>';
+                h += '<td style="font-size:0.78rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (r.insights || '').replace(/"/g, '&quot;') + '">' + (r.insights || '—') + '</td>';
+                h += '<td><button class="btn-secondary btn-sm" onclick="viewRmReport(\'' + (r._id || '').replace(/'/g, "\\'") + '\')" style="font-size:0.75rem;padding:3px 8px;">👁️ צפה</button></td>';
+                h += '</tr>';
+            });
+        });
+        h += '</tbody></table>';
+
+        container.innerHTML = h;
+    } catch(e) {
+        container.innerHTML = '<p style="text-align:center;padding:20px;color:#d32f2f;">שגיאה בטעינת דיווחים: ' + e.message + '</p>';
+    }
+}
+
+function viewRmReport(docId) {
+    if (!window._rmReportsData) return;
+    var report = window._rmReportsData.rm.find(function(r) { return r._id === docId; });
+    if (!report) { showToast('דיווח לא נמצא'); return; }
+
+    var cat = CATEGORY_NAMES[report.category] || report.categoryName || '—';
+    var days = Array.isArray(report.presenceDays) ? report.presenceDays.join(', ') : (report.presenceDays || '—');
+
+    var fields = [
+        { label: 'שם', val: report.person || '—' },
+        { label: 'קטגוריה', val: cat },
+        { label: 'שבוע', val: report.weekDisplay || report.weekStart || '—' },
+        { label: 'שעות עבודה', val: report.totalHours || report.accompanyHours || 0 },
+        { label: 'ימי נוכחות', val: days },
+        { label: 'שעות לימוד', val: report.teachingHours || report.lessonsCount || 0 },
+        { label: 'שעות תש"ש', val: report.tashHours || 0 },
+        { label: 'שיחות אישיות', val: report.personalConversations || 0 },
+        { label: 'נושאים', val: report.topics || '—' },
+        { label: 'מצב רוח / אווירה', val: report.mood || '—' },
+        { label: 'אתגרים', val: report.challenges || report.fieldChallenges || '—' },
+        { label: 'תובנות', val: report.insights || '—' },
+        { label: 'מצב ליווי / גרום', val: report.groomStatus || '—' },
+        { label: 'חוסן ואמונה', val: report.resilience || '—' },
+        { label: 'הערות', val: report.notes || '—' }
+    ];
+
+    var h = '<div style="max-height:80vh;overflow-y:auto;padding:4px;">';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">';
+    fields.forEach(function(f) {
+        var isLong = (f.val + '').length > 60;
+        var gridSpan = isLong ? 'grid-column:1/-1;' : '';
+        h += '<div style="' + gridSpan + '">';
+        h += '<div style="font-size:0.75rem;font-weight:700;color:var(--primary);margin-bottom:3px;">' + f.label + '</div>';
+        h += '<div style="font-size:0.88rem;background:#f8f9fa;padding:8px 10px;border-radius:8px;border:1px solid var(--border);white-space:pre-wrap;">' + f.val + '</div>';
+        h += '</div>';
+    });
+    h += '</div></div>';
+
+    showModal(
+        '📋 דיווח — ' + (report.person || 'ר"מ') + ' (' + (report.weekDisplay || report.weekStart || '') + ')',
+        h,
+        null,
+        { cancelText: 'סגור', size: 'large' }
+    );
+}
+
+async function exportRmMonthlyReport() {
+    if (!window._rmReportsData || window._rmReportsData.rm.length === 0) {
+        showToast('אין דיווחים לייצוא — בחר חודש וטען נתונים');
+        return;
+    }
+
+    var data = window._rmReportsData;
+    var rmReports = data.rm;
+    var monthLabel = data.monthLabel;
+
+    try {
+        if (typeof XLSX === 'undefined') await new Promise(function(r,j) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = r; s.onerror = j; document.head.appendChild(s); });
+
+        var wb = XLSX.utils.book_new();
+
+        // Group by person
+        var byPerson = {};
+        rmReports.forEach(function(r) {
+            var name = r.person || '—';
+            if (!byPerson[name]) byPerson[name] = { reports: [], totalHours: 0, totalDays: 0 };
+            byPerson[name].reports.push(r);
+            byPerson[name].totalHours += parseFloat(r.totalHours || r.accompanyHours || 0);
+            byPerson[name].totalDays += (Array.isArray(r.presenceDays) ? r.presenceDays.length : (parseInt(r.presenceDays) || 0));
+        });
+
+        // Sheet 1: Payment summary
+        var payRows = [];
+        var grandHours = 0, grandDays = 0;
+        Object.keys(byPerson).sort().forEach(function(name) {
+            var p = byPerson[name];
+            grandHours += p.totalHours;
+            grandDays += p.totalDays;
+            payRows.push({
+                'שם': name,
+                'תפקיד': 'ר"מ פלוגתי',
+                'מספר דיווחים': p.reports.length,
+                'סה"כ שעות': p.totalHours,
+                'סה"כ ימי נוכחות': p.totalDays,
+                'שעות לימוד': p.reports.reduce(function(s, r) { return s + parseFloat(r.teachingHours || r.lessonsCount || 0); }, 0),
+                'שעות תש"ש': p.reports.reduce(function(s, r) { return s + parseFloat(r.tashHours || 0); }, 0),
+                'שיחות אישיות': p.reports.reduce(function(s, r) { return s + parseInt(r.personalConversations || 0); }, 0),
+                'פעילויות': p.reports.map(function(r) {
+                    var acts = [];
+                    if (r.topics) acts.push(r.topics);
+                    if (r.insights) acts.push(r.insights);
+                    return r.weekDisplay + ': ' + (acts.join('; ') || '—');
+                }).join(' | ')
+            });
+        });
+        payRows.push({
+            'שם': 'סה"כ', 'תפקיד': '', 'מספר דיווחים': rmReports.length,
+            'סה"כ שעות': grandHours, 'סה"כ ימי נוכחות': grandDays,
+            'שעות לימוד': payRows.reduce(function(s, r) { return s + (parseFloat(r['שעות לימוד']) || 0); }, 0),
+            'שעות תש"ש': payRows.reduce(function(s, r) { return s + (parseFloat(r['שעות תש"ש']) || 0); }, 0),
+            'שיחות אישיות': payRows.reduce(function(s, r) { return s + (parseInt(r['שיחות אישיות']) || 0); }, 0),
+            'פעילויות': ''
+        });
+
+        var ws1 = XLSX.utils.json_to_sheet(payRows);
+        ws1['!cols'] = [{wch:18},{wch:12},{wch:10},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10},{wch:50}];
+        XLSX.utils.book_append_sheet(wb, ws1, 'סיכום לתשלום');
+
+        // Sheet 2: Soft data (mood, challenges, insights)
+        var softRows = [];
+        rmReports.forEach(function(r) {
+            var hasSoft = r.mood || r.challenges || r.fieldChallenges || r.insights || r.groomStatus || r.resilience;
+            if (!hasSoft) return;
+            softRows.push({
+                'שם': r.person || '—',
+                'שבוע': r.weekDisplay || r.weekStart || '—',
+                'מצב רוח / אווירה': r.mood || '—',
+                'אתגרים': r.challenges || r.fieldChallenges || '—',
+                'תובנות': r.insights || '—',
+                'מצב ליווי / גרום': r.groomStatus || '—',
+                'חוסן ואמונה': r.resilience || '—',
+                'הערות': r.notes || '—'
+            });
+        });
+        if (softRows.length > 0) {
+            var ws2 = XLSX.utils.json_to_sheet(softRows);
+            ws2['!cols'] = [{wch:18},{wch:14},{wch:30},{wch:35},{wch:35},{wch:25},{wch:25},{wch:35}];
+            XLSX.utils.book_append_sheet(wb, ws2, 'תמונת מצב רכה');
+        }
+
+        // Sheet 3: Detailed weekly breakdown
+        var detailRows = [];
+        rmReports.sort(function(a, b) { return (a.person || '').localeCompare(b.person || '') || (a.weekStart || '').localeCompare(b.weekStart || ''); });
+        rmReports.forEach(function(r) {
+            detailRows.push({
+                'שם': r.person || '—',
+                'שבוע': r.weekDisplay || r.weekStart || '—',
+                'שעות עבודה': r.totalHours || r.accompanyHours || 0,
+                'ימי נוכחות': Array.isArray(r.presenceDays) ? r.presenceDays.join(', ') : (r.presenceDays || '—'),
+                'שעות לימוד': r.teachingHours || r.lessonsCount || 0,
+                'שעות תש"ש': r.tashHours || 0,
+                'שיחות אישיות': r.personalConversations || 0,
+                'נושאים': r.topics || '—',
+                'מצב רוח': r.mood || '—',
+                'אתגרים': r.challenges || r.fieldChallenges || '—',
+                'הערות': r.notes || '—'
+            });
+        });
+        var ws3 = XLSX.utils.json_to_sheet(detailRows);
+        ws3['!cols'] = [{wch:18},{wch:14},{wch:10},{wch:20},{wch:10},{wch:10},{wch:10},{wch:30},{wch:25},{wch:30},{wch:30}];
+        XLSX.utils.book_append_sheet(wb, ws3, 'פירוט שבועי');
+
+        XLSX.writeFile(wb, 'דוח-חודשי-רמים-' + monthLabel.replace(' ', '-') + '.xlsx');
+        showToast('✅ דוח חודשי ר"מים הורד — ' + rmReports.length + ' דיווחים');
+    } catch(e) {
+        showToast('שגיאה: ' + e.message);
+    }
 }
 
 async function loadAdminDashboard() {
