@@ -494,7 +494,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .admin-fw-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
 
 /* TOAST & LOADING */
-.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--primary); color:#fff; padding:12px 28px; border-radius:30px; font-size:0.88rem; font-weight:500; opacity:0; transition:all 0.3s; z-index:9999; pointer-events:none; }
+.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--primary); color:#fff; padding:12px 28px; border-radius:30px; font-size:0.88rem; font-weight:500; opacity:0; transition:all 0.3s; z-index:99999; pointer-events:none; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 .loading-overlay { display:none; position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:9998; align-items:center; justify-content:center; }
 .spinner { width:40px; height:40px; border:4px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
@@ -3335,7 +3335,7 @@ async function loadTrainingPage(program) {
                             ${completionHtml}
                         </div>
                     </div>
-                    ${lesson.fileUrl ? `<a href="${lesson.fileUrl}" target="_blank" style="display:inline-block;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;">📄 ${lesson.fileName || 'קובץ מצורף'} ←</a>` : (lesson.fileData ? `<a href="${lesson.fileData}" download="${lesson.fileName || 'file'}" style="display:inline-block;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;">📄 ${lesson.fileName || 'קובץ מצורף'} ←</a>` : '')}
+                    ${lesson.fileUrl ? `<button onclick="previewFile('${lesson.fileUrl}','${(lesson.fileName||'קובץ').replace(/'/g,"\\'")}')" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">📄 ${lesson.fileName || 'קובץ מצורף'}</button>` : (lesson.fileData ? `<a href="${lesson.fileData}" download="${lesson.fileName || 'file'}" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;">📄 ${lesson.fileName || 'קובץ מצורף'}</a>` : '')}
                     ${lesson.url ? renderContentLink(lesson.url) : ''}
                 </div>`;
             }
@@ -11440,10 +11440,9 @@ async function loadCmgmtContent() {
                 const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
                 const color = catColors[d.category] || '#666';
                 let linkHtml = '—';
-                var fLink = d.fileUrl || d.fileData || '';
-                var fName = d.fileName || 'קובץ';
-                if (fLink) linkHtml = `<a href="${fLink}" ${d.fileData ? 'download="'+fName+'"' : 'target="_blank"'} style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${fName}</a>`;
-                if (d.url) linkHtml += (fLink ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
+                if (d.fileUrl) linkHtml = `<a href="javascript:void(0)" onclick="previewFile('${d.fileUrl}','${(d.fileName||'קובץ').replace(/'/g,"\\'")}')" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;">📄 ${d.fileName||'קובץ'}</a>`;
+                else if (d.fileData) linkHtml = `<a href="${d.fileData}" download="${d.fileName||'file'}" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName||'קובץ'}</a>`;
+                if (d.url) linkHtml += ((d.fileUrl||d.fileData) ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
                 html += `<tr>
                     <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
                     <td>${d.title}</td>
@@ -11506,7 +11505,11 @@ function openEditLesson(docId, source) {
         var fileInfo = '';
         if (existingFile) {
             var fName = esc(d.fileName || 'הורד');
-            fileInfo = '<div style="margin-top:4px;"><a href="' + esc(d.fileUrl || '#') + '" target="_blank" style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ נוכחי: ' + fName + '</a></div>';
+            if (d.fileUrl) {
+                fileInfo = '<div style="margin-top:4px;"><a href="javascript:void(0)" onclick="previewFile(\'' + esc(d.fileUrl).replace(/'/g,"\\'") + '\',\'' + fName.replace(/'/g,"\\'") + '\')" style="font-size:0.82rem;color:var(--primary-lighter);cursor:pointer;">📄 קובץ נוכחי: ' + fName + ' (לחץ לתצוגה)</a></div>';
+            } else {
+                fileInfo = '<div style="margin-top:4px;"><span style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ נוכחי: ' + fName + '</span></div>';
+            }
         }
 
         var modalHtml = '<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:480px;width:92%;direction:rtl;max-height:85vh;overflow-y:auto;" onclick="event.stopPropagation()">' +
@@ -11549,6 +11552,53 @@ window._doSaveEditLesson = function() {
     if (!docId) { alert('שגיאה: לא נמצא מזהה תוכן'); return; }
     saveEditLesson(docId, source);
 };
+
+// Helper: preview a file in a modal with download option
+function previewFile(fileUrl, fileName, fileData) {
+    var src = fileUrl || fileData || '';
+    if (!src) { showToast('אין קובץ לתצוגה'); return; }
+    var name = fileName || 'קובץ';
+    var ext = name.split('.').pop().toLowerCase();
+    var isImage = ['jpg','jpeg','png','gif','webp','svg'].indexOf(ext) >= 0;
+    var isPdf = ext === 'pdf';
+    var isVideo = ['mp4','webm','mov'].indexOf(ext) >= 0;
+
+    var previewHtml = '';
+    if (isImage) {
+        previewHtml = '<img src="' + src + '" style="max-width:100%;max-height:60vh;border-radius:8px;display:block;margin:0 auto;" alt="' + name + '">';
+    } else if (isPdf) {
+        previewHtml = '<iframe src="' + src + '" style="width:100%;height:60vh;border:1px solid var(--border);border-radius:8px;" frameborder="0"></iframe>';
+    } else if (isVideo) {
+        previewHtml = '<video src="' + src + '" controls style="max-width:100%;max-height:60vh;border-radius:8px;display:block;margin:0 auto;"></video>';
+    } else {
+        // For other file types, show file info with download
+        previewHtml = '<div style="text-align:center;padding:30px;">' +
+            '<div style="font-size:3rem;margin-bottom:12px;">📄</div>' +
+            '<div style="font-size:1rem;font-weight:600;">' + name + '</div>' +
+            '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">סוג קובץ: .' + ext + '</div>' +
+        '</div>';
+    }
+
+    var old = document.getElementById('file-preview-modal');
+    if (old) old.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'file-preview-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10001;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = '<div style="background:#ffffff;border-radius:14px;padding:20px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl;" onclick="event.stopPropagation()">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+            '<h3 style="margin:0;font-size:1rem;color:var(--primary);">📄 ' + name + '</h3>' +
+            '<button onclick="document.getElementById(\'file-preview-modal\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);">✕</button>' +
+        '</div>' +
+        previewHtml +
+        '<div style="display:flex;gap:10px;justify-content:center;margin-top:16px;">' +
+            '<a href="' + src + '" download="' + name + '" class="btn-primary btn-sm" style="text-decoration:none;font-size:0.88rem;">📥 הורד קובץ</a>' +
+            (fileUrl ? '<a href="' + src + '" target="_blank" class="btn-secondary btn-sm" style="text-decoration:none;font-size:0.88rem;">🔗 פתח בחלון חדש</a>' : '') +
+        '</div>' +
+    '</div>';
+    document.body.appendChild(modal);
+}
 
 // Helper: upload file to Firebase Storage with timeout, fallback to base64 in Firestore
 async function uploadTrainingFile(file, pathPrefix) {
@@ -11631,8 +11681,19 @@ async function saveEditLesson(docId, source) {
         console.log('Saving to Firestore:', docId);
         await db.collection('training_content').doc(docId).update(update);
 
+        // Show success inside the modal before closing
         var modal = document.getElementById('edit-lesson-modal');
-        if (modal) modal.remove();
+        if (modal) {
+            var inner = modal.querySelector('div');
+            if (inner) {
+                inner.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
+                    '<div style="font-size:3rem;margin-bottom:12px;">✅</div>' +
+                    '<div style="font-size:1.2rem;font-weight:700;color:#2E7D32;">המערך נשמר בהצלחה!</div>' +
+                    (update.fileName ? '<div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;">📄 קובץ: ' + update.fileName + '</div>' : '') +
+                '</div>';
+            }
+            setTimeout(function() { if (modal.parentNode) modal.remove(); }, 1500);
+        }
         showToast('✅ תוכן עודכן');
         if (source === 'admin') loadAdminTrainingContent();
         else loadCmgmtContent();
@@ -11674,7 +11735,7 @@ async function cmgmtAddLesson() {
             }
         }
         await db.collection('training_content').add(docData);
-        showToast('תוכן נוסף');
+        showToast('✅ המערך נוסף בהצלחה!');
         document.getElementById('cmgmt-title').value = '';
         document.getElementById('cmgmt-instructor').value = '';
         document.getElementById('cmgmt-hours').value = '';
@@ -11755,10 +11816,9 @@ async function loadAdminTrainingContent() {
             const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
             const color = catColors[d.category] || '#666';
             let linkHtml = '—';
-            var fLink = d.fileUrl || d.fileData || '';
-            var fName = d.fileName || 'קובץ';
-            if (fLink) linkHtml = `<a href="${fLink}" ${d.fileData ? 'download="'+fName+'"' : 'target="_blank"'} style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${fName}</a>`;
-            if (d.url) linkHtml += (fLink ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
+            if (d.fileUrl) linkHtml = `<a href="javascript:void(0)" onclick="previewFile('${d.fileUrl}','${(d.fileName||'קובץ').replace(/'/g,"\\'")}')" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;">📄 ${d.fileName||'קובץ'}</a>`;
+            else if (d.fileData) linkHtml = `<a href="${d.fileData}" download="${d.fileName||'file'}" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName||'קובץ'}</a>`;
+            if (d.url) linkHtml += ((d.fileUrl||d.fileData) ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
             html += `<tr>
                 <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
                 <td>${d.title}</td>
@@ -11807,7 +11867,7 @@ async function adminAddLesson() {
             }
         }
         await db.collection('training_content').add(docData);
-        showToast('תוכן נוסף');
+        showToast('✅ המערך נוסף בהצלחה!');
         document.getElementById('admin-lesson-title').value = '';
         document.getElementById('admin-lesson-instructor').value = '';
         document.getElementById('admin-lesson-hours').value = '';
