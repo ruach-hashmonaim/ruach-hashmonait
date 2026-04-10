@@ -1521,6 +1521,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('cw-videos')">סרטוני מרחב</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('user-sakag')">סק"גים עצמאיים</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('completion')">📋 מעקב ביצוע</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('duplicates')">🔄 כפילויות</button>
+        <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('export-reports')">📊 דוחות</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('ai-config')">הגדרות AI</button>
         <button class="btn-secondary btn-sm admin-tab" onclick="showAdminTab('dashboard')">דשבורד</button>
     </div>
@@ -1766,6 +1768,46 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 
     <!-- Admin dashboard -->
+    <!-- Duplicate Users Finder -->
+    <div class="admin-panel" id="admin-duplicates" style="display:none;">
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <h3 style="margin:0;">🔄 זיהוי ומיזוג כפילויות</h3>
+                <button class="btn-primary btn-sm" onclick="scanDuplicateUsers()" style="font-size:0.85rem;">🔍 סרוק כפילויות</button>
+            </div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הכלי מזהה משתמשים עם שם מלא זהה או אימייל זהה ומאפשר למזג אותם. המיזוג שומר את ההרשאות הרחבות ביותר מבין הכפילויות.</p>
+            <div id="admin-duplicates-list"></div>
+        </div>
+    </div>
+
+    <!-- Reports Export -->
+    <div class="admin-panel" id="admin-export-reports" style="display:none;">
+        <div class="card">
+            <h3 style="margin-bottom:14px;">📊 ייצוא דוחות</h3>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:280px;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
+                    <h4 style="color:var(--primary);margin-bottom:8px;">📋 דוח שבועי מרוכז</h4>
+                    <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:12px;">דוח מרוכז על בסיס הדיווחים של הרמ"ים הפלוגתיים — תמונת מצב שבועית.</p>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+                        <label style="font-size:0.82rem;font-weight:600;">שבוע:</label>
+                        <input type="week" id="export-weekly-date" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;">
+                    </div>
+                    <button class="btn-primary btn-sm" onclick="exportWeeklyReport()" style="font-size:0.85rem;">📥 הורד דוח שבועי</button>
+                </div>
+                <div style="flex:1;min-width:280px;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
+                    <h4 style="color:var(--primary);margin-bottom:8px;">💰 דוח חודשי לתשלום</h4>
+                    <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:12px;">דוח חודשי מרוכז הכולל שעות עבודה ופעילויות שבוצעו — לצורך תשלום.</p>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+                        <label style="font-size:0.82rem;font-weight:600;">חודש:</label>
+                        <input type="month" id="export-monthly-date" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;">
+                    </div>
+                    <button class="btn-primary btn-sm" onclick="exportMonthlyPaymentReport()" style="font-size:0.85rem;">📥 הורד דוח תשלום</button>
+                </div>
+            </div>
+            <div id="export-reports-status" style="margin-top:14px;"></div>
+        </div>
+    </div>
+
     <div class="admin-panel" id="admin-dashboard" style="display:none;">
         <div id="admin-dashboard-content"></div>
     </div>
@@ -16611,11 +16653,321 @@ function showAdminTab(tab) {
     if (tab === 'cw-videos') cwAdminLoadVideos();
     if (tab === 'user-sakag') loadAdminUserSakag();
     if (tab === 'completion') loadAdminCompletion('basic');
+    if (tab === 'duplicates') scanDuplicateUsers();
     if (tab === 'ai-config') loadAiConfig();
     if (tab === 'dashboard') loadAdminDashboard();
 }
 
 function loadAdminPage() { if (!hasPermission('admin')) return; loadAdminUsers(); }
+
+// ============================================================
+// Admin: Duplicate Users Finder & Merger
+// ============================================================
+async function scanDuplicateUsers() {
+    var container = document.getElementById('admin-duplicates-list');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">🔍 סורק כפילויות...</p>';
+
+    try {
+        var snap = await db.collection('users').get();
+        var users = [];
+        snap.forEach(function(doc) { users.push({ docId: doc.id, ...doc.data() }); });
+
+        // Find duplicates by name or email
+        var nameGroups = {}, emailGroups = {};
+        users.forEach(function(u) {
+            var name = (u.name || '').trim().toLowerCase();
+            var email = (u.email || '').trim().toLowerCase();
+            if (name) { if (!nameGroups[name]) nameGroups[name] = []; nameGroups[name].push(u); }
+            if (email) { if (!emailGroups[email]) emailGroups[email] = []; emailGroups[email].push(u); }
+        });
+
+        var duplicateSets = [];
+        var seen = new Set();
+
+        // Group by name
+        Object.keys(nameGroups).forEach(function(name) {
+            if (nameGroups[name].length > 1) {
+                var ids = nameGroups[name].map(function(u) { return u.docId; }).sort().join('|');
+                if (!seen.has(ids)) {
+                    seen.add(ids);
+                    duplicateSets.push({ reason: 'שם זהה: ' + nameGroups[name][0].name, users: nameGroups[name] });
+                }
+            }
+        });
+
+        // Group by email
+        Object.keys(emailGroups).forEach(function(email) {
+            if (emailGroups[email].length > 1) {
+                var ids = emailGroups[email].map(function(u) { return u.docId; }).sort().join('|');
+                if (!seen.has(ids)) {
+                    seen.add(ids);
+                    duplicateSets.push({ reason: 'אימייל זהה: ' + email, users: emailGroups[email] });
+                }
+            }
+        });
+
+        if (duplicateSets.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:30px;"><span style="font-size:2rem;">✅</span><p style="font-weight:600;color:#2E7D32;margin-top:8px;">לא נמצאו כפילויות</p><p style="font-size:0.85rem;color:var(--text-secondary);">כל ' + users.length + ' המשתמשים ייחודיים</p></div>';
+            return;
+        }
+
+        var html = '<div style="margin-bottom:10px;font-size:0.88rem;color:var(--text-secondary);">נמצאו <b style="color:#d32f2f;">' + duplicateSets.length + '</b> קבוצות כפילויות מתוך ' + users.length + ' משתמשים</div>';
+
+        duplicateSets.forEach(function(group, gi) {
+            html += '<div style="border:2px solid #FFC107;border-radius:12px;padding:14px;margin-bottom:12px;background:#FFFDE7;">';
+            html += '<div style="font-weight:700;font-size:0.9rem;margin-bottom:10px;color:#F57F17;">⚠️ ' + group.reason + '</div>';
+            html += '<table class="admin-table" style="margin-bottom:10px;"><thead><tr><th>Doc ID</th><th>שם</th><th>מייל</th><th>תפקיד</th><th>מסגרת</th><th>פלוגה</th><th>הרשאות נוספות</th><th>שמור</th></tr></thead><tbody>';
+
+            group.users.forEach(function(u, ui) {
+                var rl = (ROLES[u.role] || {}).label || u.role || '—';
+                var fw = u.framework || '—';
+                var perms = (u.permissions || []).length;
+                var hasPassword = u.passwordHash ? '🔑' : '';
+                html += '<tr>' +
+                    '<td style="font-size:0.72rem;direction:ltr;max-width:120px;overflow:hidden;text-overflow:ellipsis;">' + u.docId + '</td>' +
+                    '<td>' + (u.name || '—') + ' ' + hasPassword + '</td>' +
+                    '<td style="direction:ltr;text-align:right;">' + (u.email || '—') + '</td>' +
+                    '<td>' + rl + '</td>' +
+                    '<td>' + fw + '</td>' +
+                    '<td>' + (u.pluga || '—') + '</td>' +
+                    '<td style="text-align:center;">' + (perms > 0 ? '+' + perms : '—') + '</td>' +
+                    '<td style="text-align:center;"><input type="radio" name="dup-keep-' + gi + '" value="' + ui + '" ' + (ui===0?'checked':'') + '></td>' +
+                '</tr>';
+            });
+
+            html += '</tbody></table>';
+            html += '<button class="btn-primary btn-sm" onclick="mergeDuplicateGroup(' + gi + ')" style="font-size:0.82rem;">🔄 מזג — שמור את הנבחר ומחק את השאר</button>';
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+        // Store data for merge
+        window._duplicateSets = duplicateSets;
+    } catch(e) {
+        container.innerHTML = '<p style="color:#d32f2f;">שגיאה: ' + e.message + '</p>';
+    }
+}
+
+async function mergeDuplicateGroup(groupIndex) {
+    var group = (window._duplicateSets || [])[groupIndex];
+    if (!group) return;
+
+    var keepIdx = 0;
+    var radios = document.querySelectorAll('input[name="dup-keep-' + groupIndex + '"]');
+    radios.forEach(function(r, i) { if (r.checked) keepIdx = i; });
+
+    var keepUser = group.users[keepIdx];
+    var deleteUsers = group.users.filter(function(u, i) { return i !== keepIdx; });
+
+    if (!confirm('למזג כפילויות?\n\nשומר: ' + keepUser.name + ' (' + keepUser.docId + ')\nמוחק: ' + deleteUsers.map(function(u) { return u.name + ' (' + u.docId + ')'; }).join(', ') + '\n\nהרשאות מכל הכפילויות יתמזגו לרשומה הנשמרת.')) return;
+
+    try {
+        // Merge permissions from all duplicates into kept user
+        var mergedPerms = new Set(keepUser.permissions || []);
+        deleteUsers.forEach(function(u) {
+            (u.permissions || []).forEach(function(p) { mergedPerms.add(p); });
+        });
+
+        // Update kept user with merged permissions and best data
+        var updateData = { permissions: Array.from(mergedPerms) };
+        // Fill in missing fields from duplicates
+        deleteUsers.forEach(function(u) {
+            if (!keepUser.role && u.role) updateData.role = u.role;
+            if (!keepUser.framework && u.framework) updateData.framework = u.framework;
+            if (!keepUser.pluga && u.pluga) updateData.pluga = u.pluga;
+            if (!keepUser.passwordHash && u.passwordHash) updateData.passwordHash = u.passwordHash;
+            if (!keepUser.phone && u.phone) updateData.phone = u.phone;
+        });
+
+        await db.collection('users').doc(keepUser.docId).update(updateData);
+
+        // Delete duplicates
+        for (var i = 0; i < deleteUsers.length; i++) {
+            await db.collection('users').doc(deleteUsers[i].docId).delete();
+        }
+
+        showToast('✅ מוזג בהצלחה — נשמר: ' + keepUser.name);
+        scanDuplicateUsers(); // Refresh
+    } catch(e) {
+        showToast('❌ שגיאה: ' + e.message);
+    }
+}
+
+// ============================================================
+// Admin: Weekly & Monthly Report Exports
+// ============================================================
+async function exportWeeklyReport() {
+    var weekInput = document.getElementById('export-weekly-date');
+    if (!weekInput || !weekInput.value) { showToast('בחר שבוע'); return; }
+
+    // Parse ISO week to date range
+    var parts = weekInput.value.split('-W');
+    var year = parseInt(parts[0]);
+    var weekNum = parseInt(parts[1]);
+    // Calculate Monday of that week
+    var jan4 = new Date(year, 0, 4);
+    var dayOfWeek = jan4.getDay() || 7;
+    var weekStart = new Date(jan4);
+    weekStart.setDate(jan4.getDate() - dayOfWeek + 1 + (weekNum - 1) * 7);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    var wsStr = weekStart.toISOString().split('T')[0];
+    var weStr = weekEnd.toISOString().split('T')[0];
+
+    var statusEl = document.getElementById('export-reports-status');
+    statusEl.innerHTML = '<p style="color:var(--primary);font-weight:600;">⏳ טוען דיווחים...</p>';
+
+    try {
+        var snap = await db.collection('weekly-reports').where('weekStart', '>=', wsStr).where('weekStart', '<=', weStr).get();
+        var reports = [];
+        snap.forEach(function(doc) { reports.push(doc.data()); });
+
+        if (reports.length === 0) {
+            statusEl.innerHTML = '<p style="color:#d32f2f;">לא נמצאו דיווחים לשבוע הנבחר (' + wsStr + ')</p>';
+            return;
+        }
+
+        // Load XLSX
+        if (typeof XLSX === 'undefined') await new Promise(function(r,j) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = r; s.onerror = j; document.head.appendChild(s); });
+
+        // Build summary data
+        var rows = [];
+        reports.sort(function(a, b) { return (a.category || '').localeCompare(b.category || '') || (a.person || '').localeCompare(b.person || ''); });
+
+        reports.forEach(function(r) {
+            var cat = CATEGORY_NAMES[r.category] || r.categoryName || r.category || '—';
+            var row = {
+                'שם': r.person || '—',
+                'קטגוריה': cat,
+                'שבוע': r.weekDisplay || r.weekStart || '—',
+                'שעות עבודה': r.totalHours || r.accompanyHours || 0,
+                'ימי נוכחות': Array.isArray(r.presenceDays) ? r.presenceDays.length : (r.presenceDays || 0),
+                'שעות לימוד': r.teachingHours || r.lessonsCount || 0,
+                'שעות תש': r.tashHours || 0,
+                'שיחות אישיות': r.personalConversations || 0,
+                'נושאים': r.topics || '—',
+                'אתגרים': r.challenges || r.fieldChallenges || '—',
+                'הערות': r.notes || '—'
+            };
+            rows.push(row);
+        });
+
+        // Summary row
+        var totalHours = rows.reduce(function(s, r) { return s + (parseFloat(r['שעות עבודה']) || 0); }, 0);
+        var totalDays = rows.reduce(function(s, r) { return s + (parseInt(r['ימי נוכחות']) || 0); }, 0);
+        rows.push({
+            'שם': 'סה"כ',
+            'קטגוריה': '',
+            'שבוע': '',
+            'שעות עבודה': totalHours,
+            'ימי נוכחות': totalDays,
+            'שעות לימוד': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות לימוד']) || 0); }, 0),
+            'שעות תש': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות תש']) || 0); }, 0),
+            'שיחות אישיות': rows.reduce(function(s, r) { return s + (parseInt(r['שיחות אישיות']) || 0); }, 0),
+            'נושאים': '', 'אתגרים': '', 'הערות': ''
+        });
+
+        var ws = XLSX.utils.json_to_sheet(rows);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'דוח שבועי');
+        ws['!cols'] = [{wch:18},{wch:14},{wch:14},{wch:10},{wch:10},{wch:10},{wch:8},{wch:10},{wch:30},{wch:30},{wch:30}];
+        XLSX.writeFile(wb, 'דוח-שבועי-' + wsStr + '.xlsx');
+        statusEl.innerHTML = '<p style="color:#2E7D32;font-weight:600;">✅ דוח שבועי הורד — ' + reports.length + ' דיווחים</p>';
+    } catch(e) {
+        statusEl.innerHTML = '<p style="color:#d32f2f;">שגיאה: ' + e.message + '</p>';
+    }
+}
+
+async function exportMonthlyPaymentReport() {
+    var monthInput = document.getElementById('export-monthly-date');
+    if (!monthInput || !monthInput.value) { showToast('בחר חודש'); return; }
+
+    var parts = monthInput.value.split('-');
+    var year = parseInt(parts[0]);
+    var month = parseInt(parts[1]);
+    var monthStart = year + '-' + String(month).padStart(2, '0') + '-01';
+    var nextMonth = month === 12 ? (year + 1) + '-01-01' : year + '-' + String(month + 1).padStart(2, '0') + '-01';
+
+    var monthNames = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    var monthLabel = monthNames[month - 1] + ' ' + year;
+
+    var statusEl = document.getElementById('export-reports-status');
+    statusEl.innerHTML = '<p style="color:var(--primary);font-weight:600;">⏳ טוען דיווחים לחודש ' + monthLabel + '...</p>';
+
+    try {
+        var snap = await db.collection('weekly-reports').where('weekStart', '>=', monthStart).where('weekStart', '<', nextMonth).get();
+        var reports = [];
+        snap.forEach(function(doc) { reports.push(doc.data()); });
+
+        if (reports.length === 0) {
+            statusEl.innerHTML = '<p style="color:#d32f2f;">לא נמצאו דיווחים לחודש ' + monthLabel + '</p>';
+            return;
+        }
+
+        if (typeof XLSX === 'undefined') await new Promise(function(r,j) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = r; s.onerror = j; document.head.appendChild(s); });
+
+        // Group by person
+        var byPerson = {};
+        reports.forEach(function(r) {
+            var name = r.person || '—';
+            if (!byPerson[name]) byPerson[name] = { reports: [], totalHours: 0, totalDays: 0, activities: [], category: r.category, categoryName: r.categoryName || CATEGORY_NAMES[r.category] || '' };
+            byPerson[name].reports.push(r);
+            byPerson[name].totalHours += parseFloat(r.totalHours || r.accompanyHours || 0);
+            byPerson[name].totalDays += Array.isArray(r.presenceDays) ? r.presenceDays.length : (parseInt(r.presenceDays) || 0);
+            // Collect activities
+            var acts = [];
+            if (r.topics) acts.push(r.topics);
+            if (r.insights) acts.push(r.insights);
+            if (r.strategic) acts.push(r.strategic);
+            if (acts.length) byPerson[name].activities.push(r.weekDisplay + ': ' + acts.join('; '));
+        });
+
+        // Build Excel rows
+        var rows = [];
+        var grandTotalHours = 0, grandTotalDays = 0;
+
+        Object.keys(byPerson).sort().forEach(function(name) {
+            var p = byPerson[name];
+            grandTotalHours += p.totalHours;
+            grandTotalDays += p.totalDays;
+            rows.push({
+                'שם': name,
+                'קטגוריה': p.categoryName,
+                'מספר דיווחים': p.reports.length,
+                'סה"כ שעות': p.totalHours,
+                'סה"כ ימי נוכחות': p.totalDays,
+                'שעות לימוד': p.reports.reduce(function(s, r) { return s + parseFloat(r.teachingHours || r.lessonsCount || 0); }, 0),
+                'שעות תש': p.reports.reduce(function(s, r) { return s + parseFloat(r.tashHours || 0); }, 0),
+                'שיחות אישיות': p.reports.reduce(function(s, r) { return s + parseInt(r.personalConversations || 0); }, 0),
+                'פעילויות עיקריות': p.activities.join(' | ')
+            });
+        });
+
+        // Total row
+        rows.push({
+            'שם': 'סה"כ',
+            'קטגוריה': '',
+            'מספר דיווחים': reports.length,
+            'סה"כ שעות': grandTotalHours,
+            'סה"כ ימי נוכחות': grandTotalDays,
+            'שעות לימוד': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות לימוד']) || 0); }, 0),
+            'שעות תש': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות תש']) || 0); }, 0),
+            'שיחות אישיות': rows.reduce(function(s, r) { return s + (parseInt(r['שיחות אישיות']) || 0); }, 0),
+            'פעילויות עיקריות': ''
+        });
+
+        var ws = XLSX.utils.json_to_sheet(rows);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'דוח תשלום ' + monthLabel);
+        ws['!cols'] = [{wch:18},{wch:14},{wch:10},{wch:10},{wch:12},{wch:10},{wch:8},{wch:10},{wch:50}];
+        XLSX.writeFile(wb, 'דוח-תשלום-' + monthLabel.replace(' ', '-') + '.xlsx');
+        statusEl.innerHTML = '<p style="color:#2E7D32;font-weight:600;">✅ דוח תשלום חודשי הורד — ' + monthLabel + ' — ' + Object.keys(byPerson).length + ' אנשי צוות</p>';
+    } catch(e) {
+        statusEl.innerHTML = '<p style="color:#d32f2f;">שגיאה: ' + e.message + '</p>';
+    }
+}
 
 // === Admin: User-generated סק"גים ===
 async function loadAdminUserSakag() {
