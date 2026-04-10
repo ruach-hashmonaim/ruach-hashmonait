@@ -16821,16 +16821,19 @@ async function exportWeeklyReport() {
     var weekInput = document.getElementById('export-weekly-date');
     if (!weekInput || !weekInput.value) { showToast('בחר שבוע'); return; }
 
-    // Parse ISO week to date range
+    // Parse ISO week to date range (Sun-Thu = א-ה)
     var parts = weekInput.value.split('-W');
     var year = parseInt(parts[0]);
     var weekNum = parseInt(parts[1]);
     var jan4 = new Date(year, 0, 4);
     var dayOfWeek = jan4.getDay() || 7;
-    var weekStart = new Date(jan4);
-    weekStart.setDate(jan4.getDate() - dayOfWeek + 1 + (weekNum - 1) * 7);
+    var isoMonday = new Date(jan4);
+    isoMonday.setDate(jan4.getDate() - dayOfWeek + 1 + (weekNum - 1) * 7);
+    // Week starts on Sunday (day before Monday) and ends on Thursday
+    var weekStart = new Date(isoMonday);
+    weekStart.setDate(isoMonday.getDate() - 1); // Sunday
     var weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setDate(weekStart.getDate() + 4); // Thursday
 
     var wsStr = weekStart.toISOString().split('T')[0];
     var weStr = weekEnd.toISOString().split('T')[0];
