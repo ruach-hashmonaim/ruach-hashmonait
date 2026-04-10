@@ -3381,7 +3381,7 @@ async function loadTrainingPage(program) {
                     ${canMark ? `<div style="margin-top:4px;text-align:left;"><button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionOverview('emet_${item.id}','${program}',${week},'${plugaTrack||''}')">📋 סקירת ביצוע</button></div>` : ''}`;
                 }
 
-                html += `<div class="card" style="border-right:4px solid ${emetColor};padding:16px;background:linear-gradient(135deg, rgba(217,119,6,0.03) 0%, transparent 100%);">
+                html += `<div class="card" style="border-right:4px solid ${emetColor};padding:16px;background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, #ffffff 100%);">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
                         <div style="flex:1;min-width:200px;">
                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -11635,12 +11635,32 @@ async function loadAdminTrainingContent() {
         let query = db.collection('training_content').where('program','==',prog).where('week','==',week);
         if (track) query = query.where('track','==',track);
         const snap = await query.orderBy('order').get();
-        if (snap.empty) {
+
+        // Also get EMET items for this program+week
+        const emetItems = (EMET_CURRICULUM[prog] && EMET_CURRICULUM[prog][week]) || [];
+
+        if (snap.empty && emetItems.length === 0) {
             container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
             return;
         }
         const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
         let html = '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור / קובץ</th><th>פעולות</th></tr></thead><tbody>';
+
+        // EMET items first (hardcoded curriculum)
+        emetItems.forEach(item => {
+            const typeLabel = item.type === 'sakal' ? 'סק"ג' : 'מפה אילמת';
+            const deepLink = item.type === 'sakal' ? '#geography/sakal/' + item.id : '#geography/quiz/' + item.id;
+            html += `<tr style="background:rgba(217,119,6,0.06);">
+                <td><span style="color:#D97706;font-weight:600;">אמת מארץ תצמח</span></td>
+                <td>${item.icon} ${item.title} <span style="font-size:0.72rem;color:var(--text-secondary);">(${typeLabel})</span></td>
+                <td>מ"כ/מ"מ</td>
+                <td>0.5</td>
+                <td><a href="${deepLink}" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 ${typeLabel}</a></td>
+                <td style="font-size:0.72rem;color:var(--text-secondary);">מערכי — לא ניתן לעריכה</td>
+            </tr>`;
+        });
+
+        // Firestore lessons
         snap.forEach(doc => {
             const d = doc.data();
             const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
