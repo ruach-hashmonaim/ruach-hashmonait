@@ -3306,7 +3306,7 @@ async function loadTrainingPage(program) {
                             ${done ? '✓ בוצע' : '○ לא בוצע'}
                         </span>
                         ${rec.notes ? `<div style="font-size:0.78rem;color:var(--text-secondary);max-width:200px;text-align:left;">💬 ${rec.notes}</div>` : ''}
-                        ${rec.fileUrl ? `<a href="${rec.fileUrl}" target="_blank" style="font-size:0.78rem;color:var(--primary-lighter);">📄 קובץ מצורף</a>` : ''}
+                        ${rec.fileUrl ? `<a href="javascript:void(0)" onclick="previewFile('${rec.fileUrl}','${(rec.fileName||'קובץ מצורף').replace(/'/g,"\\'")}')" style="font-size:0.78rem;color:var(--primary-lighter);cursor:pointer;">📄 קובץ מצורף</a>` : ''}
                         ${canMark ? `<button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionDetails('${lesson.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}')">📝 פרטי ביצוע</button>` : ''}
                     </div>`;
                 } else {
@@ -3338,7 +3338,11 @@ async function loadTrainingPage(program) {
                             ${completionHtml}
                         </div>
                     </div>
-                    ${lesson.fileUrl ? `<button onclick="previewFile('${lesson.fileUrl}','${(lesson.fileName||'קובץ').replace(/'/g,"\\'")}')" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">📄 ${lesson.fileName || 'קובץ מצורף'}</button>` : (lesson.fileData ? `<a href="${lesson.fileData}" download="${lesson.fileName || 'file'}" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);text-decoration:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;">📄 ${lesson.fileName || 'קובץ מצורף'}</a>` : '')}
+                    ${(() => {
+                        if (lesson.fileUrl) return `<button onclick="previewFile('${lesson.fileUrl}','${(lesson.fileName||'קובץ').replace(/'/g,"\\'")}')" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">📄 ${lesson.fileName || 'קובץ מצורף'}</button>`;
+                        if (lesson.fileData) { var k='_fd_'+Math.random().toString(36).substr(2,8); window[k]=lesson.fileData; return `<button onclick="previewFile('','${(lesson.fileName||'קובץ').replace(/'/g,"\\'")}',window['${k}'])" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">📄 ${lesson.fileName || 'קובץ מצורף'}</button>`; }
+                        return '';
+                    })()}
                     ${lesson.url ? renderContentLink(lesson.url) : ''}
                 </div>`;
             }
@@ -3366,7 +3370,7 @@ async function loadTrainingPage(program) {
                             ${done ? '✓ בוצע' : '○ לא בוצע'}
                         </span>
                         ${rec.notes ? `<div style="font-size:0.78rem;color:var(--text-secondary);max-width:200px;text-align:left;">💬 ${rec.notes}</div>` : ''}
-                        ${rec.fileUrl ? `<a href="${rec.fileUrl}" target="_blank" style="font-size:0.78rem;color:var(--primary-lighter);">📄 קובץ מצורף</a>` : ''}
+                        ${rec.fileUrl ? `<a href="javascript:void(0)" onclick="previewFile('${rec.fileUrl}','${(rec.fileName||'קובץ מצורף').replace(/'/g,"\\'")}')" style="font-size:0.78rem;color:var(--primary-lighter);cursor:pointer;">📄 קובץ מצורף</a>` : ''}
                         ${canMark ? `<button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionDetails('emet_${item.id}','${program}',${week},'${plugaTrack||''}','${plugaLetter}')">📝 פרטי ביצוע</button>` : ''}
                     </div>`;
                 } else {
@@ -11301,7 +11305,7 @@ function openExecutionDetails(lessonId, program, week, track, platoon) {
                 <div>
                     <label style="font-weight:600;font-size:0.9rem;">העלאת קובץ (תוכן שהועבר):</label>
                     <input type="file" id="exec-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="margin-top:4px;font-size:0.85rem;">
-                    ${data.fileUrl ? `<div style="margin-top:4px;"><a href="${data.fileUrl}" target="_blank" style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ קיים: ${data.fileName || 'הורד'}</a></div>` : ''}
+                    ${data.fileUrl ? `<div style="margin-top:4px;"><a href="javascript:void(0)" onclick="previewFile('${data.fileUrl}','${(data.fileName||'קובץ').replace(/'/g,"\\'")}')" style="font-size:0.82rem;color:var(--primary-lighter);cursor:pointer;">📄 קובץ קיים: ${data.fileName || 'צפה'} (לחץ לתצוגה)</a></div>` : ''}
                 </div>
                 <div style="display:flex;gap:8px;justify-content:flex-start;margin-top:8px;">
                     <button class="btn-primary btn-sm" onclick="saveExecutionDetails('${docId}','${lessonId}','${program}',${week},'${track}','${platoon}')">שמור</button>
@@ -11363,7 +11367,7 @@ function openExecutionOverview(lessonId, program, week, track) {
                 <td style="font-weight:600;">פלוגה ${p}׳</td>
                 <td style="color:${statusColor};font-weight:700;">${statusIcon} ${d.completed ? 'בוצע' : 'לא בוצע'}</td>
                 <td style="font-size:0.82rem;">${d.notes || '—'}</td>
-                <td>${d.fileUrl ? `<a href="${d.fileUrl}" target="_blank" style="font-size:0.8rem;">📄 ${d.fileName || 'קובץ'}</a>` : '—'}</td>
+                <td>${d.fileUrl ? `<a href="javascript:void(0)" onclick="previewFile('${d.fileUrl}','${(d.fileName||'קובץ').replace(/'/g,"\\'")}')" style="font-size:0.8rem;color:var(--primary-lighter);cursor:pointer;">📄 ${d.fileName || 'קובץ'}</a>` : '—'}</td>
                 <td style="font-size:0.78rem;color:var(--text-secondary);">${d.markedBy || '—'}</td>
             </tr>`;
         }).join('');
@@ -11444,7 +11448,11 @@ async function loadCmgmtContent() {
                 const color = catColors[d.category] || '#666';
                 let linkHtml = '—';
                 if (d.fileUrl) linkHtml = `<a href="javascript:void(0)" onclick="previewFile('${d.fileUrl}','${(d.fileName||'קובץ').replace(/'/g,"\\'")}')" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;">📄 ${d.fileName||'קובץ'}</a>`;
-                else if (d.fileData) linkHtml = `<a href="${d.fileData}" download="${d.fileName||'file'}" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName||'קובץ'}</a>`;
+                else if (d.fileData) {
+                    var fdKey = '_fd_' + Math.random().toString(36).substr(2,8);
+                    window[fdKey] = d.fileData;
+                    linkHtml = `<a href="javascript:void(0)" onclick="previewFile('','${(d.fileName||'קובץ').replace(/'/g,"\\'")}',window['${fdKey}'])" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;">📄 ${d.fileName||'קובץ'}</a>`;
+                }
                 if (d.url) linkHtml += ((d.fileUrl||d.fileData) ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
                 html += `<tr>
                     <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
@@ -17661,7 +17669,7 @@ async function adminCompletionDrilldown(program, week, platoon) {
                 <td style="font-weight:600;">${lesson.title}${lesson._isEmet ? ' <span style="font-size:0.72rem;color:#B45309;">(אמת מארץ תצמח)</span>' : ''}</td>
                 <td style="text-align:center;">${status}</td>
                 <td style="font-size:0.82rem;">${rec.notes || '—'}</td>
-                <td>${rec.fileUrl ? `<a href="${rec.fileUrl}" target="_blank" style="font-size:0.8rem;">📄 ${rec.fileName || 'קובץ'}</a>` : '—'}</td>
+                <td>${rec.fileUrl ? `<a href="javascript:void(0)" onclick="previewFile('${rec.fileUrl}','${(rec.fileName||'קובץ').replace(/'/g,"\\'")}')" style="font-size:0.8rem;color:var(--primary-lighter);cursor:pointer;">📄 ${rec.fileName || 'קובץ'}</a>` : '—'}</td>
                 <td style="font-size:0.78rem;">${marker}</td>
             </tr>`;
         }).join('');
