@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ruach-v3';
+const CACHE_NAME = 'ruach-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -31,7 +31,7 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch — network first, fallback to cache
+// Fetch — network first for HTML, stale-while-revalidate for other assets
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -43,7 +43,22 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For static assets — stale-while-revalidate
+  // Network-first for HTML pages (index.html) — always get fresh content
+  if (event.request.mode === 'navigate' || event.request.destination === 'document' ||
+      url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === '') {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // For other static assets — stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetching = fetch(event.request).then(response => {
