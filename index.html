@@ -1570,6 +1570,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                         <optgroup label="גדוד יונתן">
                             <option value="magad_yonatan">מג"ד יונתן</option>
                             <option value="sgan_magad_yonatan">סגן מג"ד יונתן</option>
+                            <option value="rav_yonatan">רב הגדוד יונתן</option>
+                            <option value="mashak_chinuch_yonatan">מש"ק חינוך יונתן</option>
                             <option value="mefaked_pluga_yonatan">מ"פ יונתן</option>
                         </optgroup>
                         <optgroup label="פלוגה">
@@ -1895,6 +1897,8 @@ const ROLES = {
     // גדוד יונתן
     'magad_yonatan':    { label:'מג"ד יונתן',        level:4, canAddContent:false, canMarkCompletion:true },
     'sgan_magad_yonatan':{ label:'סגן מג"ד יונתן',   level:3, canAddContent:false, canMarkCompletion:true },
+    'rav_yonatan':      { label:'רב הגדוד יונתן',    level:4, canAddContent:false, canMarkCompletion:true },
+    'mashak_chinuch_yonatan':{ label:'מש"ק חינוך יונתן', level:3, canAddContent:true, canMarkCompletion:true },
     'mefaked_pluga_yonatan':{ label:'מ"פ יונתן',     level:3, canAddContent:false, canMarkCompletion:true },
     // פלוגה level
     'mefaked_pluga':    { label:'מ"פ',               level:3, canAddContent:false, canMarkCompletion:true },
@@ -1966,6 +1970,8 @@ const ROLE_PERMISSIONS = {
     'katzin_mediniyut': ['weekly-report-view','training-mark','training-mark-all','view-geography'],
     'magad_yonatan':    ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
     'sgan_magad_yonatan':['training-mark'],
+    'rav_yonatan':      ['weekly-report-view','training-mark','view-geography'],
+    'mashak_chinuch_yonatan':['weekly-report-fill','training-content-add','training-content-edit','training-mark','create-sakag','view-geography'],
     'mefaked_pluga_yonatan':['training-mark'],
     'mefaked_pluga':    ['weekly-report-fill','training-mark'],
     'samap':            [],
@@ -16694,9 +16700,13 @@ async function scanDuplicateUsers() {
         snap.forEach(function(doc) { users.push({ docId: doc.id, ...doc.data() }); });
 
         // Find duplicates by name or email
+        // Normalize Hebrew: collapse double spaces, strip quotes/geresh, trim
+        function normName(n) {
+            return (n || '').trim().replace(/[\u0022\u0027\u05F3\u05F4\u201C\u201D\u2018\u2019\u0060\u00AB\u00BB"'״׳]/g, '').replace(/\s+/g, ' ').toLowerCase();
+        }
         var nameGroups = {}, emailGroups = {};
         users.forEach(function(u) {
-            var name = (u.name || '').trim().toLowerCase();
+            var name = normName(u.name);
             var email = (u.email || '').trim().toLowerCase();
             if (name) { if (!nameGroups[name]) nameGroups[name] = []; nameGroups[name].push(u); }
             if (email) { if (!emailGroups[email]) emailGroups[email] = []; emailGroups[email].push(u); }
@@ -16732,12 +16742,29 @@ async function scanDuplicateUsers() {
             return;
         }
 
-        var html = '<div style="margin-bottom:10px;font-size:0.88rem;color:var(--text-secondary);">נמצאו <b style="color:#d32f2f;">' + duplicateSets.length + '</b> קבוצות כפילויות מתוך ' + users.length + ' משתמשים</div>';
+        var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">';
+        html += '<div style="font-size:0.88rem;color:var(--text-secondary);">נמצאו <b style="color:#d32f2f;">' + duplicateSets.length + '</b> קבוצות כפילויות מתוך ' + users.length + ' משתמשים</div>';
+        if (duplicateSets.length > 1) {
+            html += '<button class="btn-primary btn-sm" onclick="mergeAllDuplicates()" style="font-size:0.82rem;background:#d32f2f;">🔄 מזג את כל הכפילויות</button>';
+        }
+        html += '</div>';
 
         duplicateSets.forEach(function(group, gi) {
             html += '<div style="border:2px solid #FFC107;border-radius:12px;padding:14px;margin-bottom:12px;background:#FFFDE7;">';
             html += '<div style="font-weight:700;font-size:0.9rem;margin-bottom:10px;color:#F57F17;">⚠️ ' + group.reason + '</div>';
             html += '<table class="admin-table" style="margin-bottom:10px;"><thead><tr><th>Doc ID</th><th>שם</th><th>מייל</th><th>תפקיד</th><th>מסגרת</th><th>פלוגה</th><th>הרשאות נוספות</th><th>שמור</th></tr></thead><tbody>';
+
+            // Auto-select the user with the most data (password, role, permissions)
+            var bestIdx = 0, bestScore = -1;
+            group.users.forEach(function(u, ui) {
+                var score = 0;
+                if (u.passwordHash) score += 10;
+                if (u.role) score += 5;
+                if (u.email) score += 3;
+                if (u.framework) score += 2;
+                score += (u.permissions || []).length;
+                if (score > bestScore) { bestScore = score; bestIdx = ui; }
+            });
 
             group.users.forEach(function(u, ui) {
                 var rl = (ROLES[u.role] || {}).label || u.role || '—';
@@ -16752,7 +16779,7 @@ async function scanDuplicateUsers() {
                     '<td>' + fw + '</td>' +
                     '<td>' + (u.pluga || '—') + '</td>' +
                     '<td style="text-align:center;">' + (perms > 0 ? '+' + perms : '—') + '</td>' +
-                    '<td style="text-align:center;"><input type="radio" name="dup-keep-' + gi + '" value="' + ui + '" ' + (ui===0?'checked':'') + '></td>' +
+                    '<td style="text-align:center;"><input type="radio" name="dup-keep-' + gi + '" value="' + ui + '" ' + (ui===bestIdx?'checked':'') + '></td>' +
                 '</tr>';
             });
 
@@ -16812,6 +16839,58 @@ async function mergeDuplicateGroup(groupIndex) {
     } catch(e) {
         showToast('❌ שגיאה: ' + e.message);
     }
+}
+
+async function mergeAllDuplicates() {
+    var sets = window._duplicateSets || [];
+    if (sets.length === 0) return;
+    if (!confirm('למזג את כל ' + sets.length + ' קבוצות הכפילויות?\n\nלכל קבוצה יישמר המשתמש עם המידע המלא ביותר (סיסמה, הרשאות, תפקיד).\nכל ההרשאות ממשתמשים כפולים יתמזגו.\n\nפעולה זו לא ניתנת לביטול.')) return;
+
+    var merged = 0, errors = 0;
+    for (var gi = 0; gi < sets.length; gi++) {
+        var group = sets[gi];
+        // Find best user (most data)
+        var bestIdx = 0, bestScore = -1;
+        group.users.forEach(function(u, ui) {
+            var score = 0;
+            if (u.passwordHash) score += 10;
+            if (u.role) score += 5;
+            if (u.email) score += 3;
+            if (u.framework) score += 2;
+            score += (u.permissions || []).length;
+            if (score > bestScore) { bestScore = score; bestIdx = ui; }
+        });
+
+        // Check if user overrode the radio selection
+        var radios = document.querySelectorAll('input[name="dup-keep-' + gi + '"]');
+        radios.forEach(function(r, i) { if (r.checked) bestIdx = i; });
+
+        var keepUser = group.users[bestIdx];
+        var deleteUsers = group.users.filter(function(u, i) { return i !== bestIdx; });
+
+        try {
+            var mergedPerms = new Set(keepUser.permissions || []);
+            deleteUsers.forEach(function(u) { (u.permissions || []).forEach(function(p) { mergedPerms.add(p); }); });
+            var updateData = { permissions: Array.from(mergedPerms) };
+            deleteUsers.forEach(function(u) {
+                if (!keepUser.role && u.role) updateData.role = u.role;
+                if (!keepUser.framework && u.framework) updateData.framework = u.framework;
+                if (!keepUser.pluga && u.pluga) updateData.pluga = u.pluga;
+                if (!keepUser.passwordHash && u.passwordHash) updateData.passwordHash = u.passwordHash;
+                if (!keepUser.phone && u.phone) updateData.phone = u.phone;
+            });
+            await db.collection('users').doc(keepUser.docId).update(updateData);
+            for (var i = 0; i < deleteUsers.length; i++) {
+                await db.collection('users').doc(deleteUsers[i].docId).delete();
+            }
+            merged++;
+        } catch(e) {
+            console.error('Merge error for group', gi, e);
+            errors++;
+        }
+    }
+    showToast('✅ מוזגו ' + merged + ' קבוצות' + (errors > 0 ? ', ' + errors + ' שגיאות' : ''));
+    scanDuplicateUsers();
 }
 
 // ============================================================
