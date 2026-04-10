@@ -16805,7 +16805,6 @@ async function exportWeeklyReport() {
     var parts = weekInput.value.split('-W');
     var year = parseInt(parts[0]);
     var weekNum = parseInt(parts[1]);
-    // Calculate Monday of that week
     var jan4 = new Date(year, 0, 4);
     var dayOfWeek = jan4.getDay() || 7;
     var weekStart = new Date(jan4);
@@ -16817,28 +16816,43 @@ async function exportWeeklyReport() {
     var weStr = weekEnd.toISOString().split('T')[0];
 
     var statusEl = document.getElementById('export-reports-status');
-    statusEl.innerHTML = '<p style="color:var(--primary);font-weight:600;">⏳ טוען דיווחים...</p>';
+    statusEl.innerHTML = '<p style="color:var(--primary);font-weight:600;">⏳ טוען דיווחים ותכנים...</p>';
 
     try {
-        var snap = await db.collection('weekly-reports').where('weekStart', '>=', wsStr).where('weekStart', '<=', weStr).get();
-        var reports = [];
-        snap.forEach(function(doc) { reports.push(doc.data()); });
-
-        if (reports.length === 0) {
-            statusEl.innerHTML = '<p style="color:#d32f2f;">לא נמצאו דיווחים לשבוע הנבחר (' + wsStr + ')</p>';
-            return;
-        }
-
         // Load XLSX
         if (typeof XLSX === 'undefined') await new Promise(function(r,j) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = r; s.onerror = j; document.head.appendChild(s); });
 
-        // Build summary data
+        // Fetch weekly reports + training completion in parallel
+        var [reportsSnap, completionSnap, contentSnap] = await Promise.all([
+            db.collection('weekly-reports').where('weekStart', '>=', wsStr).where('weekStart', '<=', weStr).get(),
+            db.collection('training_completion').where('markedAt', '>=', new Date(wsStr)).where('markedAt', '<=', new Date(weStr + 'T23:59:59')).get(),
+            db.collection('training_content').get()
+        ]);
+
+        var reports = [];
+        reportsSnap.forEach(function(doc) { reports.push(doc.data()); });
+
+        var completions = [];
+        completionSnap.forEach(function(doc) { completions.push(doc.data()); });
+
+        // Build content lookup for lesson names
+        var contentMap = {};
+        contentSnap.forEach(function(doc) { var d = doc.data(); contentMap[doc.id] = d.title || d.name || doc.id; });
+
+        if (reports.length === 0 && completions.length === 0) {
+            statusEl.innerHTML = '<p style="color:#d32f2f;">לא נמצאו דיווחים או תכנים לשבוע הנבחר (' + wsStr + ')</p>';
+            return;
+        }
+
+        var wb = XLSX.utils.book_new();
+
+        // === SHEET 1: דיווחי צוות חינוכי — כמותי ===
         var rows = [];
         reports.sort(function(a, b) { return (a.category || '').localeCompare(b.category || '') || (a.person || '').localeCompare(b.person || ''); });
 
         reports.forEach(function(r) {
             var cat = CATEGORY_NAMES[r.category] || r.categoryName || r.category || '—';
-            var row = {
+            rows.push({
                 'שם': r.person || '—',
                 'קטגוריה': cat,
                 'שבוע': r.weekDisplay || r.weekStart || '—',
@@ -16848,33 +16862,97 @@ async function exportWeeklyReport() {
                 'שעות תש': r.tashHours || 0,
                 'שיחות אישיות': r.personalConversations || 0,
                 'נושאים': r.topics || '—',
-                'אתגרים': r.challenges || r.fieldChallenges || '—',
                 'הערות': r.notes || '—'
-            };
-            rows.push(row);
+            });
         });
 
-        // Summary row
-        var totalHours = rows.reduce(function(s, r) { return s + (parseFloat(r['שעות עבודה']) || 0); }, 0);
-        var totalDays = rows.reduce(function(s, r) { return s + (parseInt(r['ימי נוכחות']) || 0); }, 0);
-        rows.push({
-            'שם': 'סה"כ',
-            'קטגוריה': '',
-            'שבוע': '',
-            'שעות עבודה': totalHours,
-            'ימי נוכחות': totalDays,
-            'שעות לימוד': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות לימוד']) || 0); }, 0),
-            'שעות תש': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות תש']) || 0); }, 0),
-            'שיחות אישיות': rows.reduce(function(s, r) { return s + (parseInt(r['שיחות אישיות']) || 0); }, 0),
-            'נושאים': '', 'אתגרים': '', 'הערות': ''
+        if (rows.length > 0) {
+            var totalHours = rows.reduce(function(s, r) { return s + (parseFloat(r['שעות עבודה']) || 0); }, 0);
+            rows.push({
+                'שם': 'סה"כ', 'קטגוריה': '', 'שבוע': '',
+                'שעות עבודה': totalHours,
+                'ימי נוכחות': rows.reduce(function(s, r) { return s + (parseInt(r['ימי נוכחות']) || 0); }, 0),
+                'שעות לימוד': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות לימוד']) || 0); }, 0),
+                'שעות תש': rows.reduce(function(s, r) { return s + (parseFloat(r['שעות תש']) || 0); }, 0),
+                'שיחות אישיות': rows.reduce(function(s, r) { return s + (parseInt(r['שיחות אישיות']) || 0); }, 0),
+                'נושאים': '', 'הערות': ''
+            });
+            var ws1 = XLSX.utils.json_to_sheet(rows);
+            ws1['!cols'] = [{wch:18},{wch:14},{wch:14},{wch:10},{wch:10},{wch:10},{wch:8},{wch:10},{wch:35},{wch:35}];
+            XLSX.utils.book_append_sheet(wb, ws1, 'דיווחי צוות');
+        }
+
+        // === SHEET 2: תמונת מצב רכה — מצב רוח, אתגרים, תובנות ===
+        var softRows = [];
+        reports.forEach(function(r) {
+            var hasSoft = r.mood || r.challenges || r.fieldChallenges || r.insights || r.groomStatus || r.resilience;
+            if (!hasSoft) return;
+            softRows.push({
+                'שם': r.person || '—',
+                'קטגוריה': CATEGORY_NAMES[r.category] || r.categoryName || '—',
+                'מצב רוח / אווירה': r.mood || '—',
+                'אתגרים': r.challenges || r.fieldChallenges || '—',
+                'תובנות': r.insights || '—',
+                'מצב ליווי / גרום': r.groomStatus || '—',
+                'חוסן ואמונה': r.resilience || '—',
+                'הערות': r.notes || '—'
+            });
         });
 
-        var ws = XLSX.utils.json_to_sheet(rows);
-        var wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'דוח שבועי');
-        ws['!cols'] = [{wch:18},{wch:14},{wch:14},{wch:10},{wch:10},{wch:10},{wch:8},{wch:10},{wch:30},{wch:30},{wch:30}];
-        XLSX.writeFile(wb, 'דוח-שבועי-' + wsStr + '.xlsx');
-        statusEl.innerHTML = '<p style="color:#2E7D32;font-weight:600;">✅ דוח שבועי הורד — ' + reports.length + ' דיווחים</p>';
+        if (softRows.length > 0) {
+            var ws2 = XLSX.utils.json_to_sheet(softRows);
+            ws2['!cols'] = [{wch:18},{wch:14},{wch:30},{wch:35},{wch:35},{wch:25},{wch:25},{wch:35}];
+            XLSX.utils.book_append_sheet(wb, ws2, 'תמונת מצב רכה');
+        }
+
+        // === SHEET 3: רוח מכבי — תכנים שהועברו ===
+        var trainingRows = [];
+        var programLabels = { 'basic': 'הכשרת יסוד', 'nco': 'קורס מ״כים', 'officer': 'קורס קצינים' };
+        var plugaLabels = { 'pluga_a':'א׳','pluga_b':'ב׳','pluga_c':'ג׳','pluga_d':'ד׳','pluga_e':'ה׳','pluga_f':'ו׳','pluga_g':'ז׳','pluga_h':'ח׳' };
+
+        completions.forEach(function(c) {
+            var lessonName = contentMap[c.lessonId] || c.lessonId || '—';
+            // Handle EMET items (emet_ prefix)
+            if (c.lessonId && c.lessonId.startsWith('emet_')) {
+                lessonName = 'אמת מארץ תצמח — ' + c.lessonId.replace('emet_', '');
+            }
+            trainingRows.push({
+                'הכשרה': programLabels[c.program] || c.program || '—',
+                'שבוע': c.week || '—',
+                'מסגרת': plugaLabels[c.track] || c.track || '—',
+                'פלוגה': c.platoon ? 'פלוגה ' + c.platoon + '׳' : '—',
+                'תוכן': lessonName,
+                'בוצע': c.completed ? '✓' : '✗',
+                'הערות': c.notes || '—',
+                'קובץ': c.fileName || '—',
+                'סומן ע"י': c.markedBy || '—',
+                'תאריך סימון': c.markedAt ? (c.markedAt.toDate ? c.markedAt.toDate().toLocaleDateString('he-IL') : new Date(c.markedAt).toLocaleDateString('he-IL')) : '—'
+            });
+        });
+
+        if (trainingRows.length > 0) {
+            trainingRows.sort(function(a, b) { return (a['הכשרה'] + a['מסגרת']).localeCompare(b['הכשרה'] + b['מסגרת']); });
+            // Summary counts
+            var doneCount = trainingRows.filter(function(r) { return r['בוצע'] === '✓'; }).length;
+            var notDoneCount = trainingRows.filter(function(r) { return r['בוצע'] === '✗'; }).length;
+            trainingRows.push({
+                'הכשרה': 'סה"כ', 'שבוע': '', 'מסגרת': '',
+                'פלוגה': '', 'תוכן': doneCount + ' בוצעו, ' + notDoneCount + ' לא בוצעו',
+                'בוצע': '', 'הערות': '', 'קובץ': '', 'סומן ע"י': '', 'תאריך סימון': ''
+            });
+            var ws3 = XLSX.utils.json_to_sheet(trainingRows);
+            ws3['!cols'] = [{wch:14},{wch:6},{wch:10},{wch:10},{wch:30},{wch:6},{wch:30},{wch:14},{wch:14},{wch:12}];
+            XLSX.utils.book_append_sheet(wb, ws3, 'רוח מכבי - ביצוע');
+        }
+
+        // If no sheets at all
+        if (wb.SheetNames.length === 0) {
+            statusEl.innerHTML = '<p style="color:#d32f2f;">לא נמצא מידע לשבוע הנבחר</p>';
+            return;
+        }
+
+        XLSX.writeFile(wb, 'דוח-שבועי-מרוכז-' + wsStr + '.xlsx');
+        statusEl.innerHTML = '<p style="color:#2E7D32;font-weight:600;">✅ דוח שבועי מרוכז הורד — ' + reports.length + ' דיווחי צוות, ' + completions.length + ' סימוני ביצוע רוח מכבי</p>';
     } catch(e) {
         statusEl.innerHTML = '<p style="color:#d32f2f;">שגיאה: ' + e.message + '</p>';
     }
