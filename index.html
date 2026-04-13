@@ -1495,6 +1495,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                     <option value="chinuch">חינוך</option>
                     <option value="rabanut">רבנות</option>
                     <option value="mediniyut">מדיניות</option>
+                    <option value="betichut">בטיחות</option>
                     <option value="other">אחר</option>
                 </select>
                 <input type="text" id="cmgmt-title" placeholder="שם יחידת הלימוד" style="flex:1;min-width:150px;">
@@ -1570,6 +1571,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                             <option value="rav">רב הבה"ד</option>
                             <option value="sgan_rav">סגן רב הבה"ד</option>
                             <option value="katzin_mediniyut">קצין מדיניות</option>
+                            <option value="kabtach">קבט"ח</option>
                         </optgroup>
                         <optgroup label="גדוד יונתן">
                             <option value="magad_yonatan">מג"ד יונתן</option>
@@ -1596,16 +1598,25 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                         <option value="mifhat">מפח"ט</option>
                         <option value="ruach">רוח חשמונאית</option>
                     </select>
-                    <select id="new-user-pluga" style="width:100px;">
+                    <select id="new-user-pluga" style="width:140px;">
                         <option value="">ללא פלוגה</option>
-                        <option value="א">פלוגה א׳</option>
-                        <option value="ב">פלוגה ב׳</option>
-                        <option value="ג">פלוגה ג׳</option>
-                        <option value="ד">פלוגה ד׳</option>
-                        <option value="ה">פלוגה ה׳</option>
-                        <option value="ו">פלוגה ו׳</option>
-                        <option value="ז">פלוגה ז׳</option>
-                        <option value="ח">פלוגה ח׳</option>
+                        <optgroup label="הכשרת יסוד">
+                            <option value="א">פלוגה א׳</option>
+                            <option value="ב">פלוגה ב׳</option>
+                            <option value="ג">פלוגה ג׳</option>
+                            <option value="ד">פלוגה ד׳</option>
+                            <option value="ה">פלוגה ה׳</option>
+                            <option value="ו">פלוגה ו׳</option>
+                            <option value="ז">פלוגה ז׳</option>
+                            <option value="ח">פלוגה ח׳</option>
+                        </optgroup>
+                        <optgroup label="קורס מ״כים">
+                            <option value="קמ&quot;כ">פלוגת קמ"כ</option>
+                        </optgroup>
+                        <optgroup label="קורס קצינים">
+                            <option value="שדה">פלוגת שדה</option>
+                            <option value="גפן">פלוגת גפן</option>
+                        </optgroup>
                     </select>
                     <button class="btn-primary btn-sm" onclick="addUser()">הוסף</button>
                 </div>
@@ -1688,6 +1699,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                         <option value="chinuch">חינוך</option>
                         <option value="rabanut">רבנות</option>
                         <option value="mediniyut">מדיניות</option>
+                        <option value="betichut">בטיחות</option>
                         <option value="other">אחר</option>
                     </select>
                     <input type="text" id="admin-lesson-title" placeholder="שם יחידת הלימוד" style="flex:1;min-width:150px;">
@@ -1894,6 +1906,7 @@ const ROLES = {
     'rav':              { label:'רב הבה"ד',          level:4, canAddContent:false, canMarkCompletion:true },
     'sgan_rav':         { label:'סגן רב הבה"ד',     level:3, canAddContent:false, canMarkCompletion:true },
     'katzin_mediniyut': { label:'קצין מדיניות',      level:4, canAddContent:false, canMarkCompletion:true },
+    'kabtach':          { label:'קבט"ח',             level:3, canAddContent:true, canMarkCompletion:true },
     // רוח חשמונאית
     'ruach_menahel':    { label:'מנהל רוח חשמונאית', level:5, canAddContent:true, canMarkCompletion:true },
     'ruach_manheh':     { label:'מנחה רוח חשמונאית', level:4, canAddContent:true, canMarkCompletion:true },
@@ -1918,7 +1931,7 @@ const ROLES = {
     'segel':            { label:'סגל המצפן',  level:4, canAddContent:true, canMarkCompletion:true }
 };
 
-const PLUGA_LIST = ['א','ב','ג','ד','ה','ו','ז','ח'];
+const PLUGA_LIST = ['א','ב','ג','ד','ה','ו','ז','ח','קמ"כ','שדה','גפן'];
 
 const FRAMEWORKS = {
     'yonatan':  'גדוד יונתן',
@@ -1972,6 +1985,7 @@ const ROLE_PERMISSIONS = {
     'rav':              ['weekly-report-view','training-mark','view-geography'],
     'sgan_rav':         ['training-mark'],
     'katzin_mediniyut': ['weekly-report-view','training-mark','training-mark-all','view-geography'],
+    'kabtach':          ['training-content-add','training-content-edit','training-mark','training-mark-all','view-geography'],
     'magad_yonatan':    ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
     'sgan_magad_yonatan':['training-mark'],
     'rav_yonatan':      ['weekly-report-view','training-mark','view-geography'],
@@ -2582,7 +2596,7 @@ function onLoginSuccess() {
         roleText = 'מנהל מערכת';
     } else if (currentUser.pluga) {
         // Show: בה"ד מכבים / פלוגה א׳ / מ"פ
-        roleText = (fwLabel ? fwLabel + ' / ' : '') + 'פלוגה ' + currentUser.pluga + '׳ / ' + roleLabel;
+        roleText = (fwLabel ? fwLabel + ' / ' : '') + (currentUser.pluga.length === 1 ? 'פלוגה ' + currentUser.pluga + '׳' : 'פלוגת ' + currentUser.pluga) + ' / ' + roleLabel;
     } else if (fwLabel) {
         roleText = fwLabel + ' / ' + roleLabel;
     } else {
@@ -2978,23 +2992,41 @@ const TRAINING_PROGRAMS_MAP = { 'basic':'הכשרת יסוד', 'nco':'קורס �
 // TRAINING SYSTEM — weeks, categories, platoons
 // ============================================================
 const TRAINING_CONFIG = {
-    'basic':   { label: 'הכשרת יסוד', weeks: 30, tracks: null, hasPlugas: true },
-    'nco':     { label: 'קורס מ״כים', weeks: 13, tracks: null, hasPlugas: true },
-    'officer': { label: 'קורס קצינים', weeks: 16, tracks: ['sade','gefen'], hasPlugas: true }
+    'basic':   { label: 'הכשרת יסוד', weeks: 30, tracks: null, hasPlugas: true, plugas: ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'] },
+    'nco':     { label: 'קורס מ״כים', weeks: 13, tracks: null, hasPlugas: true, plugas: ['pluga_kamak'] },
+    'officer': { label: 'קורס קצינים', weeks: 16, tracks: ['sade','gefen'], hasPlugas: true, plugas: ['pluga_sade','pluga_gefen'] }
 };
 const TRAINING_TRACKS = {
     'sade': 'מסלול שדה', 'gefen': 'מסלול גפן',
     'pluga_a': 'פלוגה א׳', 'pluga_b': 'פלוגה ב׳', 'pluga_c': 'פלוגה ג׳', 'pluga_d': 'פלוגה ד׳',
-    'pluga_e': 'פלוגה ה׳', 'pluga_f': 'פלוגה ו׳', 'pluga_g': 'פלוגה ז׳', 'pluga_h': 'פלוגה ח׳'
+    'pluga_e': 'פלוגה ה׳', 'pluga_f': 'פלוגה ו׳', 'pluga_g': 'פלוגה ז׳', 'pluga_h': 'פלוגה ח׳',
+    'pluga_kamak': 'פלוגת קמ"כ', 'pluga_sade': 'פלוגת שדה', 'pluga_gefen': 'פלוגת גפן'
 };
 const CONTENT_RESPONSIBILITY = {
     'ruach':    'רוח חשמונאית',
     'chinuch':  'חינוך',
     'rabanut':  'רבנות',
     'mediniyut':'מדיניות',
+    'betichut': 'בטיחות',
     'other':    'אחר'
 };
 const PLATOONS = ['א','ב','ג','ד','ה','ו','ז','ח'];
+
+// Get platoon letters/labels for a specific program (for completion chips)
+function getProgramPlatoons(program) {
+    const config = TRAINING_CONFIG[program];
+    if (!config || !config.plugas) return PLATOONS;
+    return config.plugas.map(p => {
+        // Extract short label for chip display
+        if (p === 'pluga_kamak') return 'קמ"כ';
+        if (p === 'pluga_sade') return 'שדה';
+        if (p === 'pluga_gefen') return 'גפן';
+        // Standard pluga_a → א, etc.
+        var letter = p.replace('pluga_','');
+        var map = {a:'א',b:'ב',c:'ג',d:'ד',e:'ה',f:'ו',g:'ז',h:'ח'};
+        return map[letter] || letter;
+    });
+}
 
 const TRAINING_WEEK_NAMES = {
     'basic': {
@@ -3129,7 +3161,7 @@ function switchOfficerTrackTab(track) {
     loadTrainingPage('officer');
 }
 
-const PLUGA_TRACK_MAP = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h'};
+const PLUGA_TRACK_MAP = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h','קמ"כ':'pluga_kamak','שדה':'pluga_sade','גפן':'pluga_gefen'};
 
 function buildPlugaTabs(prog) {
     const container = document.getElementById('training-tracks');
@@ -3142,10 +3174,12 @@ function buildPlugaTabs(prog) {
     const setCurrentPluga = (t) => { if (prog === 'officer') { currentOfficerPluga = t; } else { currentTrainingTrack[prog] = t; } };
 
     if (lvl >= 3) {
-        // מ"פ/קמב"ץ/מש"ק חינוך/בה"ד/מפח"ט level: show all 8 platoon tabs
+        // מ"פ/קמב"ץ/מש"ק חינוך/בה"ד/מפח"ט level: show platoon tabs per program
         let html = '';
-        const allTracks = ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'];
-        const current = getCurrentPluga() || 'pluga_a';
+        const config = TRAINING_CONFIG[prog];
+        const allTracks = (config && config.plugas) || ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'];
+        const current = getCurrentPluga() || allTracks[0];
+        if (!getCurrentPluga()) setCurrentPluga(allTracks[0]);
         allTracks.forEach(t => {
             const onclick = prog === 'officer'
                 ? `switchOfficerPluga('${t}')`
@@ -3237,7 +3271,7 @@ async function loadTrainingPage(program) {
     // Permission: can this user mark pass/fail for the currently viewed platoon?
     // Only platoon managers (מ"פ/קמב"ץ) of THIS platoon + בה"ד/מפח"ט level
     const hasPluga = plugaTrack && plugaTrack.startsWith('pluga_');
-    const plugaLetter = hasPluga ? TRAINING_TRACKS[plugaTrack]?.replace('פלוגה ','').replace('׳','') : null;
+    const plugaLetter = hasPluga ? TRAINING_TRACKS[plugaTrack]?.replace('פלוגה ','').replace('פלוגת ','').replace('׳','') : null;
     const userPluga = currentUser?.pluga || '';
     const lvl = userLevel();
     const canMark = canGiveFeedback(plugaLetter);
@@ -3261,7 +3295,7 @@ async function loadTrainingPage(program) {
         });
 
         // Category colors for responsibility badges
-        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', betichut:'#DC2626', other:'#6B7280' };
 
         const trackLabel = track ? (TRAINING_TRACKS[track] || track) : '';
         const plugaLabel = hasPluga ? (TRAINING_TRACKS[plugaTrack] || '') : '';
@@ -3311,14 +3345,14 @@ async function loadTrainingPage(program) {
                     </div>`;
                 } else {
                     completionHtml = `<div class="training-col-platoons" style="margin-top:8px;">
-                        ${PLATOONS.map(p => {
+                        ${getProgramPlatoons(program).map(p => {
                             const key = `${lesson.id}_${p}`;
                             const rec = statusMap[key] || {};
                             const done = rec.completed;
                             const doneClass = done ? 'done' : '';
                             const clickHandler = canMark ? `onclick="togglePlatoonStatus('${lesson.id}','${program}',${week},'${plugaTrack||''}','${p}',${!done})"` : '';
                             const tooltip = done ? `title="${rec.markedBy||'—'}${rec.notes ? ' | ' + rec.notes : ''}"` : '';
-                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳${rec.fileUrl ? '📎' : ''}</span>`;
+                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}${p.length===1?'׳':''}${rec.fileUrl ? '📎' : ''}</span>`;
                         }).join('')}
                     </div>
                     ${canMark ? `<div style="margin-top:4px;text-align:left;"><button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionOverview('${lesson.id}','${program}',${week},'${plugaTrack||''}')">📋 סקירת ביצוע</button></div>` : ''}`;
@@ -3376,14 +3410,14 @@ async function loadTrainingPage(program) {
                 } else {
                     // No specific platoon selected — show all platoons overview
                     emetCompletionHtml = `<div class="training-col-platoons" style="margin-top:8px;">
-                        ${PLATOONS.map(p => {
+                        ${getProgramPlatoons(program).map(p => {
                             const key = `emet_${item.id}_${p}`;
                             const rec = statusMap[key] || {};
                             const done = rec.completed;
                             const doneClass = done ? 'done' : '';
                             const clickHandler = canMark ? `onclick="togglePlatoonStatus('emet_${item.id}','${program}',${week},'${plugaTrack||''}','${p}',${!done})"` : '';
                             const tooltip = done ? `title="${rec.markedBy||'—'}${rec.notes ? ' | ' + rec.notes : ''}"` : '';
-                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}׳${rec.fileUrl ? '📎' : ''}</span>`;
+                            return `<span class="platoon-chip ${doneClass}" ${clickHandler} ${tooltip}>${p}${p.length===1?'׳':''}${rec.fileUrl ? '📎' : ''}</span>`;
                         }).join('')}
                     </div>
                     ${canMark ? `<div style="margin-top:4px;text-align:left;"><button class="btn-sm btn-secondary" style="font-size:0.72rem;padding:2px 8px;" onclick="openExecutionOverview('emet_${item.id}','${program}',${week},'${plugaTrack||''}')">📋 סקירת ביצוע</button></div>` : ''}`;
@@ -11359,12 +11393,12 @@ function openExecutionOverview(lessonId, program, week, track) {
         const modal = document.createElement('div');
         modal.id = 'exec-modal';
         modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
-        let rows = PLATOONS.map(p => {
+        let rows = getProgramPlatoons(program).map(p => {
             const d = data[p] || {};
             const statusIcon = d.completed ? '✓' : '✗';
             const statusColor = d.completed ? '#059669' : '#DC2626';
             return `<tr>
-                <td style="font-weight:600;">פלוגה ${p}׳</td>
+                <td style="font-weight:600;">${p.length===1 ? 'פלוגה '+p+'׳' : 'פלוגת '+p}</td>
                 <td style="color:${statusColor};font-weight:700;">${statusIcon} ${d.completed ? 'בוצע' : 'לא בוצע'}</td>
                 <td style="font-size:0.82rem;">${d.notes || '—'}</td>
                 <td>${d.fileUrl ? `<a href="javascript:void(0)" onclick="previewFile('${d.fileUrl}','${(d.fileName||'קובץ').replace(/'/g,"\\'")}')" style="font-size:0.8rem;color:var(--primary-lighter);cursor:pointer;">📄 ${d.fileName || 'קובץ'}</a>` : '—'}</td>
@@ -11438,7 +11472,7 @@ async function loadCmgmtContent() {
             container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
             return;
         }
-        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', betichut:'#DC2626', other:'#6B7280' };
         let html = '';
         if (!snap.empty) {
             html += '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור / קובץ</th><th>פעולות</th></tr></thead><tbody>';
@@ -11804,7 +11838,7 @@ async function loadAdminTrainingContent() {
             container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
             return;
         }
-        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', other:'#6B7280' };
+        const catColors = { ruach:'#0E7490', rabanut:'#7C3AED', mediniyut:'#059669', chinuch:'#D97706', betichut:'#DC2626', other:'#6B7280' };
         let html = '<table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור / קובץ</th><th>פעולות</th></tr></thead><tbody>';
 
         // EMET items first (hardcoded curriculum)
@@ -16415,7 +16449,7 @@ async function sakalSaveGenerated() {
         var program = currentTrainingProgram || 'basic';
         var week = currentTrainingWeek[program] || 1;
         var plugaTrack = currentTrainingTrack[program] || '';
-        var plugaLetter = TRAINING_TRACKS[plugaTrack]?.replace('פלוגה ','').replace('׳','') || '';
+        var plugaLetter = TRAINING_TRACKS[plugaTrack]?.replace('פלוגה ','').replace('פלוגת ','').replace('׳','') || '';
 
         if (plugaLetter) {
             var completionId = program + '_' + week + '_' + (plugaTrack||'none') + '_emet_user_sakag_' + plugaLetter;
@@ -17520,7 +17554,7 @@ async function loadAdminCompletion(program) {
         }
 
         const weekNames = TRAINING_WEEK_NAMES[program] || {};
-        const platoons = PLATOONS; // ['א','ב',...]
+        const platoons = getProgramPlatoons(program);
 
         // Build summary stats
         let totalItems = 0, totalDone = 0;
@@ -17558,7 +17592,7 @@ async function loadAdminCompletion(program) {
         <table class="admin-table" style="font-size:0.82rem;min-width:600px;">
             <thead><tr>
                 <th style="position:sticky;right:0;background:#ffffff;z-index:1;">שבוע</th>
-                ${platoons.map(p => `<th style="text-align:center;">פלוגה ${p}׳</th>`).join('')}
+                ${platoons.map(p => `<th style="text-align:center;">${p.length===1 ? 'פלוגה '+p+'׳' : p}</th>`).join('')}
                 <th style="text-align:center;">סה"כ</th>
             </tr></thead><tbody>`;
 
@@ -17822,7 +17856,7 @@ async function loadAdminUsers() {
             const fw = getFrameworkLabel(d.framework);
             let hierarchy = '';
             if (d.pluga) {
-                hierarchy = (fw ? fw + ' / ' : '') + 'פלוגה ' + d.pluga + '׳ / ' + rl;
+                hierarchy = (fw ? fw + ' / ' : '') + (d.pluga.length === 1 ? 'פלוגה ' + d.pluga + '׳' : 'פלוגת ' + d.pluga) + ' / ' + rl;
             } else if (fw) {
                 hierarchy = fw + ' / ' + rl;
             } else {
@@ -17864,7 +17898,7 @@ async function exportUsersToExcel() {
                 d.phone || '',
                 ROLES[d.role]?.label || d.role || '',
                 getFrameworkLabel(d.framework) || '',
-                d.pluga ? 'פלוגה ' + d.pluga + '׳' : ''
+                d.pluga ? (d.pluga.length === 1 ? 'פלוגה ' + d.pluga + '׳' : 'פלוגת ' + d.pluga) : ''
             ]);
         });
         rows.sort((a, b) => a[0].localeCompare(b[0], 'he'));
@@ -17988,7 +18022,7 @@ async function openPermissionsModal(docId) {
     const roleName = ROLES[permEditData.role]?.label || permEditData.role || '—';
     document.getElementById('perm-modal-user').innerHTML =
         '<b>' + (permEditData.name || docId) + '</b> — ' + roleName +
-        (permEditData.pluga ? ' / פלוגה ' + permEditData.pluga + '׳' : '');
+        (permEditData.pluga ? ' / ' + (permEditData.pluga.length === 1 ? 'פלוגה ' + permEditData.pluga + '׳' : 'פלוגת ' + permEditData.pluga) : '');
 
     const roleDefaults = ROLE_PERMISSIONS[permEditData.role] || [];
     const userExtras = permEditData.permissions || [];
