@@ -917,6 +917,31 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 </div>
 
+<!-- ========== CHANGE PASSWORD MODAL ========== -->
+<div class="modal-overlay" id="change-password-modal" style="display:none;">
+    <div class="login-card" style="max-width:380px;">
+        <h2 style="text-align:center;color:var(--primary);margin-bottom:6px;">🔑 שינוי סיסמה</h2>
+        <p style="text-align:center;font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;">מומלץ לבחור סיסמה ייחודית ולא להישאר עם סיסמאות גנריות</p>
+        <div class="form-group">
+            <label>סיסמה נוכחית</label>
+            <input type="password" id="chpass-current" placeholder="••••••" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('chpass-new').focus()">
+        </div>
+        <div class="form-group">
+            <label>סיסמה חדשה</label>
+            <input type="password" id="chpass-new" placeholder="לפחות 4 תווים" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')document.getElementById('chpass-confirm').focus()">
+        </div>
+        <div class="form-group">
+            <label>אימות סיסמה חדשה</label>
+            <input type="password" id="chpass-confirm" placeholder="הזן שוב" style="direction:ltr;text-align:left;" onkeydown="if(event.key==='Enter')submitChangePassword()">
+        </div>
+        <div id="chpass-status" style="text-align:center;font-size:0.85rem;margin-bottom:10px;min-height:1.2em;"></div>
+        <div style="display:flex;gap:8px;">
+            <button class="btn-primary" style="flex:1;" onclick="submitChangePassword()">שנה סיסמה</button>
+            <button class="btn-secondary" style="flex:1;" onclick="closeChangePassword()">ביטול</button>
+        </div>
+    </div>
+</div>
+
 <!-- ========== APP LAYOUT ========== -->
 <div id="app-layout" class="app-layout" style="display:none;">
 
@@ -958,7 +983,10 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <div class="user-name" id="sidebar-participant-name">—</div>
                 <div class="user-role" id="sidebar-participant-role">משתתף</div>
             </div>
-            <button class="btn-logout" onclick="logoutParticipant()">יציאה</button>
+            <div style="display:flex;gap:4px;flex-direction:column;">
+                <button class="btn-logout" onclick="openChangePassword('participant')" style="color:#fff;border-color:rgba(255,255,255,0.3);">🔑 שנה סיסמה</button>
+                <button class="btn-logout" onclick="logoutParticipant()">יציאה</button>
+            </div>
         </div>
         <!-- Staff logged in -->
         <div id="sidebar-user-info" class="sidebar-user" style="display:none;">
@@ -967,7 +995,10 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <div class="user-name" id="sidebar-username">—</div>
                 <div class="user-role" id="sidebar-role">—</div>
             </div>
-            <button class="btn-logout" onclick="logout()">יציאה</button>
+            <div style="display:flex;gap:4px;flex-direction:column;">
+                <button class="btn-logout" onclick="openChangePassword('staff')" style="color:#fff;border-color:rgba(255,255,255,0.3);">🔑 שנה סיסמה</button>
+                <button class="btn-logout" onclick="logout()">יציאה</button>
+            </div>
         </div>
         <div class="credit-line">פותח ע״י IAB-Smart AI Solutions</div>
     </div>
@@ -2769,6 +2800,64 @@ function updateUIForRole() {
     document.querySelectorAll('.nav-geography, .tile-geography').forEach(el => {
         el.style.display = canGeo ? '' : 'none';
     });
+}
+
+// --- Change Password ---
+var _chpassType = ''; // 'staff' or 'participant'
+
+function openChangePassword(type) {
+    _chpassType = type;
+    document.getElementById('chpass-current').value = '';
+    document.getElementById('chpass-new').value = '';
+    document.getElementById('chpass-confirm').value = '';
+    document.getElementById('chpass-status').innerHTML = '';
+    document.getElementById('change-password-modal').style.display = 'flex';
+}
+
+function closeChangePassword() {
+    document.getElementById('change-password-modal').style.display = 'none';
+}
+
+async function submitChangePassword() {
+    var currentPass = document.getElementById('chpass-current').value;
+    var newPass = document.getElementById('chpass-new').value;
+    var confirmPass = document.getElementById('chpass-confirm').value;
+    var statusEl = document.getElementById('chpass-status');
+
+    if (!currentPass) { statusEl.innerHTML = '<span style="color:#d32f2f;">יש להזין סיסמה נוכחית</span>'; return; }
+    if (!newPass || newPass.length < 4) { statusEl.innerHTML = '<span style="color:#d32f2f;">סיסמה חדשה חייבת להכיל לפחות 4 תווים</span>'; return; }
+    if (newPass === currentPass) { statusEl.innerHTML = '<span style="color:#d32f2f;">הסיסמה החדשה חייבת להיות שונה מהנוכחית</span>'; return; }
+    if (newPass !== confirmPass) { statusEl.innerHTML = '<span style="color:#d32f2f;">הסיסמאות אינן תואמות</span>'; return; }
+
+    statusEl.innerHTML = '<span style="color:var(--primary);">מעדכן...</span>';
+
+    try {
+        var collection = _chpassType === 'participant' ? 'participants' : 'users';
+        var userId = _chpassType === 'participant' ? currentParticipant?.id : currentUser?.id;
+        if (!userId) { statusEl.innerHTML = '<span style="color:#d32f2f;">משתמש לא מזוהה — יש להתחבר מחדש</span>'; return; }
+
+        var userDoc = await db.collection(collection).doc(userId).get();
+        if (!userDoc.exists) { statusEl.innerHTML = '<span style="color:#d32f2f;">משתמש לא נמצא במערכת</span>'; return; }
+
+        var userData = userDoc.data();
+        var currentHashed = await hashPassword(currentPass);
+
+        // Verify current password
+        if (userData.passwordHash && userData.passwordHash !== currentHashed) {
+            statusEl.innerHTML = '<span style="color:#d32f2f;">סיסמה נוכחית שגויה</span>';
+            return;
+        }
+
+        // If no password hash exists yet (first login set), still verify against what they used to login
+        var newHashed = await hashPassword(newPass);
+        await db.collection(collection).doc(userId).update({ passwordHash: newHashed });
+
+        statusEl.innerHTML = '<span style="color:#2E7D32;">✅ הסיסמה שונתה בהצלחה!</span>';
+        setTimeout(function() { closeChangePassword(); showToast('✅ הסיסמה שונתה בהצלחה'); }, 1200);
+    } catch(e) {
+        console.error('Change password error:', e);
+        statusEl.innerHTML = '<span style="color:#d32f2f;">שגיאה בעדכון — ' + (e.message || 'נסה שוב') + '</span>';
+    }
 }
 
 function logout() {
