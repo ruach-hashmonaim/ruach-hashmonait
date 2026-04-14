@@ -1263,7 +1263,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <button class="geo-tab" id="geo-tab-dilemma" onclick="setGeoMode('dilemma')">⚖️ דילמות</button>
             <button class="geo-tab" id="geo-tab-library" onclick="setGeoMode('library')">📚 ספרייה</button>
             <button class="geo-tab" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מפה אילמת</button>
-            <button class="geo-tab" id="geo-tab-gedolim" onclick="setGeoMode('gedolim')">🌟 גדולי האומה</button>
         </div>
         <!-- Map Quiz Mode -->
         <div id="geo-mode-mapquiz" style="display:none;">
@@ -1670,14 +1669,21 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <!-- ====== טריוויות העשרה ====== -->
         <div id="geo-mode-trivia" style="display:none;">
-            <div style="text-align:center;padding:30px;">
-                <div style="font-size:3rem;margin-bottom:12px;">🧠</div>
-                <h3 style="color:var(--primary);margin-bottom:8px;">טריוויות העשרה</h3>
-                <p style="font-size:0.9rem;color:var(--text-secondary);max-width:400px;margin:0 auto;">טריוויות במגוון נושאים — היסטוריה, תורה, גיאוגרפיה, מורשת קרב ועוד.<br>בקרוב!</p>
-                <div style="margin-top:20px;padding:14px;background:rgba(14,116,144,0.04);border:1.5px solid rgba(14,116,144,0.15);border-radius:12px;max-width:350px;margin-left:auto;margin-right:auto;">
-                    <p style="font-size:0.82rem;color:var(--text-secondary);">📌 בינתיים ניתן להשתמש ב<b>מפה אילמת</b> לחידוני גיאוגרפיה</p>
-                    <button class="btn-primary btn-sm" onclick="setGeoMode('mapquiz')" style="margin-top:8px;">🗺️ למפה אילמת</button>
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">טריוויות העשרה במגוון נושאים — גדולי האומה, גיאוגרפיה, היסטוריה ועוד. בחר קטגוריה והתחל!</p>
+            <!-- Trivia category selection -->
+            <div id="trivia-categories" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;"></div>
+            <!-- Active trivia quiz -->
+            <div id="trivia-active" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <button class="btn-primary btn-sm" onclick="triviaBackToCategories()" style="font-size:0.8rem;">← חזרה לקטגוריות</button>
+                    <div id="trivia-score" style="font-size:0.85rem;font-weight:600;color:var(--primary);"></div>
                 </div>
+                <div id="trivia-quiz-title" style="text-align:center;font-size:1.05rem;font-weight:700;color:var(--primary);margin-bottom:8px;padding:8px 12px;background:var(--bg-secondary);border-radius:8px;"></div>
+                <div id="trivia-progress" style="height:6px;background:var(--bg-secondary);border-radius:3px;margin-bottom:14px;overflow:hidden;">
+                    <div id="trivia-progress-bar" style="height:100%;background:var(--primary);border-radius:3px;transition:width 0.4s;width:0%;"></div>
+                </div>
+                <div id="trivia-question-area"></div>
+                <div id="trivia-result" style="display:none;text-align:center;padding:20px;"></div>
             </div>
         </div>
 
@@ -12473,6 +12479,8 @@ function setGeoMode(mode) {
         morakLoadList();
     } else if (mode === 'lesson') {
         lessonLoadList();
+    } else if (mode === 'trivia') {
+        triviaRenderCategories();
     } else if (mode === 'library') {
         loadLibrary('all');
     }
@@ -17617,7 +17625,260 @@ async function viewGeneratedContent(docId, collection) {
 }
 
 // ============================================================
-// תחנות בחייהם של גדולי האומה
+// טריוויות העשרה — Trivia Engine
+// ============================================================
+
+var triviaCurrentQuiz = null;
+var triviaCurrentQ = 0;
+var triviaScore = 0;
+var triviaAnswered = false;
+
+// Build trivia categories from Gedolim periods + map quizzes
+function getTriviaCategories() {
+    var cats = [];
+    // Gedolim period quizzes
+    var periodGroups = {};
+    GEDOLIM_FIGURES.forEach(function(f) {
+        if (!periodGroups[f.category]) periodGroups[f.category] = [];
+        periodGroups[f.category].push(f);
+    });
+    GEDOLIM_CATEGORIES.forEach(function(c) {
+        var figures = periodGroups[c.id] || [];
+        if (figures.length < 2) return;
+        cats.push({
+            id: 'gedolim_' + c.id,
+            name: c.name,
+            icon: c.icon,
+            desc: figures.length + ' דמויות',
+            type: 'gedolim',
+            categoryId: c.id,
+            color: '#7C3AED'
+        });
+    });
+    // Map quizzes
+    if (typeof MAP_QUIZZES !== 'undefined') {
+        MAP_QUIZZES.forEach(function(q) {
+            cats.push({
+                id: 'mapquiz_' + q.id,
+                name: q.title,
+                icon: '🗺️',
+                desc: q.questions.length + ' שאלות',
+                type: 'mapquiz',
+                quizData: q,
+                color: '#0E7490'
+            });
+        });
+    }
+    // All gedolim combined
+    cats.unshift({
+        id: 'gedolim_all',
+        name: 'כל גדולי האומה',
+        icon: '🌟',
+        desc: GEDOLIM_FIGURES.length + ' דמויות',
+        type: 'gedolim',
+        categoryId: null,
+        color: '#D97706'
+    });
+    return cats;
+}
+
+function triviaRenderCategories() {
+    var container = document.getElementById('trivia-categories');
+    if (!container) return;
+    var cats = getTriviaCategories();
+    container.innerHTML = cats.map(function(c) {
+        return '<div onclick="triviaStartQuiz(\''+c.id+'\')" style="cursor:pointer;background:#fff;border:2px solid ' + c.color + '33;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\''+c.color+'\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\''+c.color+'33\';this.style.transform=\'\'">' +
+            '<div style="font-size:2rem;margin-bottom:6px;">' + c.icon + '</div>' +
+            '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + c.name + '</div>' +
+            '<div style="font-size:0.75rem;color:' + c.color + ';margin-top:4px;font-weight:600;">' + c.desc + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function triviaStartQuiz(catId) {
+    var cats = getTriviaCategories();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+
+    var questions = [];
+    if (cat.type === 'gedolim') {
+        questions = triviaGenerateGedolimQuestions(cat.categoryId);
+    } else if (cat.type === 'mapquiz') {
+        questions = triviaConvertMapQuiz(cat.quizData);
+    }
+
+    if (questions.length === 0) { showToast('אין מספיק שאלות בקטגוריה זו'); return; }
+
+    // Shuffle
+    for (var i = questions.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = questions[i]; questions[i] = questions[j]; questions[j] = t;
+    }
+
+    triviaCurrentQuiz = { title: cat.icon + ' ' + cat.name, questions: questions.slice(0, 15), _catId: catId };
+    triviaCurrentQ = 0;
+    triviaScore = 0;
+    triviaAnswered = false;
+
+    document.getElementById('trivia-categories').style.display = 'none';
+    document.getElementById('trivia-active').style.display = '';
+    document.getElementById('trivia-result').style.display = 'none';
+    document.getElementById('trivia-quiz-title').textContent = triviaCurrentQuiz.title;
+    triviaShowQuestion();
+}
+
+function triviaGenerateGedolimQuestions(categoryId) {
+    var figures = categoryId ? GEDOLIM_FIGURES.filter(function(f) { return f.category === categoryId; }) : GEDOLIM_FIGURES.slice();
+    var questions = [];
+
+    figures.forEach(function(f) {
+        if (!f.stations || f.stations.length < 1) return;
+
+        // Q1: Where did X do Y? (station-based)
+        f.stations.forEach(function(st) {
+            if (st.desc && st.desc.length > 20) {
+                var wrongStations = [];
+                var allFigures = GEDOLIM_FIGURES.slice();
+                for (var i = allFigures.length - 1; i > 0; i--) { var j = Math.floor(Math.random()*(i+1)); var t = allFigures[i]; allFigures[i] = allFigures[j]; allFigures[j] = t; }
+                allFigures.forEach(function(of) {
+                    if (of.id === f.id || wrongStations.length >= 3) return;
+                    of.stations.forEach(function(os) {
+                        if (wrongStations.length >= 3) return;
+                        if (os.name !== st.name && wrongStations.indexOf(os.name) === -1) wrongStations.push(os.name);
+                    });
+                });
+                if (wrongStations.length >= 2) {
+                    questions.push({
+                        question: 'איפה ' + f.name + '? רמז: ' + st.desc.replace(/<[^>]+>/g,'').substring(0, 80) + '...',
+                        correct: st.name,
+                        options: shuffleArray([st.name].concat(wrongStations.slice(0,3)))
+                    });
+                }
+            }
+        });
+
+        // Q2: Which period?
+        var cat = GEDOLIM_CATEGORIES.find(function(c) { return c.id === f.category; });
+        if (cat) {
+            var wrongCats = GEDOLIM_CATEGORIES.filter(function(c) { return c.id !== f.category; });
+            for (var wi = wrongCats.length - 1; wi > 0; wi--) { var wj = Math.floor(Math.random()*(wi+1)); var wt = wrongCats[wi]; wrongCats[wi] = wrongCats[wj]; wrongCats[wj] = wt; }
+            questions.push({
+                question: 'לאיזו תקופה שייך/ת ' + f.name + '?',
+                correct: cat.name,
+                options: shuffleArray([cat.name].concat(wrongCats.slice(0,3).map(function(c){return c.name;})))
+            });
+        }
+
+        // Q3: How many stations?
+        if (f.stations.length >= 3) {
+            var correctCount = f.stations.length + ' תחנות';
+            var wrongCounts = [Math.max(1,f.stations.length-2)+' תחנות', (f.stations.length+2)+' תחנות', (f.stations.length+4)+' תחנות'];
+            questions.push({
+                question: 'כמה תחנות מרכזיות ידועות בחיי ' + f.name + '?',
+                correct: correctCount,
+                options: shuffleArray([correctCount].concat(wrongCounts))
+            });
+        }
+    });
+
+    return questions;
+}
+
+function shuffleArray(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random()*(i+1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+}
+
+function triviaConvertMapQuiz(quiz) {
+    return (quiz.questions || []).map(function(q) {
+        return {
+            question: q.text || q.question || '',
+            correct: q.options ? q.options[q.answer] : (q.correct || ''),
+            options: q.options || [q.correct, q.wrong1, q.wrong2, q.wrong3].filter(Boolean),
+            explanation: q.explanation || q.expansion || ''
+        };
+    });
+}
+
+function triviaShowQuestion() {
+    var quiz = triviaCurrentQuiz;
+    if (!quiz || triviaCurrentQ >= quiz.questions.length) { triviaShowResult(); return; }
+    triviaAnswered = false;
+    var q = quiz.questions[triviaCurrentQ];
+    var total = quiz.questions.length;
+
+    document.getElementById('trivia-score').textContent = triviaScore + '/' + total + ' נכונות';
+    document.getElementById('trivia-progress-bar').style.width = ((triviaCurrentQ / total) * 100) + '%';
+
+    var optionsHtml = (q.options || []).map(function(opt, i) {
+        return '<button class="trivia-opt" onclick="triviaAnswer(this,\'' + opt.replace(/'/g,"\\'") + '\')" style="display:block;width:100%;text-align:right;padding:12px 16px;margin-bottom:8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:0.9rem;font-family:inherit;cursor:pointer;transition:all 0.2s;" onmouseover="if(!triviaAnswered)this.style.borderColor=\'var(--primary)\'" onmouseout="if(!triviaAnswered)this.style.borderColor=\'var(--border)\'">' + opt + '</button>';
+    }).join('');
+
+    document.getElementById('trivia-question-area').innerHTML =
+        '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;">שאלה ' + (triviaCurrentQ+1) + ' מתוך ' + total + '</div>' +
+        '<div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:14px;line-height:1.6;">' + q.question + '</div>' +
+        '<div id="trivia-options">' + optionsHtml + '</div>' +
+        '<div id="trivia-feedback" style="margin-top:10px;"></div>';
+}
+
+function triviaAnswer(btn, answer) {
+    if (triviaAnswered) return;
+    triviaAnswered = true;
+    var q = triviaCurrentQuiz.questions[triviaCurrentQ];
+    var correct = answer === q.correct;
+    if (correct) triviaScore++;
+
+    // Color all buttons
+    document.querySelectorAll('.trivia-opt').forEach(function(b) {
+        b.style.cursor = 'default';
+        var bText = b.textContent;
+        if (bText === q.correct) { b.style.borderColor = '#059669'; b.style.background = '#D1FAE5'; b.style.fontWeight = '700'; }
+        else if (b === btn && !correct) { b.style.borderColor = '#DC2626'; b.style.background = '#FEE2E2'; }
+        else { b.style.opacity = '0.5'; }
+    });
+
+    var feedbackEl = document.getElementById('trivia-feedback');
+    feedbackEl.innerHTML = correct
+        ? '<div style="color:#059669;font-weight:700;">✅ נכון!</div>'
+        : '<div style="color:#DC2626;font-weight:700;">❌ לא נכון — התשובה: ' + q.correct + '</div>';
+    if (q.explanation) feedbackEl.innerHTML += '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + q.explanation + '</div>';
+
+    // Auto advance
+    document.getElementById('trivia-score').textContent = triviaScore + '/' + triviaCurrentQuiz.questions.length + ' נכונות';
+    setTimeout(function() {
+        triviaCurrentQ++;
+        triviaShowQuestion();
+    }, correct ? 1500 : 2500);
+}
+
+function triviaShowResult() {
+    var total = triviaCurrentQuiz.questions.length;
+    var pct = Math.round((triviaScore / total) * 100);
+    var emoji = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '💪';
+    var msg = pct >= 80 ? 'מצוין!' : pct >= 50 ? 'לא רע!' : 'יש מקום לשיפור — נסה שוב!';
+
+    document.getElementById('trivia-question-area').style.display = 'none';
+    document.getElementById('trivia-progress-bar').style.width = '100%';
+    document.getElementById('trivia-result').style.display = '';
+    document.getElementById('trivia-result').innerHTML =
+        '<div style="font-size:3rem;margin-bottom:10px;">' + emoji + '</div>' +
+        '<div style="font-size:1.4rem;font-weight:700;color:var(--primary);">' + triviaScore + ' / ' + total + '</div>' +
+        '<div style="font-size:1rem;color:var(--text-secondary);margin:6px 0 16px;">' + pct + '% — ' + msg + '</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
+            '<button class="btn-primary btn-sm" onclick="triviaStartQuiz(\'' + triviaCurrentQuiz._catId + '\')">🔄 שחק שוב</button>' +
+            '<button class="btn-secondary btn-sm" onclick="triviaBackToCategories()">← לקטגוריות</button>' +
+        '</div>';
+}
+
+function triviaBackToCategories() {
+    document.getElementById('trivia-categories').style.display = '';
+    document.getElementById('trivia-active').style.display = 'none';
+    triviaRenderCategories();
+}
+
+// ============================================================
+// תחנות בחייהם של גדולי האומה (data kept for trivia generation)
 // ============================================================
 
 var GEDOLIM_CATEGORIES = [
