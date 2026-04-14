@@ -16799,79 +16799,163 @@ async function generateSakagPDF(sakagData, placeName) {
 
 // === AI סק"ג Generator ===
 
-// Step 1: Research prompt — uses Google Search grounding to find real places
-const SAKAG_RESEARCH_PROMPT = `אתה חוקר שטח ישראלי מומחה. חקור את המרחב ברדיוס [RADIUS_LABEL] סביב הנקודה [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
+// Overpass API — fetch REAL POIs from OpenStreetMap
+async function fetchOverpassPOIs(lat, lng, radiusMeters, routePoints, polygonPoints, areaMode) {
+    var query = '';
+    if (areaMode === 'polygon' && polygonPoints && polygonPoints.length >= 3) {
+        var polyStr = polygonPoints.map(function(p){ return p[0]+' '+p[1]; }).join(' ');
+        query = '[out:json][timeout:15];(' +
+            'nwr["historic"](poly:"'+polyStr+'");' +
+            'nwr["tourism"](poly:"'+polyStr+'");' +
+            'nwr["archaeological_site"](poly:"'+polyStr+'");' +
+            'nwr["memorial"](poly:"'+polyStr+'");' +
+            'nwr["place_of_worship"]["religion"="jewish"](poly:"'+polyStr+'");' +
+            'nwr["natural"~"spring|peak|cliff|cave_entrance"](poly:"'+polyStr+'");' +
+            'nwr["leisure"="nature_reserve"](poly:"'+polyStr+'");' +
+            'nwr["boundary"="national_park"](poly:"'+polyStr+'");' +
+            'nwr["name:he"](poly:"'+polyStr+'");' +
+        ');out center 80;';
+    } else if (areaMode === 'route' && routePoints && routePoints.length >= 2) {
+        // Buffer around route — query around each point
+        var parts = routePoints.map(function(p){
+            return 'nwr["historic"](around:1500,'+p[0]+','+p[1]+');' +
+                'nwr["tourism"](around:1500,'+p[0]+','+p[1]+');' +
+                'nwr["archaeological_site"](around:1500,'+p[0]+','+p[1]+');' +
+                'nwr["memorial"](around:1500,'+p[0]+','+p[1]+');' +
+                'nwr["place_of_worship"]["religion"="jewish"](around:1500,'+p[0]+','+p[1]+');' +
+                'nwr["natural"~"spring|peak|cliff|cave_entrance"](around:1500,'+p[0]+','+p[1]+');';
+        }).join('');
+        query = '[out:json][timeout:15];('+parts+');out center 80;';
+    } else {
+        // Point — use radius
+        var r = radiusMeters || 1000;
+        query = '[out:json][timeout:15];(' +
+            'nwr["historic"](around:'+r+','+lat+','+lng+');' +
+            'nwr["tourism"~"attraction|viewpoint|museum|archaeological_site|information"](around:'+r+','+lat+','+lng+');' +
+            'nwr["archaeological_site"](around:'+r+','+lat+','+lng+');' +
+            'nwr["memorial"](around:'+r+','+lat+','+lng+');' +
+            'nwr["place_of_worship"]["religion"="jewish"](around:'+r+','+lat+','+lng+');' +
+            'nwr["natural"~"spring|peak|cliff|cave_entrance"](around:'+r+','+lat+','+lng+');' +
+            'nwr["leisure"="nature_reserve"](around:'+r+','+lat+','+lng+');' +
+        ');out center 80;';
+    }
 
-חשוב מאוד: לפני שאתה מתחיל, חשב על שמות היסטוריים והעתיקים של המקום. רוב המקומות בארץ ישראל מוכרים בשמות שונים בתקופות שונות (ארמית, יוונית, רומית, ערבית). למשל: עקרבה=עקרבתנא=Akrabattene, שכם=נאבלוס, חברון=קרית ארבע, לוד=Lydda. חפש את המקום גם בשמותיו העתיקים.
+    try {
+        var resp = await fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'data=' + encodeURIComponent(query)
+        });
+        if (!resp.ok) return [];
+        var data = await resp.json();
+        var pois = [];
+        var seen = new Set();
+        (data.elements || []).forEach(function(el) {
+            var name = el.tags?.['name:he'] || el.tags?.name || '';
+            if (!name || seen.has(name)) return;
+            seen.add(name);
+            var elLat = el.lat || el.center?.lat;
+            var elLng = el.lon || el.center?.lon;
+            if (!elLat) return;
+            var dist = Math.round(haversine(lat, lng, elLat, elLng));
+            var type = el.tags?.historic || el.tags?.tourism || el.tags?.natural || el.tags?.memorial || el.tags?.religion || '';
+            var desc = el.tags?.['description:he'] || el.tags?.description || el.tags?.['wikipedia:he'] || el.tags?.wikipedia || '';
+            pois.push({ name: name, lat: elLat, lng: elLng, dist: dist, type: type, desc: desc, tags: el.tags || {} });
+        });
+        pois.sort(function(a,b){ return a.dist - b.dist; });
+        return pois;
+    } catch(e) { console.warn('Overpass error:', e); return []; }
+}
 
-חפש באינטרנט ומצא:
-1. אתרי טיול, שבילים מסומנים ונקודות עניין בטבע באזור (חפש באתרים כמו עמוד ענן, שביל ישראל, רשות הטבע והגנים). חשוב: ודא שכל אתר נמצא בתוך רדיוס [RADIUS_LABEL] מהנקודה — בדוק מרחק בפועל ולא רק אזור כללי.
-2. אתרים ארכיאולוגיים, תלים, חורבות, מבצרים או שרידים היסטוריים בתוך רדיוס [RADIUS_LABEL]
-3. מקומות בעלי משמעות תורנית-יהודית: קברי צדיקים, בתי כנסת עתיקים, מקוואות, מערות
-4. אירועים היסטוריים שהתרחשו באזור הספציפי הזה (תקופת המקרא, בית שני, חשמונאים, תקופת המשנה והתלמוד, מלחמות ישראל)
-5. מקורות תורניים: חפש את [PLACE_NAME] ואת שמותיו העתיקים בתנ"ך, במשנה, בתלמוד ובמדרש. חפש גם בוויקיפדיה את הערך של המקום — שם לרוב יש אזכורים למקורות חז"ל. חפש גם את נחלת השבט שהאזור שייך לה.
+function haversine(lat1, lon1, lat2, lon2) {
+    var R = 6371000;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLon = (lon2 - lon1) * Math.PI / 180;
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 
-עבור כל ממצא ציין:
-- שם המקום/האתר
-- מרחק משוער מהנקודה (חשב מרחק אווירי לפי קואורדינטות!)
-- תיאור קצר
-- מקור המידע
+function formatPOIsForPrompt(pois) {
+    if (!pois.length) return 'לא נמצאו נקודות עניין במאגר הגיאוגרפי.';
+    return pois.map(function(p, i) {
+        var line = (i+1) + '. **' + p.name + '** (' + p.dist + ' מ׳)';
+        if (p.type) line += ' [' + p.type + ']';
+        if (p.desc) line += ' — ' + p.desc.substring(0, 120);
+        line += ' (' + p.lat.toFixed(5) + ', ' + p.lng.toFixed(5) + ')';
+        return line;
+    }).join('\n');
+}
 
-כתוב בעברית. היה מדויק — הבא רק מידע שמצאת בחיפוש, אל תמציא. אל תכלול נחלים, מעיינות או אתרים שנמצאים מעבר ל-[RADIUS_LABEL] מהנקודה.`;
+// Research prompt — now receives REAL POI data
+const SAKAG_RESEARCH_PROMPT = `אתה חוקר שטח ומורשת מומחה. לפניך רשימת נקודות עניין אמיתיות שנמצאו במאגר גיאוגרפי (OpenStreetMap) סביב [PLACE_NAME] ([LAT], [LNG]).
 
-const SAKAG_AI_PROMPT = `אתה חוקר גיאוגרפיה היסטורית ותורנית עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
-משימתך: לבנות סקירה גיאוגרפית (סק"ג) מדויקת, אינפורמטיבית ותמציתית עבור המרחב סביב [PLACE_NAME] (קואורדינטות: [LAT], [LNG]).
+[AREA_DESC]
+
+=== נקודות עניין שנמצאו במאגר הגיאוגרפי ===
+[POI_LIST]
+
+משימתך:
+1. עבור על כל נקודה ברשימה — זהה אילו מהן בעלות חשיבות היסטורית (כל תקופה — מקרא, בית שני, חשמונאים, רומאים, צלבנים, מלחמות ישראל)
+2. מתוך הנקודות ההיסטוריות — זהה אילו קשורות להיסטוריה יהודית ספציפית
+3. עבור הנקודות היהודיות — חפש מקורות תורניים ספציפיים (תנ"ך פרק:פסוק, משנה מסכת פרק, תלמוד מסכת דף, מדרש)
+4. חפש גם את שמות המקום העתיקים (ארמי, יווני, רומי, ערבי) — רבים מהאתרים מוכרים בשמות שונים
+5. חפש אירועים צבאיים שהתרחשו באזור (כולל מלחמות ישראל 1948, 1967, מבצעים)
+
+חשוב: הבא רק מידע שמצאת בחיפוש. אל תמציא מקורות. ציין מקור לכל פרט.
+כתוב בעברית.`;
+
+const SAKAG_AI_PROMPT = `בנה סק"ג (סקירה גיאוגרפית) עבור חטיבת "חשמונאים" — [PLACE_NAME] ([LAT], [LNG]).
+
+=== נקודות עניין שנמצאו בשטח (נתונים אמיתיים מ-OpenStreetMap) ===
+[POI_LIST]
+
+=== מחקר היסטורי ותורני שנאסף ===
+[RESEARCH_TEXT]
+
+[AREA_CONTEXT]
 
 כללים קריטיים:
-1. מיקוד גיאוגרפי: התמקד אך ורק במרחב של עד [RADIUS_LABEL] מהנקודה הנתונה. כל אתר, נחל, מעיין או מקור שאתה מזכיר חייב להיות ממוקם בתוך רדיוס זה. לפני שאתה מזכיר נחל או אתר — ודא שהוא אכן בתוך [RADIUS_LABEL] מהקואורדינטות הנתונות. אל תזכיר אתרים מרוחקים גם אם הם מפורסמים יותר.
-2. אמינות מידע: הבא רק עובדות היסטוריות שאתה בטוח בנכונותן. אם יש מחלוקת חוקרים על זיהוי מקום — ציין את המחלוקת בקצרה. עדיף פחות עובדות ודאיות מאשר הרבה השערות.
-3. ייחודיות: כל סק"ג חייב להיות ייחודי למרחב הספציפי. כתוב מידע קונקרטי שעולה מהמקום עצמו — שמות גיאוגרפיים מקומיים, אתרים ספציפיים, אירועים שהתרחשו כאן, מקורות תורניים שמתייחסים ישירות לאזור הזה. הימנע מניסוחים כלליים שיכולים להתאים לכל מקום.
-4. סגנון: כתיבה עניינית, אינפורמטיבית ומכבדת. כמו מסמך מודיעיני-תורני — עובדות, מקורות, תובנות. ללא לשון שלילה, ללא פאתוס מוגזם, ללא ניסוחים ריקים. תן לעובדות לדבר.
-5. מקורות תורניים: כשמצטט תנ"ך — ציין ספר, פרק ופסוק. כשמצטט חז"ל — ציין מסכת ודף. כשמזכיר מדרש — ציין שם המדרש ופרשה. רק מקורות שקשורים ישירות למרחב הזה.
-6. שפה: בלי ביטויים כמו "לא סתם", "לא ריק ממשמעות", "לא במקרה". כתוב בחיוב — מה הדבר כן, לא מה הוא לא.
-7. אל תמהר לכתוב "לא נמצאו מקורות" — לפני כן חפש גם בשמות עתיקים וחלופיים של המקום (ארמית, יוונית, רומית, ערבית). אם באמת אין מקורות ישירים על המקום הספציפי — כתוב על נחלת השבט שהוא שייך לה, על האזור הגיאוגרפי, או על אירועים שהתרחשו בסביבה. חשוב: אל תמציא מקורות שלא קיימים. עדיף לכתוב פחות מידע אמיתי מאשר הרבה מידע שגוי.
-8. אימות גיאוגרפי: לפני שמזכירים נחל, מעיין, שביל או אתר — ודא שהוא אכן קרוב לקואורדינטות הנתונות. השתמש במידע מהמחקר שצורף. אם המחקר מזכיר מקום שלא בטוח שהוא ברדיוס — אל תכלול אותו.
+1. התחל מהנקודה הספציפית [PLACE_NAME] — תאר מה נמצא בדיוק כאן, לפני שמרחיב.
+2. השתמש אך ורק בנקודות העניין מהרשימה ובממצאי המחקר. אל תמציא אתרים.
+3. ציין כל אתר בשמו, מרחקו ומיקומו — כמו מסמך מודיעיני.
+4. מקורות תורניים: רק כאלה שקשורים ישירות לאתרים שנמצאו. ציין ספר:פרק:פסוק או מסכת:דף. אל תצטט פסוקים כלליים שלא קשורים לנקודה הספציפית.
+5. סגנון: עובדתי, ממוקד, ללא פאתוס ריק. תן לעובדות לדבר.
+6. אל תחזור על ביטויים מהפרומפט. כתוב תוכן מקורי.
 
 פורמט JSON:
 {
-  "title": "סקירה גיאוגרפית — [שם המקום/האזור המדויק]",
-  "subtitle": "[משפט תיאורי קצר וקונקרטי על המרחב]",
+  "title": "סקירה גיאוגרפית — [שם ספציפי של המקום]",
+  "subtitle": "[משפט אחד קונקרטי — מה ייחודי בנקודה הזו]",
   "sections": [
     {
-      "title": "1. המרחב הגיאוגרפי",
-      "icon": "🏔️",
-      "content": "[תיאור פיזי מדויק של הסביבה ברדיוס [RADIUS_LABEL]: טופוגרפיה, גבהים, נחלים, שבילים, צמחייה, אקלים, יישובים סמוכים, אתרים ונקודות ציון. כתוב כך שלוחם שמגיע למקום יוכל לזהות את הסביבה. השתמש בתגיות HTML: <p> ו-<b>]"
+      "title": "1. הנקודה והמרחב",
+      "icon": "📍",
+      "content": "[התחל מהנקודה עצמה: מה זה, מה נמצא כאן. אחר כך הרחב: אתרים בסביבה מהרשימה, טופוגרפיה, שבילים. ציין מרחקים. HTML: <p>, <b>]"
     },
     {
-      "title": "2. שורשים תורניים",
-      "icon": "📖",
-      "content": "[מקורות תנ\\"ך, משנה, תלמוד, מדרש וחז\\"ל שמתייחסים למקום הזה או לאזור הזה. חפש גם בשמות העתיקים של המקום (ארמית, יוונית, ערבית). ציין מקורות מדויקים בלבד — אל תמציא מקורות שאינך בטוח בהם. הבא גם מקורות הקשורים לנחלת השבט שהאזור שייך לה. השתמש בתגיות HTML]"
+      "title": "2. אתרים ונקודות עניין",
+      "icon": "🏛️",
+      "content": "[פרט על כל אתר משמעותי שנמצא ברשימת ה-POIs: שם, מיקום, מרחק, תיאור ופרטים היסטוריים. סדר לפי מרחק. HTML]"
     },
     {
       "title": "3. ציר היסטורי",
       "icon": "⚔️",
-      "content": "[אירועים היסטוריים שהתרחשו במרחב הזה ברדיוס [RADIUS_LABEL] — מתקופת התנ\\"ך ועד ימינו. סדר כרונולוגי. כלול: תקופת המקרא, בית שני, חשמונאים (אם רלוונטי), תקופות מאוחרות, מלחמות ישראל, ימינו. רק אירועים שהתרחשו כאן. השתמש בתגיות HTML]"
+      "content": "[אירועים שהתרחשו באתרים שנמצאו — סדר כרונולוגי. רק אירועים מתועדים. כלול מלחמות ישראל אם רלוונטי. HTML]"
     },
     {
-      "title": "4. חיבור תורני-ערכי",
+      "title": "4. מקורות תורניים",
+      "icon": "📖",
+      "content": "[מקורות תנ\\"ך, משנה, תלמוד שמתייחסים לאתרים ספציפיים שנמצאו. ציין מקור מדויק לכל ציטוט. אם אין מקורות ישירים — ציין נחלת שבט ומקורות על האזור. אל תמציא. HTML]"
+    },
+    {
+      "title": "5. שאלה למחשבה",
       "icon": "💡",
-      "content": "[תובנה תורנית אחת מרכזית שעולה מהמקום הזה — קשר בין ההיסטוריה המקומית לערך תורני. חבר בין מה שקרה כאן בעבר לבין המשמעות של הנוכחות הצבאית היום. הרעיון המנחה: כל מקום בארץ ישראל נושא זיכרון (חבקוק ב:יא), והנוכחות במקום היא המשך של שרשרת הדורות. השתמש בתגיות HTML]"
-    },
-    {
-      "title": "5. סיכום ושאלה למחשבה",
-      "icon": "❓",
-      "content": "[סיכום קצר של הנקודות המרכזיות + שאלה פתוחה ספציפית הנוגעת למה שקרה במרחב הזה — שאלה שמזמינה את הלוחם לחשוב על הקשר בינו לבין ההיסטוריה המקומית. השתמש בתגיות HTML]"
+      "content": "[שאלה ספציפית שנוגעת לאתר או אירוע שנמצא במרחב הזה — לא שאלה כללית. HTML]"
     }
   ]
 }
 
-דרישות נוספות:
-- כתיבה בהירה, עובדתית ומכבדת. הימנע מפסקאות פתיחה גנריות.
-- כל סעיף צריך להכיל מידע ספציפי למרחב ולא ניסוחים כלליים.
-- אם אין מספיק מידע תורני ישיר על השם הנוכחי של המקום — חפש בשמות העתיקים (ארמיים/יווניים/רומיים/ערביים), ובנחלת השבט. כתוב את מה שכן ידוע. אל תמציא מקורות — עדיף פחות מידע אמיתי מהמצאות.
-- סה"כ אורך: 600-900 מילים. לא יותר.
-
-חשוב מאוד: החזר אך ורק אובייקט JSON תקני. אין להוסיף טקסט, הסברים או הקדמות לפני או אחרי ה-JSON. התשובה חייבת להתחיל ב-{ ולהסתיים ב-}.`;
+אורך: 600-1000 מילים. החזר JSON בלבד.`;
 
 var sakalAiGenerating = false;
 
@@ -16892,23 +16976,13 @@ async function sakalGenerateAI(lat, lng, placeName) {
     var _sakalCtx = { activity: sakalWizardData.activity || '', mission: sakalWizardData.mission || '' };
     var areaMode = sakalWizardData.areaMode || 'point';
     var areaDesc = sakalGetAreaDescription();
-    var radiusLabel = areaMode === 'point' ? 'הנקודה הספציפית ותוך 500 מ׳ ממנה' : sakalGetModeLabel();
     sakalAiGenerating = true;
     var templateEl = document.getElementById('sakal-create-template');
     templateEl.style.display = '';
     var btn = document.getElementById('sakal-generate-btn');
     if (btn) btn.disabled = true;
 
-    templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
-        '<div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
-        '<p id="sakal-ai-step-label" style="font-weight:700;color:var(--primary);font-size:1rem;">שלב 1/3 — סורק תשתיות גיאוגרפיות סביב '+placeName+'...</p>' +
-        '<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">מחפש אתרים בגוגל מפות ועמוד ענן — ' + radiusLabel + '</p>' +
-        '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
-            '<div id="sakal-progress-bar" style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
-        '</div>' +
-    '</div>';
-
-    // Add progress animation
+    // Add animations
     if (!document.getElementById('sakag-anim-style')) {
         var style = document.createElement('style');
         style.id = 'sakag-anim-style';
@@ -16916,49 +16990,61 @@ async function sakalGenerateAI(lat, lng, placeName) {
         document.head.appendChild(style);
     }
 
+    templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
+        '<div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
+        '<p id="sakal-ai-step-label" style="font-weight:700;color:var(--primary);font-size:1rem;">שלב 1/3 — הצפה גיאוגרפית סביב '+placeName+'...</p>' +
+        '<p id="sakal-ai-step-desc" style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">שולף נקודות עניין מ-OpenStreetMap</p>' +
+        '<div id="sakal-poi-count" style="font-size:0.82rem;color:var(--primary);margin-top:8px;font-weight:600;"></div>' +
+        '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
+            '<div id="sakal-progress-bar" style="width:5%;height:100%;background:var(--primary);border-radius:4px;transition:width 0.5s;"></div>' +
+        '</div>' +
+    '</div>';
+
     try {
+        // ============================================================
+        // STEP 1: Geographic Flood — Fetch REAL POIs from Overpass API
+        // ============================================================
+        var radiusMeters = areaMode === 'point' ? 1000 : 3000;
+        var pois = await fetchOverpassPOIs(lat, lng, radiusMeters, sakalWizardData.routePoints, sakalWizardData.polygonPoints, areaMode);
+        var poiText = formatPOIsForPrompt(pois);
+        var poiCountEl = document.getElementById('sakal-poi-count');
+        if (poiCountEl) poiCountEl.textContent = '📍 נמצאו ' + pois.length + ' נקודות עניין';
+
         var configDoc = await db.collection('config').doc('ai').get();
         var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
-        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
-
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
 
-        // Build area context for prompts
-        var areaContext = '\n\n=== הגדרת מרחב החקירה ===\n' + areaDesc;
-        if (areaMode === 'point') {
-            areaContext += '\nחשוב: הסק"ג חייב להתחיל בהתייחסות ישירה לנקודה הספציפית ' + placeName + ' — מה מיוחד בנקודה הזו, מה קרה כאן, ומה נמצא בדיוק כאן. רק אחר כך הרחב לסביבה הקרובה (עד 500 מ׳).';
-        } else if (areaMode === 'route') {
-            areaContext += '\nחשוב: הסק"ג חייב להתייחס לנקודות לאורך ציר התנועה. התחל בנקודת המוצא, עבור על אתרים לאורך הציר, וסיים בנקודת הסיום.';
-        } else if (areaMode === 'polygon') {
-            areaContext += '\nחשוב: הסק"ג חייב להתייחס רק לאתרים שנמצאים בתוך האזור המוגדר (הפוליגון).';
-        }
+        // Build area context
+        var areaContext = '=== מרחב חקירה ===\n' + areaDesc;
+        if (areaMode === 'point') areaContext += '\nדגש: התחל מהנקודה הספציפית ' + placeName + ' עצמה.';
+        else if (areaMode === 'route') areaContext += '\nדגש: עבור לאורך ציר התנועה מהתחלה לסוף.';
+        else if (areaMode === 'polygon') areaContext += '\nדגש: רק אתרים בתוך האזור המוגדר.';
 
-        // Step 1: Geographic infrastructure scan (Google Maps, Amud Anan)
-        var geoScanPrompt = 'אתה סוקר תשתיות גיאוגרפיות. חפש ב-Google Maps ובעמוד ענן (amudanan.co.il) מידע על הנקודה ' + placeName + ' (' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ').\n\n' +
-            'מצא: שבילים מסומנים, אתרי טיול, נקודות עניין, אתרים ארכיאולוגיים, מעיינות, תצפיות, חניונים, ופרטי השטח (גובה, סוג קרקע, צמחייה).\n' +
-            areaContext + '\n\nכתוב בעברית. רשימה מפורטת בלבד — שם, מרחק, תיאור קצר.';
-
-        var geoResp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: geoScanPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } })
-        });
-        var geoData = geoResp.ok ? await geoResp.json() : {};
-        var geoParts = geoData.candidates?.[0]?.content?.parts || [];
-        var geoText = '';
-        for (var gi = geoParts.length - 1; gi >= 0; gi--) { if (!geoParts[gi].thought && geoParts[gi].text) { geoText = geoParts[gi].text; break; } }
-
-        // Step 2: Deep research based on geo findings
+        // ============================================================
+        // STEP 2: Historical Research — which POIs have significance?
+        // ============================================================
         var stepLabel = document.getElementById('sakal-ai-step-label');
-        if (stepLabel) stepLabel.textContent = 'שלב 2/3 — חוקר היסטוריה ומקורות תורניים...';
+        var stepDesc = document.getElementById('sakal-ai-step-desc');
+        if (stepLabel) stepLabel.textContent = 'שלב 2/3 — חוקר היסטוריה ומקורות...';
+        if (stepDesc) stepDesc.textContent = 'מזהה אתרים בעלי משמעות היסטורית ויהודית מתוך ' + pois.length + ' נקודות';
         var progressBar = document.getElementById('sakal-progress-bar');
-        if (progressBar) { progressBar.style.animation = 'none'; progressBar.style.width = '40%'; }
+        if (progressBar) progressBar.style.width = '35%';
 
-        var researchPrompt = SAKAG_RESEARCH_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, radiusLabel)
-            + areaContext
-            + '\n\n=== ממצאים מסריקה גיאוגרפית (בסס את המחקר על ממצאים אלה) ===\n' + geoText;
+        var researchPrompt = SAKAG_RESEARCH_PROMPT
+            .replace(/\[PLACE_NAME\]/g, placeName)
+            .replace(/\[LAT\]/g, lat.toFixed(4))
+            .replace(/\[LNG\]/g, lng.toFixed(4))
+            .replace('[AREA_DESC]', areaContext)
+            .replace('[POI_LIST]', poiText);
+
         var researchResp = await fetch(geminiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.4, maxOutputTokens: 8192 } })
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: researchPrompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
+            })
         });
         if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר: ' + researchResp.status);
         var researchData = await researchResp.json();
@@ -16969,15 +17055,21 @@ async function sakalGenerateAI(lat, lng, placeName) {
         }
         if (!researchText && researchParts.length) researchText = researchParts[researchParts.length - 1].text || '';
 
-        // Step 3: Generate structured סק"ג
+        // ============================================================
+        // STEP 3: Build structured סק"ג from real data
+        // ============================================================
         if (stepLabel) stepLabel.textContent = 'שלב 3/3 — בונה את הסק"ג...';
-        if (progressBar) { progressBar.style.width = '70%'; }
+        if (stepDesc) stepDesc.textContent = 'מארגן את הממצאים למסמך מובנה';
+        if (progressBar) progressBar.style.width = '70%';
 
-        var prompt = SAKAG_AI_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, radiusLabel)
-            + areaContext
-            + buildSakagContextPrompt(_sakalCtx)
-            + '\n\n=== סריקה גיאוגרפית (Google Maps + עמוד ענן) ===\n' + geoText
-            + '\n\n=== מחקר היסטורי ותורני ===\n' + researchText;
+        var prompt = SAKAG_AI_PROMPT
+            .replace(/\[PLACE_NAME\]/g, placeName)
+            .replace(/\[LAT\]/g, lat.toFixed(4))
+            .replace(/\[LNG\]/g, lng.toFixed(4))
+            .replace('[POI_LIST]', poiText)
+            .replace('[RESEARCH_TEXT]', researchText)
+            .replace('[AREA_CONTEXT]', areaContext)
+            + buildSakagContextPrompt(_sakalCtx);
 
         var response = await fetch(geminiUrl, {
             method: 'POST',
