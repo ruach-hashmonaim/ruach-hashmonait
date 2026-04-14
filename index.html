@@ -1319,69 +1319,55 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <h3 style="text-align:center;margin-bottom:6px;color:var(--primary);">📋 יצירת סק"ג חדש</h3>
                 <!-- Step Indicators -->
                 <div id="sakal-steps-bar" style="display:flex;justify-content:center;gap:4px;margin-bottom:16px;flex-wrap:wrap;">
-                    <span class="sakag-step-ind active" data-step="1">1. מיקום</span>
-                    <span class="sakag-step-ind" data-step="2">2. מרחב</span>
-                    <span class="sakag-step-ind" data-step="3">3. הקשר</span>
-                    <span class="sakag-step-ind" data-step="4">4. פעילות</span>
-                    <span class="sakag-step-ind" data-step="5">5. יצירה</span>
+                    <span class="sakag-step-ind active" data-step="1">1. מרחב</span>
+                    <span class="sakag-step-ind" data-step="2">2. הקשר</span>
+                    <span class="sakag-step-ind" data-step="3">3. פעילות</span>
+                    <span class="sakag-step-ind" data-step="4">4. יצירה</span>
                 </div>
 
-                <!-- Step 1: Location -->
+                <!-- Step 1: Select Area (merged location + area mode) -->
                 <div id="sakal-step-1" class="sakal-wizard-step">
-                    <div style="text-align:center;margin-bottom:10px;">
-                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">📍 שלב 1 — בחירת מיקום</div>
-                        <p style="font-size:0.85rem;color:var(--text-secondary);">בחר את הנקודה שעליה תרצה לבנות את הסק"ג</p>
+                    <div style="text-align:center;margin-bottom:12px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">📍 שלב 1 — בחר מרחב לחקירה</div>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">בחר אחת מ-4 דרכים להגדיר את המרחב לסק"ג</p>
                     </div>
-                    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
-                        <button class="btn-primary btn-sm" onclick="sakalCreateFromLocation()" id="sakal-create-locate-btn">📍 המיקום שלי</button>
-                        <div style="display:flex;gap:6px;">
-                            <input type="text" id="sakal-create-search" placeholder="חפש מקום..." style="padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;width:180px;" onkeydown="if(event.key==='Enter')sakalCreateFromSearch()">
-                            <button class="btn-primary btn-sm" onclick="sakalCreateFromSearch()">🔍 חפש</button>
+                    <!-- 4 mode tabs -->
+                    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">
+                        <button class="btn-primary btn-sm" id="sakal-mode-search-btn" onclick="sakalSwitchMode('search')" style="font-size:0.82rem;">🔍 חפש שם מקום</button>
+                        <button class="btn-secondary btn-sm" id="sakal-mode-point-btn" onclick="sakalSwitchMode('point')" style="font-size:0.82rem;">📍 סמן נקודה</button>
+                        <button class="btn-secondary btn-sm" id="sakal-mode-route-btn" onclick="sakalSwitchMode('route')" style="font-size:0.82rem;">🛤️ שרטט ציר</button>
+                        <button class="btn-secondary btn-sm" id="sakal-mode-polygon-btn" onclick="sakalSwitchMode('polygon')" style="font-size:0.82rem;">🔷 שרטט תא שטח</button>
+                    </div>
+                    <!-- Search sub-mode -->
+                    <div id="sakal-submode-search">
+                        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:10px;">
+                            <input type="text" id="sakal-create-search" placeholder="הזן שם מקום, אתר, ישוב..." style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:0.9rem;font-family:inherit;width:250px;" onkeydown="if(event.key==='Enter')sakalCreateFromSearch()">
+                            <button class="btn-primary btn-sm" onclick="sakalCreateFromSearch()" style="font-size:0.9rem;">🔍</button>
+                        </div>
+                        <div style="text-align:center;margin-bottom:6px;">
+                            <button class="btn-secondary btn-sm" onclick="sakalCreateFromLocation()" id="sakal-create-locate-btn" style="font-size:0.82rem;">📍 או השתמש במיקום שלי (GPS)</button>
                         </div>
                     </div>
-                    <div id="sakal-create-status" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;"></div>
-                    <div id="sakal-create-map" style="height:300px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;display:none;z-index:0;"></div>
+                    <!-- Point/Route/Polygon sub-mode -->
+                    <div id="sakal-submode-draw" style="display:none;">
+                        <p id="sakal-draw-instructions" style="text-align:center;font-size:0.85rem;color:var(--primary);font-weight:600;margin-bottom:8px;"></p>
+                    </div>
+                    <!-- Status + Map (shared) -->
+                    <div id="sakal-create-status" style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:10px;"></div>
+                    <div id="sakal-create-map" style="height:350px;border-radius:12px;border:2px solid var(--border);margin-bottom:10px;display:none;z-index:0;"></div>
+                    <div id="sakal-draw-controls" style="display:none;text-align:center;margin-bottom:10px;">
+                        <button class="btn-secondary btn-sm" onclick="sakalClearDrawing()" style="font-size:0.82rem;">🗑️ נקה</button>
+                        <span id="sakal-draw-status" style="font-size:0.82rem;color:var(--text-secondary);margin-right:10px;"></span>
+                    </div>
+                    <div id="sakal-step1-next" style="text-align:center;display:none;">
+                        <button class="btn-primary btn-sm" onclick="sakalWizardNext(2)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
                 </div>
 
-                <!-- Step 2: Area Mode -->
+                <!-- Step 2: Commander Context -->
                 <div id="sakal-step-2" class="sakal-wizard-step" style="display:none;">
                     <div style="text-align:center;margin-bottom:10px;">
-                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🔎 שלב 2 — הגדרת מרחב החקירה</div>
-                        <p style="font-size:0.85rem;color:var(--text-secondary);">בחר איך לחקור: נקודה ספציפית, ציר תנועה, או אזור מוגדר</p>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:10px;max-width:450px;margin:0 auto;">
-                        <label class="sakag-radius-option" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:2px solid var(--primary);border-radius:12px;cursor:pointer;transition:all 0.2s;background:rgba(14,116,144,0.04);" onclick="sakalSetAreaMode('point')">
-                            <input type="radio" name="sakag-area-mode" value="point" checked style="accent-color:var(--primary);">
-                            <div><b>📍 נקודה</b> — חקירת הנקודה הספציפית שנבחרה<br><span style="font-size:0.8rem;color:var(--text-secondary);">אתר, מבנה, קבר, תל — רדיוס צמוד</span></div>
-                        </label>
-                        <label class="sakag-radius-option" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s;" onclick="sakalSetAreaMode('route')">
-                            <input type="radio" name="sakag-area-mode" value="route" style="accent-color:var(--primary);">
-                            <div><b>🛤️ ציר תנועה</b> — סמן מסלול על המפה<br><span style="font-size:0.8rem;color:var(--text-secondary);">מסע, סיור, ניווט — כל האתרים לאורך הציר</span></div>
-                        </label>
-                        <label class="sakag-radius-option" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s;" onclick="sakalSetAreaMode('polygon')">
-                            <input type="radio" name="sakag-area-mode" value="polygon" style="accent-color:var(--primary);">
-                            <div><b>🔷 אזור (פוליגון)</b> — סמן גבולות אזור על המפה<br><span style="font-size:0.8rem;color:var(--text-secondary);">שטח אימונים, מרחב מוגדר — כל האתרים בתוך האזור</span></div>
-                        </label>
-                    </div>
-                    <!-- Drawing map for route/polygon -->
-                    <div id="sakal-draw-area" style="display:none;margin-top:14px;">
-                        <p id="sakal-draw-instructions" style="text-align:center;font-size:0.85rem;color:var(--primary);font-weight:600;margin-bottom:8px;"></p>
-                        <div id="sakal-draw-map" style="height:350px;border-radius:12px;border:2px solid var(--primary);z-index:0;"></div>
-                        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
-                            <button class="btn-secondary btn-sm" onclick="sakalClearDrawing()" style="font-size:0.82rem;">🗑️ נקה ציור</button>
-                            <span id="sakal-draw-status" style="font-size:0.82rem;color:var(--text-secondary);padding:6px 0;"></span>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
-                        <button class="btn-secondary btn-sm" onclick="sakalWizardNext(1)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
-                        <button class="btn-primary btn-sm" onclick="sakalWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
-                    </div>
-                </div>
-
-                <!-- Step 3: Commander Context -->
-                <div id="sakal-step-3" class="sakal-wizard-step" style="display:none;">
-                    <div style="text-align:center;margin-bottom:10px;">
-                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🎯 שלב 3 — הקשר רצוי</div>
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🎯 שלב 2 — הקשר רצוי</div>
                         <p style="font-size:0.85rem;color:var(--text-secondary);">מה חשוב לך כמפקד להעביר? אילו ערכים, מסרים, ונקודות מרכזיות?</p>
                     </div>
                     <div style="max-width:500px;margin:0 auto;">
@@ -1389,15 +1375,15 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                         <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:6px;">שדה זה משפיע על הטון והדגשים של הסק"ג שייווצר</p>
                     </div>
                     <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
-                        <button class="btn-secondary btn-sm" onclick="sakalWizardNext(2)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
-                        <button class="btn-primary btn-sm" onclick="sakalWizardNext(4)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                        <button class="btn-secondary btn-sm" onclick="sakalWizardNext(1)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary btn-sm" onclick="sakalWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
                     </div>
                 </div>
 
-                <!-- Step 4: Activity Type -->
-                <div id="sakal-step-4" class="sakal-wizard-step" style="display:none;">
+                <!-- Step 3: Activity Type -->
+                <div id="sakal-step-3" class="sakal-wizard-step" style="display:none;">
                     <div style="text-align:center;margin-bottom:10px;">
-                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🏃 שלב 4 — הקשר לסוג הפעילות</div>
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🏃 שלב 3 — הקשר לסוג הפעילות</div>
                         <p style="font-size:0.85rem;color:var(--text-secondary);">מהי הפעילות שבמסגרתה ישתמשו בסק"ג?</p>
                     </div>
                     <div style="max-width:400px;margin:0 auto;">
@@ -1419,15 +1405,15 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                         <input type="text" id="sakal-activity-other" placeholder="תאר את הפעילות..." style="display:none;width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
                     </div>
                     <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
-                        <button class="btn-secondary btn-sm" onclick="sakalWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
-                        <button class="btn-primary btn-sm" onclick="sakalWizardNext(5)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                        <button class="btn-secondary btn-sm" onclick="sakalWizardNext(2)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary btn-sm" onclick="sakalWizardNext(4)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
                     </div>
                 </div>
 
-                <!-- Step 5: Generate -->
-                <div id="sakal-step-5" class="sakal-wizard-step" style="display:none;">
+                <!-- Step 4: Generate -->
+                <div id="sakal-step-4" class="sakal-wizard-step" style="display:none;">
                     <div style="text-align:center;margin-bottom:10px;">
-                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🤖 שלב 5 — יצירת הסק"ג</div>
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🤖 שלב 4 — יצירת הסק"ג</div>
                         <p style="font-size:0.85rem;color:var(--text-secondary);">בדוק את הפרטים ולחץ ליצירה</p>
                     </div>
                     <div id="sakal-wizard-summary" style="max-width:500px;margin:0 auto 16px auto;background:rgba(14,116,144,0.04);border:1.5px solid rgba(14,116,144,0.15);border-radius:12px;padding:14px;font-size:0.88rem;direction:rtl;"></div>
@@ -1435,7 +1421,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                         ⚠️ <b>שים לב:</b> הסקירה מוכנה באמצעות בינה מלאכותית (AI) ויש לוודא את נכונות התכנים, לבדוק מקורות ולהצליב עם מידע נוסף לפני השימוש.
                     </div>
                     <div style="display:flex;gap:8px;justify-content:center;">
-                        <button class="btn-secondary btn-sm" onclick="sakalWizardNext(4)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-secondary btn-sm" onclick="sakalWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
                         <button class="btn-primary" onclick="sakalWizardGenerate()" id="sakal-generate-btn" style="font-size:1rem;padding:12px 28px;">🤖 צור סק"ג עכשיו</button>
                     </div>
                     <div id="sakal-create-template" style="display:none;margin-top:14px;"></div>
@@ -15843,38 +15829,145 @@ function sakalBackToList() {
     if (_sakalOverviewMap) setTimeout(function() { _sakalOverviewMap.invalidateSize(); }, 100);
 }
 
-var sakalWizardData = { lat: null, lng: null, placeName: '', radius: 5, step: 1 };
+var sakalWizardData = { lat: null, lng: null, placeName: '', areaMode: 'search', routePoints: [], polygonPoints: [], step: 1 };
+var sakalCurrentDrawMode = null;
 
 function sakalStartCreate() {
     document.getElementById('sakal-list-view').style.display = 'none';
     document.getElementById('sakal-detail-view').style.display = 'none';
     document.getElementById('sakal-create-view').style.display = '';
-    sakalWizardData = { lat: null, lng: null, placeName: '', areaMode: 'point', routePoints: [], polygonPoints: [], step: 1 };
+    sakalWizardData = { lat: null, lng: null, placeName: '', areaMode: 'search', routePoints: [], polygonPoints: [], step: 1 };
+    sakalCurrentDrawMode = null;
     document.getElementById('sakal-create-status').textContent = '';
     document.getElementById('sakal-create-template').style.display = 'none';
     document.getElementById('sakal-create-map').style.display = 'none';
+    var dc = document.getElementById('sakal-draw-controls');
+    if (dc) dc.style.display = 'none';
+    var sn = document.getElementById('sakal-step1-next');
+    if (sn) sn.style.display = 'none';
+    sakalSwitchMode('search');
     sakalShowStep(1);
+}
+
+function sakalSwitchMode(mode) {
+    sakalCurrentDrawMode = mode;
+    ['search','point','route','polygon'].forEach(function(m) {
+        var btn = document.getElementById('sakal-mode-' + m + '-btn');
+        if (btn) btn.className = m === mode ? 'btn-primary btn-sm' : 'btn-secondary btn-sm';
+    });
+    var searchSub = document.getElementById('sakal-submode-search');
+    var drawSub = document.getElementById('sakal-submode-draw');
+    var drawControls = document.getElementById('sakal-draw-controls');
+    var instrEl = document.getElementById('sakal-draw-instructions');
+    var mapEl = document.getElementById('sakal-create-map');
+
+    if (mode === 'search') {
+        if (searchSub) searchSub.style.display = '';
+        if (drawSub) drawSub.style.display = 'none';
+        if (drawControls) drawControls.style.display = 'none';
+        if (mapEl) mapEl.style.display = 'none';
+        sakalWizardData.areaMode = 'point';
+    } else {
+        if (searchSub) searchSub.style.display = 'none';
+        if (drawSub) drawSub.style.display = '';
+        sakalWizardData.areaMode = mode;
+        if (mode === 'point') instrEl.textContent = 'לחץ על המפה לסימון הנקודה';
+        else if (mode === 'route') instrEl.textContent = 'לחץ על המפה לסימון נקודות לאורך ציר התנועה (לפחות 2)';
+        else if (mode === 'polygon') instrEl.textContent = 'לחץ על המפה לסימון פינות תא השטח (לפחות 3)';
+        sakalInitInteractiveMap(mode);
+    }
+    sakalWizardData.lat = null; sakalWizardData.lng = null; sakalWizardData.placeName = '';
+    sakalWizardData.routePoints = []; sakalWizardData.polygonPoints = [];
+    sakalDrawPoints = [];
+    document.getElementById('sakal-create-status').textContent = '';
+    var sn = document.getElementById('sakal-step1-next');
+    if (sn) sn.style.display = 'none';
+}
+
+function sakalInitInteractiveMap(mode) {
+    var mapEl = document.getElementById('sakal-create-map');
+    mapEl.style.display = '';
+    var dc = document.getElementById('sakal-draw-controls');
+    if (dc) dc.style.display = '';
+    if (sakalCreateMap) { sakalCreateMap.remove(); sakalCreateMap = null; }
+    sakalCreateMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([31.5, 35.0], 8);
+    L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123' }).addTo(sakalCreateMap);
+    sakalDrawPoints = [];
+    sakalDrawLayer = L.layerGroup().addTo(sakalCreateMap);
+
+    sakalCreateMap.on('click', function(e) {
+        if (mode === 'point') {
+            sakalDrawPoints = [[e.latlng.lat, e.latlng.lng]];
+            sakalWizardData.lat = e.latlng.lat;
+            sakalWizardData.lng = e.latlng.lng;
+            sakalWizardData.areaMode = 'point';
+            sakalReverseGeocode(e.latlng.lat, e.latlng.lng);
+        } else {
+            sakalDrawPoints.push([e.latlng.lat, e.latlng.lng]);
+            if (mode === 'route') {
+                sakalWizardData.routePoints = sakalDrawPoints.slice();
+                sakalWizardData.areaMode = 'route';
+            } else {
+                sakalWizardData.polygonPoints = sakalDrawPoints.slice();
+                sakalWizardData.areaMode = 'polygon';
+            }
+            if (!sakalWizardData.lat) {
+                sakalWizardData.lat = sakalDrawPoints[0][0];
+                sakalWizardData.lng = sakalDrawPoints[0][1];
+                sakalReverseGeocode(sakalDrawPoints[0][0], sakalDrawPoints[0][1]);
+            }
+        }
+        sakalRedrawOverlay(mode);
+        var enough = mode === 'point' || (mode === 'route' && sakalDrawPoints.length >= 2) || (mode === 'polygon' && sakalDrawPoints.length >= 3);
+        var sn = document.getElementById('sakal-step1-next');
+        if (sn) sn.style.display = enough ? '' : 'none';
+    });
+    setTimeout(function() { try { sakalCreateMap.invalidateSize(); } catch(e) {} }, 300);
+}
+
+function sakalReverseGeocode(lat, lng) {
+    var statusEl = document.getElementById('sakal-create-status');
+    statusEl.innerHTML = '<span style="color:var(--primary);">📍 מזהה מיקום...</span>';
+    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=18&accept-language=he&addressdetails=1&namedetails=1&extratags=1')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var addr = data.address || {};
+        var specific = addr.tourism || addr.historic || addr.building || addr.amenity || addr.natural || '';
+        var local = addr.neighbourhood || addr.hamlet || addr.village || addr.suburb || '';
+        var city = addr.city || addr.town || '';
+        var name = specific || local || city || (data.display_name ? data.display_name.split(',')[0] : 'נקודה');
+        var parts = [specific, local, city].filter(Boolean);
+        var fullName = parts.length > 1 ? parts.join(', ') : name;
+        sakalWizardData.placeName = fullName;
+        sakalWizardData.placeDetails = addr;
+        sakalWizardData.nominatimFull = data;
+        statusEl.innerHTML = '<span style="color:#2E7D32;">✅ <b>' + fullName + '</b></span>';
+        if (sakalCurrentDrawMode === 'point') {
+            var sn = document.getElementById('sakal-step1-next');
+            if (sn) sn.style.display = '';
+        }
+    }).catch(function() {
+        sakalWizardData.placeName = lat.toFixed(4) + ', ' + lng.toFixed(4);
+        statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נקלט</span>';
+    });
 }
 
 function sakalShowStep(n) {
     sakalWizardData.step = n;
-    for (var i = 1; i <= 5; i++) {
+    for (var i = 1; i <= 4; i++) {
         var el = document.getElementById('sakal-step-' + i);
         if (el) el.style.display = i === n ? '' : 'none';
     }
-    // Update step indicators
-    document.querySelectorAll('.sakag-step-ind').forEach(function(ind) {
+    document.querySelectorAll('#sakal-steps-bar .sakag-step-ind').forEach(function(ind) {
         var s = parseInt(ind.getAttribute('data-step'));
         ind.classList.remove('active', 'done');
         if (s === n) ind.classList.add('active');
         else if (s < n) ind.classList.add('done');
     });
-    // Build summary on step 5
-    if (n === 5) sakalBuildSummary();
+    if (n === 4) sakalBuildSummary();
 }
 
 function sakalWizardNext(step) {
-    // Validate before advancing
     if (step > 1 && !sakalWizardData.lat) {
         showToast('יש לבחור מיקום קודם');
         sakalShowStep(1);
@@ -16003,24 +16096,11 @@ function sakalCreateFromLocation() {
     }
     navigator.geolocation.getCurrentPosition(function(pos) {
         var lat = pos.coords.latitude, lng = pos.coords.longitude;
-        statusEl.innerHTML = '<span style="color:var(--primary);">📍 מזהה את שם המקום...</span>';
-        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=14&accept-language=he')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            var name = (data.address && (data.address.city || data.address.town || data.address.village || data.address.hamlet)) || data.display_name?.split(',')[0] || 'המיקום שלי';
-            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>' + name + '</b></span>';
-            sakalWizardData.lat = lat;
-            sakalWizardData.lng = lng;
-            sakalWizardData.placeName = name;
-            sakalShowMapPreview(lat, lng);
-            setTimeout(function() { sakalWizardNext(2); }, 800);
-        }).catch(function() {
-            sakalWizardData.lat = lat;
-            sakalWizardData.lng = lng;
-            sakalWizardData.placeName = 'המיקום שלי';
-            sakalShowMapPreview(lat, lng);
-            setTimeout(function() { sakalWizardNext(2); }, 800);
-        });
+        sakalWizardData.lat = lat;
+        sakalWizardData.lng = lng;
+        sakalWizardData.areaMode = 'point';
+        sakalReverseGeocode(lat, lng);
+        sakalShowMapPreview(lat, lng);
     }, function(err) {
         statusEl.innerHTML = '<span style="color:#d32f2f;">לא ניתן לאתר מיקום: '+err.message+'</span>';
     }, { enableHighAccuracy: true, timeout: 10000 });
@@ -16031,18 +16111,20 @@ function sakalCreateFromSearch() {
     if (!q) return;
     var statusEl = document.getElementById('sakal-create-status');
     statusEl.innerHTML = '<span style="color:var(--primary);">🔍 מחפש "'+q+'"...</span>';
-    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&limit=1&countrycodes=il,ps,jo')
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&limit=1&countrycodes=il,ps,jo&addressdetails=1&namedetails=1&extratags=1')
     .then(function(r){ return r.json(); })
     .then(function(data){
         if(data.length===0){ statusEl.innerHTML='<span style="color:#d32f2f;">לא נמצא — נסה שם אחר</span>'; return; }
         var lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
         var name = data[0].display_name.split(',')[0];
-        statusEl.innerHTML = '<span style="color:#2E7D32;">✅ מיקום נמצא: <b>' + name + '</b></span>';
         sakalWizardData.lat = lat;
         sakalWizardData.lng = lng;
         sakalWizardData.placeName = name;
+        sakalWizardData.areaMode = 'point';
+        sakalWizardData.nominatimFull = data[0];
+        sakalWizardData.placeDetails = data[0].address || {};
+        statusEl.innerHTML = '<span style="color:#2E7D32;">✅ <b>' + name + '</b></span>';
         sakalShowMapPreview(lat, lng);
-        setTimeout(function() { sakalWizardNext(2); }, 800);
     }).catch(function(e){ statusEl.innerHTML='<span style="color:#d32f2f;">שגיאה בחיפוש</span>'; });
 }
 
@@ -16050,12 +16132,14 @@ function sakalShowMapPreview(lat, lng) {
     var mapEl = document.getElementById('sakal-create-map');
     mapEl.style.display = '';
     if (sakalCreateMap) { sakalCreateMap.remove(); sakalCreateMap = null; }
-    sakalCreateMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], 13);
-    L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123', attribution: '&copy; Google Maps' }).addTo(sakalCreateMap);
+    sakalCreateMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], 15);
+    L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: '0123' }).addTo(sakalCreateMap);
     L.marker([lat, lng], {
         icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[36,36], iconAnchor:[18,18] })
     }).addTo(sakalCreateMap);
     setTimeout(function() { try { sakalCreateMap.invalidateSize(); } catch(e) {} }, 300);
+    var sn = document.getElementById('sakal-step1-next');
+    if (sn) sn.style.display = '';
 }
 
 // === Inline סק"ג Creator Modal (works from within רוח מכבי) ===
@@ -16377,7 +16461,14 @@ function buildSakagContextPrompt(ctx) {
 }
 
 function openSakagCreatorModal() {
-    // Remove existing modal if any
+    // Redirect to the new wizard in כלים למפקד
+    navigate('geography');
+    setTimeout(function() {
+        setGeoMode('sakal');
+        setTimeout(function() { sakalStartCreate(); }, 200);
+    }, 300);
+    return;
+    // Legacy modal code below (kept but unreachable)
     var existing = document.getElementById('sakag-creator-modal');
     if (existing) existing.remove();
 
@@ -16837,17 +16928,30 @@ async function fetchOverpassPOIs(lat, lng, radiusMeters, routePoints, polygonPoi
         }).join('');
         query = '[out:json][timeout:15];('+parts+');out center 80;';
     } else {
-        // Point — use radius
-        var r = radiusMeters || 1000;
-        query = '[out:json][timeout:15];(' +
+        // Point — use larger radius to catch nearby named features
+        var r = radiusMeters || 2000;
+        query = '[out:json][timeout:20];(' +
+            // Historic sites (ruins, castles, archaeological, monuments, etc.)
             'nwr["historic"](around:'+r+','+lat+','+lng+');' +
-            'nwr["tourism"~"attraction|viewpoint|museum|archaeological_site|information"](around:'+r+','+lat+','+lng+');' +
+            // Tourism features
+            'nwr["tourism"~"attraction|viewpoint|museum|archaeological_site|information|artwork"](around:'+r+','+lat+','+lng+');' +
+            // Archaeological explicitly
             'nwr["archaeological_site"](around:'+r+','+lat+','+lng+');' +
+            // Memorials and places of worship
             'nwr["memorial"](around:'+r+','+lat+','+lng+');' +
-            'nwr["place_of_worship"]["religion"="jewish"](around:'+r+','+lat+','+lng+');' +
-            'nwr["natural"~"spring|peak|cliff|cave_entrance"](around:'+r+','+lat+','+lng+');' +
+            'nwr["place_of_worship"](around:'+r+','+lat+','+lng+');' +
+            // Natural features: springs, peaks, caves, water, valleys
+            'nwr["natural"~"spring|peak|cliff|cave_entrance|saddle|water|hot_spring"](around:'+r+','+lat+','+lng+');' +
+            'nwr["waterway"~"stream|river|spring"](around:'+r+','+lat+','+lng+');' +
+            // Nature reserves and parks
             'nwr["leisure"="nature_reserve"](around:'+r+','+lat+','+lng+');' +
-        ');out center 80;';
+            'nwr["boundary"="national_park"](around:'+r+','+lat+','+lng+');' +
+            // Named places — settlements, ruins, tells
+            'nwr["place"~"locality|hamlet|isolated_dwelling"](around:'+r+','+lat+','+lng+');' +
+            'nwr["ruins"](around:'+r+','+lat+','+lng+');' +
+            // Hiking trails and info signs
+            'nwr["information"~"guidepost|map|board"](around:'+r+','+lat+','+lng+');' +
+        ');out center 120;';
     }
 
     try {
@@ -16971,8 +17075,7 @@ var sakalAiGenerating = false;
 
 function sakalWizardGenerate() {
     var d = sakalWizardData;
-    if (!d.lat || !d.lng) { showToast('יש לבחור מיקום'); sakalShowStep(1); return; }
-    // Gather context from wizard fields
+    if (!d.lat || !d.lng) { showToast('יש לבחור מרחב'); sakalShowStep(1); return; }
     var missionVal = (document.getElementById('sakal-mission') || {}).value || '';
     var activityVal = (document.getElementById('sakal-activity') || {}).value || '';
     if (activityVal === 'אחר') activityVal = (document.getElementById('sakal-activity-other') || {}).value || 'פעילות אחרת';
