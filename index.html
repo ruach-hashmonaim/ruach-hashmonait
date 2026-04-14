@@ -17400,11 +17400,12 @@ async function sakalViewUserSakag(docId) {
 // Load user-created סק"גים into the main list alongside built-in ones
 async function sakalLoadUserCreated() {
     try {
-        var snap = await db.collection('user_sakag').where('status','==','active').orderBy('createdAt','desc').get();
+        var snap = await db.collection('user_sakag').get();
         var grid = document.getElementById('sakal-cards-grid');
         if (!grid || snap.empty) return;
         snap.forEach(function(doc) {
             var s = doc.data();
+            if (s.status && s.status !== 'active') return;
             var card = document.createElement('div');
             card.className = 'sakal-card';
             card.style.cssText = 'background:#fff;border:2px solid #D97706;border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;min-height:140px;';
@@ -17646,11 +17647,14 @@ async function morakLoadList() {
     if (wrap) wrap.style.display = hasPermission('create-sakag') ? '' : 'none';
     grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">טוען...</div>';
     try {
-        var snap = await db.collection('commander_tools').where('type','==','morak').where('status','==','active').orderBy('createdAt','desc').limit(50).get();
-        if (snap.empty) { grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">אין מור"קים — צור את הראשון!</div>'; return; }
+        var snap = await db.collection('commander_tools').get();
+        var morakDocs = [];
+        snap.forEach(function(doc) { var d = doc.data(); if (d.type === 'morak' && (!d.status || d.status === 'active')) morakDocs.push({ id: doc.id, data: d }); });
+        morakDocs.sort(function(a,b) { return (b.data.createdAt?.seconds||0) - (a.data.createdAt?.seconds||0); });
+        if (morakDocs.length === 0) { grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">אין מור"קים — צור את הראשון!</div>'; return; }
         grid.innerHTML = '';
-        snap.forEach(function(doc) {
-            var s = doc.data();
+        morakDocs.forEach(function(item) {
+            var s = item.data; var doc = { id: item.id };
             grid.innerHTML += '<div class="card" style="cursor:pointer;border-right:4px solid #7C3AED;" onclick="viewGeneratedContent(\''+doc.id+'\')">' +
                 '<div style="font-weight:700;font-size:0.95rem;">⭐ ' + (s.title||'') + '</div>' +
                 '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + (s.subtitle||'') + '</div>' +
@@ -17852,11 +17856,14 @@ async function lessonLoadList() {
     if (wrap) wrap.style.display = hasPermission('create-sakag') ? '' : 'none';
     grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">טוען...</div>';
     try {
-        var snap = await db.collection('commander_tools').where('type','==','lesson').where('status','==','active').orderBy('createdAt','desc').limit(50).get();
-        if (snap.empty) { grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">אין מערכי שיעור — צור את הראשון!</div>'; return; }
+        var snap = await db.collection('commander_tools').get();
+        var lessonDocs = [];
+        snap.forEach(function(doc) { var d = doc.data(); if (d.type === 'lesson' && (!d.status || d.status === 'active')) lessonDocs.push({ id: doc.id, data: d }); });
+        lessonDocs.sort(function(a,b) { return (b.data.createdAt?.seconds||0) - (a.data.createdAt?.seconds||0); });
+        if (lessonDocs.length === 0) { grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">אין מערכי שיעור — צור את הראשון!</div>'; return; }
         grid.innerHTML = '';
-        snap.forEach(function(doc) {
-            var s = doc.data();
+        lessonDocs.forEach(function(item) {
+            var s = item.data; var doc = { id: item.id };
             grid.innerHTML += '<div class="card" style="cursor:pointer;border-right:4px solid #059669;" onclick="viewGeneratedContent(\''+doc.id+'\')">' +
                 '<div style="font-weight:700;font-size:0.95rem;">📖 ' + (s.title||'') + '</div>' +
                 '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + (s.subtitle||'') + '</div>' +
@@ -17881,26 +17888,35 @@ async function loadLibrary(filter) {
 
     try {
         var items = [];
-        // Load user sakags
+        // Load user sakags (no composite index needed — filter client-side)
         if (filter === 'all' || filter === 'sakag') {
-            var sakagSnap = await db.collection('user_sakag').where('status','==','active').orderBy('createdAt','desc').limit(30).get();
-            sakagSnap.forEach(function(doc) { var d = doc.data(); items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName, subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt }); });
+            try {
+                var sakagSnap = await db.collection('user_sakag').get();
+                sakagSnap.forEach(function(doc) {
+                    var d = doc.data();
+                    if (d.status && d.status !== 'active') return;
+                    items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
+                });
+            } catch(e) { console.warn('Library: sakag load error', e); }
         }
-        // Load commander_tools
+        // Load commander_tools (no composite index needed — filter client-side)
         if (filter === 'all' || filter === 'morak' || filter === 'lesson') {
-            var query = db.collection('commander_tools').where('status','==','active');
-            if (filter !== 'all') query = query.where('type','==',filter);
-            var toolsSnap = await query.orderBy('createdAt','desc').limit(30).get();
-            toolsSnap.forEach(function(doc) {
-                var d = doc.data();
-                var icon = d.type === 'morak' ? '⭐' : '📖';
-                var color = d.type === 'morak' ? '#7C3AED' : '#059669';
-                var label = d.type === 'morak' ? 'מור"ק' : 'מערך שיעור';
-                items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
-            });
+            try {
+                var toolsSnap = await db.collection('commander_tools').get();
+                toolsSnap.forEach(function(doc) {
+                    var d = doc.data();
+                    if (d.status && d.status !== 'active') return;
+                    if (filter !== 'all' && d.type !== filter) return;
+                    var icon = d.type === 'morak' ? '⭐' : '📖';
+                    var color = d.type === 'morak' ? '#7C3AED' : '#059669';
+                    var label = d.type === 'morak' ? 'מור"ק' : 'מערך שיעור';
+                    items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
+                });
+            } catch(e) { console.warn('Library: tools load error', e); }
         }
-        // Sort by timestamp desc
+        // Sort by timestamp desc (client-side)
         items.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
+        items = items.slice(0, 50);
 
         if (items.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:30px;">אין תכנים עדיין — השתמש בכלים למעלה ליצירת תוכן!</div>'; return; }
 
