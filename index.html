@@ -958,7 +958,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <a onclick="navigate('learning')" data-page="learning"><span class="nav-icon">&#9702;</span> והגית בו — למידה יומית</a>
         <a onclick="navigate('hebrew')" data-page="hebrew"><span class="nav-icon">&#9702;</span> לימוד עברית</a>
-        <a onclick="navigate('geography')" data-page="geography" class="nav-geography" style="display:none;"><span class="nav-icon">&#9702;</span> אמת מארץ תצמח</a>
+        <a onclick="navigate('geography')" data-page="geography" class="nav-geography" style="display:none;"><span class="nav-icon">&#9702;</span> כלים למפקד</a>
         <a onclick="navigate('internet-safety')" data-page="internet-safety"><span class="nav-icon">&#9702;</span> שולטים ברשת הפנימית</a>
         <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי — תוכנית הרוח והחינוך</a>
         <a onclick="navigate('surveys')" data-page="surveys"><span class="nav-icon">&#9702;</span> סקרים ומשובים</a>
@@ -1031,8 +1031,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </a>
         <a class="home-tile tile-geography" style="display:none;" onclick="navigate('geography')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0369A1,#0891B2);"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
-            <div class="tile-title">אמת מארץ תצמח</div>
-            <div class="tile-desc">מפה אינטראקטיבית, היסטוריה ומקורות</div>
+            <div class="tile-title">כלים למפקד</div>
+            <div class="tile-desc">סק"ג, מור"ק, מערך שיעור, דילמות וטריוויה — כלי AI למפקד</div>
         </a>
         <a class="home-tile tile-training" style="display:none;" onclick="navigate('training')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
@@ -1250,14 +1250,19 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 </div>
 
-<!-- ====== GEOGRAPHY — אמת מארץ תצמח ====== -->
+<!-- ====== כלים למפקד ====== -->
 <div class="page-section" id="page-geography">
     <div class="card">
-        <div class="card-title"><div class="icon">🗺️</div> אמת מארץ תצמח</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">מפת ארץ ישראל — אתרים היסטוריים, מקומות קדושים ומקורות תורניים.</p>
-        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-            <button class="geo-tab active" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מפה אילמת</button>
-            <button class="geo-tab" id="geo-tab-sakal" onclick="setGeoMode('sakal')">📋 תבנית נוף הכשרתו</button>
+        <div class="card-title"><div class="icon">🛠️</div> כלים למפקד</div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">כלי AI משלימים לתוכנית "רוח מכבי" — סקירות גיאוגרפיות, מורשת קרב, מערכי שיעור, דילמות וטריוויה.</p>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+            <button class="geo-tab active" id="geo-tab-sakal" onclick="setGeoMode('sakal')">📋 סק"ג</button>
+            <button class="geo-tab" id="geo-tab-morak" onclick="setGeoMode('morak')">⭐ מור"ק</button>
+            <button class="geo-tab" id="geo-tab-lesson" onclick="setGeoMode('lesson')">📖 מערך שיעור</button>
+            <button class="geo-tab" id="geo-tab-trivia" onclick="setGeoMode('trivia')">🧠 טריוויה</button>
+            <button class="geo-tab" id="geo-tab-dilemma" onclick="setGeoMode('dilemma')">⚖️ דילמות</button>
+            <button class="geo-tab" id="geo-tab-library" onclick="setGeoMode('library')">📚 ספרייה</button>
+            <button class="geo-tab" id="geo-tab-mapquiz" onclick="setGeoMode('mapquiz')">🗺️ מפה אילמת</button>
             <button class="geo-tab" id="geo-tab-gedolim" onclick="setGeoMode('gedolim')">🌟 גדולי האומה</button>
         </div>
         <!-- Map Quiz Mode -->
@@ -1446,6 +1451,255 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <div id="gedolim-detail-map" style="height:400px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;z-index:0;"></div>
                 <div id="gedolim-detail-stations"></div>
             </div>
+        </div>
+
+        <!-- ====== מור"ק — מורשת קרב ====== -->
+        <div id="geo-mode-morak" style="display:none;">
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">יצירת מורשת קרב (מור"ק) סביב גיבור שנפל או קרב — הסוכן חוקר ובונה מור"ק מובנה.</p>
+            <!-- List of saved moraks -->
+            <div id="morak-list-view">
+                <div id="morak-create-wrap" style="margin-bottom:14px;display:none;">
+                    <button class="btn-primary btn-sm" onclick="morakStartCreate()" style="font-size:0.85rem;">➕ צור מור"ק חדש</button>
+                </div>
+                <div id="morak-saved-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+            </div>
+            <!-- Create wizard -->
+            <div id="morak-create-view" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <button class="btn-primary btn-sm" onclick="morakBackToList()" style="font-size:0.8rem;">← חזרה לרשימה</button>
+                </div>
+                <h3 style="text-align:center;margin-bottom:6px;color:var(--primary);">⭐ יצירת מור"ק חדש</h3>
+                <!-- Step indicators -->
+                <div id="morak-steps-bar" style="display:flex;justify-content:center;gap:4px;margin-bottom:16px;flex-wrap:wrap;">
+                    <span class="sakag-step-ind active" data-step="1">1. נושא</span>
+                    <span class="sakag-step-ind" data-step="2">2. הקשר</span>
+                    <span class="sakag-step-ind" data-step="3">3. קהל יעד</span>
+                    <span class="sakag-step-ind" data-step="4">4. יצירה</span>
+                </div>
+                <!-- Step 1: Subject -->
+                <div id="morak-step-1" class="morak-wizard-step">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🎖️ שלב 1 — בחירת נושא</div>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">בחר סוג מור"ק והזן את שם הגיבור או הקרב</p>
+                    </div>
+                    <div style="max-width:450px;margin:0 auto;">
+                        <div style="display:flex;gap:10px;margin-bottom:14px;">
+                            <label style="flex:1;display:flex;align-items:center;gap:8px;padding:12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;" onclick="this.querySelector('input').checked=true;document.querySelectorAll('#morak-step-1 label').forEach(l=>l.style.borderColor='var(--border)');this.style.borderColor='var(--primary)'">
+                                <input type="radio" name="morak-type" value="person" checked style="accent-color:var(--primary);">
+                                <div><b>גיבור / חלל</b><br><span style="font-size:0.8rem;color:var(--text-secondary);">מורשת קרב סביב אדם</span></div>
+                            </label>
+                            <label style="flex:1;display:flex;align-items:center;gap:8px;padding:12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;" onclick="this.querySelector('input').checked=true;document.querySelectorAll('#morak-step-1 label').forEach(l=>l.style.borderColor='var(--border)');this.style.borderColor='var(--primary)'">
+                                <input type="radio" name="morak-type" value="battle" style="accent-color:var(--primary);">
+                                <div><b>קרב / מבצע</b><br><span style="font-size:0.8rem;color:var(--text-secondary);">מורשת קרב סביב אירוע</span></div>
+                            </label>
+                        </div>
+                        <input type="text" id="morak-subject" placeholder="שם הגיבור / החלל / הקרב / המבצע" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:0.92rem;font-family:inherit;box-sizing:border-box;">
+                    </div>
+                    <div style="text-align:center;margin-top:16px;">
+                        <button class="btn-primary btn-sm" onclick="morakWizardNext(2)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
+                </div>
+                <!-- Step 2: Context -->
+                <div id="morak-step-2" class="morak-wizard-step" style="display:none;">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🎯 שלב 2 — הקשר ודגשים</div>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">מה חשוב לך להדגיש במור"ק? אילו ערכים, מסרים, לקחים?</p>
+                    </div>
+                    <div style="max-width:500px;margin:0 auto;">
+                        <textarea id="morak-context" rows="4" placeholder="לדוגמה: חשוב לי להדגיש את ערך החברות, ההקרבה למען החברים, האומץ במצבי לחימה..." style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+                        <button class="btn-secondary btn-sm" onclick="morakWizardNext(1)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary btn-sm" onclick="morakWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
+                </div>
+                <!-- Step 3: Audience -->
+                <div id="morak-step-3" class="morak-wizard-step" style="display:none;">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">👥 שלב 3 — קהל יעד</div>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">למי מיועד המור"ק?</p>
+                    </div>
+                    <div style="max-width:400px;margin:0 auto;">
+                        <select id="morak-audience" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;background:#fff;margin-bottom:10px;">
+                            <option value="חניכי הכשרת יסוד">חניכי הכשרת יסוד</option>
+                            <option value="חניכי קורס מ&quot;כים">חניכי קורס מ"כים</option>
+                            <option value="חניכי קורס קצינים">חניכי קורס קצינים</option>
+                            <option value="מפקדים ומדריכים">מפקדים ומדריכים</option>
+                            <option value="כלל הלוחמים">כלל הלוחמים</option>
+                        </select>
+                        <input type="text" id="morak-duration" placeholder="משך המור&quot;ק (לדוגמה: 30 דקות, שעה)" value="45 דקות" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+                        <button class="btn-secondary btn-sm" onclick="morakWizardNext(2)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary btn-sm" onclick="morakWizardNext(4)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
+                </div>
+                <!-- Step 4: Generate -->
+                <div id="morak-step-4" class="morak-wizard-step" style="display:none;">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🤖 שלב 4 — יצירת המור"ק</div>
+                    </div>
+                    <div id="morak-wizard-summary" style="max-width:500px;margin:0 auto 16px auto;background:rgba(14,116,144,0.04);border:1.5px solid rgba(14,116,144,0.15);border-radius:12px;padding:14px;font-size:0.88rem;direction:rtl;"></div>
+                    <div style="background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;padding:10px 14px;max-width:500px;margin:0 auto 14px auto;font-size:0.82rem;color:#856404;text-align:center;">
+                        ⚠️ <b>שים לב:</b> המור"ק מוכן באמצעות בינה מלאכותית (AI) ויש לוודא את נכונות התכנים ולבדוק מקורות.
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;">
+                        <button class="btn-secondary btn-sm" onclick="morakWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary" onclick="morakGenerate()" id="morak-generate-btn" style="font-size:1rem;padding:12px 28px;">🤖 צור מור"ק עכשיו</button>
+                    </div>
+                    <div id="morak-create-template" style="display:none;margin-top:14px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== מערך שיעור ====== -->
+        <div id="geo-mode-lesson" style="display:none;">
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">בניית מערך שיעור מותאם — ענה על מספר שאלות הכוונה והמערכת תבנה עבורך שיעור מוכן.</p>
+            <div id="lesson-list-view">
+                <div id="lesson-create-wrap" style="margin-bottom:14px;display:none;">
+                    <button class="btn-primary btn-sm" onclick="lessonStartCreate()" style="font-size:0.85rem;">➕ צור מערך שיעור חדש</button>
+                </div>
+                <div id="lesson-saved-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+            </div>
+            <div id="lesson-create-view" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <button class="btn-primary btn-sm" onclick="lessonBackToList()" style="font-size:0.8rem;">← חזרה לרשימה</button>
+                </div>
+                <h3 style="text-align:center;margin-bottom:6px;color:var(--primary);">📖 יצירת מערך שיעור</h3>
+                <div id="lesson-steps-bar" style="display:flex;justify-content:center;gap:4px;margin-bottom:16px;flex-wrap:wrap;">
+                    <span class="sakag-step-ind active" data-step="1">1. נושא</span>
+                    <span class="sakag-step-ind" data-step="2">2. יעדים</span>
+                    <span class="sakag-step-ind" data-step="3">3. קהל</span>
+                    <span class="sakag-step-ind" data-step="4">4. סגנון</span>
+                    <span class="sakag-step-ind" data-step="5">5. יצירה</span>
+                </div>
+                <!-- Step 1: Topic -->
+                <div id="lesson-step-1" class="lesson-wizard-step">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">📝 שלב 1 — נושא השיעור</div>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">על מה תרצה להעביר שיעור?</p>
+                    </div>
+                    <div style="max-width:500px;margin:0 auto;">
+                        <input type="text" id="lesson-topic" placeholder="לדוגמה: ערך החברות ביחידה, מנהיגות בשדה הקרב, סיפור קרב תל פאחר..." style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:0.92rem;font-family:inherit;box-sizing:border-box;">
+                    </div>
+                    <div style="text-align:center;margin-top:16px;">
+                        <button class="btn-primary btn-sm" onclick="lessonWizardNext(2)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
+                </div>
+                <!-- Step 2: Goals -->
+                <div id="lesson-step-2" class="lesson-wizard-step" style="display:none;">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🎯 שלב 2 — מטרות ויעדים</div>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">מה היית רוצה שהחניכים ייקחו מהשיעור?</p>
+                    </div>
+                    <div style="max-width:500px;margin:0 auto;">
+                        <textarea id="lesson-goals" rows="4" placeholder="לדוגמה: שיבינו את חשיבות הערבות ההדדית, שיכירו דוגמאות היסטוריות, שיפתחו דיון..." style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+                        <button class="btn-secondary btn-sm" onclick="lessonWizardNext(1)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary btn-sm" onclick="lessonWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
+                </div>
+                <!-- Step 3: Audience -->
+                <div id="lesson-step-3" class="lesson-wizard-step" style="display:none;">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">👥 שלב 3 — קהל יעד ומשך</div>
+                    </div>
+                    <div style="max-width:400px;margin:0 auto;">
+                        <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px;">קהל יעד</label>
+                        <select id="lesson-audience" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;background:#fff;margin-bottom:12px;">
+                            <option value="חניכי הכשרת יסוד">חניכי הכשרת יסוד</option>
+                            <option value="חניכי קורס מ&quot;כים">חניכי קורס מ"כים</option>
+                            <option value="חניכי קורס קצינים">חניכי קורס קצינים</option>
+                            <option value="מפקדים">מפקדים</option>
+                        </select>
+                        <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px;">משך השיעור</label>
+                        <select id="lesson-duration" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;background:#fff;">
+                            <option value="20 דקות">20 דקות</option>
+                            <option value="30 דקות">30 דקות</option>
+                            <option value="45 דקות" selected>45 דקות</option>
+                            <option value="שעה">שעה</option>
+                            <option value="שעה וחצי">שעה וחצי</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+                        <button class="btn-secondary btn-sm" onclick="lessonWizardNext(2)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary btn-sm" onclick="lessonWizardNext(4)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
+                </div>
+                <!-- Step 4: Style -->
+                <div id="lesson-step-4" class="lesson-wizard-step" style="display:none;">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🎨 שלב 4 — סגנון והעדפות</div>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">איך תרצה שהשיעור ייראה?</p>
+                    </div>
+                    <div style="max-width:450px;margin:0 auto;">
+                        <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px;">סגנון השיעור</label>
+                        <select id="lesson-style" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;background:#fff;margin-bottom:12px;">
+                            <option value="שיעור פרונטלי עם דיון">שיעור פרונטלי עם דיון</option>
+                            <option value="סדנה פעילה עם תרגול">סדנה פעילה עם תרגול</option>
+                            <option value="סיפור וניתוח אירוע">סיפור וניתוח אירוע</option>
+                            <option value="למידה בקבוצות קטנות">למידה בקבוצות קטנות</option>
+                            <option value="שיעור עם מולטימדיה">שיעור עם מולטימדיה</option>
+                        </select>
+                        <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px;">הערות נוספות (אופציונלי)</label>
+                        <textarea id="lesson-notes" rows="3" placeholder="דגשים מיוחדים, חומרים שיש לשלב, רקע מיוחד..." style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+                        <button class="btn-secondary btn-sm" onclick="lessonWizardNext(3)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary btn-sm" onclick="lessonWizardNext(5)" style="font-size:0.9rem;padding:10px 24px;">המשך →</button>
+                    </div>
+                </div>
+                <!-- Step 5: Generate -->
+                <div id="lesson-step-5" class="lesson-wizard-step" style="display:none;">
+                    <div style="text-align:center;margin-bottom:10px;">
+                        <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:4px;">🤖 שלב 5 — יצירת מערך השיעור</div>
+                    </div>
+                    <div id="lesson-wizard-summary" style="max-width:500px;margin:0 auto 16px auto;background:rgba(14,116,144,0.04);border:1.5px solid rgba(14,116,144,0.15);border-radius:12px;padding:14px;font-size:0.88rem;direction:rtl;"></div>
+                    <div style="background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;padding:10px 14px;max-width:500px;margin:0 auto 14px auto;font-size:0.82rem;color:#856404;text-align:center;">
+                        ⚠️ <b>שים לב:</b> מערך השיעור מוכן באמצעות AI — יש לוודא נכונות ולהתאים למציאות.
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;">
+                        <button class="btn-secondary btn-sm" onclick="lessonWizardNext(4)" style="font-size:0.9rem;padding:10px 24px;">← חזרה</button>
+                        <button class="btn-primary" onclick="lessonGenerate()" id="lesson-generate-btn" style="font-size:1rem;padding:12px 28px;">🤖 צור מערך שיעור</button>
+                    </div>
+                    <div id="lesson-create-template" style="display:none;margin-top:14px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== טריוויות העשרה ====== -->
+        <div id="geo-mode-trivia" style="display:none;">
+            <div style="text-align:center;padding:30px;">
+                <div style="font-size:3rem;margin-bottom:12px;">🧠</div>
+                <h3 style="color:var(--primary);margin-bottom:8px;">טריוויות העשרה</h3>
+                <p style="font-size:0.9rem;color:var(--text-secondary);max-width:400px;margin:0 auto;">טריוויות במגוון נושאים — היסטוריה, תורה, גיאוגרפיה, מורשת קרב ועוד.<br>בקרוב!</p>
+                <div style="margin-top:20px;padding:14px;background:rgba(14,116,144,0.04);border:1.5px solid rgba(14,116,144,0.15);border-radius:12px;max-width:350px;margin-left:auto;margin-right:auto;">
+                    <p style="font-size:0.82rem;color:var(--text-secondary);">📌 בינתיים ניתן להשתמש ב<b>מפה אילמת</b> לחידוני גיאוגרפיה</p>
+                    <button class="btn-primary btn-sm" onclick="setGeoMode('mapquiz')" style="margin-top:8px;">🗺️ למפה אילמת</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== דילמות פיקודיות ====== -->
+        <div id="geo-mode-dilemma" style="display:none;">
+            <div style="text-align:center;padding:30px;">
+                <div style="font-size:3rem;margin-bottom:12px;">⚖️</div>
+                <h3 style="color:var(--primary);margin-bottom:8px;">בנק דילמות פיקודיות</h3>
+                <p style="font-size:0.9rem;color:var(--text-secondary);max-width:400px;margin:0 auto;">דילמות פיקודיות במגוון נושאים לדיון ולמידה — אתיקה, מנהיגות, ערכים ופיקוד.<br>בקרוב!</p>
+            </div>
+        </div>
+
+        <!-- ====== ספרייה משותפת ====== -->
+        <div id="geo-mode-library" style="display:none;">
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">כל התכנים שנוצרו בכלים למפקד — סק"גים, מור"קים, מערכי שיעור — זמינים לשימוש חוזר.</p>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                <button class="btn-sm" id="lib-filter-all" onclick="loadLibrary('all')" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">הכל</button>
+                <button class="btn-sm btn-secondary" id="lib-filter-sakag" onclick="loadLibrary('sakag')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">📋 סק"גים</button>
+                <button class="btn-sm btn-secondary" id="lib-filter-morak" onclick="loadLibrary('morak')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">⭐ מור"קים</button>
+                <button class="btn-sm btn-secondary" id="lib-filter-lesson" onclick="loadLibrary('lesson')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">📖 מערכי שיעור</button>
+            </div>
+            <div id="library-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
         </div>
     </div>
     <div id="geo-map-section">
@@ -2103,7 +2357,7 @@ const PERMISSIONS = {
     'manage-surveys':       { label:'ניהול סקרים',             cat:'ניהול',    icon:'📋' },
     'view-dashboard':       { label:'צפייה בדשבורד',           cat:'ניהול',    icon:'📊' },
     'create-sakag':         { label:'יצירת סק"ג',              cat:'תכנים',    icon:'🗺️' },
-    'view-geography':       { label:'גישה לאמת מארץ תצמח',     cat:'תכנים',    icon:'🌍' }
+    'view-geography':       { label:'גישה לכלים למפקד',        cat:'תכנים',    icon:'🛠️' }
 };
 
 // Default permissions per role (based on role level and existing flags)
@@ -2248,7 +2502,7 @@ const PAGE_TITLES = {
     'learning': 'והגית בו — למידה יומית',
     'hebrew': 'לימוד עברית',
     'training': 'תוכנית הרוח והחינוך של בה״ד מכבים',
-    'geography': 'אמת מארץ תצמח',
+    'geography': 'כלים למפקד',
     'internet-safety': 'שולטים ברשת הפנימית',
     'reports': 'מעקב שבועי — צוות חינוכי',
     'surveys': 'סקרים ומשובים',
@@ -2371,7 +2625,7 @@ function activatePage(page) {
 
     if (page === 'learning') loadLearningPrograms();
     if (page === 'hebrew') loadHebrewPage();
-    if (page === 'geography') { initGeoMap(); setGeoMode('mapquiz'); }
+    if (page === 'geography') { initGeoMap(); setGeoMode('sakal'); }
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
@@ -12199,12 +12453,13 @@ function clearGeoMarkers() {
 }
 function setGeoMode(mode) {
     geoCurrentMode = mode;
-    document.getElementById('geo-tab-mapquiz').classList.toggle('active', mode === 'mapquiz');
-    document.getElementById('geo-tab-sakal').classList.toggle('active', mode === 'sakal');
-    document.getElementById('geo-tab-gedolim').classList.toggle('active', mode === 'gedolim');
-    document.getElementById('geo-mode-mapquiz').style.display = mode === 'mapquiz' ? '' : 'none';
-    document.getElementById('geo-mode-sakal').style.display = mode === 'sakal' ? '' : 'none';
-    document.getElementById('geo-mode-gedolim').style.display = mode === 'gedolim' ? '' : 'none';
+    var allModes = ['mapquiz','sakal','gedolim','morak','lesson','trivia','dilemma','library'];
+    allModes.forEach(function(m) {
+        var tab = document.getElementById('geo-tab-' + m);
+        var panel = document.getElementById('geo-mode-' + m);
+        if (tab) tab.classList.toggle('active', mode === m);
+        if (panel) panel.style.display = mode === m ? '' : 'none';
+    });
     var mapSection = document.getElementById('geo-map-section');
     if (mapSection) mapSection.style.display = 'none';
     if (mode === 'mapquiz') {
@@ -12214,6 +12469,12 @@ function setGeoMode(mode) {
         sakalLoadUserCreated();
     } else if (mode === 'gedolim') {
         gedolimRenderList();
+    } else if (mode === 'morak') {
+        morakLoadList();
+    } else if (mode === 'lesson') {
+        lessonLoadList();
+    } else if (mode === 'library') {
+        loadLibrary('all');
     }
 }
 function filterGeoCategory(cat) {
@@ -16836,6 +17097,523 @@ async function sakalLoadUserCreated() {
             sakalAddUserSakagToMap(doc.id, s);
         });
     } catch(e) { console.error('Error loading user sakag:', e); }
+}
+
+// ============================================================
+// מור"ק — מורשת קרב
+// ============================================================
+var morakWizardData = {};
+
+function morakStartCreate() {
+    document.getElementById('morak-list-view').style.display = 'none';
+    document.getElementById('morak-create-view').style.display = '';
+    morakWizardData = {};
+    morakShowStep(1);
+}
+
+function morakBackToList() {
+    document.getElementById('morak-list-view').style.display = '';
+    document.getElementById('morak-create-view').style.display = 'none';
+    morakLoadList();
+}
+
+function morakShowStep(n) {
+    for (var i = 1; i <= 4; i++) {
+        var el = document.getElementById('morak-step-' + i);
+        if (el) el.style.display = i === n ? '' : 'none';
+    }
+    document.querySelectorAll('#morak-steps-bar .sakag-step-ind').forEach(function(ind) {
+        var s = parseInt(ind.getAttribute('data-step'));
+        ind.classList.remove('active', 'done');
+        if (s === n) ind.classList.add('active');
+        else if (s < n) ind.classList.add('done');
+    });
+    if (n === 4) morakBuildSummary();
+}
+
+function morakWizardNext(step) {
+    if (step > 1) {
+        var subject = (document.getElementById('morak-subject')||{}).value;
+        if (!subject || !subject.trim()) { showToast('יש להזין שם גיבור או קרב'); morakShowStep(1); return; }
+    }
+    morakShowStep(step);
+}
+
+function morakBuildSummary() {
+    var type = document.querySelector('input[name="morak-type"]:checked')?.value || 'person';
+    var subject = (document.getElementById('morak-subject')||{}).value || '';
+    var context = (document.getElementById('morak-context')||{}).value || '';
+    var audience = (document.getElementById('morak-audience')||{}).value || '';
+    var duration = (document.getElementById('morak-duration')||{}).value || '';
+    morakWizardData = { type: type, subject: subject, context: context, audience: audience, duration: duration };
+    var html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    html += '<div>🎖️ <b>סוג:</b> ' + (type === 'person' ? 'גיבור / חלל' : 'קרב / מבצע') + '</div>';
+    html += '<div>📌 <b>נושא:</b> ' + subject + '</div>';
+    html += '<div>🎯 <b>דגשים:</b> ' + (context || '<span style="color:var(--text-secondary);">לא הוזן</span>') + '</div>';
+    html += '<div>👥 <b>קהל יעד:</b> ' + audience + '</div>';
+    html += '<div>⏱ <b>משך:</b> ' + duration + '</div>';
+    html += '</div>';
+    document.getElementById('morak-wizard-summary').innerHTML = html;
+}
+
+const MORAK_RESEARCH_PROMPT = `אתה חוקר היסטוריה צבאית ישראלית מומחה. חקור באינטרנט ומצא מידע מפורט על [SUBJECT_TYPE]: "[SUBJECT_NAME]".
+
+חפש:
+1. פרטים ביוגרפיים / רקע היסטורי מלא
+2. אירועי הקרב / הפעולה המרכזיים — תיאור מפורט
+3. גילויי גבורה, הקרבה ואומץ
+4. עדויות של חברים, מפקדים, בני משפחה
+5. ההשפעה על היחידה, על הצבא ועל החברה הישראלית
+6. מקורות תורניים או ערכיים שניתן לקשר לסיפור
+7. מיקומים גיאוגרפיים רלוונטיים (אם קיימים)
+
+כתוב בעברית. היה מדויק — הבא רק מידע שמצאת בחיפוש, אל תמציא.`;
+
+const MORAK_AI_PROMPT = `אתה בונה מורשת קרב (מור"ק) עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
+משימתך: לבנות מור"ק מדויק, מרגש ואינפורמטיבי עבור [SUBJECT_TYPE] "[SUBJECT_NAME]".
+
+קהל יעד: [AUDIENCE]
+משך: [DURATION]
+
+כללים:
+1. אמינות: הבא רק עובדות מאומתות. אם חסר מידע — ציין זאת.
+2. כבוד: התייחס בכבוד רב לזכר הנופלים ולמשפחותיהם.
+3. ערכיות: שלב ערכים של גבורה, חברות, הקרבה, מנהיגות ואחריות.
+4. מעשיות: כלול פעילויות מוצעות למפקד — שאלות לדיון, הפנמה, לקחים.
+5. אם רלוונטי — קשר למקורות תורניים על גבורה ומסירות נפש.
+
+פורמט JSON:
+{
+  "title": "מורשת קרב — [שם]",
+  "subtitle": "[משפט תיאורי קצר]",
+  "sections": [
+    { "title": "1. רקע וסיפור חיים", "icon": "👤", "content": "[ביוגרפיה קצרה, רקע אישי, דרך למערכת הביטחון. השתמש בתגיות HTML: <p> ו-<b>]" },
+    { "title": "2. האירוע / הקרב", "icon": "⚔️", "content": "[תיאור מפורט של הקרב או האירוע המרכזי. כרונולוגיה, נסיבות, אתגרים. HTML]" },
+    { "title": "3. גילויי גבורה", "icon": "🎖️", "content": "[מעשי גבורה ספציפיים, הקרבה, עדויות חברים ומפקדים. HTML]" },
+    { "title": "4. ערכים ולקחים", "icon": "💡", "content": "[ערכים שעולים מהסיפור — גבורה, חברות, מנהיגות, אחריות. קשר תורני אם רלוונטי. HTML]" },
+    { "title": "5. פעילות מוצעת למפקד", "icon": "📋", "content": "[3-5 פעילויות/שאלות לדיון מותאמות לקהל היעד. שאלת הפנמה לסיום. HTML]" }
+  ]
+}
+
+חשוב: החזר אך ורק JSON תקני. אין טקסט לפני או אחרי.`;
+
+async function morakGenerate() {
+    var d = morakWizardData;
+    if (!d.subject) { showToast('יש להזין נושא'); morakShowStep(1); return; }
+
+    var templateEl = document.getElementById('morak-create-template');
+    templateEl.style.display = '';
+    var btn = document.getElementById('morak-generate-btn');
+    if (btn) btn.disabled = true;
+
+    var subjectType = d.type === 'person' ? 'גיבור/חלל' : 'קרב/מבצע';
+    templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
+        '<div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
+        '<p style="font-weight:700;color:var(--primary);font-size:1rem;">חוקר מידע על "' + d.subject + '"...</p>' +
+        '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
+            '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
+        '</div></div>';
+
+    try {
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
+
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
+        // Step 1: Research
+        var researchPrompt = MORAK_RESEARCH_PROMPT.replace('[SUBJECT_TYPE]', subjectType).replace('[SUBJECT_NAME]', d.subject);
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.4, maxOutputTokens: 8192 } })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
+
+        // Step 2: Build מור"ק
+        var buildPrompt = MORAK_AI_PROMPT.replace(/\[SUBJECT_TYPE\]/g, subjectType).replace(/\[SUBJECT_NAME\]/g, d.subject)
+            .replace('[AUDIENCE]', d.audience || 'כלל הלוחמים').replace('[DURATION]', d.duration || '45 דקות');
+        if (d.context) buildPrompt += '\n\n=== דגשים של המפקד ===\n' + d.context;
+        buildPrompt += '\n\n=== מידע שנאסף ממחקר ===\n' + researchText;
+
+        var resp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+        });
+        if (!resp.ok) throw new Error('שגיאת Gemini');
+        var data = await resp.json();
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').trim();
+        var morakData;
+        try { morakData = JSON.parse(aiText); } catch(e) {
+            var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
+            if (bs !== -1 && be > bs) try { morakData = JSON.parse(aiText.substring(bs, be + 1)); } catch(e2) {}
+            if (!morakData) throw new Error('לא ניתן לנתח את תשובת ה-AI');
+        }
+
+        morakRenderGenerated(morakData);
+    } catch(err) {
+        templateEl.innerHTML = '<div style="padding:20px;text-align:center;"><p style="color:#d32f2f;font-weight:700;">⚠️ שגיאה</p><p style="font-size:0.85rem;">' + err.message + '</p>' +
+            '<button class="btn-primary btn-sm" onclick="morakGenerate()" style="margin-top:10px;">🔄 נסה שוב</button></div>';
+    } finally { if (btn) btn.disabled = false; }
+}
+
+var morakLastGenerated = null;
+
+function morakRenderGenerated(data) {
+    morakLastGenerated = { data: data, wizardData: morakWizardData };
+    var templateEl = document.getElementById('morak-create-template');
+    var sectionsHtml = (data.sections || []).map(function(sec) {
+        return '<div style="margin-bottom:16px;"><div style="font-weight:700;color:var(--primary);margin-bottom:6px;">' + (sec.icon||'📌') + ' ' + sec.title + '</div>' +
+            '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.7;direction:rtl;">' + sec.content + '</div></div>';
+    }).join('');
+    templateEl.innerHTML = '<div style="border:2px solid var(--primary);border-radius:14px;overflow:hidden;">' +
+        '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;">⭐ ' + data.title + '</div>' +
+        '<div style="padding:4px 16px 0;text-align:center;font-size:0.85rem;color:var(--text-secondary);">' + (data.subtitle||'') + '</div>' +
+        '<div style="padding:16px;">' + sectionsHtml + '</div>' +
+        '<div style="margin:0 16px 12px;padding:10px 14px;background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;font-size:0.82rem;color:#856404;text-align:center;">⚠️ <b>שים לב:</b> מור"ק זה הוכן באמצעות AI — יש לוודא נכונות התכנים ולהצליב עם מקורות.</div>' +
+        '<div style="padding:12px 16px 16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;border-top:1px solid var(--border);">' +
+            '<button class="btn-primary" onclick="morakSave()" style="font-size:0.9rem;padding:10px 24px;">💾 שמור מור"ק</button>' +
+            '<button class="btn-secondary" onclick="morakGenerate()" style="font-size:0.9rem;padding:10px 24px;">🔄 צור מחדש</button>' +
+        '</div></div>';
+}
+
+async function morakSave() {
+    if (!morakLastGenerated || !currentUser) return;
+    var d = morakLastGenerated;
+    try {
+        await db.collection('commander_tools').add({
+            type: 'morak',
+            title: d.data.title || 'מור"ק',
+            subtitle: d.data.subtitle || '',
+            subject: d.wizardData.subject || '',
+            subjectType: d.wizardData.type || 'person',
+            sections: d.data.sections || [],
+            audience: d.wizardData.audience || '',
+            duration: d.wizardData.duration || '',
+            createdBy: currentUser.id || currentUser.email,
+            createdByName: currentUser.name || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'active'
+        });
+        showToast('✅ המור"ק נשמר בהצלחה!');
+        var templateEl = document.getElementById('morak-create-template');
+        templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">המור"ק נשמר!</p>' +
+            '<div style="display:flex;gap:10px;justify-content:center;margin-top:14px;"><button class="btn-primary btn-sm" onclick="morakStartCreate()">➕ צור מור"ק נוסף</button><button class="btn-secondary btn-sm" onclick="morakBackToList()">← חזרה</button></div></div>';
+    } catch(e) { showToast('❌ שגיאה: ' + e.message); }
+}
+
+async function morakLoadList() {
+    var grid = document.getElementById('morak-saved-list');
+    if (!grid) return;
+    var wrap = document.getElementById('morak-create-wrap');
+    if (wrap) wrap.style.display = hasPermission('create-sakag') ? '' : 'none';
+    grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">טוען...</div>';
+    try {
+        var snap = await db.collection('commander_tools').where('type','==','morak').where('status','==','active').orderBy('createdAt','desc').limit(50).get();
+        if (snap.empty) { grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">אין מור"קים — צור את הראשון!</div>'; return; }
+        grid.innerHTML = '';
+        snap.forEach(function(doc) {
+            var s = doc.data();
+            grid.innerHTML += '<div class="card" style="cursor:pointer;border-right:4px solid #7C3AED;" onclick="viewGeneratedContent(\''+doc.id+'\')">' +
+                '<div style="font-weight:700;font-size:0.95rem;">⭐ ' + (s.title||'') + '</div>' +
+                '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + (s.subtitle||'') + '</div>' +
+                '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">נוצר ע"י ' + (s.createdByName||'') + '</div></div>';
+        });
+    } catch(e) { grid.innerHTML = '<div style="color:#d32f2f;">שגיאה בטעינה</div>'; }
+}
+
+// ============================================================
+// מערך שיעור
+// ============================================================
+
+function lessonStartCreate() {
+    document.getElementById('lesson-list-view').style.display = 'none';
+    document.getElementById('lesson-create-view').style.display = '';
+    lessonShowStep(1);
+}
+
+function lessonBackToList() {
+    document.getElementById('lesson-list-view').style.display = '';
+    document.getElementById('lesson-create-view').style.display = 'none';
+    lessonLoadList();
+}
+
+function lessonShowStep(n) {
+    for (var i = 1; i <= 5; i++) {
+        var el = document.getElementById('lesson-step-' + i);
+        if (el) el.style.display = i === n ? '' : 'none';
+    }
+    document.querySelectorAll('#lesson-steps-bar .sakag-step-ind').forEach(function(ind) {
+        var s = parseInt(ind.getAttribute('data-step'));
+        ind.classList.remove('active', 'done');
+        if (s === n) ind.classList.add('active');
+        else if (s < n) ind.classList.add('done');
+    });
+    if (n === 5) lessonBuildSummary();
+}
+
+function lessonWizardNext(step) {
+    if (step > 1) {
+        var topic = (document.getElementById('lesson-topic')||{}).value;
+        if (!topic || !topic.trim()) { showToast('יש להזין נושא שיעור'); lessonShowStep(1); return; }
+    }
+    lessonShowStep(step);
+}
+
+function lessonBuildSummary() {
+    var topic = (document.getElementById('lesson-topic')||{}).value || '';
+    var goals = (document.getElementById('lesson-goals')||{}).value || '';
+    var audience = (document.getElementById('lesson-audience')||{}).value || '';
+    var duration = (document.getElementById('lesson-duration')||{}).value || '';
+    var style = (document.getElementById('lesson-style')||{}).value || '';
+    var notes = (document.getElementById('lesson-notes')||{}).value || '';
+    var html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    html += '<div>📝 <b>נושא:</b> ' + topic + '</div>';
+    html += '<div>🎯 <b>יעדים:</b> ' + (goals || '<span style="color:var(--text-secondary);">לא הוזן</span>') + '</div>';
+    html += '<div>👥 <b>קהל:</b> ' + audience + ' | ⏱ ' + duration + '</div>';
+    html += '<div>🎨 <b>סגנון:</b> ' + style + '</div>';
+    if (notes) html += '<div>📌 <b>הערות:</b> ' + notes + '</div>';
+    html += '</div>';
+    document.getElementById('lesson-wizard-summary').innerHTML = html;
+}
+
+const LESSON_AI_PROMPT = `אתה מפתח תכני חינוך וערכים עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
+משימתך: לבנות מערך שיעור מפורט, מעשי ומותאם למפקד.
+
+נושא: [TOPIC]
+קהל יעד: [AUDIENCE]
+משך: [DURATION]
+סגנון: [STYLE]
+[GOALS_SECTION]
+[NOTES_SECTION]
+
+כללים:
+1. מערך מעשי שמפקד יכול לקחת ולהעביר כמו שהוא
+2. כלול פתיחה, גוף ושאלות סיום
+3. הוסף ציטוטים ומקורות רלוונטיים
+4. התאם לרמת הקהל והזמן העומד לרשות
+5. כלול הנחיות למפקד — מה לעשות בכל שלב
+
+פורמט JSON:
+{
+  "title": "מערך שיעור — [נושא]",
+  "subtitle": "[תיאור קצר]",
+  "sections": [
+    { "title": "1. רקע והכנה למפקד", "icon": "📋", "content": "[מה צריך לדעת, חומרים נדרשים, הכנה מראש. HTML]" },
+    { "title": "2. פתיחה ([X דקות])", "icon": "🎬", "content": "[סיפור פותח / שאלה מעוררת / ציטוט — לרתק את הקהל. HTML]" },
+    { "title": "3. גוף השיעור ([X דקות])", "icon": "📖", "content": "[תוכן מרכזי מחולק לנקודות, דוגמאות, מקורות. HTML]" },
+    { "title": "4. דיון ותרגול ([X דקות])", "icon": "💬", "content": "[3-5 שאלות לדיון, פעילות קבוצתית, תרגול מעשי. HTML]" },
+    { "title": "5. סיכום והפנמה", "icon": "🎯", "content": "[נקודות מפתח, משפט סיכום, שאלת הפנמה לסיום. HTML]" }
+  ]
+}
+
+חשוב: החזר אך ורק JSON תקני.`;
+
+async function lessonGenerate() {
+    var topic = (document.getElementById('lesson-topic')||{}).value || '';
+    var goals = (document.getElementById('lesson-goals')||{}).value || '';
+    var audience = (document.getElementById('lesson-audience')||{}).value || '';
+    var duration = (document.getElementById('lesson-duration')||{}).value || '';
+    var style = (document.getElementById('lesson-style')||{}).value || '';
+    var notes = (document.getElementById('lesson-notes')||{}).value || '';
+
+    if (!topic.trim()) { showToast('יש להזין נושא'); lessonShowStep(1); return; }
+
+    var templateEl = document.getElementById('lesson-create-template');
+    templateEl.style.display = '';
+    var btn = document.getElementById('lesson-generate-btn');
+    if (btn) btn.disabled = true;
+
+    templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
+        '<p style="font-weight:700;color:var(--primary);">בונה מערך שיעור על "' + topic + '"...</p>' +
+        '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
+        '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 40s ease-out forwards;"></div></div></div>';
+
+    try {
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
+
+        var prompt = LESSON_AI_PROMPT.replace('[TOPIC]', topic).replace('[AUDIENCE]', audience).replace('[DURATION]', duration).replace('[STYLE]', style)
+            .replace('[GOALS_SECTION]', goals ? 'מטרות ויעדים: ' + goals : '')
+            .replace('[NOTES_SECTION]', notes ? 'הערות נוספות: ' + notes : '');
+
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+        var resp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+        });
+        if (!resp.ok) throw new Error('שגיאת Gemini');
+        var data = await resp.json();
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        var lessonData;
+        try { lessonData = JSON.parse(aiText); } catch(e) {
+            var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
+            if (bs !== -1 && be > bs) try { lessonData = JSON.parse(aiText.substring(bs, be + 1)); } catch(e2) {}
+            if (!lessonData) throw new Error('לא ניתן לנתח את התשובה');
+        }
+
+        lessonRenderGenerated(lessonData, { topic: topic, goals: goals, audience: audience, duration: duration, style: style, notes: notes });
+    } catch(err) {
+        templateEl.innerHTML = '<div style="padding:20px;text-align:center;"><p style="color:#d32f2f;font-weight:700;">⚠️ שגיאה</p><p style="font-size:0.85rem;">' + err.message + '</p>' +
+            '<button class="btn-primary btn-sm" onclick="lessonGenerate()" style="margin-top:10px;">🔄 נסה שוב</button></div>';
+    } finally { if (btn) btn.disabled = false; }
+}
+
+var lessonLastGenerated = null;
+
+function lessonRenderGenerated(data, wizardData) {
+    lessonLastGenerated = { data: data, wizardData: wizardData };
+    var templateEl = document.getElementById('lesson-create-template');
+    var sectionsHtml = (data.sections || []).map(function(sec) {
+        return '<div style="margin-bottom:16px;"><div style="font-weight:700;color:var(--primary);margin-bottom:6px;">' + (sec.icon||'📌') + ' ' + sec.title + '</div>' +
+            '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.7;direction:rtl;">' + sec.content + '</div></div>';
+    }).join('');
+    templateEl.innerHTML = '<div style="border:2px solid var(--primary);border-radius:14px;overflow:hidden;">' +
+        '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;">📖 ' + data.title + '</div>' +
+        '<div style="padding:4px 16px 0;text-align:center;font-size:0.85rem;color:var(--text-secondary);">' + (data.subtitle||'') + '</div>' +
+        '<div style="padding:16px;">' + sectionsHtml + '</div>' +
+        '<div style="margin:0 16px 12px;padding:10px 14px;background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;font-size:0.82rem;color:#856404;text-align:center;">⚠️ <b>שים לב:</b> מערך שיעור זה הוכן באמצעות AI — יש להתאים למציאות ולוודא נכונות.</div>' +
+        '<div style="padding:12px 16px 16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;border-top:1px solid var(--border);">' +
+            '<button class="btn-primary" onclick="lessonSave()" style="font-size:0.9rem;padding:10px 24px;">💾 שמור מערך שיעור</button>' +
+            '<button class="btn-secondary" onclick="lessonGenerate()" style="font-size:0.9rem;padding:10px 24px;">🔄 צור מחדש</button>' +
+        '</div></div>';
+}
+
+async function lessonSave() {
+    if (!lessonLastGenerated || !currentUser) return;
+    var d = lessonLastGenerated;
+    try {
+        await db.collection('commander_tools').add({
+            type: 'lesson',
+            title: d.data.title || 'מערך שיעור',
+            subtitle: d.data.subtitle || '',
+            topic: d.wizardData.topic || '',
+            sections: d.data.sections || [],
+            audience: d.wizardData.audience || '',
+            duration: d.wizardData.duration || '',
+            style: d.wizardData.style || '',
+            createdBy: currentUser.id || currentUser.email,
+            createdByName: currentUser.name || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'active'
+        });
+        showToast('✅ מערך השיעור נשמר!');
+        var templateEl = document.getElementById('lesson-create-template');
+        templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">מערך השיעור נשמר!</p>' +
+            '<div style="display:flex;gap:10px;justify-content:center;margin-top:14px;"><button class="btn-primary btn-sm" onclick="lessonStartCreate()">➕ צור מערך נוסף</button><button class="btn-secondary btn-sm" onclick="lessonBackToList()">← חזרה</button></div></div>';
+    } catch(e) { showToast('❌ שגיאה: ' + e.message); }
+}
+
+async function lessonLoadList() {
+    var grid = document.getElementById('lesson-saved-list');
+    if (!grid) return;
+    var wrap = document.getElementById('lesson-create-wrap');
+    if (wrap) wrap.style.display = hasPermission('create-sakag') ? '' : 'none';
+    grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">טוען...</div>';
+    try {
+        var snap = await db.collection('commander_tools').where('type','==','lesson').where('status','==','active').orderBy('createdAt','desc').limit(50).get();
+        if (snap.empty) { grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">אין מערכי שיעור — צור את הראשון!</div>'; return; }
+        grid.innerHTML = '';
+        snap.forEach(function(doc) {
+            var s = doc.data();
+            grid.innerHTML += '<div class="card" style="cursor:pointer;border-right:4px solid #059669;" onclick="viewGeneratedContent(\''+doc.id+'\')">' +
+                '<div style="font-weight:700;font-size:0.95rem;">📖 ' + (s.title||'') + '</div>' +
+                '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + (s.subtitle||'') + '</div>' +
+                '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">נוצר ע"י ' + (s.createdByName||'') + '</div></div>';
+        });
+    } catch(e) { grid.innerHTML = '<div style="color:#d32f2f;">שגיאה בטעינה</div>'; }
+}
+
+// ============================================================
+// ספרייה משותפת + תצוגת תוכן שנוצר
+// ============================================================
+
+async function loadLibrary(filter) {
+    var container = document.getElementById('library-content');
+    if (!container) return;
+    // Update filter buttons
+    ['all','sakag','morak','lesson'].forEach(function(f) {
+        var btn = document.getElementById('lib-filter-' + f);
+        if (btn) { btn.style.background = f === filter ? 'var(--primary)' : ''; btn.style.color = f === filter ? '#fff' : ''; }
+    });
+    container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">טוען...</div>';
+
+    try {
+        var items = [];
+        // Load user sakags
+        if (filter === 'all' || filter === 'sakag') {
+            var sakagSnap = await db.collection('user_sakag').where('status','==','active').orderBy('createdAt','desc').limit(30).get();
+            sakagSnap.forEach(function(doc) { var d = doc.data(); items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName, subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt }); });
+        }
+        // Load commander_tools
+        if (filter === 'all' || filter === 'morak' || filter === 'lesson') {
+            var query = db.collection('commander_tools').where('status','==','active');
+            if (filter !== 'all') query = query.where('type','==',filter);
+            var toolsSnap = await query.orderBy('createdAt','desc').limit(30).get();
+            toolsSnap.forEach(function(doc) {
+                var d = doc.data();
+                var icon = d.type === 'morak' ? '⭐' : '📖';
+                var color = d.type === 'morak' ? '#7C3AED' : '#059669';
+                var label = d.type === 'morak' ? 'מור"ק' : 'מערך שיעור';
+                items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
+            });
+        }
+        // Sort by timestamp desc
+        items.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
+
+        if (items.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:30px;">אין תכנים עדיין — השתמש בכלים למעלה ליצירת תוכן!</div>'; return; }
+
+        container.innerHTML = items.map(function(item) {
+            return '<div class="card" style="cursor:pointer;border-right:4px solid ' + item.color + ';" onclick="viewGeneratedContent(\''+item.id+'\',\''+item.collection+'\')">' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                    '<span style="font-size:1.4rem;">' + item.icon + '</span>' +
+                    '<span style="font-size:0.72rem;background:' + item.color + '22;color:' + item.color + ';padding:2px 8px;border-radius:8px;font-weight:600;">' + item.label + '</span>' +
+                '</div>' +
+                '<div style="font-weight:700;font-size:0.95rem;">' + item.title + '</div>' +
+                '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + item.subtitle + '</div>' +
+                '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">נוצר ע"י ' + item.author + '</div>' +
+            '</div>';
+        }).join('');
+    } catch(e) { container.innerHTML = '<div style="color:#d32f2f;">שגיאה בטעינה: ' + e.message + '</div>'; }
+}
+
+async function viewGeneratedContent(docId, collection) {
+    collection = collection || 'commander_tools';
+    try {
+        var doc = await db.collection(collection).doc(docId).get();
+        if (!doc.exists) { showToast('תוכן לא נמצא'); return; }
+        var d = doc.data();
+        var sections = d.sections || [];
+
+        var modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10001;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+
+        var sectionsHtml = sections.map(function(sec) {
+            return '<div style="margin-bottom:16px;"><div style="font-weight:700;color:var(--primary);margin-bottom:6px;">' + (sec.icon||'📌') + ' ' + sec.title + '</div>' +
+                '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.7;">' + sec.content + '</div></div>';
+        }).join('');
+
+        modal.innerHTML = '<div style="background:#ffffff;border-radius:14px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl;" onclick="event.stopPropagation()">' +
+            '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;border-radius:14px 14px 0 0;position:relative;">' + (d.title||'') +
+                '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">✕</button>' +
+            '</div>' +
+            (d.subtitle ? '<div style="padding:6px 18px 0;text-align:center;font-size:0.85rem;color:var(--text-secondary);">' + d.subtitle + '</div>' : '') +
+            '<div style="padding:18px;">' + sectionsHtml + '</div>' +
+            '<div style="margin:0 18px 14px;padding:10px 14px;background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;font-size:0.82rem;color:#856404;text-align:center;">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>' +
+        '</div>';
+        document.body.appendChild(modal);
+    } catch(e) { showToast('שגיאה בטעינה'); }
 }
 
 // ============================================================
