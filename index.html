@@ -1987,6 +1987,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                             <option value="mashak_chinuch_yonatan">מש"ק חינוך יונתן</option>
                             <option value="mefaked_pluga_yonatan">מ"פ יונתן</option>
                         </optgroup>
+                        <optgroup label="קורס קצינים">
+                            <option value="tzoer">צוער</option>
+                        </optgroup>
                         <optgroup label="פלוגה">
                             <option value="mefaked_pluga">מ"פ</option>
                             <option value="samap">סמ"פ</option>
@@ -2314,6 +2317,8 @@ const ROLES = {
     'sgan_rav':         { label:'סגן רב הבה"ד',     level:3, canAddContent:false, canMarkCompletion:true },
     'katzin_mediniyut': { label:'קצין מדיניות',      level:4, canAddContent:false, canMarkCompletion:true },
     'kabtach':          { label:'קבט"ח',             level:3, canAddContent:true, canMarkCompletion:true },
+    // קורס קצינים
+    'tzoer':            { label:'צוער',              level:1, canAddContent:false, canMarkCompletion:false },
     // רוח חשמונאית
     'ruach_menahel':    { label:'מנהל רוח חשמונאית', level:5, canAddContent:true, canMarkCompletion:true },
     'ruach_manheh':     { label:'מנחה רוח חשמונאית', level:4, canAddContent:true, canMarkCompletion:true },
@@ -2385,7 +2390,7 @@ const ROLE_PERMISSIONS = {
     'ruach_ram':        ['weekly-report-fill','training-content-add','training-content-edit','training-mark','create-sakag','view-geography'],
     'magad':            ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
     'katzin_chinuch':   ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
-    'mashak_chinuch':   ['weekly-report-fill','training-content-add','training-content-edit','training-mark','create-sakag','view-geography'],
+    'mashak_chinuch':   ['weekly-report-fill','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','create-sakag','view-geography'],
     'mashak_ivrit':     ['training-content-add','training-content-edit','training-mark','manage-hebrew','view-geography'],
     'ramad_hadraha':    ['weekly-report-view','training-mark','training-mark-all','view-geography'],
     'mashak_hadraha':   ['training-mark'],
@@ -2393,10 +2398,11 @@ const ROLE_PERMISSIONS = {
     'sgan_rav':         ['training-mark'],
     'katzin_mediniyut': ['weekly-report-view','training-mark','training-mark-all','view-geography'],
     'kabtach':          ['training-content-add','training-content-edit','training-mark','training-mark-all','view-geography'],
+    'tzoer':            ['view-geography','create-sakag'],
     'magad_yonatan':    ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
     'sgan_magad_yonatan':['training-mark'],
     'rav_yonatan':      ['weekly-report-view','training-mark','view-geography'],
-    'mashak_chinuch_yonatan':['weekly-report-fill','training-content-add','training-content-edit','training-mark','create-sakag','view-geography'],
+    'mashak_chinuch_yonatan':['weekly-report-fill','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','create-sakag','view-geography'],
     'mefaked_pluga_yonatan':['training-mark'],
     'mefaked_pluga':    ['weekly-report-fill','training-mark'],
     'samap':            [],
@@ -2797,6 +2803,8 @@ async function loginWithPassword() {
             email: email,
             role: ud.role || 'lohem',
             framework: ud.framework || '',
+            pluga: ud.pluga || '',
+            permissions: ud.permissions || [],
             loginTime: Date.now(),
             sessionExpiry: Date.now() + (12 * 60 * 60 * 1000) // 12 hour session
         };
@@ -2908,7 +2916,9 @@ async function userLogin() {
                     name: ud.name || userDoc.id,
                     email: email,
                     role: ud.role || 'lohem',
-                    framework: ud.framework || ''
+                    framework: ud.framework || '',
+                    pluga: ud.pluga || '',
+                    permissions: ud.permissions || []
                 };
                 localStorage.setItem('ruach-user', JSON.stringify(currentUser));
                 closeUserLoginModal();
@@ -20563,6 +20573,19 @@ function tryAutoLogin() {
                 localStorage.setItem('ruach-user', JSON.stringify(currentUser));
             } else {
                 currentUser = parsed;
+            }
+            // Refresh permissions from Firestore in background
+            if (currentUser.id && db) {
+                db.collection('users').doc(currentUser.id).get().then(function(doc) {
+                    if (doc.exists) {
+                        var fresh = doc.data();
+                        currentUser.permissions = fresh.permissions || [];
+                        currentUser.role = fresh.role || currentUser.role;
+                        currentUser.pluga = fresh.pluga || currentUser.pluga;
+                        currentUser.framework = fresh.framework || currentUser.framework;
+                        localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+                    }
+                }).catch(function(){});
             }
             onLoginSuccess();
             const page = window.location.hash.slice(1) || 'home';
