@@ -1965,6 +1965,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                             <option value="sgan_rav">סגן רב הבה"ד</option>
                             <option value="katzin_mediniyut">קצין מדיניות</option>
                             <option value="kabtach">קבט"ח</option>
+                            <option value="memag">ממ"ג</option>
                         </optgroup>
                         <optgroup label="גדוד יונתן">
                             <option value="magad_yonatan">מג"ד יונתן</option>
@@ -2303,6 +2304,7 @@ const ROLES = {
     'sgan_rav':         { label:'סגן רב הבה"ד',     level:3, canAddContent:false, canMarkCompletion:true },
     'katzin_mediniyut': { label:'קצין מדיניות',      level:4, canAddContent:false, canMarkCompletion:true },
     'kabtach':          { label:'קבט"ח',             level:3, canAddContent:true, canMarkCompletion:true },
+    'memag':            { label:'ממ"ג',              level:3.5, canAddContent:false, canMarkCompletion:true },
     // קורס קצינים
     'tzoer':            { label:'צוער',              level:1, canAddContent:false, canMarkCompletion:false },
     // רוח חשמונאית
@@ -2375,8 +2377,8 @@ const ROLE_PERMISSIONS = {
     'ruach_manheh':     ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
     'ruach_ram':        ['weekly-report-fill','training-content-add','training-content-edit','training-mark','create-sakag','view-geography'],
     'magad':            ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
-    'katzin_chinuch':   ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
-    'mashak_chinuch':   ['weekly-report-fill','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','create-sakag','view-geography'],
+    'katzin_chinuch':   ['weekly-report-fill','weekly-report-view','weekly-report-all','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','manage-surveys','view-dashboard','create-sakag','view-geography'],
+    'mashak_chinuch':   ['weekly-report-fill','weekly-report-view','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','manage-permissions','export-data','view-dashboard','create-sakag','view-geography'],
     'mashak_ivrit':     ['training-content-add','training-content-edit','training-mark','manage-hebrew','view-geography'],
     'ramad_hadraha':    ['weekly-report-view','training-mark','training-mark-all','view-geography'],
     'mashak_hadraha':   ['training-mark'],
@@ -2384,15 +2386,16 @@ const ROLE_PERMISSIONS = {
     'sgan_rav':         ['training-mark'],
     'katzin_mediniyut': ['weekly-report-view','training-mark','training-mark-all','view-geography'],
     'kabtach':          ['training-content-add','training-content-edit','training-mark','training-mark-all','view-geography'],
+    'memag':            ['weekly-report-view','training-mark','training-mark-all','view-dashboard','view-geography','create-sakag'],
     'tzoer':            ['view-geography','create-sakag'],
     'magad_yonatan':    ['weekly-report-view','training-mark','training-mark-all','view-dashboard','create-sakag','view-geography'],
     'sgan_magad_yonatan':['training-mark'],
     'rav_yonatan':      ['weekly-report-view','training-mark','view-geography'],
     'mashak_chinuch_yonatan':['weekly-report-fill','training-content-add','training-content-edit','training-mark','training-mark-all','admin-panel','manage-users','export-data','create-sakag','view-geography'],
     'mefaked_pluga_yonatan':['training-mark'],
-    'mefaked_pluga':    ['weekly-report-fill','training-mark'],
-    'samap':            [],
-    'kambatz':          ['weekly-report-fill','training-mark'],
+    'mefaked_pluga':    ['weekly-report-fill','training-mark','view-geography','create-sakag'],
+    'samap':            ['view-geography'],
+    'kambatz':          ['weekly-report-fill','training-mark','view-geography'],
     'mem_mem':          [],
     'samal':            [],
     'mach':             [],
@@ -2406,6 +2409,50 @@ function userLevel() { return ROLES[currentUser?.role]?.level || 0; }
 function userRoleLabel() { return ROLES[currentUser?.role]?.label || ''; }
 function canUserAddContent() { return hasPermission('training-content-add'); }
 function canUserMarkCompletion() { return hasPermission('training-mark'); }
+
+// Content category restrictions by role
+// Returns array of allowed categories, or null = all categories allowed
+function getAllowedContentCategories() {
+    if (!currentUser) return [];
+    var role = currentUser.role || '';
+    // חינוך roles, רוח חשמונאית, מנהלים — can edit ALL categories
+    var allCatRoles = ['admin_system','menahel','katzin_chinuch_hativa','katzin_chinuch','mashak_chinuch',
+        'mashak_chinuch_yonatan','ruach_menahel','ruach_manheh','ruach_ram','raan_mediniyut','segel'];
+    if (allCatRoles.includes(role)) return null; // null = all allowed
+
+    // Role-specific categories
+    var roleCategories = {
+        'rav':          ['rabanut'],
+        'sgan_rav':     ['rabanut'],
+        'rav_hativa':   ['rabanut'],
+        'rav_yonatan':  ['rabanut'],
+        'kabtach':      ['betichut'],
+        'katzin_mediniyut': ['mediniyut'],
+        'mashak_ivrit': ['chinuch']
+    };
+    return roleCategories[role] || [];
+}
+
+function canEditCategory(category) {
+    var allowed = getAllowedContentCategories();
+    if (allowed === null) return true; // all allowed
+    return allowed.includes(category);
+}
+
+// Filter category dropdown to only show allowed categories
+function filterCategoryDropdown(selectId) {
+    var sel = document.getElementById(selectId);
+    if (!sel) return;
+    var allowed = getAllowedContentCategories();
+    if (allowed === null) return; // all allowed, show everything
+    Array.from(sel.options).forEach(function(opt) {
+        if (!opt.value) return; // skip empty default
+        opt.style.display = allowed.includes(opt.value) ? '' : 'none';
+        opt.disabled = !allowed.includes(opt.value);
+    });
+    // Auto-select first allowed
+    if (allowed.length === 1) sel.value = allowed[0];
+}
 
 function getUserPermissions(user) {
     if (!user) return [];
@@ -2633,7 +2680,7 @@ function activatePage(page) {
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
-    if (page === 'content-mgmt') cmgmtProgramChanged();
+    if (page === 'content-mgmt') { cmgmtProgramChanged(); filterCategoryDropdown('cmgmt-cat'); }
     if (page === 'internet-safety') {
         // Require login (either staff or participant) for this module
         if (!currentUser && !currentParticipant) {
@@ -3581,27 +3628,21 @@ function getUserAllowedPrograms() {
 // Check if user can provide weekly feedback for a given platoon
 function canGiveFeedback(plugaLetter) {
     if (!currentUser) return false;
-    const lvl = userLevel();
     const role = currentUser.role || '';
     const userPluga = currentUser.pluga || '';
-    const roleObj = ROLES[role] || {};
 
-    // Level 4+ (קצין חינוך, מג"ד, מנהל, etc.) can give feedback for any platoon
-    if (lvl >= 4) return true;
+    // Staff/command level — can mark for any platoon
+    if (canSeeAllPlugas()) return true;
 
-    // Any role with canMarkCompletion flag can give feedback
-    // מ"פ/קמב"ץ with pluga set: only for their own platoon
-    // מ"פ/קמב"ץ without pluga set: can mark for the currently viewed platoon
-    if (roleObj.canMarkCompletion) {
-        // If user has a specific platoon assigned, only allow for that platoon
+    // Platoon-level: only מ"פ and קמב"ץ can mark (not סמ"פ, מ"מ, סמל, מ"כ, לוחם)
+    const canMarkRoles = ['mefaked_pluga', 'kambatz', 'mefaked_pluga_yonatan'];
+    if (canMarkRoles.includes(role)) {
+        // Must be for their own platoon
         if (userPluga && plugaLetter && userPluga !== plugaLetter) return false;
         return true;
     }
 
-    // מנהל-level roles in ROLES
-    if (role === 'menahel' || role === 'admin_system' || role === 'segel') return true;
-
-    // Everyone else cannot give feedback
+    // Everyone else (סמ"פ, מ"מ, סמל, מ"כ, לוחם, צוער) — view only, no marking
     return false;
 }
 
@@ -3624,18 +3665,28 @@ function switchOfficerTrackTab(track) {
 
 const PLUGA_TRACK_MAP = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h','קמ"כ':'pluga_kamak','שדה':'pluga_sade','גפן':'pluga_gefen'};
 
+// Roles that can see ALL platoons (staff/command level)
+const ALL_PLUGAS_ROLES = ['admin_system','menahel','mhat','raan_mediniyut','rav_hativa','katzin_chinuch_hativa',
+    'ruach_menahel','ruach_manheh','magad','memag','katzin_chinuch','mashak_chinuch','mashak_ivrit',
+    'ramad_hadraha','mashak_hadraha','rav','sgan_rav','katzin_mediniyut','kabtach',
+    'magad_yonatan','sgan_magad_yonatan','rav_yonatan','mashak_chinuch_yonatan','segel'];
+
+function canSeeAllPlugas() {
+    if (!currentUser) return false;
+    return ALL_PLUGAS_ROLES.includes(currentUser.role);
+}
+
 function buildPlugaTabs(prog) {
     const container = document.getElementById('training-tracks');
     if (!container) return;
-    const lvl = userLevel();
     const userPluga = currentUser?.pluga || '';
+    const role = currentUser?.role || '';
 
-    // For officer course, platoon state is stored separately in currentOfficerPluga
     const getCurrentPluga = () => prog === 'officer' ? currentOfficerPluga : currentTrainingTrack[prog];
     const setCurrentPluga = (t) => { if (prog === 'officer') { currentOfficerPluga = t; } else { currentTrainingTrack[prog] = t; } };
 
-    if (lvl >= 3) {
-        // מ"פ/קמב"ץ/מש"ק חינוך/בה"ד/מפח"ט level: show platoon tabs per program
+    if (canSeeAllPlugas()) {
+        // Staff/command — can see all platoons and switch between them
         let html = '';
         const config = TRAINING_CONFIG[prog];
         const allTracks = (config && config.plugas) || ['pluga_a','pluga_b','pluga_c','pluga_d','pluga_e','pluga_f','pluga_g','pluga_h'];
@@ -3649,14 +3700,14 @@ function buildPlugaTabs(prog) {
         });
         container.innerHTML = html;
     } else if (userPluga) {
-        // Platoon-level user: ONLY their own platoon — locked, no switching
+        // Platoon-level user (מ"פ, קמב"ץ, סמ"פ, לוחם, etc.): ONLY their own platoon
         const userTrack = PLUGA_TRACK_MAP[userPluga];
         if (userTrack) {
             setCurrentPluga(userTrack);
-            container.innerHTML = `<span style="font-size:0.88rem;font-weight:600;color:var(--primary);">🔒 פלוגה ${userPluga}׳</span>`;
+            var label = userPluga.length === 1 ? 'פלוגה ' + userPluga + '׳' : 'פלוגת ' + userPluga;
+            container.innerHTML = `<span style="font-size:0.88rem;font-weight:600;color:var(--primary);">🔒 ${label}</span>`;
         }
     } else {
-        // No platoon assigned, not a manager — show message
         container.innerHTML = '<span style="font-size:0.82rem;color:var(--text-secondary);">לא שויכת לפלוגה — פנה למשק חינוך</span>';
     }
 }
@@ -12214,6 +12265,7 @@ async function cmgmtAddLesson() {
     const track = prog === 'officer' ? document.getElementById('cmgmt-track').value : '';
     const week = parseInt(document.getElementById('cmgmt-week').value) || 1;
     const category = document.getElementById('cmgmt-cat').value;
+    if (!canEditCategory(category)) { showToast('אין לך הרשאה להוסיף תכנים בקטגוריה זו'); return; }
     const title = document.getElementById('cmgmt-title').value.trim();
     const instructor = document.getElementById('cmgmt-instructor').value.trim();
     const hours = parseFloat(document.getElementById('cmgmt-hours').value) || 0;
@@ -12282,6 +12334,7 @@ function adminTrainingChanged() {
 }
 
 async function loadAdminTrainingContent() {
+    filterCategoryDropdown('admin-lesson-cat');
     const container = document.getElementById('admin-training-list');
     const prog = document.getElementById('admin-train-program').value;
     const track = prog === 'officer' ? document.getElementById('admin-train-track').value : '';
@@ -12347,6 +12400,7 @@ async function adminAddLesson() {
     const track = prog === 'officer' ? document.getElementById('admin-train-track').value : '';
     const week = parseInt(document.getElementById('admin-train-week').value) || 1;
     const category = document.getElementById('admin-lesson-cat').value;
+    if (!canEditCategory(category)) { showToast('אין לך הרשאה להוסיף תכנים בקטגוריה זו'); return; }
     const title = document.getElementById('admin-lesson-title').value.trim();
     const instructor = document.getElementById('admin-lesson-instructor').value.trim();
     const hours = parseFloat(document.getElementById('admin-lesson-hours').value) || 0;
