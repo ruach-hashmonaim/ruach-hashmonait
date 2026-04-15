@@ -3776,7 +3776,7 @@ async function loadTrainingPage(program) {
         // Content query: filter by content track (sade/gefen for officer), not by platoon
         let query = db.collection('training_content').where('program','==',program).where('week','==',week);
         if (track) query = query.where('track','==',track);
-        const snap = await query.orderBy('order').get();
+        const snap = await query.get();
 
         // Load completion status
         let statusQuery = db.collection('training_completion').where('program','==',program).where('week','==',week);
@@ -11962,7 +11962,7 @@ async function loadCmgmtContent() {
     try {
         let query = db.collection('training_content').where('program','==',prog).where('week','==',week);
         if (track) query = query.where('track','==',track);
-        const snap = await query.orderBy('order').get();
+        const snap = await query.get();
         const emetCheck = (EMET_CURRICULUM[prog] && EMET_CURRICULUM[prog][week]) || [];
         if (snap.empty && emetCheck.length === 0) {
             container.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">אין תכנים לשבוע זה</p>';
@@ -12327,7 +12327,7 @@ async function loadAdminTrainingContent() {
     try {
         let query = db.collection('training_content').where('program','==',prog).where('week','==',week);
         if (track) query = query.where('track','==',track);
-        const snap = await query.orderBy('order').get();
+        const snap = await query.get();
 
         // Also get EMET items for this program+week
         const emetItems = (EMET_CURRICULUM[prog] && EMET_CURRICULUM[prog][week]) || [];
@@ -20750,20 +20750,23 @@ function tryAutoLogin() {
             } else {
                 currentUser = parsed;
             }
-            // Refresh permissions from Firestore in background
+            // Refresh permissions from Firestore BEFORE rendering UI
+            onLoginSuccess(); // show basic UI immediately
             if (currentUser.id && db) {
-                db.collection('users').doc(currentUser.id).get().then(function(doc) {
-                    if (doc.exists) {
-                        var fresh = doc.data();
+                try {
+                    var freshDoc = await db.collection('users').doc(currentUser.id).get();
+                    if (freshDoc.exists) {
+                        var fresh = freshDoc.data();
                         currentUser.permissions = fresh.permissions || [];
                         currentUser.role = fresh.role || currentUser.role;
                         currentUser.pluga = fresh.pluga || currentUser.pluga;
                         currentUser.framework = fresh.framework || currentUser.framework;
+                        currentUser.name = fresh.name || currentUser.name;
                         localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+                        onLoginSuccess(); // re-render with fresh permissions
                     }
-                }).catch(function(){});
+                } catch(e) { console.warn('Permission refresh failed:', e); }
             }
-            onLoginSuccess();
             const page = window.location.hash.slice(1) || 'home';
             if (PAGE_PERMISSIONS[page] && hasPermission(PAGE_PERMISSIONS[page])) activatePage(page);
             return; // staff login found, done
