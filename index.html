@@ -17347,9 +17347,10 @@ async function sakalGenerateAI(lat, lng, placeName) {
 var sakalLastGenerated = null;
 
 function sakalRenderGenerated(sakagData, lat, lng, placeName) {
-    sakalLastGenerated = { data: sakagData, lat: lat, lng: lng, placeName: placeName, pois: window._lastSakalPois || [] };
+    var pois = window._lastSakalPois || [];
+    sakalLastGenerated = { data: sakagData, lat: lat, lng: lng, placeName: placeName, pois: pois };
     var templateEl = document.getElementById('sakal-create-template');
-    var sectionsHtml = (sakagData.sections || []).map(function(sec, i) {
+    var sectionsHtml = (sakagData.sections || []).map(function(sec) {
         return '<div style="margin-bottom:16px;">' +
             '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">' + (sec.icon||'📌') + ' ' + sec.title + '</div>' +
             '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.7;direction:rtl;">' + sec.content + '</div>' +
@@ -17359,13 +17360,88 @@ function sakalRenderGenerated(sakagData, lat, lng, placeName) {
     templateEl.innerHTML = '<div style="border:2px solid var(--primary);border-radius:14px;overflow:hidden;">' +
         '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;">📋 ' + sakagData.title + '</div>' +
         '<div style="padding:4px 16px 0;text-align:center;font-size:0.85rem;color:var(--text-secondary);">' + (sakagData.subtitle||'') + '</div>' +
+        // POI Map
+        '<div id="sakal-result-map" style="height:280px;margin:12px 16px;border-radius:12px;border:2px solid var(--border);z-index:0;"></div>' +
         '<div style="padding:16px;">' + sectionsHtml + '</div>' +
-        '<div style="margin:0 16px 12px;padding:10px 14px;background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;font-size:0.82rem;color:#856404;text-align:center;">⚠️ <b>שים לב:</b> סקירה זו הוכנה באמצעות בינה מלאכותית (AI). יש לוודא את נכונות התכנים, לבדוק מקורות ולהצליב עם מידע נוסף לפני השימוש.</div>' +
+        '<div style="margin:0 16px 12px;padding:10px 14px;background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;font-size:0.82rem;color:#856404;text-align:center;">⚠️ <b>שים לב:</b> סקירה זו הוכנה באמצעות AI. יש לוודא נכונות ולהצליב עם מקורות.</div>' +
         '<div style="padding:12px 16px 16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;border-top:1px solid var(--border);">' +
             '<button class="btn-primary" onclick="sakalSaveGenerated()" style="font-size:0.9rem;padding:10px 24px;">💾 שמור סק"ג</button>' +
+            '<button class="btn-secondary" onclick="exportSakalPDF()" style="font-size:0.9rem;padding:10px 24px;">📥 הורד PDF</button>' +
+            '<button class="btn-secondary" onclick="exportSakalText()" style="font-size:0.9rem;padding:10px 24px;">📄 הורד טקסט</button>' +
             '<button class="btn-secondary" onclick="sakalGenerateAI('+lat+','+lng+',\''+placeName.replace(/'/g,"\\'")+'\')" style="font-size:0.9rem;padding:10px 24px;">🔄 צור מחדש</button>' +
         '</div>' +
     '</div>';
+
+    // Render the map with POIs
+    setTimeout(function() {
+        var mapEl = document.getElementById('sakal-result-map');
+        if (!mapEl) return;
+        var map = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], 14);
+        L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(map);
+
+        // Main location marker
+        L.marker([lat, lng], {
+            icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[34,34], iconAnchor:[17,17] })
+        }).addTo(map).bindPopup('<b>' + placeName + '</b>');
+
+        // Draw route/polygon if applicable
+        var wd = sakalWizardData || {};
+        if (wd.areaMode === 'route' && wd.routePoints && wd.routePoints.length >= 2) {
+            L.polyline(wd.routePoints, { color: '#0E7490', weight: 4, dashArray: '8,6' }).addTo(map);
+            wd.routePoints.forEach(function(p, i) {
+                L.circleMarker(p, { radius: 5, color: '#0E7490', fillColor: '#fff', fillOpacity: 1, weight: 2 }).addTo(map);
+            });
+        } else if (wd.areaMode === 'polygon' && wd.polygonPoints && wd.polygonPoints.length >= 3) {
+            L.polygon(wd.polygonPoints, { color: '#0E7490', fillColor: '#0E7490', fillOpacity: 0.1, weight: 2 }).addTo(map);
+        }
+
+        // POI markers
+        var bounds = [[lat, lng]];
+        pois.forEach(function(poi) {
+            if (!poi.lat || !poi.lng) return;
+            bounds.push([poi.lat, poi.lng]);
+            L.circleMarker([poi.lat, poi.lng], { radius: 7, color: '#D97706', fillColor: '#D97706', fillOpacity: 0.7, weight: 2 })
+                .addTo(map).bindPopup('<b>' + poi.name + '</b><br><span style="font-size:0.8rem;">' + (poi.dist||'') + ' מ׳ | ' + (poi.type||'') + '</span>');
+        });
+        if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+        setTimeout(function() { map.invalidateSize(); }, 200);
+    }, 300);
+}
+
+function exportSakalPDF() {
+    if (!sakalLastGenerated) return;
+    var d = sakalLastGenerated.data;
+    var sections = d.sections || [];
+    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}</style></head><body>';
+    html += '<h1>' + (d.title || '') + '</h1>';
+    if (d.subtitle) html += '<p class="subtitle">' + d.subtitle + '</p>';
+    sections.forEach(function(sec) {
+        html += '<h2>' + (sec.icon||'') + ' ' + sec.title + '</h2>';
+        html += '<div>' + sec.content + '</div>';
+    });
+    html += '<div class="warning">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>';
+    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — חטיבת החשמונאים</p></body></html>';
+    var win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(function() { win.print(); }, 500);
+}
+
+function exportSakalText() {
+    if (!sakalLastGenerated) return;
+    var d = sakalLastGenerated.data;
+    var sections = d.sections || [];
+    var text = (d.title || '') + '\n' + (d.subtitle || '') + '\n' + '='.repeat(40) + '\n\n';
+    sections.forEach(function(sec) {
+        text += (sec.icon||'') + ' ' + sec.title + '\n' + '-'.repeat(30) + '\n';
+        var div = document.createElement('div'); div.innerHTML = sec.content;
+        text += div.textContent + '\n\n';
+    });
+    text += '\n⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.\nהמצפן — חטיבת החשמונאים';
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = (d.title || 'sakag').replace(/[^א-תa-zA-Z0-9 ]/g, '') + '.txt';
+    a.click();
 }
 
 async function sakalSaveGenerated() {
