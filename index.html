@@ -17408,23 +17408,83 @@ function sakalRenderGenerated(sakagData, lat, lng, placeName) {
     }, 300);
 }
 
+function buildStaticMapUrl(lat, lng, pois, routePoints, polygonPoints, areaMode) {
+    // Use OpenStreetMap static map via leaflet-image workaround:
+    // Build a simple static map image URL using OSM tile + marker overlay
+    var zoom = 13;
+    var w = 600, h = 350;
+    // Use Google Static Maps (no API key needed for basic embed)
+    var url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + lat + ',' + lng +
+        '&zoom=' + zoom + '&size=' + w + 'x' + h + '&maptype=terrain&language=he' +
+        '&markers=color:red|' + lat + ',' + lng;
+    // Add POI markers (up to 15 to stay under URL limit)
+    var poiSlice = (pois || []).slice(0, 15);
+    if (poiSlice.length > 0) {
+        url += '&markers=color:orange|size:small|' + poiSlice.map(function(p) { return p.lat + ',' + p.lng; }).join('|');
+    }
+    // Add path for route
+    if (areaMode === 'route' && routePoints && routePoints.length >= 2) {
+        url += '&path=color:0x0E7490ff|weight:3|' + routePoints.map(function(p) { return p[0] + ',' + p[1]; }).join('|');
+    }
+    // Add polygon
+    if (areaMode === 'polygon' && polygonPoints && polygonPoints.length >= 3) {
+        var polyPath = polygonPoints.map(function(p) { return p[0] + ',' + p[1]; }).join('|');
+        url += '&path=color:0x0E7490ff|fillcolor:0x0E749022|weight:2|' + polyPath + '|' + polygonPoints[0][0] + ',' + polygonPoints[0][1];
+    }
+    return url;
+}
+
 function exportSakalPDF() {
     if (!sakalLastGenerated) return;
-    var d = sakalLastGenerated.data;
+    var sg = sakalLastGenerated;
+    var d = sg.data;
     var sections = d.sections || [];
-    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}</style></head><body>';
+    var wd = sakalWizardData || {};
+
+    // Try to capture the map canvas as image
+    var mapImg = '';
+    var mapEl = document.getElementById('sakal-result-map');
+    if (mapEl) {
+        // Use static map URL as fallback (always works)
+        var staticUrl = buildStaticMapUrl(sg.lat, sg.lng, sg.pois, wd.routePoints, wd.polygonPoints, wd.areaMode);
+        mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + staticUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;" onerror="this.style.display=\'none\'"><p style="font-size:0.7rem;color:#999;">📍 ' + (sg.placeName || '') + ' (' + sg.lat.toFixed(4) + ', ' + sg.lng.toFixed(4) + ')</p></div>';
+    }
+
+    // Also try canvas capture from Leaflet
+    try {
+        var canvas = mapEl ? mapEl.querySelector('canvas') : null;
+        if (canvas) {
+            var dataUrl = canvas.toDataURL('image/png');
+            if (dataUrl && dataUrl.length > 100) {
+                mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + dataUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;"><p style="font-size:0.7rem;color:#999;">📍 ' + (sg.placeName || '') + '</p></div>';
+            }
+        }
+    } catch(e) {}
+
+    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}.poi-list{font-size:0.8rem;color:#555;columns:2;margin:8px 0;}</style></head><body>';
     html += '<h1>' + (d.title || '') + '</h1>';
     if (d.subtitle) html += '<p class="subtitle">' + d.subtitle + '</p>';
+    html += mapImg;
+
+    // POI list
+    if (sg.pois && sg.pois.length > 0) {
+        html += '<div style="margin:10px 0;padding:10px;background:#f5f5f5;border-radius:8px;"><b style="font-size:0.85rem;color:#0E7490;">נקודות עניין שנמצאו במרחב (' + sg.pois.length + '):</b><div class="poi-list">';
+        sg.pois.slice(0, 20).forEach(function(p) {
+            html += '<div>• ' + p.name + ' (' + (p.dist||'?') + ' מ׳)</div>';
+        });
+        html += '</div></div>';
+    }
+
     sections.forEach(function(sec) {
         html += '<h2>' + (sec.icon||'') + ' ' + sec.title + '</h2>';
         html += '<div>' + sec.content + '</div>';
     });
     html += '<div class="warning">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>';
-    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — חטיבת החשמונאים</p></body></html>';
+    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</p></body></html>';
     var win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
-    setTimeout(function() { win.print(); }, 500);
+    setTimeout(function() { win.print(); }, 800);
 }
 
 function exportSakalText() {
@@ -18200,20 +18260,45 @@ async function exportContentPDF(docId, collection) {
     if (!doc.exists) return;
     var d = doc.data();
     var sections = d.sections || [];
-    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}p{margin:6px 0;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}</style></head><body>';
+
+    // Map image for סק"ג
+    var mapImg = '';
+    if (d.lat && d.lng) {
+        var staticUrl = buildStaticMapUrl(d.lat, d.lng, d.pois || [], [], [], 'point');
+        mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + staticUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;" onerror="this.style.display=\'none\'"><p style="font-size:0.7rem;color:#999;">📍 ' + (d.placeName || '') + '</p></div>';
+        // Try canvas capture
+        try {
+            var viewMap = document.getElementById('view-content-map');
+            var canvas = viewMap ? viewMap.querySelector('canvas') : null;
+            if (canvas) {
+                var dataUrl = canvas.toDataURL('image/png');
+                if (dataUrl && dataUrl.length > 100) mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + dataUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;"></div>';
+            }
+        } catch(e) {}
+    }
+
+    // POI list
+    var poiHtml = '';
+    if (d.pois && d.pois.length > 0) {
+        poiHtml = '<div style="margin:10px 0;padding:10px;background:#f5f5f5;border-radius:8px;"><b style="font-size:0.85rem;color:#0E7490;">נקודות עניין (' + d.pois.length + '):</b><div style="font-size:0.8rem;columns:2;margin:8px 0;">';
+        d.pois.slice(0, 20).forEach(function(p) { poiHtml += '<div>• ' + p.name + ' (' + (p.dist||'?') + ' מ׳)</div>'; });
+        poiHtml += '</div></div>';
+    }
+
+    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}</style></head><body>';
     html += '<h1>' + (d.title || '') + '</h1>';
     if (d.subtitle) html += '<p class="subtitle">' + d.subtitle + '</p>';
+    html += mapImg + poiHtml;
     sections.forEach(function(sec) {
         html += '<h2>' + (sec.icon||'') + ' ' + sec.title + '</h2>';
         html += '<div>' + sec.content + '</div>';
     });
-    html += '<div class="warning">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות התכנים.</div>';
-    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</p>';
-    html += '</body></html>';
+    html += '<div class="warning">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>';
+    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — חטיבת החשמונאים</p></body></html>';
     var win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
-    setTimeout(function() { win.print(); }, 500);
+    setTimeout(function() { win.print(); }, 800);
 }
 
 // Export content as plain text
