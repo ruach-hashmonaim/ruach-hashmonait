@@ -1000,9 +1000,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- MAIN -->
 <div class="main-content">
     <header class="main-header">
-        <div>
-            <h1 id="page-title">דף הבית</h1>
-            <div class="breadcrumb" id="page-breadcrumb">המצפן</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button id="back-btn" onclick="navigate('home')" style="display:none;background:none;border:1.5px solid var(--border);border-radius:10px;padding:6px 12px;cursor:pointer;font-size:0.85rem;font-family:inherit;color:var(--primary);white-space:nowrap;transition:all 0.2s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='none'">→ חזרה</button>
+            <div>
+                <h1 id="page-title">דף הבית</h1>
+                <div class="breadcrumb" id="page-breadcrumb">המצפן</div>
+            </div>
         </div>
     </header>
 
@@ -2668,6 +2671,9 @@ function activatePage(page) {
     if (navLink) navLink.classList.add('active');
     document.getElementById('page-title').textContent = PAGE_TITLES[page] || '';
     document.getElementById('page-breadcrumb').textContent = 'המצפן' + (page !== 'home' ? ' / ' + (PAGE_TITLES[page] || '') : '');
+    // Show/hide back button
+    var backBtn = document.getElementById('back-btn');
+    if (backBtn) backBtn.style.display = page === 'home' ? 'none' : '';
 
     if (page === 'learning') loadLearningPrograms();
     if (page === 'hebrew') loadHebrewPage();
