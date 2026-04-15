@@ -1688,6 +1688,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <button class="btn-sm btn-secondary" id="lib-filter-morak" onclick="loadLibrary('morak')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">⭐ מור"קים</button>
                 <button class="btn-sm btn-secondary" id="lib-filter-lesson" onclick="loadLibrary('lesson')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">📖 מערכי שיעור</button>
             </div>
+            <!-- Library map showing סק"ג locations -->
+            <div id="library-map" style="height:300px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;z-index:0;display:none;"></div>
             <div id="library-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
         </div>
     </div>
@@ -17195,6 +17197,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
         // ============================================================
         var radiusMeters = areaMode === 'point' ? 1000 : 3000;
         var pois = await fetchOverpassPOIs(lat, lng, radiusMeters, sakalWizardData.routePoints, sakalWizardData.polygonPoints, areaMode);
+        window._lastSakalPois = pois; // Store for save
         var poiText = formatPOIsForPrompt(pois);
         var poiCountEl = document.getElementById('sakal-poi-count');
         if (poiCountEl) poiCountEl.textContent = '📍 נמצאו ' + pois.length + ' נקודות עניין';
@@ -17344,7 +17347,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
 var sakalLastGenerated = null;
 
 function sakalRenderGenerated(sakagData, lat, lng, placeName) {
-    sakalLastGenerated = { data: sakagData, lat: lat, lng: lng, placeName: placeName };
+    sakalLastGenerated = { data: sakagData, lat: lat, lng: lng, placeName: placeName, pois: window._lastSakalPois || [] };
     var templateEl = document.getElementById('sakal-create-template');
     var sectionsHtml = (sakagData.sections || []).map(function(sec, i) {
         return '<div style="margin-bottom:16px;">' +
@@ -17370,12 +17373,15 @@ async function sakalSaveGenerated() {
     var d = sakalLastGenerated;
 
     try {
+        // Store POIs (limit to first 30, only essential fields to save space)
+        var poisToSave = (d.pois || []).slice(0, 30).map(function(p) { return { name: p.name, lat: p.lat, lng: p.lng, dist: p.dist, type: p.type }; });
         var docRef = await db.collection('user_sakag').add({
             title: d.data.title || 'סק"ג — ' + d.placeName,
             subtitle: d.data.subtitle || '',
             placeName: d.placeName,
             lat: d.lat,
             lng: d.lng,
+            pois: poisToSave,
             sections: d.data.sections || [],
             createdBy: currentUser.id || currentUser.uid || currentUser.email,
             createdByName: currentUser.name || currentUser.email || '',
@@ -17974,7 +17980,7 @@ async function loadLibrary(filter) {
                 sakagSnap.forEach(function(doc) {
                     var d = doc.data();
                     if (d.status && d.status !== 'active') return;
-                    items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
+                    items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt, lat: d.lat, lng: d.lng });
                 });
             } catch(e) { console.warn('Library: sakag load error', e); }
         }
@@ -17999,8 +18005,31 @@ async function loadLibrary(filter) {
 
         if (items.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:30px;">אין תכנים עדיין — השתמש בכלים למעלה ליצירת תוכן!</div>'; return; }
 
+        // Show map with סק"ג locations
+        var sakagItems = items.filter(function(i) { return i.type === 'sakag' && i.lat; });
+        var libMapEl = document.getElementById('library-map');
+        if (sakagItems.length > 0 && libMapEl) {
+            libMapEl.style.display = '';
+            if (window._libMap) { window._libMap.remove(); window._libMap = null; }
+            window._libMap = L.map(libMapEl, { zoomControl: true, attributionControl: false }).setView([31.5, 35.0], 8);
+            L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(window._libMap);
+            var bounds = [];
+            sakagItems.forEach(function(s) {
+                bounds.push([s.lat, s.lng]);
+                L.marker([s.lat, s.lng], {
+                    icon: L.divIcon({ className:'', html:'<div style="background:#D97706;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer;">📋</div>', iconSize:[30,30], iconAnchor:[15,15] })
+                }).addTo(window._libMap).bindPopup('<b>' + s.title + '</b><br><span style="font-size:0.8rem;">' + (s.subtitle||'') + '</span><br><button onclick="viewGeneratedContent(\''+s.id+'\',\''+s.collection+'\')" style="margin-top:6px;padding:4px 10px;border:none;background:var(--primary);color:#fff;border-radius:6px;cursor:pointer;font-family:inherit;font-size:0.8rem;">📖 פתח</button>');
+            });
+            if (bounds.length > 1) window._libMap.fitBounds(bounds, { padding: [30, 30] });
+            else if (bounds.length === 1) window._libMap.setView(bounds[0], 12);
+            setTimeout(function() { try { window._libMap.invalidateSize(); } catch(e) {} }, 300);
+        } else if (libMapEl) { libMapEl.style.display = 'none'; }
+
+        var isAdmin = hasPermission('admin') || hasPermission('manage-permissions');
         container.innerHTML = items.map(function(item) {
-            return '<div class="card" style="cursor:pointer;border-right:4px solid ' + item.color + ';" onclick="viewGeneratedContent(\''+item.id+'\',\''+item.collection+'\')">' +
+            var deleteBtn = isAdmin ? '<button onclick="event.stopPropagation();deleteLibraryItem(\''+item.id+'\',\''+item.collection+'\')" style="position:absolute;top:8px;left:8px;background:#DC2626;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:0.7rem;cursor:pointer;font-family:inherit;" title="מחק">🗑️</button>' : '';
+            return '<div class="card" style="cursor:pointer;border-right:4px solid ' + item.color + ';position:relative;" onclick="viewGeneratedContent(\''+item.id+'\',\''+item.collection+'\')">' +
+                deleteBtn +
                 '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
                     '<span style="font-size:1.4rem;">' + item.icon + '</span>' +
                     '<span style="font-size:0.72rem;background:' + item.color + '22;color:' + item.color + ';padding:2px 8px;border-radius:8px;font-weight:600;">' + item.label + '</span>' +
@@ -18013,6 +18042,15 @@ async function loadLibrary(filter) {
     } catch(e) { container.innerHTML = '<div style="color:#d32f2f;">שגיאה בטעינה: ' + e.message + '</div>'; }
 }
 
+async function deleteLibraryItem(docId, collection) {
+    if (!confirm('למחוק תוכן זה לצמיתות?')) return;
+    try {
+        await db.collection(collection).doc(docId).update({ status: 'deleted' });
+        showToast('✅ התוכן נמחק');
+        loadLibrary('all');
+    } catch(e) { showToast('שגיאה במחיקה: ' + e.message); }
+}
+
 async function viewGeneratedContent(docId, collection) {
     collection = collection || 'commander_tools';
     try {
@@ -18022,6 +18060,7 @@ async function viewGeneratedContent(docId, collection) {
         var sections = d.sections || [];
 
         var modal = document.createElement('div');
+        modal.id = 'view-content-modal';
         modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10001;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;';
         modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
 
@@ -18030,16 +18069,96 @@ async function viewGeneratedContent(docId, collection) {
                 '<div style="background:#F5F5F5;border-radius:8px;padding:12px;font-size:0.85rem;line-height:1.7;">' + sec.content + '</div></div>';
         }).join('');
 
+        // Map for סק"ג with POI locations
+        var mapHtml = '';
+        if (d.lat && d.lng) {
+            mapHtml = '<div id="view-content-map" style="height:250px;border-radius:12px;border:2px solid var(--border);margin:0 18px 14px;z-index:0;"></div>';
+        }
+
+        // Export buttons
+        var exportHtml = '<div style="display:flex;gap:8px;justify-content:center;padding:0 18px 14px;flex-wrap:wrap;">' +
+            '<button onclick="exportContentPDF(\'' + docId + '\',\'' + collection + '\')" class="btn-primary btn-sm" style="font-size:0.82rem;">📥 הורד PDF</button>' +
+            '<button onclick="exportContentText(\'' + docId + '\',\'' + collection + '\')" class="btn-secondary btn-sm" style="font-size:0.82rem;">📄 הורד טקסט</button>' +
+        '</div>';
+
         modal.innerHTML = '<div style="background:#ffffff;border-radius:14px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;direction:rtl;" onclick="event.stopPropagation()">' +
             '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;border-radius:14px 14px 0 0;position:relative;">' + (d.title||'') +
                 '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">✕</button>' +
             '</div>' +
             (d.subtitle ? '<div style="padding:6px 18px 0;text-align:center;font-size:0.85rem;color:var(--text-secondary);">' + d.subtitle + '</div>' : '') +
+            mapHtml +
             '<div style="padding:18px;">' + sectionsHtml + '</div>' +
-            '<div style="margin:0 18px 14px;padding:10px 14px;background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;font-size:0.82rem;color:#856404;text-align:center;">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>' +
+            '<div style="margin:0 18px 10px;padding:10px 14px;background:#FFF3CD;border:1.5px solid #FFC107;border-radius:10px;font-size:0.82rem;color:#856404;text-align:center;">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>' +
+            exportHtml +
         '</div>';
         document.body.appendChild(modal);
+
+        // Render map if סק"ג
+        if (d.lat && d.lng) {
+            setTimeout(function() {
+                var mapEl = document.getElementById('view-content-map');
+                if (!mapEl) return;
+                var map = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([d.lat, d.lng], 14);
+                L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(map);
+                // Main marker
+                L.marker([d.lat, d.lng], {
+                    icon: L.divIcon({ className:'', html:'<div style="background:#d32f2f;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>', iconSize:[32,32], iconAnchor:[16,16] })
+                }).addTo(map).bindPopup('<b>' + (d.placeName || d.title || '') + '</b>');
+                // POI markers if available
+                if (d.pois && d.pois.length) {
+                    d.pois.forEach(function(poi) {
+                        if (!poi.lat || !poi.lng) return;
+                        L.circleMarker([poi.lat, poi.lng], { radius: 6, color: '#0E7490', fillColor: '#0E7490', fillOpacity: 0.7, weight: 2 })
+                            .addTo(map).bindPopup('<b>' + poi.name + '</b>' + (poi.dist ? '<br>' + poi.dist + ' מ׳' : ''));
+                    });
+                }
+                setTimeout(function() { map.invalidateSize(); }, 200);
+            }, 300);
+        }
     } catch(e) { showToast('שגיאה בטעינה'); }
+}
+
+// Export content as PDF (using browser print)
+async function exportContentPDF(docId, collection) {
+    var doc = await db.collection(collection).doc(docId).get();
+    if (!doc.exists) return;
+    var d = doc.data();
+    var sections = d.sections || [];
+    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}p{margin:6px 0;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}</style></head><body>';
+    html += '<h1>' + (d.title || '') + '</h1>';
+    if (d.subtitle) html += '<p class="subtitle">' + d.subtitle + '</p>';
+    sections.forEach(function(sec) {
+        html += '<h2>' + (sec.icon||'') + ' ' + sec.title + '</h2>';
+        html += '<div>' + sec.content + '</div>';
+    });
+    html += '<div class="warning">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות התכנים.</div>';
+    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</p>';
+    html += '</body></html>';
+    var win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(function() { win.print(); }, 500);
+}
+
+// Export content as plain text
+async function exportContentText(docId, collection) {
+    var doc = await db.collection(collection).doc(docId).get();
+    if (!doc.exists) return;
+    var d = doc.data();
+    var sections = d.sections || [];
+    var text = (d.title || '') + '\n' + (d.subtitle || '') + '\n' + '='.repeat(40) + '\n\n';
+    sections.forEach(function(sec) {
+        text += (sec.icon||'') + ' ' + sec.title + '\n' + '-'.repeat(30) + '\n';
+        // Strip HTML
+        var div = document.createElement('div'); div.innerHTML = sec.content;
+        text += div.textContent + '\n\n';
+    });
+    text += '\n⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.\nהמצפן — חטיבת החשמונאים';
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = (d.title || 'content').replace(/[^א-תa-zA-Z0-9 ]/g, '') + '.txt';
+    a.click(); URL.revokeObjectURL(url);
 }
 
 // ============================================================
