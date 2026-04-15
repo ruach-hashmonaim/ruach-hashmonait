@@ -20785,11 +20785,11 @@ async function tryAutoLogin() {
             } else {
                 currentUser = parsed;
             }
-            // Refresh permissions from Firestore BEFORE rendering UI
-            onLoginSuccess(); // show basic UI immediately
+            // Show UI immediately with cached permissions
+            onLoginSuccess();
+            // Then refresh permissions from Firestore in background (non-blocking)
             if (currentUser.id && db) {
-                try {
-                    var freshDoc = await db.collection('users').doc(currentUser.id).get();
+                db.collection('users').doc(currentUser.id).get().then(function(freshDoc) {
                     if (freshDoc.exists) {
                         var fresh = freshDoc.data();
                         currentUser.permissions = fresh.permissions || [];
@@ -20800,7 +20800,7 @@ async function tryAutoLogin() {
                         localStorage.setItem('ruach-user', JSON.stringify(currentUser));
                         onLoginSuccess(); // re-render with fresh permissions
                     }
-                } catch(e) { console.warn('Permission refresh failed:', e); }
+                }).catch(function(e) { console.warn('Permission refresh failed:', e); });
             }
             const page = window.location.hash.slice(1) || 'home';
             if (PAGE_PERMISSIONS[page] && hasPermission(PAGE_PERMISSIONS[page])) activatePage(page);
