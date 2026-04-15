@@ -20734,7 +20734,7 @@ async function initApp() {
     } catch(e) { console.error('Init error:', e); }
 }
 
-function tryAutoLogin() {
+async function tryAutoLogin() {
     // Try staff login first
     const savedStaff = localStorage.getItem('ruach-user');
     if (savedStaff) {
