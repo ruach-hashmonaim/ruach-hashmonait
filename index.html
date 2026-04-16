@@ -22215,22 +22215,26 @@ function updateHebrewDate() {
     try {
         var now = new Date();
 
-        // Full Hebrew date in Hebrew (e.g., "יום חמישי, כ״ה בניסן תשפ״ו")
+        // Hebrew date string (e.g., "כ״ט בניסן תשפ״ו") — day + month + year only
         var hebDateStr = '';
         try {
             hebDateStr = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-                weekday: 'long',
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric'
             }).format(now);
-        } catch(e) {
-            hebDateStr = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-                day: 'numeric',
-                month: 'long',
+        } catch(e) { hebDateStr = ''; }
+
+        // Numeric Hebrew year (e.g. 5786) using English formatter for reliable digits
+        var hebYearNum = null;
+        try {
+            var yearParts = new Intl.DateTimeFormat('en-US-u-ca-hebrew', {
                 year: 'numeric'
-            }).format(now);
-        }
+            }).formatToParts(now);
+            yearParts.forEach(function(p) {
+                if (p.type === 'year') hebYearNum = parseInt(p.value, 10);
+            });
+        } catch(e) {}
 
         // Get Hebrew month + day in English (for Omer computation)
         var hebDay = null, hebMonth = '';
@@ -22266,8 +22270,6 @@ function updateHebrewDate() {
             var weekNum = Math.ceil(omerDay / 7);                    // 1-7
             var dayInWeek = ((omerDay - 1) % 7) + 1;                 // 1-7
             var pair = sefirot[dayInWeek - 1] + ' שב' + sefirot[weekNum - 1];
-            // Special wording for the first day of each week (day in week = 1)
-            // and the first day overall
             var omerLabel;
             if (omerDay === 1) {
                 omerLabel = 'היום יום אחד לעומר';
@@ -22279,9 +22281,17 @@ function updateHebrewDate() {
 
         var el = document.getElementById('hebrew-year-display');
         if (el) {
-            var html = '📅 ' + hebDateStr;
-            if (omerLine) html += '<br>' + omerLine;
-            el.innerHTML = html;
+            var lines = [];
+            if (hebYearNum) {
+                lines.push('📅 שנת ' + hebYearNum + ' לבריאת העולם');
+            }
+            if (hebDateStr) {
+                lines.push(hebDateStr);
+            }
+            if (omerLine) {
+                lines.push(omerLine);
+            }
+            el.innerHTML = lines.join('<br>');
         }
     } catch(e) { console.log('Hebrew date error:', e); }
 }
