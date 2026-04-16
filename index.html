@@ -22210,49 +22210,86 @@ function cwStartPauseTimer() {
 }
 
 
+// Hebrew gematria helpers — convert integers to Hebrew letters
+function hebrewNumeral(n) {
+    if (n <= 0) return '';
+    var HUNDREDS = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'];
+    var TENS = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+    var ONES = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    var result = '';
+    if (n >= 100) {
+        result += HUNDREDS[Math.floor(n / 100)];
+        n = n % 100;
+    }
+    // Avoid spelling God's name: 15 = טו (not יה), 16 = טז (not יו)
+    if (n === 15) result += 'טו';
+    else if (n === 16) result += 'טז';
+    else {
+        if (n >= 10) {
+            result += TENS[Math.floor(n / 10)];
+            n = n % 10;
+        }
+        if (n > 0) result += ONES[n];
+    }
+    return result;
+}
+function addGershayim(s) {
+    if (!s) return s;
+    if (s.length === 1) return s + '׳';          // single letter → geresh
+    return s.slice(0, -1) + '״' + s.slice(-1);   // multi → gershayim
+}
+function hebrewDayStr(n)  { return addGershayim(hebrewNumeral(n)); }
+function hebrewYearStr(n) { return 'ה' + addGershayim(hebrewNumeral(n % 1000)); }
+
 // Hebrew date + Sefirat HaOmer display
 function updateHebrewDate() {
     try {
         var now = new Date();
 
-        // Hebrew date string (e.g., "כ״ט בניסן תשפ״ו") — day + month + year only
-        var hebDateStr = '';
-        try {
-            hebDateStr = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            }).format(now);
-        } catch(e) { hebDateStr = ''; }
-
-        // Numeric Hebrew year (e.g. 5786) using English formatter for reliable digits
-        var hebYearNum = null;
-        try {
-            var yearParts = new Intl.DateTimeFormat('en-US-u-ca-hebrew', {
-                year: 'numeric'
-            }).formatToParts(now);
-            yearParts.forEach(function(p) {
-                if (p.type === 'year') hebYearNum = parseInt(p.value, 10);
-            });
-        } catch(e) {}
-
-        // Get Hebrew month + day in English (for Omer computation)
-        var hebDay = null, hebMonth = '';
+        // Get Hebrew month + day + year via English-locale Intl formatter
+        var hebDay = null, hebMonth = '', hebYearNum = null;
         try {
             var parts = new Intl.DateTimeFormat('en-US-u-ca-hebrew', {
                 day: 'numeric',
-                month: 'long'
+                month: 'long',
+                year: 'numeric'
             }).formatToParts(now);
             parts.forEach(function(p) {
                 if (p.type === 'day') hebDay = parseInt(p.value, 10);
                 else if (p.type === 'month') hebMonth = p.value;
+                else if (p.type === 'year') hebYearNum = parseInt(p.value, 10);
             });
         } catch(e) {}
 
+        // Map English Hebrew-month names → Hebrew
+        var HEB_MONTHS = {
+            'Tishri':  'תשרי',
+            'Heshvan': 'חשוון',
+            'Kislev':  'כסלו',
+            'Tevet':   'טבת',
+            'Shevat':  'שבט',
+            'Adar':    'אדר',
+            'Adar I':  'אדר א׳',
+            'Adar II': 'אדר ב׳',
+            'Nisan':   'ניסן',
+            'Iyar':    'אייר',
+            'Sivan':   'סיוון',
+            'Tamuz':   'תמוז',
+            'Av':      'אב',
+            'Elul':    'אלול'
+        };
+        var heMonth = HEB_MONTHS[hebMonth] || hebMonth;
+
+        // Build Hebrew date string in gematria, e.g. "כ״ט בניסן התשפ״ו"
+        var hebDateStr = '';
+        if (hebDay && heMonth && hebYearNum) {
+            hebDateStr = hebrewDayStr(hebDay) + ' ב' + heMonth + ' ' + hebrewYearStr(hebYearNum);
+        }
+
         // Compute day of Omer (1-49) or 0 if outside period
         // Omer: 16 Nisan → 5 Sivan (49 days)
-        //   Nisan 16-30 = days 1-15 (Nisan has 30 days)
-        //   Iyar 1-29   = days 16-44 (Iyar has 29 days)
+        //   Nisan 16-30 = days 1-15
+        //   Iyar 1-29   = days 16-44
         //   Sivan 1-5   = days 45-49
         var omerDay = 0;
         if (hebMonth === 'Nisan' && hebDay >= 16) {
@@ -22263,19 +22300,14 @@ function updateHebrewDate() {
             omerDay = 44 + hebDay;
         }
 
-        // Sefirot pair computation
+        // Sefirot pair
         var sefirot = ['חסד', 'גבורה', 'תפארת', 'נצח', 'הוד', 'יסוד', 'מלכות'];
         var omerLine = '';
         if (omerDay >= 1 && omerDay <= 49) {
-            var weekNum = Math.ceil(omerDay / 7);                    // 1-7
-            var dayInWeek = ((omerDay - 1) % 7) + 1;                 // 1-7
+            var weekNum = Math.ceil(omerDay / 7);
+            var dayInWeek = ((omerDay - 1) % 7) + 1;
             var pair = sefirot[dayInWeek - 1] + ' שב' + sefirot[weekNum - 1];
-            var omerLabel;
-            if (omerDay === 1) {
-                omerLabel = 'היום יום אחד לעומר';
-            } else {
-                omerLabel = 'היום יום ' + omerDay + ' לעומר';
-            }
+            var omerLabel = (omerDay === 1) ? 'היום יום אחד לעומר' : 'היום יום ' + omerDay + ' לעומר';
             omerLine = '🌾 ' + omerLabel + ' — ' + pair;
         }
 
@@ -22283,10 +22315,10 @@ function updateHebrewDate() {
         if (el) {
             var lines = [];
             if (hebYearNum) {
-                lines.push('📅 שנת ' + hebYearNum + ' לבריאת העולם');
+                lines.push('🌍 שנת ' + hebYearNum.toLocaleString('en-US') + ' לבריאת העולם');
             }
             if (hebDateStr) {
-                lines.push(hebDateStr);
+                lines.push('📅 ' + hebDateStr);
             }
             if (omerLine) {
                 lines.push(omerLine);
