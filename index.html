@@ -1046,14 +1046,35 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- ====== כשירות אישית ====== -->
 <div class="page-section" id="page-soldier-tools">
     <div class="card">
-        <div class="card-title"><div class="icon">🛡️</div> כשירות אישית</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">כלים להתפתחות אישית — למידה יומית, לימוד עברית, וביטחון ברשת.</p>
-        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <!-- Menu grid — shown by default -->
+        <div id="soldier-menu-grid">
+            <div class="card-title"><div class="icon">🛡️</div> כשירות אישית</div>
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר נושא כדי להתחיל:</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;">
+                <div onclick="switchSoldierTab('learning')" style="cursor:pointer;background:linear-gradient(135deg,#0E7490 0%,#06B6D4 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(14,116,144,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(14,116,144,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(14,116,144,0.25)'">
+                    <div style="font-size:2.5rem;margin-bottom:10px;">📖</div>
+                    <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">והגית בו</div>
+                    <div style="font-size:0.78rem;opacity:0.85;line-height:1.4;">לוח קביעויות ופרסים — למידה יומית</div>
+                </div>
+                <div onclick="switchSoldierTab('hebrew')" style="cursor:pointer;background:linear-gradient(135deg,#7C3AED 0%,#A78BFA 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(124,58,237,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(124,58,237,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.25)'">
+                    <div style="font-size:2.5rem;margin-bottom:10px;">🔤</div>
+                    <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">לימוד עברית</div>
+                    <div style="font-size:0.78rem;opacity:0.85;line-height:1.4;">חידוני אוצר מילים ותרגול</div>
+                </div>
+                <div onclick="switchSoldierTab('internet')" style="cursor:pointer;background:linear-gradient(135deg,#DC2626 0%,#F87171 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(220,38,38,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(220,38,38,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(220,38,38,0.25)'">
+                    <div style="font-size:2.5rem;margin-bottom:10px;">🛡️</div>
+                    <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">שולטים ברשת</div>
+                    <div style="font-size:0.78rem;opacity:0.85;line-height:1.4;">ביטחון ברשת הפנימית</div>
+                </div>
+            </div>
+        </div>
+        <!-- Hidden old tabs for compatibility -->
+        <div id="soldier-tabs-row" style="display:none;">
             <button class="geo-tab active" id="soldier-tab-learning" onclick="switchSoldierTab('learning')">📖 והגית בו</button>
             <button class="geo-tab" id="soldier-tab-hebrew" onclick="switchSoldierTab('hebrew')">🔤 לימוד עברית</button>
             <button class="geo-tab" id="soldier-tab-internet" onclick="switchSoldierTab('internet')">🛡️ שולטים ברשת</button>
         </div>
-        <div id="soldier-content-learning"></div>
+        <div id="soldier-content-learning" style="display:none;"></div>
         <div id="soldier-content-hebrew" style="display:none;"></div>
         <div id="soldier-content-internet" style="display:none;"></div>
     </div>
@@ -1089,33 +1110,80 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
 <!-- ====== TRAINING — רוח מכבי — תוכנית הרוח והחינוך של בה״ד מכבים ====== -->
 <div class="page-section" id="page-training">
-    <div class="card">
+    <!-- Step 1: Choose program -->
+    <div id="training-step1" class="card">
         <div class="card-title">רוח מכבי</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">תוכנית הרוח והחינוך של בה״ד מכבים — תכני הכשרה לקורס קצינים, מ״כים, והכשרת יסוד</p>
-        <div style="margin-bottom:14px;">
-            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">הכשרה</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="track-tab active" id="training-prog-basic" onclick="switchTrainingProgram('basic')">הכשרת יסוד</button>
-                <button class="track-tab" id="training-prog-nco" onclick="switchTrainingProgram('nco')">קורס מ״כים</button>
-                <button class="track-tab" id="training-prog-officer" onclick="switchTrainingProgram('officer')">קורס קצינים</button>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר את סוג ההכשרה:</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;">
+            <div onclick="trainingSelectProgram('basic')" style="cursor:pointer;background:linear-gradient(135deg,#0E7490 0%,#06B6D4 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(14,116,144,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(14,116,144,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(14,116,144,0.25)'">
+                <div style="font-size:2.5rem;margin-bottom:10px;">🎖️</div>
+                <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">הכשרת יסוד</div>
+                <div style="font-size:0.78rem;opacity:0.85;line-height:1.4;">תכנית בסיסית לטירונות</div>
             </div>
-        </div>
-        <div id="training-officer-subtracks" style="display:none;margin-bottom:14px;">
-            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">מסלול</div>
-            <div style="display:flex;gap:8px;">
-                <button class="track-tab active" id="officer-track-sade" data-track="sade" onclick="switchOfficerTrackTab('sade')">מסלול שדה</button>
-                <button class="track-tab" id="officer-track-gefen" data-track="gefen" onclick="switchOfficerTrackTab('gefen')">מסלול גפן</button>
+            <div onclick="trainingSelectProgram('nco')" style="cursor:pointer;background:linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(124,58,237,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(124,58,237,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.25)'">
+                <div style="font-size:2.5rem;margin-bottom:10px;">⚔️</div>
+                <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">קורס מ״כים</div>
+                <div style="font-size:0.78rem;opacity:0.85;line-height:1.4;">תכנית לקורס מפקדים זוטרים</div>
             </div>
-        </div>
-        <div style="margin-bottom:14px;">
-            <div id="training-tracks-label" style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">מסגרת</div>
-            <div class="track-tabs-wrap" id="training-tracks" style="margin-bottom:0;"></div>
-        </div>
-        <div style="margin-bottom:4px;">
-            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-right:2px;">שבוע הכשרה</div>
-            <div class="training-controls" id="training-controls"></div>
+            <div onclick="trainingSelectProgram('officer')" style="cursor:pointer;background:linear-gradient(135deg,#D97706 0%,#F59E0B 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(217,119,6,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(217,119,6,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(217,119,6,0.25)'">
+                <div style="font-size:2.5rem;margin-bottom:10px;">🏅</div>
+                <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">קורס קצינים</div>
+                <div style="font-size:0.78rem;opacity:0.85;line-height:1.4;">תכנית לקורס הפיכ״לים</div>
+            </div>
         </div>
     </div>
+
+    <!-- Step 2: Officer sub-tracks (only for officer program) -->
+    <div id="training-step1b" style="display:none;" class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border,#e0e0e0);">
+            <button onclick="trainingBackToStep1()" style="background:none;border:1.5px solid var(--primary,#0E7490);color:var(--primary,#0E7490);border-radius:10px;padding:6px 14px;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:600;">← חזרה</button>
+            <span style="font-weight:700;font-size:1rem;color:var(--text-primary);">🏅 קורס קצינים — בחר מסלול</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;">
+            <div onclick="trainingSelectOfficerTrack('sade')" style="cursor:pointer;background:linear-gradient(135deg,#92400E 0%,#D4A843 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(146,64,14,0.25);" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform=''">
+                <div style="font-size:2.5rem;margin-bottom:10px;">🏔️</div>
+                <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">מסלול שדה</div>
+            </div>
+            <div onclick="trainingSelectOfficerTrack('gefen')" style="cursor:pointer;background:linear-gradient(135deg,#059669 0%,#10B981 100%);border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(5,150,105,0.25);" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform=''">
+                <div style="font-size:2.5rem;margin-bottom:10px;">🌿</div>
+                <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">מסלול גפן</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Choose platoon/framework -->
+    <div id="training-step2" style="display:none;" class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border,#e0e0e0);">
+            <button onclick="trainingBackFromStep2()" style="background:none;border:1.5px solid var(--primary,#0E7490);color:var(--primary,#0E7490);border-radius:10px;padding:6px 14px;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:600;">← חזרה</button>
+            <span id="training-step2-title" style="font-weight:700;font-size:1rem;color:var(--text-primary);"></span>
+        </div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר פלוגה / מסגרת:</p>
+        <div id="training-step2-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;"></div>
+    </div>
+
+    <!-- Step 3: Choose week -->
+    <div id="training-step3" style="display:none;" class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border,#e0e0e0);">
+            <button onclick="trainingBackToStep2()" style="background:none;border:1.5px solid var(--primary,#0E7490);color:var(--primary,#0E7490);border-radius:10px;padding:6px 14px;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:600;">← חזרה</button>
+            <span id="training-step3-title" style="font-weight:700;font-size:1rem;color:var(--text-primary);"></span>
+        </div>
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר שבוע הכשרה:</p>
+        <div id="training-step3-weeks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;"></div>
+    </div>
+
+    <!-- Hidden old controls for compatibility -->
+    <div id="training-old-controls" style="display:none;">
+        <button class="track-tab" id="training-prog-basic">הכשרת יסוד</button>
+        <button class="track-tab" id="training-prog-nco">קורס מ״כים</button>
+        <button class="track-tab" id="training-prog-officer">קורס קצינים</button>
+        <button class="track-tab" id="officer-track-sade" data-track="sade">מסלול שדה</button>
+        <button class="track-tab" id="officer-track-gefen" data-track="gefen">מסלול גפן</button>
+        <div id="training-officer-subtracks" style="display:none;"></div>
+        <div id="training-tracks-label" style="display:none;"></div>
+        <div class="track-tabs-wrap" id="training-tracks" style="display:none;"></div>
+        <div class="training-controls" id="training-controls" style="display:none;"></div>
+    </div>
+
     <div id="training-content"></div>
 </div>
 
@@ -1244,9 +1312,50 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- ====== כלים למפקד ====== -->
 <div class="page-section" id="page-geography">
     <div class="card">
-        <div class="card-title"><div class="icon">🛠️</div> כלים למפקד</div>
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">כלי AI משלימים לתוכנית "רוח מכבי" — סקירות גיאוגרפיות, מורשת קרב, מערכי שיעור, דילמות וטריוויה.</p>
-        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+        <!-- Menu grid — shown by default, hidden when a mode is active -->
+        <div id="geo-menu-grid">
+            <div class="card-title"><div class="icon">🛠️</div> כלים למפקד</div>
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר כלי כדי להתחיל:</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;">
+                <div class="geo-menu-tile" onclick="setGeoMode('sakal')" style="cursor:pointer;background:linear-gradient(135deg,#0E7490 0%,#0891B2 100%);border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(14,116,144,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(14,116,144,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(14,116,144,0.25)'">
+                    <div style="font-size:2.2rem;margin-bottom:8px;">📋</div>
+                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">סק"ג</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;">סקירה גיאוגרפית לאזור פעילות</div>
+                </div>
+                <div class="geo-menu-tile" onclick="setGeoMode('morak')" style="cursor:pointer;background:linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%);border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(124,58,237,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(124,58,237,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.25)'">
+                    <div style="font-size:2.2rem;margin-bottom:8px;">⭐</div>
+                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">מור"ק</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;">מורשת קרב — סיפורי גבורה</div>
+                </div>
+                <div class="geo-menu-tile" onclick="setGeoMode('lesson')" style="cursor:pointer;background:linear-gradient(135deg,#059669 0%,#10B981 100%);border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(5,150,105,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(5,150,105,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(5,150,105,0.25)'">
+                    <div style="font-size:2.2rem;margin-bottom:8px;">📖</div>
+                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">מערך שיעור</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;">בניית מערך שיעור עם AI</div>
+                </div>
+                <div class="geo-menu-tile" onclick="setGeoMode('trivia')" style="cursor:pointer;background:linear-gradient(135deg,#D97706 0%,#F59E0B 100%);border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(217,119,6,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(217,119,6,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(217,119,6,0.25)'">
+                    <div style="font-size:2.2rem;margin-bottom:8px;">🧠</div>
+                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">טריוויה</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;">חידוני ידע בנושאים מגוונים</div>
+                </div>
+                <div class="geo-menu-tile" onclick="setGeoMode('dilemma')" style="cursor:pointer;background:linear-gradient(135deg,#BE185D 0%,#EC4899 100%);border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(190,24,93,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(190,24,93,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(190,24,93,0.25)'">
+                    <div style="font-size:2.2rem;margin-bottom:8px;">⚖️</div>
+                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">דילמות</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;">דילמות ערכיות לדיון</div>
+                </div>
+                <div class="geo-menu-tile" onclick="setGeoMode('library')" style="cursor:pointer;background:linear-gradient(135deg,#1E40AF 0%,#3B82F6 100%);border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(30,64,175,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(30,64,175,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(30,64,175,0.25)'">
+                    <div style="font-size:2.2rem;margin-bottom:8px;">📚</div>
+                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">ספרייה</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;">תכנים שנוצרו ונשמרו</div>
+                </div>
+                <div class="geo-menu-tile" onclick="setGeoMode('mapquiz')" style="cursor:pointer;background:linear-gradient(135deg,#92400E 0%,#D4A843 100%);border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(146,64,14,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(146,64,14,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(146,64,14,0.25)'">
+                    <div style="font-size:2.2rem;margin-bottom:8px;">🗺️</div>
+                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">מפה אילמת</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;">מבחני התמצאות במפה</div>
+                </div>
+            </div>
+        </div>
+        <!-- Hidden old tabs for compatibility — still used by setGeoMode -->
+        <div id="geo-tabs-row" style="display:none;">
             <button class="geo-tab active" id="geo-tab-sakal" onclick="setGeoMode('sakal')">📋 סק"ג</button>
             <button class="geo-tab" id="geo-tab-morak" onclick="setGeoMode('morak')">⭐ מור"ק</button>
             <button class="geo-tab" id="geo-tab-lesson" onclick="setGeoMode('lesson')">📖 מערך שיעור</button>
@@ -1652,8 +1761,90 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
         <!-- ====== טריוויות העשרה ====== -->
         <div id="geo-mode-trivia" style="display:none;">
-            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">טריוויות העשרה במגוון נושאים — גדולי האומה, גיאוגרפיה, היסטוריה ועוד. בחר קטגוריה והתחל!</p>
-            <!-- Trivia category selection -->
+            <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;">טריוויות העשרה במגוון נושאים — גדולי האומה, גיאוגרפיה, היסטוריה ועוד. בחר קטגוריה קיימת או צור טריוויה חדשה!</p>
+
+            <!-- Create Trivia Button -->
+            <div id="trivia-create-section" style="margin-bottom:18px;">
+                <button class="btn-primary" onclick="triviaShowCreateWizard()" id="trivia-create-btn" style="width:100%;padding:14px;font-size:0.95rem;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <span style="font-size:1.3rem;">✨</span> צור טריוויה חדשה עם AI
+                </button>
+            </div>
+
+            <!-- Create Trivia Wizard -->
+            <div id="trivia-create-wizard" style="display:none;margin-bottom:20px;background:#fff;border:2px solid var(--primary);border-radius:16px;overflow:hidden;">
+                <div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;display:flex;align-items:center;justify-content:space-between;">
+                    <span>✨ יצירת טריוויה חדשה</span>
+                    <button onclick="triviaHideCreateWizard()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;">✕</button>
+                </div>
+                <div style="padding:18px;">
+                    <!-- Topic -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:6px;">📌 נושא הטריוויה</label>
+                        <select id="trivia-create-topic" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;appearance:auto;" onchange="var o=document.getElementById('trivia-create-topic-other');o.style.display=this.value==='other'?'':'none';">
+                            <option value="">— בחר נושא —</option>
+                            <option value="חגי ישראל">🕎 חגי ישראל</option>
+                            <option value="הלכה">📜 הלכה</option>
+                            <option value="פרשת שבוע">📖 פרשת שבוע</option>
+                            <option value="גמרא">📚 גמרא</option>
+                            <option value="קרבות ישראל">⚔️ קרבות ישראל</option>
+                            <option value="התמצאות במרחב">🗺️ התמצאות במרחב</option>
+                            <option value="גדולי ישראל">👑 גדולי ישראל</option>
+                            <option value="מורשת קרב">🎖️ מורשת קרב</option>
+                            <option value="ארץ ישראל">🌄 ארץ ישראל</option>
+                            <option value="תנ״ך">🏛️ תנ״ך</option>
+                            <option value="ערכים וסיפורי גבורה">💪 ערכים וסיפורי גבורה</option>
+                            <option value="other">📝 נושא אחר</option>
+                        </select>
+                        <input type="text" id="trivia-create-topic-other" placeholder="תאר את הנושא..." style="display:none;width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;margin-top:8px;box-sizing:border-box;">
+                    </div>
+                    <!-- Subtopic / focus -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:6px;">🎯 התמקדות (אופציונלי)</label>
+                        <input type="text" id="trivia-create-subtopic" placeholder='למשל: "פסח ויציאת מצרים", "מבצע אנטבה", "הלכות שבת"...' style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                    </div>
+                    <!-- Sources -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:6px;">📖 מקורות ספציפיים (אופציונלי)</label>
+                        <input type="text" id="trivia-create-sources" placeholder='למשל: "רמב"ם הלכות שבת", "ספר שמואל", "מעשה ידי רוקם"...' style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                    </div>
+                    <!-- Difficulty -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:6px;">📊 רמת קושי</label>
+                        <div style="display:flex;gap:8px;">
+                            <button class="trivia-diff-btn geo-tab active" data-diff="easy" onclick="triviaSetDifficulty(this,'easy')" style="flex:1;">קל</button>
+                            <button class="trivia-diff-btn geo-tab" data-diff="medium" onclick="triviaSetDifficulty(this,'medium')" style="flex:1;">בינוני</button>
+                            <button class="trivia-diff-btn geo-tab" data-diff="hard" onclick="triviaSetDifficulty(this,'hard')" style="flex:1;">קשה</button>
+                        </div>
+                    </div>
+                    <!-- Number of questions -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:6px;">🔢 מספר שאלות</label>
+                        <select id="trivia-create-count" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;appearance:auto;">
+                            <option value="5">5 שאלות</option>
+                            <option value="10" selected>10 שאלות</option>
+                            <option value="15">15 שאלות</option>
+                            <option value="20">20 שאלות</option>
+                        </select>
+                    </div>
+                    <!-- Target audience -->
+                    <div style="margin-bottom:18px;">
+                        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:6px;">🎯 קהל יעד</label>
+                        <select id="trivia-create-audience" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;appearance:auto;">
+                            <option value="חיילים">חיילים</option>
+                            <option value="מפקדים זוטרים">מפקדים זוטרים</option>
+                            <option value="קצינים">קצינים</option>
+                            <option value="כולם">כולם</option>
+                        </select>
+                    </div>
+                    <!-- Generate -->
+                    <button class="btn-primary" onclick="triviaGenerateAI()" id="trivia-generate-btn" style="width:100%;padding:14px;font-size:1rem;border-radius:12px;">🧠 צור טריוויה</button>
+                    <div id="trivia-create-status" style="text-align:center;margin-top:10px;font-size:0.85rem;color:var(--text-secondary);"></div>
+                </div>
+            </div>
+            <!-- AI Generated Trivia Result -->
+            <div id="trivia-ai-result" style="display:none;margin-bottom:20px;"></div>
+
+            <!-- Trivia category selection (existing quizzes) -->
             <div id="trivia-categories" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;"></div>
             <!-- Active trivia quiz -->
             <div id="trivia-active" style="display:none;">
@@ -2638,6 +2829,29 @@ function activatePage(page) {
                 var idx = MAP_QUIZZES.findIndex(function(q) { return q.id === geoId; });
                 if (idx >= 0) {
                     window._mqDeepLink = true;
+                    // Hide sidebar, header, tabs, and other UI — show only the quiz
+                    var sidebar = document.getElementById('sidebar');
+                    if (sidebar) sidebar.style.display = 'none';
+                    var headerEl = document.querySelector('.header');
+                    if (headerEl) headerEl.style.display = 'none';
+                    var mainContent = document.querySelector('.main-content');
+                    if (mainContent) mainContent.style.marginRight = '0';
+                    // Hide back button and geo tabs
+                    var backBtn = document.getElementById('back-btn');
+                    if (backBtn) backBtn.style.display = 'none';
+                    // Hide geo tabs row and card title
+                    var geoCard = document.querySelector('#page-geography > .card');
+                    if (geoCard) {
+                        geoCard.querySelectorAll('.card-title, .card-title + p, .card-title ~ div:first-of-type').forEach(function(e) {
+                            if (e.querySelectorAll('.geo-tab').length > 0 || e.classList.contains('card-title')) e.style.display = 'none';
+                        });
+                        // Also hide description paragraph
+                        var descP = document.querySelector('#geo-mode-mapquiz > p');
+                        if (descP) descP.style.display = 'none';
+                    }
+                    // Hide all geo tabs row
+                    var tabsRow = geoCard ? geoCard.querySelector('[style*="flex-wrap:wrap"]') : null;
+                    if (tabsRow && tabsRow.querySelector('.geo-tab')) tabsRow.style.display = 'none';
                     mqStartQuiz(idx);
                 }
             }, 200);
@@ -2697,11 +2911,22 @@ function activatePage(page) {
         cwStartTracking();
     }
     if (page === 'training') {
-        const prog = currentTrainingProgram || 'basic';
-        // Build platoon tabs dynamically based on user permissions
-        const tc = TRAINING_CONFIG[prog];
-        if (tc && tc.hasPlugas) buildPlugaTabs(prog);
-        loadTrainingPage(prog);
+        // Show step 1 (program selection) — progressive drill-down
+        trainingHideAllSteps();
+        document.getElementById('training-step1').style.display = '';
+        // Hide program tiles based on user permissions
+        var allowed = getUserAllowedPrograms();
+        var step1Tiles = document.querySelectorAll('#training-step1 .geo-menu-tile, #training-step1 [onclick*="trainingSelectProgram"]');
+        step1Tiles.forEach(function(tile) {
+            var onclick = tile.getAttribute('onclick') || '';
+            if (onclick.includes("'basic'")) tile.style.display = allowed.includes('basic') ? '' : 'none';
+            else if (onclick.includes("'nco'")) tile.style.display = allowed.includes('nco') ? '' : 'none';
+            else if (onclick.includes("'officer'")) tile.style.display = allowed.includes('officer') ? '' : 'none';
+        });
+        // If only one program allowed, skip step 1
+        if (allowed.length === 1) {
+            trainingSelectProgram(allowed[0]);
+        }
     }
 }
 
@@ -3640,21 +3865,150 @@ function canGiveFeedback(plugaLetter) {
     return false;
 }
 
-function switchTrainingProgram(prog) {
-    currentTrainingProgram = prog;
-    document.getElementById('training-prog-basic').classList.toggle('active', prog === 'basic');
-    document.getElementById('training-prog-nco').classList.toggle('active', prog === 'nco');
-    document.getElementById('training-prog-officer').classList.toggle('active', prog === 'officer');
-    document.getElementById('training-officer-subtracks').style.display = prog === 'officer' ? '' : 'none';
-    loadTrainingPage(prog);
+// ===== Progressive drill-down for training =====
+var _trainingStepProgram = null;
+var _trainingStepTrack = null;
+var _trainingStepPluga = null;
+
+function trainingHideAllSteps() {
+    ['training-step1','training-step1b','training-step2','training-step3'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    var content = document.getElementById('training-content');
+    if (content) content.innerHTML = '';
+}
+function trainingBackToStep1() {
+    trainingHideAllSteps();
+    document.getElementById('training-step1').style.display = '';
+}
+function trainingBackFromStep2() {
+    trainingHideAllSteps();
+    if (_trainingStepProgram === 'officer') {
+        document.getElementById('training-step1b').style.display = '';
+    } else {
+        document.getElementById('training-step1').style.display = '';
+    }
+}
+function trainingBackToStep2() {
+    trainingHideAllSteps();
+    document.getElementById('training-step2').style.display = '';
 }
 
-function switchOfficerTrackTab(track) {
+function trainingSelectProgram(prog) {
+    _trainingStepProgram = prog;
+    currentTrainingProgram = prog;
+    trainingHideAllSteps();
+    if (prog === 'officer') {
+        // Show sub-track selection (שדה / גפן)
+        document.getElementById('training-step1b').style.display = '';
+    } else {
+        // Skip to platoon selection
+        trainingShowStep2(prog);
+    }
+}
+function trainingSelectOfficerTrack(track) {
+    _trainingStepTrack = track;
     currentOfficerTrack = track;
-    // Update the שדה/גפן buttons
-    document.getElementById('officer-track-sade').classList.toggle('active', track === 'sade');
-    document.getElementById('officer-track-gefen').classList.toggle('active', track === 'gefen');
-    loadTrainingPage('officer');
+    trainingHideAllSteps();
+    trainingShowStep2('officer');
+}
+
+function trainingShowStep2(prog) {
+    var config = TRAINING_CONFIG[prog];
+    var PROG_LABELS = { basic:'🎖️ הכשרת יסוד', nco:'⚔️ קורס מ״כים', officer:'🏅 קורס קצינים' };
+    var title = PROG_LABELS[prog] || '';
+    if (prog === 'officer' && _trainingStepTrack) {
+        title += ' — ' + (_trainingStepTrack === 'sade' ? '🏔️ מסלול שדה' : '🌿 מסלול גפן');
+    }
+    document.getElementById('training-step2-title').textContent = title;
+
+    // Check if user can see all platoons or only their own
+    var tilesDiv = document.getElementById('training-step2-tiles');
+    var plugas = config.plugas || [];
+
+    // If user is limited to one platoon, skip this step
+    if (!canSeeAllPlugas() && currentUser && currentUser.pluga) {
+        var userTrack = PLUGA_TRACK_MAP[currentUser.pluga];
+        if (userTrack) {
+            _trainingStepPluga = userTrack;
+            if (prog === 'officer') currentOfficerPluga = userTrack;
+            else currentTrainingTrack[prog] = userTrack;
+            trainingShowStep3(prog, userTrack);
+            return;
+        }
+    }
+
+    var colors = ['#0E7490','#7C3AED','#059669','#D97706','#BE185D','#1E40AF','#DC2626','#92400E'];
+    tilesDiv.innerHTML = plugas.map(function(p, i) {
+        var label = TRAINING_TRACKS[p] || p;
+        var color = colors[i % colors.length];
+        return '<div onclick="trainingSelectPluga(\'' + prog + '\',\'' + p + '\')" style="cursor:pointer;background:linear-gradient(135deg,' + color + ' 0%,' + color + 'cc 100%);border-radius:14px;padding:22px 14px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 12px ' + color + '40;" onmouseenter="this.style.transform=\'translateY(-3px)\'" onmouseleave="this.style.transform=\'\'">' +
+            '<div style="font-size:1.6rem;margin-bottom:6px;">🏴</div>' +
+            '<div style="font-weight:700;font-size:0.95rem;">' + label + '</div>' +
+        '</div>';
+    }).join('');
+    document.getElementById('training-step2').style.display = '';
+}
+
+function trainingSelectPluga(prog, track) {
+    _trainingStepPluga = track;
+    if (prog === 'officer') currentOfficerPluga = track;
+    else currentTrainingTrack[prog] = track;
+    trainingHideAllSteps();
+    trainingShowStep3(prog, track);
+}
+
+function trainingShowStep3(prog, pluga) {
+    var config = TRAINING_CONFIG[prog];
+    var PROG_LABELS = { basic:'הכשרת יסוד', nco:'קורס מ״כים', officer:'קורס קצינים' };
+    var plugaLabel = TRAINING_TRACKS[pluga] || pluga;
+    document.getElementById('training-step3-title').textContent = PROG_LABELS[prog] + ' — ' + plugaLabel;
+
+    var weeksDiv = document.getElementById('training-step3-weeks');
+    var totalWeeks = config.weeks;
+    var weekNames = TRAINING_WEEK_NAMES[prog] || {};
+    var track = config.tracks ? currentOfficerTrack : null;
+    var html = '';
+    for (var w = 1; w <= totalWeeks; w++) {
+        var wInfo = weekNames[w];
+        var hasName = wInfo && (!wInfo.track || wInfo.track === track);
+        var label = hasName ? (wInfo.icon || '') + ' שבוע ' + w + '<br><span style="font-size:0.72rem;opacity:0.85;">' + wInfo.name + '</span>' : 'שבוע ' + w;
+        html += '<div onclick="trainingSelectWeek(\'' + prog + '\',' + w + ')" style="cursor:pointer;background:var(--bg-secondary);border:2px solid var(--border);border-radius:14px;padding:18px 10px;text-align:center;transition:all 0.25s;font-weight:600;font-size:0.9rem;color:var(--text-primary);line-height:1.4;" onmouseenter="this.style.borderColor=\'var(--primary)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\';this.style.boxShadow=\'\'">' + label + '</div>';
+    }
+    weeksDiv.innerHTML = html;
+    document.getElementById('training-step3').style.display = '';
+}
+
+function trainingSelectWeek(prog, week) {
+    currentTrainingWeek[prog] = week;
+    trainingHideAllSteps();
+    // Show a back button + load content
+    var container = document.getElementById('training-content');
+    container.innerHTML = '';
+    // Build a back-bar at top
+    var backBar = document.createElement('div');
+    backBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border);';
+    var plugaLabel = TRAINING_TRACKS[_trainingStepPluga] || '';
+    var PROG_LABELS = { basic:'הכשרת יסוד', nco:'קורס מ״כים', officer:'קורס קצינים' };
+    backBar.innerHTML = '<button onclick="trainingBackToWeeks()" style="background:none;border:1.5px solid var(--primary);color:var(--primary);border-radius:10px;padding:6px 14px;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:600;">← חזרה</button><span style="font-weight:700;font-size:0.92rem;color:var(--text-primary);">' + PROG_LABELS[prog] + ' — ' + plugaLabel + ' — שבוע ' + week + '</span>';
+    container.parentElement.insertBefore(backBar, container);
+    container._backBar = backBar;
+    loadTrainingPage(prog);
+}
+function trainingBackToWeeks() {
+    var container = document.getElementById('training-content');
+    if (container._backBar) { container._backBar.remove(); container._backBar = null; }
+    container.innerHTML = '';
+    trainingShowStep3(_trainingStepProgram, _trainingStepPluga);
+}
+
+// Legacy compatibility wrappers
+function switchTrainingProgram(prog) {
+    trainingSelectProgram(prog);
+}
+function switchOfficerTrackTab(track) {
+    trainingSelectOfficerTrack(track);
 }
 
 const PLUGA_TRACK_MAP = {'א':'pluga_a','ב':'pluga_b','ג':'pluga_c','ד':'pluga_d','ה':'pluga_e','ו':'pluga_f','ז':'pluga_g','ח':'pluga_h','קמ"כ':'pluga_kamak','שדה':'pluga_sade','גפן':'pluga_gefen'};
@@ -12507,8 +12861,25 @@ function clearGeoMarkers() {
     if (geoUserMarker) { geoMap.removeLayer(geoUserMarker); geoUserMarker = null; }
     if (geoCircle) { geoMap.removeLayer(geoCircle); geoCircle = null; }
 }
+function geoBackToMenu() {
+    geoCurrentMode = null;
+    var allModes = ['mapquiz','sakal','gedolim','morak','lesson','trivia','dilemma','library'];
+    allModes.forEach(function(m) {
+        var tab = document.getElementById('geo-tab-' + m);
+        var panel = document.getElementById('geo-mode-' + m);
+        if (tab) tab.classList.remove('active');
+        if (panel) panel.style.display = 'none';
+    });
+    var menu = document.getElementById('geo-menu-grid');
+    if (menu) menu.style.display = '';
+    var mapSection = document.getElementById('geo-map-section');
+    if (mapSection) mapSection.style.display = 'none';
+}
 function setGeoMode(mode) {
     geoCurrentMode = mode;
+    // Hide the menu grid, show the selected mode
+    var menu = document.getElementById('geo-menu-grid');
+    if (menu) menu.style.display = 'none';
     var allModes = ['mapquiz','sakal','gedolim','morak','lesson','trivia','dilemma','library'];
     allModes.forEach(function(m) {
         var tab = document.getElementById('geo-tab-' + m);
@@ -12518,6 +12889,16 @@ function setGeoMode(mode) {
     });
     var mapSection = document.getElementById('geo-map-section');
     if (mapSection) mapSection.style.display = 'none';
+    // Add "back to menu" button at top of active panel (if not already there)
+    var MODE_TITLES = { sakal:'📋 סק"ג', morak:'⭐ מור"ק', lesson:'📖 מערך שיעור', trivia:'🧠 טריוויה', dilemma:'⚖️ דילמות', library:'📚 ספרייה', mapquiz:'🗺️ מפה אילמת', gedolim:'👑 גדולי האומה' };
+    var panel = document.getElementById('geo-mode-' + mode);
+    if (panel && !panel.querySelector('.geo-back-to-menu')) {
+        var backDiv = document.createElement('div');
+        backDiv.className = 'geo-back-to-menu';
+        backDiv.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border,#e0e0e0);';
+        backDiv.innerHTML = '<button onclick="geoBackToMenu()" style="background:none;border:1.5px solid var(--primary,#0E7490);color:var(--primary,#0E7490);border-radius:10px;padding:6px 14px;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:600;transition:all 0.2s;" onmouseenter="this.style.background=\'var(--primary)\';this.style.color=\'#fff\'" onmouseleave="this.style.background=\'none\';this.style.color=\'var(--primary)\'">← חזרה לתפריט</button><span style="font-weight:700;font-size:1rem;color:var(--text-primary);">' + (MODE_TITLES[mode]||'') + '</span>';
+        panel.insertBefore(backDiv, panel.firstChild);
+    }
     if (mode === 'mapquiz') {
         mqRenderQuizList();
     } else if (mode === 'sakal') {
@@ -18146,6 +18527,8 @@ async function lessonLoadList() {
 async function loadLibrary(filter) {
     var container = document.getElementById('library-content');
     if (!container) return;
+    if (!db) { try { db = firebase.firestore(); } catch(e) {} }
+    if (!db) { container.innerHTML = '<div style="text-align:center;color:#d32f2f;padding:30px;">שגיאה: אין חיבור למסד הנתונים. נסה לרענן את הדף.</div>'; return; }
     // Update filter buttons
     ['all','sakag','morak','lesson'].forEach(function(f) {
         var btn = document.getElementById('lib-filter-' + f);
@@ -18155,6 +18538,7 @@ async function loadLibrary(filter) {
 
     try {
         var items = [];
+        var loadErrors = [];
         // Load user sakags (no composite index needed — filter client-side)
         if (filter === 'all' || filter === 'sakag') {
             try {
@@ -18164,7 +18548,7 @@ async function loadLibrary(filter) {
                     if (d.status && d.status !== 'active') return;
                     items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt, lat: d.lat, lng: d.lng });
                 });
-            } catch(e) { console.warn('Library: sakag load error', e); }
+            } catch(e) { loadErrors.push('סק"ג: ' + e.message); console.error('Library: sakag load error', e); }
         }
         // Load commander_tools (no composite index needed — filter client-side)
         if (filter === 'all' || filter === 'morak' || filter === 'lesson') {
@@ -18179,13 +18563,19 @@ async function loadLibrary(filter) {
                     var label = d.type === 'morak' ? 'מור"ק' : 'מערך שיעור';
                     items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
                 });
-            } catch(e) { console.warn('Library: tools load error', e); }
+            } catch(e) { loadErrors.push('כלים: ' + e.message); console.error('Library: tools load error', e); }
         }
         // Sort by timestamp desc (client-side)
         items.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
         items = items.slice(0, 50);
 
-        if (items.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:30px;">אין תכנים עדיין — השתמש בכלים למעלה ליצירת תוכן!</div>'; return; }
+        if (items.length === 0) {
+            var msg = loadErrors.length > 0
+                ? '<div style="text-align:center;padding:30px;"><div style="color:#d32f2f;margin-bottom:8px;">שגיאה בטעינת הספרייה:</div><div style="font-size:0.82rem;color:var(--text-secondary);">' + loadErrors.join('<br>') + '</div><button onclick="loadLibrary(\'' + filter + '\')" style="margin-top:12px;padding:8px 18px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-family:inherit;">🔄 נסה שוב</button></div>'
+                : '<div style="text-align:center;color:var(--text-secondary);padding:30px;">אין תכנים עדיין — השתמש בכלים למעלה ליצירת תוכן!</div>';
+            container.innerHTML = msg;
+            return;
+        }
 
         // Show map with סק"ג locations
         var sakagItems = items.filter(function(i) { return i.type === 'sakag' && i.lat; });
@@ -18542,6 +18932,192 @@ function triviaConvertMapQuiz(quiz) {
     });
 }
 
+// ===== AI Trivia Creator =====
+var _triviaCreateDifficulty = 'easy';
+
+function triviaShowCreateWizard() {
+    document.getElementById('trivia-create-wizard').style.display = '';
+    document.getElementById('trivia-create-btn').style.display = 'none';
+    document.getElementById('trivia-ai-result').style.display = 'none';
+}
+function triviaHideCreateWizard() {
+    document.getElementById('trivia-create-wizard').style.display = 'none';
+    document.getElementById('trivia-create-btn').style.display = '';
+}
+function triviaSetDifficulty(btn, diff) {
+    _triviaCreateDifficulty = diff;
+    document.querySelectorAll('.trivia-diff-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+}
+
+async function triviaGenerateAI() {
+    var topicSelect = document.getElementById('trivia-create-topic');
+    var topic = topicSelect.value;
+    if (topic === 'other') topic = document.getElementById('trivia-create-topic-other').value.trim();
+    if (!topic) { showToast('בחר נושא לטריוויה'); return; }
+
+    var subtopic = document.getElementById('trivia-create-subtopic').value.trim();
+    var sources = document.getElementById('trivia-create-sources').value.trim();
+    var count = parseInt(document.getElementById('trivia-create-count').value) || 10;
+    var audience = document.getElementById('trivia-create-audience').value;
+    var difficulty = _triviaCreateDifficulty;
+    var DIFF_MAP = { easy: 'קל — שאלות בסיסיות שחייל ממוצע אמור לדעת', medium: 'בינוני — דורש ידע מעמיק', hard: 'קשה — שאלות מאתגרות לחניכים מתקדמים' };
+
+    var btn = document.getElementById('trivia-generate-btn');
+    var status = document.getElementById('trivia-create-status');
+    btn.disabled = true; btn.textContent = '⏳ מייצר טריוויה...';
+    status.textContent = 'מחפש מידע ויוצר שאלות — עלול לקחת עד 30 שניות...';
+
+    var prompt = `אתה מומחה ליצירת חידוני טריוויה איכותיים בעברית לחיילי צה"ל בחטיבת חשמונאים.
+
+צור חידון טריוויה לפי הפרמטרים הבאים:
+- נושא: ${topic}${subtopic ? '\n- התמקדות: ' + subtopic : ''}${sources ? '\n- מקורות: ' + sources : ''}
+- רמת קושי: ${DIFF_MAP[difficulty]}
+- מספר שאלות: ${count}
+- קהל יעד: ${audience}
+
+לכל שאלה יש לכלול:
+- שאלה ברורה ומדויקת
+- 4 אפשרויות תשובה (אחת נכונה, שלוש שגויות אך מתקבלות על הדעת)
+- הסבר קצר (2-3 משפטים) למה התשובה הנכונה היא הנכונה
+
+חשוב מאוד:
+- השאלות צריכות להיות מגוונות ומעניינות
+- האפשרויות השגויות צריכות להיות מתקבלות על הדעת (לא מגוחכות)
+- ההסבר צריך לתת ערך מוסף ולא רק לחזור על השאלה
+- כתוב הכל בעברית
+
+החזר JSON בלבד בפורמט:
+{
+  "title": "כותרת הטריוויה",
+  "questions": [
+    {
+      "question": "טקסט השאלה",
+      "options": ["תשובה א", "תשובה ב", "תשובה ג", "תשובה ד"],
+      "correct": 0,
+      "explanation": "הסבר לתשובה הנכונה"
+    }
+  ]
+}
+
+חשוב: correct הוא אינדקס (0-3) של התשובה הנכונה במערך options.
+החזר אך ורק JSON תקני.` + JEWISH_SOURCES_RESTRICTION;
+
+    try {
+        var configDoc = await db.collection('config').doc('api_keys').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) { showToast('מפתח API חסר — פנה למנהל'); btn.disabled = false; btn.textContent = '🧠 צור טריוויה'; status.textContent = ''; return; }
+
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+        var resp = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+                tools: [{ googleSearch: {} }]
+            })
+        });
+        var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || 'Gemini error');
+
+        var text = '';
+        if (data.candidates && data.candidates[0]) {
+            data.candidates[0].content.parts.forEach(function(p) { if (p.text) text += p.text; });
+        }
+        // Parse JSON
+        var jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('לא התקבל JSON תקני');
+        var triviaData = JSON.parse(jsonMatch[0]);
+
+        if (!triviaData.questions || triviaData.questions.length === 0) throw new Error('לא נוצרו שאלות');
+
+        // Show result — let the user play the trivia or save it
+        triviaShowAIResult(triviaData, topic, subtopic);
+        triviaHideCreateWizard();
+        status.textContent = '';
+    } catch(e) {
+        status.innerHTML = '<span style="color:#d32f2f;">שגיאה: ' + e.message + '</span>';
+        console.error('Trivia AI error:', e);
+    }
+    btn.disabled = false; btn.textContent = '🧠 צור טריוויה';
+}
+
+function triviaShowAIResult(data, topic, subtopic) {
+    var resultDiv = document.getElementById('trivia-ai-result');
+    resultDiv.style.display = '';
+    var titleLabel = data.title || ('טריוויה: ' + topic + (subtopic ? ' — ' + subtopic : ''));
+    resultDiv.innerHTML = '<div style="border:2px solid var(--primary);border-radius:14px;overflow:hidden;">' +
+        '<div style="background:var(--primary);color:#fff;padding:14px 18px;font-weight:700;font-size:1rem;text-align:center;">✨ ' + titleLabel + '</div>' +
+        '<div style="padding:16px;">' +
+            '<p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px;text-align:center;">נוצרו ' + data.questions.length + ' שאלות. בחר מה לעשות:</p>' +
+            '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn-primary" onclick="triviaPlayAIQuiz()" style="padding:12px 24px;font-size:0.95rem;">🎮 התחל לשחק</button>' +
+                '<button class="btn-secondary" onclick="triviaSaveAIQuiz()" style="padding:12px 24px;font-size:0.95rem;">💾 שמור לספרייה</button>' +
+            '</div>' +
+            '<div style="margin-top:14px;font-size:0.82rem;color:var(--text-secondary);text-align:center;">⚠️ תוכן נוצר באמצעות AI — יש לוודא נכונות</div>' +
+        '</div>' +
+    '</div>';
+
+    // Store the generated quiz data
+    window._lastAITrivia = data;
+    window._lastAITriviaMeta = { topic: topic, subtopic: subtopic };
+}
+
+function triviaPlayAIQuiz() {
+    var data = window._lastAITrivia;
+    if (!data || !data.questions) return;
+
+    // Convert to internal trivia format
+    var questions = data.questions.map(function(q) {
+        var correctIdx = typeof q.correct === 'number' ? q.correct : 0;
+        return {
+            question: q.question,
+            correct: q.options[correctIdx],
+            options: q.options.slice(),
+            explanation: q.explanation || ''
+        };
+    });
+
+    // Shuffle
+    for (var i = questions.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = questions[i]; questions[i] = questions[j]; questions[j] = t;
+    }
+
+    triviaCurrentQuiz = { title: '✨ ' + (data.title || 'טריוויה'), questions: questions };
+    triviaCurrentQ = 0;
+    triviaScore = 0;
+    triviaAnswered = false;
+
+    document.getElementById('trivia-categories').style.display = 'none';
+    document.getElementById('trivia-create-section').style.display = 'none';
+    document.getElementById('trivia-ai-result').style.display = 'none';
+    document.getElementById('trivia-active').style.display = '';
+    document.getElementById('trivia-result').style.display = 'none';
+    document.getElementById('trivia-quiz-title').textContent = triviaCurrentQuiz.title;
+    triviaShowQuestion();
+}
+
+async function triviaSaveAIQuiz() {
+    var data = window._lastAITrivia;
+    var meta = window._lastAITriviaMeta || {};
+    if (!data || !currentUser) { showToast('לא ניתן לשמור'); return; }
+    try {
+        await db.collection('commander_tools').add({
+            type: 'trivia',
+            title: data.title || 'טריוויה: ' + (meta.topic || ''),
+            subtitle: meta.subtopic || '',
+            questions: data.questions,
+            createdBy: currentUser.id || currentUser.uid || currentUser.email,
+            createdByName: currentUser.name || currentUser.email || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'active'
+        });
+        showToast('✅ הטריוויה נשמרה בספרייה!');
+    } catch(e) { showToast('שגיאה בשמירה: ' + e.message); }
+}
+
 function triviaShowQuestion() {
     var quiz = triviaCurrentQuiz;
     if (!quiz || triviaCurrentQ >= quiz.questions.length) { triviaShowResult(); return; }
@@ -18615,6 +19191,10 @@ function triviaShowResult() {
 function triviaBackToCategories() {
     document.getElementById('trivia-categories').style.display = '';
     document.getElementById('trivia-active').style.display = 'none';
+    var cs = document.getElementById('trivia-create-section');
+    if (cs) cs.style.display = '';
+    var ar = document.getElementById('trivia-ai-result');
+    if (ar) ar.style.display = 'none';
     triviaRenderCategories();
 }
 
