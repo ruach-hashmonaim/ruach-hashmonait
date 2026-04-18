@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ruach-v21';
+const CACHE_NAME = 'ruach-v22';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,13 @@ self.addEventListener('install', event => {
     })
   );
   self.skipWaiting();
+});
+
+// Listen for skip waiting message from page
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Activate — clean old caches
