@@ -2343,19 +2343,13 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <!-- AI Configuration -->
     <div class="admin-panel" id="admin-ai-config" style="display:none;">
         <div class="card">
-            <div class="card-title"><div class="icon">⚙️</div> הגדרות AI — Claude (Anthropic)</div>
-            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הגדרת מפתח Claude API ו-Proxy URL ליצירת תכנים אוטומטיים</p>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-                <label style="font-weight:600;font-size:0.88rem;min-width:120px;">מפתח Claude API:</label>
-                <input type="password" id="ai-claude-key-input" placeholder="sk-ant-..." style="flex:1;min-width:250px;direction:ltr;text-align:left;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;">
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-                <label style="font-weight:600;font-size:0.88rem;min-width:120px;">Proxy URL:</label>
-                <input type="text" id="ai-claude-proxy-input" placeholder="https://your-worker.workers.dev" style="flex:1;min-width:250px;direction:ltr;text-align:left;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;">
-            </div>
-            <div style="display:flex;gap:8px;">
-                <button class="btn-primary btn-sm" onclick="saveClaudeConfig()">💾 שמור</button>
-                <button class="btn-secondary btn-sm" onclick="testClaudeKey()">🧪 בדוק חיבור</button>
+            <div class="card-title"><div class="icon">⚙️</div> הגדרות AI</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">הגדרת מפתח Gemini API (Google) ליצירת סק"גים אוטומטיים</p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <label style="font-weight:600;font-size:0.88rem;">מפתח Gemini API:</label>
+                <input type="password" id="ai-gemini-key-input" placeholder="AIza..." style="flex:1;min-width:250px;direction:ltr;text-align:left;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;">
+                <button class="btn-primary btn-sm" onclick="saveGeminiKey()">💾 שמור</button>
+                <button class="btn-secondary btn-sm" onclick="testGeminiKey()">🧪 בדוק חיבור</button>
             </div>
             <div id="ai-config-status" style="margin-top:8px;font-size:0.85rem;"></div>
         </div>
@@ -16750,18 +16744,60 @@ async function standaloneSakagGenerate(lat, lng, placeName) {
     }
 
     try {
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח AI לא הוגדר');
+
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
+        // Step 1: Research
         var _standaloneRadius = '5 ק"מ';
+        var researchPrompt = SAKAG_RESEARCH_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, _standaloneRadius);
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: researchPrompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
+            })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) {
+            if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; }
+        }
+        if (!researchText && researchParts.length) researchText = researchParts[researchParts.length - 1].text || '';
 
-        // Single Claude call — merged research + build
-        var systemPrompt = SAKAG_AI_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, _standaloneRadius)
-            + buildSakagContextPrompt(_standaloneCtx)
-            + '\n\nהשתמש בידע שלך על ההיסטוריה, הגיאוגרפיה והמורשת היהודית של האזור. חפש בידע שלך מידע על אתרים, שבילים, מקומות היסטוריים ומקורות תורניים הקשורים למיקום זה.';
-        var userMessage = 'צור סק"ג עבור ' + placeName + ' בקואורדינטות ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ' ברדיוס ' + _standaloneRadius + '. החזר JSON בלבד.';
-
+        // Step 2: Generate JSON
         var stepEl = document.getElementById('standalone-sakag-step');
-        if (stepEl) stepEl.textContent = 'יוצר סק"ג עבור ' + placeName + '...';
+        if (stepEl) stepEl.textContent = 'שלב 2/2 — מארגן את הסק"ג...';
+        var progressEl = document.getElementById('standalone-sakag-progress');
+        if (progressEl) { progressEl.style.animation = 'none'; progressEl.style.width = '60%'; }
 
-        var aiText = await callClaudeAI(systemPrompt, userMessage, { maxTokens: 16384, temperature: 0.7 });
+        var buildPrompt = SAKAG_AI_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, _standaloneRadius)
+            + buildSakagContextPrompt(_standaloneCtx)
+            + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
+
+        var response = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: buildPrompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+            })
+        });
+        if (!response.ok) throw new Error('שגיאת API');
+
+        var data = await response.json();
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) {
+            if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; }
+        }
+        if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
 
         var sakagData;
@@ -16769,10 +16805,20 @@ async function standaloneSakagGenerate(lat, lng, placeName) {
             var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
             if (bs !== -1 && be > bs) { try { sakagData = JSON.parse(aiText.substring(bs, be + 1)); } catch(e2) {} }
             if (!sakagData) {
-                // Retry with stricter prompt
-                var retryText = await callClaudeAI(systemPrompt, 'RESPOND WITH ONLY A VALID JSON OBJECT. No text before or after.\n\n' + userMessage, { maxTokens: 16384, temperature: 0.5 });
-                retryText = retryText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
-                try { sakagData = JSON.parse(retryText); } catch(e3) { var bs2 = retryText.indexOf('{'), be2 = retryText.lastIndexOf('}'); if (bs2!==-1&&be2>bs2) try { sakagData = JSON.parse(retryText.substring(bs2,be2+1)); } catch(e4){} }
+                // Retry
+                var retryResp = await fetch(geminiUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: 'RESPOND WITH ONLY A VALID JSON OBJECT.\n\n' + buildPrompt }] }],
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+                });
+                if (retryResp.ok) {
+                    var rd = await retryResp.json();
+                    var rp = rd.candidates?.[0]?.content?.parts || [];
+                    var rt = ''; for (var rpi = rp.length - 1; rpi >= 0; rpi--) { if (!rp[rpi].thought && rp[rpi].text) { rt = rp[rpi].text; break; } }
+                    if (!rt && rp.length) rt = rp[rp.length - 1].text || '';
+                    rt = rt.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                    try { sakagData = JSON.parse(rt); } catch(e3) { var bs2 = rt.indexOf('{'), be2 = rt.lastIndexOf('}'); if (bs2!==-1&&be2>bs2) try { sakagData = JSON.parse(rt.substring(bs2,be2+1)); } catch(e4){} }
+                }
                 if (!sakagData) throw new Error('לא ניתן לנתח את התשובה. נסה שוב.');
             }
         }
@@ -17013,38 +17059,104 @@ async function modalSakagGenerate(lat, lng, placeName) {
     }
 
     try {
+        // Get Gemini API key from Firestore
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
+
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
+        // === STEP 1: Research the area with Google Search grounding ===
         var _modalRadius = '5 ק"מ';
+        var researchPrompt = SAKAG_RESEARCH_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, _modalRadius);
 
-        // Single Claude call — merged research + build
-        var systemPrompt = SAKAG_AI_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, _modalRadius)
-            + buildSakagContextPrompt(_modalCtx)
-            + '\n\nהשתמש בידע שלך על ההיסטוריה, הגיאוגרפיה והמורשת היהודית של האזור. חפש בידע שלך מידע על אתרים, שבילים, מקומות היסטוריים ומקורות תורניים הקשורים למיקום זה.';
-        var userMessage = 'צור סק"ג עבור ' + placeName + ' בקואורדינטות ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ' ברדיוס ' + _modalRadius + '. החזר JSON בלבד.';
+        var researchResponse = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: researchPrompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
+            })
+        });
 
+        if (!researchResponse.ok) throw new Error('שגיאה בשלב המחקר: ' + researchResponse.status);
+        var researchData = await researchResponse.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) {
+            if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; }
+        }
+        if (!researchText && researchParts.length) researchText = researchParts[researchParts.length - 1].text || '';
+
+        // === STEP 2: Generate structured סק"ג using research data ===
         var stepEl = document.getElementById('modal-sakag-step');
-        if (stepEl) stepEl.textContent = 'יוצר סק"ג עבור ' + placeName + '...';
+        if (stepEl) stepEl.textContent = 'שלב 2/2 — מארגן את הסק"ג...';
+        var progressEl = document.getElementById('modal-sakag-progress');
+        if (progressEl) { progressEl.style.animation = 'none'; progressEl.style.width = '60%'; }
 
-        var aiText = await callClaudeAI(systemPrompt, userMessage, { maxTokens: 16384, temperature: 0.7 });
-        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+        var buildPrompt = SAKAG_AI_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, _modalRadius)
+            + buildSakagContextPrompt(_modalCtx)
+            + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
 
+        var response = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: buildPrompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+            })
+        });
+
+        if (!response.ok) throw new Error('שגיאת Gemini API: ' + response.status);
+
+        var data = await response.json();
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) {
+            if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; }
+        }
+        if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        // Strip BOM and zero-width characters
+        aiText = aiText.replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '');
         var sakagData;
         try { sakagData = JSON.parse(aiText); } catch(e) {
+            // Try to extract JSON object from mixed text
             var braceStart = aiText.indexOf('{');
             var braceEnd = aiText.lastIndexOf('}');
             if (braceStart !== -1 && braceEnd > braceStart) {
                 try { sakagData = JSON.parse(aiText.substring(braceStart, braceEnd + 1)); } catch(e2) {
+                    // Try nested match for valid JSON
                     var m = aiText.match(/\{[^{}]*"title"[\s\S]*"sections"[\s\S]*\}/);
                     if (m) { try { sakagData = JSON.parse(m[0]); } catch(e3) {} }
                 }
             }
             if (!sakagData) {
-                // Retry with stricter prompt
+                // Retry once with explicit JSON-only instruction
                 console.warn('Sakag AI: first parse failed, retrying with stricter prompt...');
-                var retryText = await callClaudeAI(systemPrompt, 'RESPOND WITH ONLY A VALID JSON OBJECT. No text before or after. No markdown. Just the JSON.\n\n' + userMessage, { maxTokens: 16384, temperature: 0.5 });
-                retryText = retryText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
-                try { sakagData = JSON.parse(retryText); } catch(e4) {
-                    var bs = retryText.indexOf('{'), be = retryText.lastIndexOf('}');
-                    if (bs !== -1 && be > bs) { try { sakagData = JSON.parse(retryText.substring(bs, be + 1)); } catch(e5) {} }
+                var retryPrompt = 'RESPOND WITH ONLY A VALID JSON OBJECT. No text before or after. No markdown. Just the JSON.\n\n' + buildPrompt;
+                var retryResp = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: retryPrompt }] }],
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+                    })
+                });
+                if (retryResp.ok) {
+                    var retryData = await retryResp.json();
+                    var retryParts = retryData.candidates?.[0]?.content?.parts || [];
+                    var retryText = '';
+                    for (var rpi = retryParts.length - 1; rpi >= 0; rpi--) {
+                        if (!retryParts[rpi].thought && retryParts[rpi].text) { retryText = retryParts[rpi].text; break; }
+                    }
+                    if (!retryText && retryParts.length) retryText = retryParts[retryParts.length - 1].text || '';
+                    retryText = retryText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                    try { sakagData = JSON.parse(retryText); } catch(e4) {
+                        var bs = retryText.indexOf('{'), be = retryText.lastIndexOf('}');
+                        if (bs !== -1 && be > bs) { try { sakagData = JSON.parse(retryText.substring(bs, be + 1)); } catch(e5) {} }
+                    }
                 }
                 if (!sakagData) throw new Error('לא ניתן לנתח את תשובת ה-AI. נסה שוב או בחר מיקום אחר.');
             }
@@ -17499,6 +17611,11 @@ async function sakalGenerateAI(lat, lng, placeName) {
         var poiCountEl = document.getElementById('sakal-poi-count');
         if (poiCountEl) poiCountEl.textContent = '📍 נמצאו ' + pois.length + ' נקודות עניין';
 
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
         // Build area context
         var areaContext = '=== מרחב חקירה ===\n' + areaDesc;
         if (areaMode === 'point') areaContext += '\nדגש: התחל מהנקודה הספציפית ' + placeName + ' עצמה.';
@@ -17506,29 +17623,77 @@ async function sakalGenerateAI(lat, lng, placeName) {
         else if (areaMode === 'polygon') areaContext += '\nדגש: רק אתרים בתוך האזור המוגדר.';
 
         // ============================================================
-        // STEP 2: Build structured סק"ג — single Claude call (merged research + build)
+        // STEP 2: Historical Research — which POIs have significance?
         // ============================================================
         var stepLabel = document.getElementById('sakal-ai-step-label');
         var stepDesc = document.getElementById('sakal-ai-step-desc');
-        if (stepLabel) stepLabel.textContent = 'שלב 2/2 — בונה סק"ג...';
-        if (stepDesc) stepDesc.textContent = 'חוקר היסטוריה ובונה מסמך מובנה מתוך ' + pois.length + ' נקודות';
+        if (stepLabel) stepLabel.textContent = 'שלב 2/3 — חוקר היסטוריה ומקורות...';
+        if (stepDesc) stepDesc.textContent = 'מזהה אתרים בעלי משמעות היסטורית ויהודית מתוך ' + pois.length + ' נקודות';
         var progressBar = document.getElementById('sakal-progress-bar');
-        if (progressBar) progressBar.style.width = '50%';
+        if (progressBar) progressBar.style.width = '35%';
 
-        var systemPrompt = SAKAG_AI_PROMPT
+        var researchPrompt = SAKAG_RESEARCH_PROMPT
+            .replace(/\[PLACE_NAME\]/g, placeName)
+            .replace(/\[LAT\]/g, lat.toFixed(4))
+            .replace(/\[LNG\]/g, lng.toFixed(4))
+            .replace('[AREA_DESC]', areaContext)
+            .replace('[POI_LIST]', poiText);
+
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: researchPrompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
+            })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר: ' + researchResp.status);
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) {
+            if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; }
+        }
+        if (!researchText && researchParts.length) researchText = researchParts[researchParts.length - 1].text || '';
+
+        // ============================================================
+        // STEP 3: Build structured סק"ג from real data
+        // ============================================================
+        if (stepLabel) stepLabel.textContent = 'שלב 3/3 — בונה את הסק"ג...';
+        if (stepDesc) stepDesc.textContent = 'מארגן את הממצאים למסמך מובנה';
+        if (progressBar) progressBar.style.width = '70%';
+
+        var prompt = SAKAG_AI_PROMPT
             .replace(/\[PLACE_NAME\]/g, placeName)
             .replace(/\[LAT\]/g, lat.toFixed(4))
             .replace(/\[LNG\]/g, lng.toFixed(4))
             .replace('[POI_LIST]', poiText)
-            .replace('[RESEARCH_TEXT]', '')
+            .replace('[RESEARCH_TEXT]', researchText)
             .replace('[AREA_CONTEXT]', areaContext)
-            + buildSakagContextPrompt(_sakalCtx)
-            + '\n\nהשתמש בידע שלך על ההיסטוריה, הגיאוגרפיה והמורשת היהודית של האזור. חפש בידע שלך מידע על אתרים היסטוריים ומקורות תורניים הקשורים לנקודות העניין שנמצאו.';
-        var userMessage = 'צור סק"ג עבור ' + placeName + ' בקואורדינטות ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + '. נמצאו ' + pois.length + ' נקודות עניין מ-OpenStreetMap. החזר JSON בלבד.';
+            + buildSakagContextPrompt(_sakalCtx);
 
-        var aiText = await callClaudeAI(systemPrompt, userMessage, { maxTokens: 16384, temperature: 0.7 });
+        var response = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+            })
+        });
 
-        if (progressBar) progressBar.style.width = '90%';
+        if (!response.ok) {
+            var errText = await response.text();
+            throw new Error('שגיאת Gemini API: ' + response.status + ' — ' + errText.substring(0, 200));
+        }
+
+        var data = await response.json();
+        // Gemini 2.5 may return thinking parts — get last non-thought text part
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) {
+            if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; }
+        }
+        if (!aiText && parts.length) aiText = parts[parts.length - 1].text || '';
 
         // Parse JSON from AI response (handle markdown code blocks)
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
@@ -17536,6 +17701,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
         try {
             sakagData = JSON.parse(aiText);
         } catch(parseErr) {
+            // Try to extract JSON object from mixed text
             var bs2 = aiText.indexOf('{'), be2 = aiText.lastIndexOf('}');
             if (bs2 !== -1 && be2 > bs2) {
                 try { sakagData = JSON.parse(aiText.substring(bs2, be2 + 1)); } catch(e2) {
@@ -17546,11 +17712,28 @@ async function sakalGenerateAI(lat, lng, placeName) {
             if (!sakagData) {
                 // Retry with stricter prompt
                 console.warn('Sakag AI: first parse failed, retrying...');
-                var retryText = await callClaudeAI(systemPrompt, 'RESPOND WITH ONLY A VALID JSON OBJECT. No text before or after. No markdown. Just the JSON.\n\n' + userMessage, { maxTokens: 16384, temperature: 0.5 });
-                retryText = retryText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
-                try { sakagData = JSON.parse(retryText); } catch(e4) {
-                    var bs3 = retryText.indexOf('{'), be3 = retryText.lastIndexOf('}');
-                    if (bs3 !== -1 && be3 > bs3) { try { sakagData = JSON.parse(retryText.substring(bs3, be3 + 1)); } catch(e5) {} }
+                var retryPrompt2 = 'RESPOND WITH ONLY A VALID JSON OBJECT. No text before or after. No markdown. Just the JSON.\n\n' + prompt;
+                var retryResp2 = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: retryPrompt2 }] }],
+                        generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+                    })
+                });
+                if (retryResp2.ok) {
+                    var rd2 = await retryResp2.json();
+                    var rp2 = rd2.candidates?.[0]?.content?.parts || [];
+                    var rt2 = '';
+                    for (var rpi2 = rp2.length - 1; rpi2 >= 0; rpi2--) {
+                        if (!rp2[rpi2].thought && rp2[rpi2].text) { rt2 = rp2[rpi2].text; break; }
+                    }
+                    if (!rt2 && rp2.length) rt2 = rp2[rp2.length - 1].text || '';
+                    rt2 = rt2.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+                    try { sakagData = JSON.parse(rt2); } catch(e4) {
+                        var bs3 = rt2.indexOf('{'), be3 = rt2.lastIndexOf('}');
+                        if (bs3 !== -1 && be3 > bs3) { try { sakagData = JSON.parse(rt2.substring(bs3, be3 + 1)); } catch(e5) {} }
+                    }
                 }
                 if (!sakagData) throw new Error('לא ניתן לנתח את תשובת ה-AI. נסה שוב או בחר מיקום אחר.');
             }
@@ -18040,14 +18223,39 @@ async function morakGenerate() {
         '</div></div>';
 
     try {
-        // Single Claude call — merged research + build
-        var systemPrompt = MORAK_AI_PROMPT.replace(/\[SUBJECT_TYPE\]/g, subjectType).replace(/\[SUBJECT_NAME\]/g, d.subject)
-            .replace('[AUDIENCE]', d.audience || 'כלל הלוחמים').replace('[DURATION]', d.duration || '45 דקות')
-            + '\n\nהשתמש בידע שלך על ההיסטוריה הצבאית הישראלית, גילויי גבורה ומורשת קרב. חפש בידע שלך מידע מפורט על הנושא.';
-        if (d.context) systemPrompt += '\n\n=== דגשים של המפקד ===\n' + d.context;
-        var userMessage = 'בנה מור"ק עבור ' + subjectType + ': "' + d.subject + '". החזר JSON בלבד.';
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
 
-        var aiText = await callClaudeAI(systemPrompt, userMessage, { maxTokens: 16384, temperature: 0.7 });
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
+        // Step 1: Research
+        var researchPrompt = MORAK_RESEARCH_PROMPT.replace('[SUBJECT_TYPE]', subjectType).replace('[SUBJECT_NAME]', d.subject);
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.4, maxOutputTokens: 8192 } })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
+
+        // Step 2: Build מור"ק
+        var buildPrompt = MORAK_AI_PROMPT.replace(/\[SUBJECT_TYPE\]/g, subjectType).replace(/\[SUBJECT_NAME\]/g, d.subject)
+            .replace('[AUDIENCE]', d.audience || 'כלל הלוחמים').replace('[DURATION]', d.duration || '45 דקות');
+        if (d.context) buildPrompt += '\n\n=== דגשים של המפקד ===\n' + d.context;
+        buildPrompt += '\n\n=== מידע שנאסף ממחקר ===\n' + researchText;
+
+        var resp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+        });
+        if (!resp.ok) throw new Error('שגיאת Gemini');
+        var data = await resp.json();
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').trim();
         var morakData;
         try { morakData = JSON.parse(aiText); } catch(e) {
@@ -18239,12 +18447,24 @@ async function lessonGenerate() {
         '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 40s ease-out forwards;"></div></div></div>';
 
     try {
-        var systemPrompt = LESSON_AI_PROMPT.replace('[TOPIC]', topic).replace('[AUDIENCE]', audience).replace('[DURATION]', duration).replace('[STYLE]', style)
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
+
+        var prompt = LESSON_AI_PROMPT.replace('[TOPIC]', topic).replace('[AUDIENCE]', audience).replace('[DURATION]', duration).replace('[STYLE]', style)
             .replace('[GOALS_SECTION]', goals ? 'מטרות ויעדים: ' + goals : '')
             .replace('[NOTES_SECTION]', notes ? 'הערות נוספות: ' + notes : '');
-        var userMessage = 'בנה מערך שיעור על "' + topic + '". החזר JSON בלבד.';
 
-        var aiText = await callClaudeAI(systemPrompt, userMessage, { maxTokens: 16384, temperature: 0.7 });
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+        var resp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+        });
+        if (!resp.ok) throw new Error('שגיאת Gemini');
+        var data = await resp.json();
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        var aiText = '';
+        for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         var lessonData;
         try { lessonData = JSON.parse(aiText); } catch(e) {
@@ -18779,7 +18999,13 @@ async function triviaGenerateAI() {
     btn.disabled = true; btn.textContent = '⏳ מייצר טריוויה...';
     status.textContent = 'מחפש מידע ויוצר שאלות — עלול לקחת עד 30 שניות...';
 
-    var triviaSystemPrompt = `אתה מומחה ליצירת חידוני טריוויה איכותיים בעברית לחיילי צה"ל בחטיבת חשמונאים.
+    var prompt = `אתה מומחה ליצירת חידוני טריוויה איכותיים בעברית לחיילי צה"ל בחטיבת חשמונאים.
+
+צור חידון טריוויה לפי הפרמטרים הבאים:
+- נושא: ${topic}${subtopic ? '\n- התמקדות: ' + subtopic : ''}${sources ? '\n- מקורות: ' + sources : ''}
+- רמת קושי: ${DIFF_MAP[difficulty]}
+- מספר שאלות: ${count}
+- קהל יעד: ${audience}
 
 לכל שאלה יש לכלול:
 - שאלה ברורה ומדויקת
@@ -18791,7 +19017,6 @@ async function triviaGenerateAI() {
 - האפשרויות השגויות צריכות להיות מתקבלות על הדעת (לא מגוחכות)
 - ההסבר צריך לתת ערך מוסף ולא רק לחזור על השאלה
 - כתוב הכל בעברית
-- חפש בידע שלך מידע מדויק ועדכני על הנושא
 
 החזר JSON בלבד בפורמט:
 {
@@ -18809,17 +19034,28 @@ async function triviaGenerateAI() {
 חשוב: correct הוא אינדקס (0-3) של התשובה הנכונה במערך options.
 החזר אך ורק JSON תקני.` + JEWISH_SOURCES_RESTRICTION;
 
-    var triviaUserMessage = `צור חידון טריוויה לפי הפרמטרים הבאים:
-- נושא: ${topic}${subtopic ? '\n- התמקדות: ' + subtopic : ''}${sources ? '\n- מקורות: ' + sources : ''}
-- רמת קושי: ${DIFF_MAP[difficulty]}
-- מספר שאלות: ${count}
-- קהל יעד: ${audience}
-
-החזר JSON בלבד.`;
-
     try {
-        var text = await callClaudeAI(triviaSystemPrompt, triviaUserMessage, { maxTokens: 8192, temperature: 0.7 });
+        var configDoc = await db.collection('config').doc('ai').get();
+        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        if (!apiKey) { showToast('מפתח API חסר — פנה למנהל'); btn.disabled = false; btn.textContent = '🧠 צור טריוויה'; status.textContent = ''; return; }
 
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+        var resp = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+                tools: [{ googleSearch: {} }]
+            })
+        });
+        var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || 'Gemini error');
+
+        var text = '';
+        if (data.candidates && data.candidates[0]) {
+            data.candidates[0].content.parts.forEach(function(p) { if (p.text) text += p.text; });
+        }
         // Parse JSON
         var jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error('לא התקבל JSON תקני');
@@ -20176,80 +20412,53 @@ async function adminCompletionDrilldown(program, week, platoon) {
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
 
-// === Admin: AI Configuration (Claude / Anthropic) ===
+// === Admin: AI Configuration ===
 async function loadAiConfig() {
     try {
         var doc = await db.collection('config').doc('ai').get();
         var data = doc.exists ? doc.data() : {};
-        var key = data.claudeKey || '';
-        var proxy = data.claudeProxyUrl || '';
-        var keyInput = document.getElementById('ai-claude-key-input');
-        if (keyInput && key) keyInput.value = key;
-        var proxyInput = document.getElementById('ai-claude-proxy-input');
-        if (proxyInput && proxy) proxyInput.value = proxy;
+        var key = data.geminiKey || '';
+        var input = document.getElementById('ai-gemini-key-input');
+        if (input && key) input.value = key;
         var statusEl = document.getElementById('ai-config-status');
-        if (statusEl) statusEl.innerHTML = (key && proxy)
-            ? '<span style="color:#2E7D32;">✅ Claude API מוגדר (' + key.substring(0,12) + '...)</span>'
-            : '<span style="color:#B45309;">⚠️ ' + (!key ? 'מפתח Claude חסר' : 'Proxy URL חסר') + ' — סוכן AI לא יעבוד</span>';
+        if (statusEl) statusEl.innerHTML = key
+            ? '<span style="color:#2E7D32;">✅ מפתח Gemini מוגדר (' + key.substring(0,10) + '...)</span>'
+            : '<span style="color:#B45309;">⚠️ מפתח לא מוגדר — סוכן AI לא יעבוד</span>';
     } catch(e) { console.error('AI config error:', e); }
 }
 
-async function saveClaudeConfig() {
-    var key = document.getElementById('ai-claude-key-input').value.trim();
-    var proxy = document.getElementById('ai-claude-proxy-input').value.trim();
-    if (!key || !proxy) { showToast('הזן מפתח ו-Proxy URL'); return; }
+async function saveGeminiKey() {
+    var key = document.getElementById('ai-gemini-key-input').value.trim();
+    if (!key) { showToast('הזן מפתח'); return; }
     try {
-        await db.collection('config').doc('ai').set({ claudeKey: key, claudeProxyUrl: proxy }, { merge: true });
-        showToast('✅ הגדרות Claude נשמרו');
+        await db.collection('config').doc('ai').set({ geminiKey: key }, { merge: true });
+        showToast('✅ מפתח Gemini נשמר');
         loadAiConfig();
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
 
-// === Generic Claude AI helper ===
-async function callClaudeAI(systemPrompt, userMessage, options) {
-    options = options || {};
-    var configDoc = await db.collection('config').doc('ai').get();
-    var config = configDoc.exists ? configDoc.data() : {};
-    var apiKey = config.claudeKey || '';
-    var proxyUrl = config.claudeProxyUrl || '';
-    if (!apiKey) throw new Error('מפתח Claude לא הוגדר. הגדר בניהול מערכת → הגדרות AI');
-    if (!proxyUrl) throw new Error('Proxy URL לא הוגדר. הגדר בניהול מערכת → הגדרות AI');
-
-    var resp = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            apiKey: apiKey,
-            model: options.model || 'claude-sonnet-4-20250514',
-            max_tokens: options.maxTokens || 8192,
-            temperature: options.temperature !== undefined ? options.temperature : 0.7,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: userMessage }]
-        })
-    });
-
-    var data = await resp.json();
-    if (!resp.ok || data.error) {
-        var errMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : (data.error || 'Claude API error');
-        throw new Error(errMsg);
-    }
-
-    var text = '';
-    if (data.content) {
-        data.content.forEach(function(block) { if (block.type === 'text') text += block.text; });
-    }
-    return text;
-}
-
-async function testClaudeKey() {
+async function testGeminiKey() {
     var statusEl = document.getElementById('ai-config-status');
-    statusEl.innerHTML = '<span style="color:var(--primary);">🔄 בודק חיבור ל-Claude...</span>';
+    statusEl.innerHTML = '<span style="color:var(--primary);">🔄 בודק חיבור ל-Gemini...</span>';
     try {
-        var text = await callClaudeAI('אתה עוזר בעברית בלבד.', 'אמור "שלום"', { maxTokens: 50 });
-        statusEl.innerHTML = '<span style="color:#2E7D32;">✅ החיבור תקין! Claude API פעיל. תשובה: ' + text.substring(0,50) + '</span>';
-    } catch(e) {
-        statusEl.innerHTML = '<span style="color:#d32f2f;">❌ שגיאה: ' + e.message.substring(0,100) + '</span>';
-    }
+        var doc = await db.collection('config').doc('ai').get();
+        var key = doc.exists ? doc.data().geminiKey : '';
+        if (!key) { statusEl.innerHTML = '<span style="color:#d32f2f;">❌ מפתח לא מוגדר</span>'; return; }
+        var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: 'אמור "שלום" בעברית בלבד.' }] }],
+                generationConfig: { maxOutputTokens: 50 }
+            })
+        });
+        if (resp.ok) {
+            statusEl.innerHTML = '<span style="color:#2E7D32;">✅ החיבור תקין! Gemini API פעיל.</span>';
+        } else {
+            var err = await resp.text();
+            statusEl.innerHTML = '<span style="color:#d32f2f;">❌ שגיאה: ' + resp.status + ' — ' + err.substring(0,100) + '</span>';
+        }
+    } catch(e) { statusEl.innerHTML = '<span style="color:#d32f2f;">❌ שגיאת רשת: ' + e.message + '</span>'; }
 }
 
 async function loadAdminParticipants() {
