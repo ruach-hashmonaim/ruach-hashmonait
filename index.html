@@ -1878,6 +1878,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <button class="btn-sm btn-secondary" id="lib-filter-sakag" onclick="loadLibrary('sakag')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">📋 סק"גים</button>
                 <button class="btn-sm btn-secondary" id="lib-filter-morak" onclick="loadLibrary('morak')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">⭐ מור"קים</button>
                 <button class="btn-sm btn-secondary" id="lib-filter-lesson" onclick="loadLibrary('lesson')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">📖 מערכי שיעור</button>
+                <button class="btn-sm btn-secondary" id="lib-filter-trivia" onclick="loadLibrary('trivia')" style="border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;">🧠 טריוויות</button>
             </div>
             <!-- Library map showing סק"ג locations -->
             <div id="library-map" style="height:300px;border-radius:12px;border:2px solid var(--border);margin-bottom:14px;z-index:0;display:none;"></div>
@@ -2895,7 +2896,7 @@ function activatePage(page) {
 
     if (page === 'learning') loadLearningPrograms();
     if (page === 'hebrew') loadHebrewPage();
-    if (page === 'geography') { initGeoMap(); setGeoMode('sakal'); }
+    if (page === 'geography') { initGeoMap(); geoBackToMenu(); }
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
     if (page === 'admin') loadAdminPage();
@@ -18530,7 +18531,7 @@ async function loadLibrary(filter) {
     if (!db) { try { db = firebase.firestore(); } catch(e) {} }
     if (!db) { container.innerHTML = '<div style="text-align:center;color:#d32f2f;padding:30px;">שגיאה: אין חיבור למסד הנתונים. נסה לרענן את הדף.</div>'; return; }
     // Update filter buttons
-    ['all','sakag','morak','lesson'].forEach(function(f) {
+    ['all','sakag','morak','lesson','trivia'].forEach(function(f) {
         var btn = document.getElementById('lib-filter-' + f);
         if (btn) { btn.style.background = f === filter ? 'var(--primary)' : ''; btn.style.color = f === filter ? '#fff' : ''; }
     });
@@ -18551,16 +18552,16 @@ async function loadLibrary(filter) {
             } catch(e) { loadErrors.push('סק"ג: ' + e.message); console.error('Library: sakag load error', e); }
         }
         // Load commander_tools (no composite index needed — filter client-side)
-        if (filter === 'all' || filter === 'morak' || filter === 'lesson') {
+        if (filter === 'all' || filter === 'morak' || filter === 'lesson' || filter === 'trivia') {
             try {
                 var toolsSnap = await db.collection('commander_tools').get();
                 toolsSnap.forEach(function(doc) {
                     var d = doc.data();
                     if (d.status && d.status !== 'active') return;
                     if (filter !== 'all' && d.type !== filter) return;
-                    var icon = d.type === 'morak' ? '⭐' : '📖';
-                    var color = d.type === 'morak' ? '#7C3AED' : '#059669';
-                    var label = d.type === 'morak' ? 'מור"ק' : 'מערך שיעור';
+                    var icon = d.type === 'morak' ? '⭐' : d.type === 'trivia' ? '🧠' : '📖';
+                    var color = d.type === 'morak' ? '#7C3AED' : d.type === 'trivia' ? '#D97706' : '#059669';
+                    var label = d.type === 'morak' ? 'מור"ק' : d.type === 'trivia' ? 'טריוויה' : 'מערך שיעור';
                     items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
                 });
             } catch(e) { loadErrors.push('כלים: ' + e.message); console.error('Library: tools load error', e); }
@@ -18629,6 +18630,14 @@ async function viewGeneratedContent(docId, collection) {
         var doc = await db.collection(collection).doc(docId).get();
         if (!doc.exists) { showToast('תוכן לא נמצא'); return; }
         var d = doc.data();
+
+        // If it's a trivia, play it directly
+        if (d.type === 'trivia' && d.questions && d.questions.length > 0) {
+            window._lastAITrivia = { title: d.title, questions: d.questions };
+            triviaPlayAIQuiz();
+            return;
+        }
+
         var sections = d.sections || [];
 
         var modal = document.createElement('div');
@@ -18765,65 +18774,60 @@ var triviaScore = 0;
 var triviaAnswered = false;
 
 // Build trivia categories from Gedolim periods + map quizzes
-function getTriviaCategories() {
-    var cats = [];
-    // Gedolim period quizzes
-    var periodGroups = {};
-    GEDOLIM_FIGURES.forEach(function(f) {
-        if (!periodGroups[f.category]) periodGroups[f.category] = [];
-        periodGroups[f.category].push(f);
-    });
-    GEDOLIM_CATEGORIES.forEach(function(c) {
-        var figures = periodGroups[c.id] || [];
-        if (figures.length < 2) return;
-        cats.push({
-            id: 'gedolim_' + c.id,
-            name: c.name,
-            icon: c.icon,
-            desc: figures.length + ' דמויות',
-            type: 'gedolim',
-            categoryId: c.id,
-            color: '#7C3AED'
-        });
-    });
-    // Map quizzes
-    if (typeof MAP_QUIZZES !== 'undefined') {
-        MAP_QUIZZES.forEach(function(q) {
-            cats.push({
-                id: 'mapquiz_' + q.id,
-                name: q.title,
-                icon: '🗺️',
-                desc: q.questions.length + ' שאלות',
-                type: 'mapquiz',
-                quizData: q,
-                color: '#0E7490'
-            });
-        });
-    }
-    // All gedolim combined
-    cats.unshift({
-        id: 'gedolim_all',
-        name: 'כל גדולי האומה',
-        icon: '🌟',
-        desc: GEDOLIM_FIGURES.length + ' דמויות',
-        type: 'gedolim',
-        categoryId: null,
-        color: '#D97706'
-    });
-    return cats;
-}
-
-function triviaRenderCategories() {
+// Load saved trivia quizzes from Firestore
+async function triviaRenderCategories() {
     var container = document.getElementById('trivia-categories');
     if (!container) return;
-    var cats = getTriviaCategories();
-    container.innerHTML = cats.map(function(c) {
-        return '<div onclick="triviaStartQuiz(\''+c.id+'\')" style="cursor:pointer;background:#fff;border:2px solid ' + c.color + '33;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\''+c.color+'\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\''+c.color+'33\';this.style.transform=\'\'">' +
-            '<div style="font-size:2rem;margin-bottom:6px;">' + c.icon + '</div>' +
-            '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + c.name + '</div>' +
-            '<div style="font-size:0.75rem;color:' + c.color + ';margin-top:4px;font-weight:600;">' + c.desc + '</div>' +
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">טוען טריוויות...</div>';
+
+    var savedTrivias = [];
+    try {
+        if (db) {
+            var snap = await db.collection('commander_tools').get();
+            snap.forEach(function(doc) {
+                var d = doc.data();
+                if (d.type === 'trivia' && d.status !== 'deleted' && d.questions && d.questions.length > 0) {
+                    savedTrivias.push({ id: doc.id, title: d.title || 'טריוויה', subtitle: d.subtitle || '', questions: d.questions, author: d.createdByName || '', ts: d.createdAt });
+                }
+            });
+        }
+    } catch(e) { console.warn('Trivia load error:', e); }
+
+    if (savedTrivias.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);grid-column:1/-1;"><div style="font-size:2.5rem;margin-bottom:8px;">🧠</div><div style="font-weight:600;">אין טריוויות עדיין</div><div style="font-size:0.85rem;margin-top:6px;">לחץ על הכפתור למעלה כדי ליצור טריוויה חדשה!</div></div>';
+        return;
+    }
+
+    // Sort by newest first
+    savedTrivias.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
+
+    container.innerHTML = savedTrivias.map(function(t) {
+        return '<div onclick="triviaPlaySaved(\''+t.id+'\')" style="cursor:pointer;background:#fff;border:2px solid #D9770633;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\'#D97706\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'#D9770633\';this.style.transform=\'\'">' +
+            '<div style="font-size:2rem;margin-bottom:6px;">🧠</div>' +
+            '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + t.title + '</div>' +
+            (t.subtitle ? '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">' + t.subtitle + '</div>' : '') +
+            '<div style="font-size:0.75rem;color:#D97706;margin-top:4px;font-weight:600;">' + t.questions.length + ' שאלות</div>' +
+            '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:4px;">נוצר ע"י ' + t.author + '</div>' +
         '</div>';
     }).join('');
+
+    // Store for playback
+    window._savedTrivias = savedTrivias;
+}
+
+async function triviaPlaySaved(docId) {
+    // Find from stored list or fetch from Firestore
+    var trivia = (window._savedTrivias || []).find(function(t) { return t.id === docId; });
+    if (!trivia) {
+        try {
+            var doc = await db.collection('commander_tools').doc(docId).get();
+            if (doc.exists) trivia = { ...doc.data(), id: doc.id };
+        } catch(e) {}
+    }
+    if (!trivia || !trivia.questions) { showToast('טריוויה לא נמצאה'); return; }
+
+    window._lastAITrivia = { title: trivia.title, questions: trivia.questions };
+    triviaPlayAIQuiz();
 }
 
 function triviaStartQuiz(catId) {
@@ -19183,8 +19187,8 @@ function triviaShowResult() {
         '<div style="font-size:1.4rem;font-weight:700;color:var(--primary);">' + triviaScore + ' / ' + total + '</div>' +
         '<div style="font-size:1rem;color:var(--text-secondary);margin:6px 0 16px;">' + pct + '% — ' + msg + '</div>' +
         '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
-            '<button class="btn-primary btn-sm" onclick="triviaStartQuiz(\'' + triviaCurrentQuiz._catId + '\')">🔄 שחק שוב</button>' +
-            '<button class="btn-secondary btn-sm" onclick="triviaBackToCategories()">← לקטגוריות</button>' +
+            '<button class="btn-primary btn-sm" onclick="triviaPlayAIQuiz()">🔄 שחק שוב</button>' +
+            '<button class="btn-secondary btn-sm" onclick="triviaBackToCategories()">← לטריוויות</button>' +
         '</div>';
 }
 
