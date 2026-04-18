@@ -21810,6 +21810,45 @@ function splashEnter() {
     }
 }
 
+// Firestore offline recovery — detects offline state and re-enables network
+function setupFirestoreRecovery() {
+    if (!db) return;
+    var _firestoreRetrying = false;
+    // Listen for online/offline events
+    window.addEventListener('online', async function() {
+        console.log('Network back online — re-enabling Firestore');
+        try {
+            await db.enableNetwork();
+            _firestoreRetrying = false;
+            console.log('Firestore network re-enabled');
+            // Re-auth if needed
+            if (firebase.auth && !firebase.auth().currentUser) {
+                try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+            }
+        } catch(e) { console.warn('Firestore enableNetwork failed:', e); }
+    });
+    // Periodic check — if we're online but Firestore thinks we're offline
+    setInterval(async function() {
+        if (navigator.onLine && !_firestoreRetrying) {
+            try {
+                // Quick test read to verify connectivity
+                await db.collection('config').doc('ai').get({ source: 'server' });
+            } catch(e) {
+                if (e.message && e.message.includes('offline')) {
+                    _firestoreRetrying = true;
+                    console.log('Firestore stuck offline — forcing reconnect');
+                    try {
+                        await db.disableNetwork();
+                        await db.enableNetwork();
+                        _firestoreRetrying = false;
+                        console.log('Firestore reconnected');
+                    } catch(re) { _firestoreRetrying = false; }
+                }
+            }
+        }
+    }, 30000); // Check every 30 seconds
+}
+
 async function initApp() {
     const page = window.location.hash.slice(1) || 'home';
     // For standalone sakag creator — skip splash and show immediately after Firebase is ready
@@ -21839,6 +21878,8 @@ async function initApp() {
         } else {
             console.warn('Firebase Storage not available — file uploads will not work');
         }
+        // Firestore offline recovery — if connection drops, re-enable network
+        setupFirestoreRecovery();
         analyticsInit();
         // If standalone sakag, re-activate now that Firebase is ready
         if (page === 'sakag-create') activatePage(page);
