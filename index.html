@@ -17268,6 +17268,7 @@ async function modalSakagSaveAndPDF() {
     try {
         // Generate PDF regardless of save status
         await generateSakagPDF(d.data, d.placeName);
+        if (saved) _libCache = null; // invalidate library cache
         showToast(saved ? '✅ הסק"ג נשמר והורד כ-PDF!' : '✅ ה-PDF הורד (השמירה נכשלה)');
 
         // Close modal after short delay
@@ -18025,6 +18026,7 @@ async function sakalSaveGenerated() {
             status: 'active'
         });
 
+        _libCache = null; // invalidate library cache
         showToast('✅ הסק"ג נשמר בהצלחה!');
 
         // Auto-mark training completion if applicable
@@ -18372,6 +18374,7 @@ async function morakSave() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
+        _libCache = null; // invalidate library cache
         showToast('✅ המור"ק נשמר בהצלחה!');
         var templateEl = document.getElementById('morak-create-template');
         templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">המור"ק נשמר!</p>' +
@@ -18597,6 +18600,7 @@ async function lessonSave() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
+        _libCache = null; // invalidate library cache
         showToast('✅ מערך השיעור נשמר!');
         var templateEl = document.getElementById('lesson-create-template');
         templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">מערך השיעור נשמר!</p>' +
@@ -18631,6 +18635,11 @@ async function lessonLoadList() {
 // ספרייה משותפת + תצוגת תוכן שנוצר
 // ============================================================
 
+// In-memory library cache — avoids re-downloading on every filter switch
+var _libCache = null;
+var _libCacheTime = 0;
+var _libCacheMaxAge = 60000; // 1 minute
+
 async function loadLibrary(filter) {
     var container = document.getElementById('library-content');
     if (!container) return;
@@ -18650,33 +18659,51 @@ async function loadLibrary(filter) {
     try {
         var items = [];
         var loadErrors = [];
-        // Load user sakags (no composite index needed — filter client-side)
-        if (filter === 'all' || filter === 'sakag') {
-            try {
-                var sakagSnap = await db.collection('user_sakag').get();
-                sakagSnap.forEach(function(doc) {
-                    var d = doc.data();
-                    if (d.status && d.status !== 'active') return;
-                    items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt, lat: d.lat, lng: d.lng });
-                });
-            } catch(e) { loadErrors.push('סק"ג: ' + e.message); console.error('Library: sakag load error', e); }
+
+        // Use cache if fresh (< 1 minute old)
+        var useCache = _libCache && (Date.now() - _libCacheTime < _libCacheMaxAge);
+
+        if (useCache) {
+            items = _libCache.slice(); // shallow copy
+        } else {
+            // Run BOTH queries in parallel for speed
+            var promises = [];
+            promises.push(
+                db.collection('user_sakag').orderBy('createdAt', 'desc').limit(30).get()
+                    .then(function(sakagSnap) {
+                        sakagSnap.forEach(function(doc) {
+                            var d = doc.data();
+                            if (d.status && d.status !== 'active') return;
+                            items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt, lat: d.lat, lng: d.lng });
+                        });
+                    }).catch(function(e) { loadErrors.push('סק"ג: ' + e.message); console.error('Library: sakag load error', e); })
+            );
+            promises.push(
+                db.collection('commander_tools').orderBy('createdAt', 'desc').limit(50).get()
+                    .then(function(toolsSnap) {
+                        toolsSnap.forEach(function(doc) {
+                            var d = doc.data();
+                            if (d.status && d.status !== 'active') return;
+                            var icon = d.type === 'morak' ? '⭐' : d.type === 'trivia' ? '🧠' : '📖';
+                            var color = d.type === 'morak' ? '#7C3AED' : d.type === 'trivia' ? '#D97706' : '#059669';
+                            var label = d.type === 'morak' ? 'מור"ק' : d.type === 'trivia' ? 'טריוויה' : 'מערך שיעור';
+                            items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
+                        });
+                    }).catch(function(e) { loadErrors.push('כלים: ' + e.message); console.error('Library: tools load error', e); })
+            );
+            await Promise.all(promises);
+
+            // Cache the full result set
+            _libCache = items.slice();
+            _libCacheTime = Date.now();
         }
-        // Load commander_tools (no composite index needed — filter client-side)
-        if (filter === 'all' || filter === 'morak' || filter === 'lesson' || filter === 'trivia') {
-            try {
-                var toolsSnap = await db.collection('commander_tools').get();
-                toolsSnap.forEach(function(doc) {
-                    var d = doc.data();
-                    if (d.status && d.status !== 'active') return;
-                    if (filter !== 'all' && d.type !== filter) return;
-                    var icon = d.type === 'morak' ? '⭐' : d.type === 'trivia' ? '🧠' : '📖';
-                    var color = d.type === 'morak' ? '#7C3AED' : d.type === 'trivia' ? '#D97706' : '#059669';
-                    var label = d.type === 'morak' ? 'מור"ק' : d.type === 'trivia' ? 'טריוויה' : 'מערך שיעור';
-                    items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
-                });
-            } catch(e) { loadErrors.push('כלים: ' + e.message); console.error('Library: tools load error', e); }
+
+        // Apply filter client-side (from cache or fresh data)
+        if (filter !== 'all') {
+            items = items.filter(function(item) { return item.type === filter; });
         }
-        // Sort by timestamp desc (client-side)
+
+        // Sort by timestamp desc
         items.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
         items = items.slice(0, 50);
 
@@ -18729,6 +18756,7 @@ async function deleteLibraryItem(docId, collection) {
     if (!confirm('למחוק תוכן זה לצמיתות?')) return;
     try {
         await db.collection(collection).doc(docId).update({ status: 'deleted' });
+        _libCache = null; // invalidate library cache
         showToast('✅ התוכן נמחק');
         loadLibrary('all');
     } catch(e) { showToast('שגיאה במחיקה: ' + e.message); }
@@ -19243,6 +19271,7 @@ async function triviaSaveAIQuiz() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
+        _libCache = null; // invalidate library cache
         showToast('✅ הטריוויה נשמרה בספרייה!');
     } catch(e) { showToast('שגיאה בשמירה: ' + e.message); }
 }
