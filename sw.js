@@ -1,10 +1,8 @@
-const CACHE_NAME = 'ruach-v18';
+const CACHE_NAME = 'ruach-v19';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './firebase/firebase-auth-compat.js',
-  'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
   'https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap'
 ];
 
@@ -32,16 +30,28 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch — network first for HTML, stale-while-revalidate for other assets
+// Fetch — NEVER intercept API calls; cache only static assets
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always go network-first for Firebase/Firestore API calls
-  if (url.hostname.includes('firestore') || url.hostname.includes('firebase')) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
-    return;
+  // === CRITICAL: Let ALL API/Firebase/Google requests pass through untouched ===
+  // Do NOT call event.respondWith() for these — the browser handles them directly
+  if (url.hostname.includes('firestore') ||
+      url.hostname.includes('firebase') ||
+      url.hostname.includes('googleapis') ||
+      url.hostname.includes('identitytoolkit') ||
+      url.hostname.includes('securetoken') ||
+      url.hostname.includes('google.com') ||
+      url.hostname.includes('gstatic.com') ||
+      url.hostname.includes('generativelanguage') ||
+      url.hostname.includes('anthropic') ||
+      url.hostname.includes('cloudflare') ||
+      url.hostname.includes('nominatim') ||
+      url.hostname.includes('openstreetmap') ||
+      url.hostname.includes('unpkg.com') ||
+      url.hostname.includes('cdnjs.cloudflare.com') ||
+      url.protocol === 'chrome-extension:') {
+    return; // Let browser handle natively — no SW interference
   }
 
   // Network-first for HTML pages (index.html) — always get fresh content
@@ -59,7 +69,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For other static assets — stale-while-revalidate
+  // For other static assets (CSS, images, local JS) — stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetching = fetch(event.request).then(response => {
