@@ -86,13 +86,15 @@
     </script>
 <style>
 :root {
-    --primary: #0C4A6E; --primary-light: #0E7490; --primary-lighter: #06B6D4;
-    --accent: #F0C040; --accent-light: #FADB5F;
-    --bg: #F0F9FF; --card: #FFFFFF; --text: #0F172A; --text-secondary: #64748B; --border: #E2E8F0;
-    --success: #0D9488; --warning: #F59E0B; --danger: #DC2626;
-    --shadow: 0 2px 12px rgba(12,74,110,0.06); --shadow-lg: 0 8px 30px rgba(12,74,110,0.10);
+    --primary: #2D3B2D; --primary-light: #3D5A3D; --primary-lighter: #5A7D5A;
+    --accent: #D4A843; --accent-light: #E8C364;
+    --bg: #F5F0E8; --card: #FFFFFF; --text: #1A1A1A; --text-secondary: #5C5C5C; --border: #D4CFC4;
+    --success: #3D6B3D; --warning: #C4930A; --danger: #8B2020;
+    --shadow: 0 2px 12px rgba(45,59,45,0.08); --shadow-lg: 0 8px 30px rgba(45,59,45,0.12);
     --radius: 14px; --radius-sm: 10px;
     --sidebar-w: 260px;
+    --olive: #4A5D3A; --olive-light: #6B8C54; --khaki: #C4B07B; --sand: #E8DCC8;
+    --brigade-gold: #D4A843; --brigade-dark: #1A2E1A;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; line-height:1.6; }
@@ -101,7 +103,7 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .app-layout { display:flex; min-height:100vh; }
 
 /* SIDEBAR */
-.sidebar { width:var(--sidebar-w); background:linear-gradient(180deg,var(--primary) 0%,#082F49 100%); color:#fff; position:fixed; top:0; right:0; bottom:0; z-index:200; display:flex; flex-direction:column; transition:transform 0.3s; }
+.sidebar { width:var(--sidebar-w); background:linear-gradient(180deg,var(--primary) 0%,var(--brigade-dark) 100%); color:#fff; position:fixed; top:0; right:0; bottom:0; z-index:200; display:flex; flex-direction:column; transition:transform 0.3s; }
 .sidebar-brand { padding:24px 20px 16px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.1); }
 .sidebar-logo { width:64px; height:64px; border-radius:12px; object-fit:contain; margin-bottom:8px; }
 .sidebar-brand h2 { font-size:1.1rem; font-weight:700; margin-bottom:2px; }
@@ -138,7 +140,7 @@ body { font-family:'Heebo',sans-serif; background:var(--bg); color:var(--text); 
 .splash-credit { font-size:0.7rem; opacity:0.35; margin-top:28px; }
 
 /* GUEST BAR */
-.guest-bar { background:linear-gradient(135deg,var(--accent),var(--accent-light)); color:var(--primary); padding:8px 20px; text-align:center; font-size:0.82rem; font-weight:600; display:none; position:fixed; top:0; left:0; right:0; z-index:400; margin-right:var(--sidebar-w); }
+.guest-bar { background:linear-gradient(135deg,var(--brigade-gold),var(--accent-light)); color:var(--brigade-dark); padding:8px 20px; text-align:center; font-size:0.82rem; font-weight:600; display:none; position:fixed; top:0; left:0; right:0; z-index:400; margin-right:var(--sidebar-w); }
 .guest-bar a { color:var(--primary); text-decoration:underline; cursor:pointer; font-weight:700; margin-right:8px; }
 
 /* ===== מרחב פנימי — Nature Healing Theme ===== */
@@ -330,16 +332,37 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .code-inputs { display:flex; gap:8px; direction:ltr; justify-content:center; }
 .code-inputs input { width:48px; height:54px; text-align:center; font-size:1.4rem; font-weight:700; letter-spacing:0; padding:0; }
 
-/* HOME TILES */
+/* HOME TILES — Military Brigade Style */
 .home-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:18px; }
-.home-tile { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:28px 20px 22px; text-align:center; cursor:pointer; transition:all 0.3s cubic-bezier(.4,0,.2,1); text-decoration:none; color:var(--text); position:relative; overflow:hidden; }
-.home-tile::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--primary-light),var(--primary-lighter)); opacity:0; transition:opacity 0.3s; }
-.home-tile:hover { transform:translateY(-4px); box-shadow:0 12px 36px rgba(12,74,110,0.12); border-color:var(--primary-lighter); }
+.home-tile { background:#fff; border-radius:var(--radius); border:2px solid var(--border); padding:28px 20px 22px; text-align:center; cursor:pointer; transition:all 0.3s cubic-bezier(.4,0,.2,1); text-decoration:none; color:var(--text); position:relative; overflow:hidden; border-top:4px solid var(--olive); }
+.home-tile::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--brigade-gold),var(--accent-light)); opacity:0; transition:opacity 0.3s; }
+.home-tile:hover { transform:translateY(-5px); box-shadow:0 12px 36px rgba(45,59,45,0.18); border-color:var(--olive-light); }
 .home-tile:hover::before { opacity:1; }
-.home-tile .tile-icon { width:56px; height:56px; margin:0 auto 16px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:1.35rem; font-weight:800; color:#fff; letter-spacing:-1px; box-shadow:0 4px 14px rgba(0,0,0,0.12); }
+.home-tile .tile-icon { width:60px; height:60px; margin:0 auto 16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.35rem; font-weight:800; color:#fff; letter-spacing:-1px; box-shadow:0 4px 14px rgba(0,0,0,0.15); border:3px solid rgba(255,255,255,0.3); }
 .home-tile .tile-icon svg { width:30px; height:30px; fill:#fff; }
-.home-tile .tile-title { font-weight:700; font-size:1rem; color:var(--primary); margin-bottom:6px; }
+.home-tile .tile-title { font-weight:800; font-size:1.05rem; color:var(--primary); margin-bottom:6px; letter-spacing:0.3px; }
 .home-tile .tile-desc { font-size:0.8rem; color:var(--text-secondary); line-height:1.5; }
+
+/* Military Menu Tiles (inner grids) */
+.geo-menu-tile, .soldier-menu-tile { position:relative; }
+.geo-menu-tile::after, .soldier-menu-tile::after { content:''; position:absolute; bottom:0; left:10%; right:10%; height:3px; background:var(--brigade-gold); border-radius:3px 3px 0 0; opacity:0; transition:opacity 0.3s; }
+.geo-menu-tile:hover::after, .soldier-menu-tile:hover::after { opacity:1; }
+
+/* Floating AI Progress Widget */
+#ai-progress-float { position:fixed; bottom:20px; left:20px; z-index:9999; display:none; min-width:280px; max-width:340px; background:var(--card); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.18); border:2px solid var(--brigade-gold); overflow:hidden; direction:rtl; font-family:'Heebo',sans-serif; animation:floatSlideUp 0.4s ease-out; }
+#ai-progress-float .ai-float-header { background:linear-gradient(135deg,var(--primary),var(--olive)); color:#fff; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+#ai-progress-float .ai-float-header .ai-float-title { font-size:0.85rem; font-weight:700; }
+#ai-progress-float .ai-float-body { padding:12px 14px; }
+#ai-progress-float .ai-float-status { font-size:0.82rem; color:var(--text-secondary); margin-bottom:8px; }
+#ai-progress-float .ai-float-bar { height:6px; background:var(--sand); border-radius:3px; overflow:hidden; margin-bottom:8px; }
+#ai-progress-float .ai-float-bar-fill { height:100%; background:linear-gradient(90deg,var(--olive),var(--brigade-gold)); border-radius:3px; transition:width 0.5s ease; }
+#ai-progress-float .ai-float-timer { font-size:0.78rem; color:var(--text-secondary); text-align:center; }
+#ai-progress-float .ai-float-done { display:none; text-align:center; padding:8px 0; }
+#ai-progress-float .ai-float-done .btn-sm { font-size:0.82rem; padding:6px 16px; }
+#ai-progress-float .ai-float-close { background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer; font-size:1rem; padding:2px 4px; }
+#ai-progress-float .ai-float-close:hover { color:#fff; }
+@keyframes floatSlideUp { from { transform:translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes floatPulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
 
 /* LEARNING */
 .program-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
@@ -1015,29 +1038,29 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
 <!-- ====== HOME ====== -->
 <div class="page-section active" id="page-home">
-    <div class="card" style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;margin-bottom:20px;">
+    <div class="card" style="background:linear-gradient(135deg,var(--primary),var(--olive));color:#fff;margin-bottom:20px;border-right:5px solid var(--brigade-gold);">
         <h2 style="font-size:1.2rem;">ברוכים הבאים <span id="home-greeting"></span></h2>
-        <p style="opacity:0.8;font-size:0.88rem;margin-top:4px;">רוח · חוסן · חינוך — חטיבת החשמונאים</p>
+        <p style="opacity:0.85;font-size:0.88rem;margin-top:4px;">רוח · חוסן · חינוך — חטיבת החשמונאים</p>
         <div id="home-framework-badge" style="display:none;margin-top:8px;"></div>
     </div>
     <div class="home-grid" id="home-grid">
-        <a class="home-tile tile-training" style="display:none;background:linear-gradient(rgba(255,255,255,0.75),rgba(255,255,255,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/IDF_Hasmonean_Brigade_badge.png/400px-IDF_Hasmonean_Brigade_badge.png') center/cover;" onclick="navigate('training')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
+        <a class="home-tile tile-training" style="display:none;background:linear-gradient(rgba(245,240,232,0.78),rgba(245,240,232,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/IDF_Hasmonean_Brigade_badge.png/400px-IDF_Hasmonean_Brigade_badge.png') center/cover;" onclick="navigate('training')">
+            <div class="tile-icon" style="background:linear-gradient(135deg,#4A5D3A,#6B8C54);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
             <div class="tile-title">רוח מכבי</div>
             <div class="tile-desc">תוכנית הרוח והחינוך — הכשרת יסוד, קורס מ״כים, קורס קצינים</div>
         </a>
-        <a class="home-tile tile-geography" style="display:none;background:linear-gradient(rgba(255,255,255,0.75),rgba(255,255,255,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg/400px-123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg') center/cover;" onclick="navigate('geography')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#0369A1,#0891B2);"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
+        <a class="home-tile tile-geography" style="display:none;background:linear-gradient(rgba(245,240,232,0.78),rgba(245,240,232,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg/400px-123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg') center/cover;" onclick="navigate('geography')">
+            <div class="tile-icon" style="background:linear-gradient(135deg,#2D3B2D,#4A5D3A);"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
             <div class="tile-title">כלים למפקד</div>
             <div class="tile-desc">סק"ג, מור"ק, מערך שיעור, דילמות וטריוויה</div>
         </a>
-        <a class="home-tile" style="background:linear-gradient(rgba(255,255,255,0.75),rgba(255,255,255,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/125090_upper_galilee_PikiWiki_Israel.jpg/400px-125090_upper_galilee_PikiWiki_Israel.jpg') center/cover;" onclick="navigate('soldier-tools')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#0C4A6E,#0E7490);"><svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg></div>
+        <a class="home-tile" style="background:linear-gradient(rgba(245,240,232,0.78),rgba(245,240,232,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/125090_upper_galilee_PikiWiki_Israel.jpg/400px-125090_upper_galilee_PikiWiki_Israel.jpg') center/cover;" onclick="navigate('soldier-tools')">
+            <div class="tile-icon" style="background:linear-gradient(135deg,#5C4A1E,#8B7335);"><svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg></div>
             <div class="tile-title">כשירות אישית</div>
             <div class="tile-desc">והגית בו, לימוד עברית, שולטים ברשת הפנימית</div>
         </a>
-        <a class="home-tile tile-admin" style="display:none;background:linear-gradient(rgba(255,255,255,0.78),rgba(255,255,255,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Jerusalem_Panorama.jpg/400px-Jerusalem_Panorama.jpg') center/cover;" onclick="navigate('admin')">
-            <div class="tile-icon" style="background:linear-gradient(135deg,#475569,#64748B);"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></div>
+        <a class="home-tile tile-admin" style="display:none;background:linear-gradient(rgba(245,240,232,0.78),rgba(245,240,232,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Jerusalem_Panorama.jpg/400px-Jerusalem_Panorama.jpg') center/cover;" onclick="navigate('admin')">
+            <div class="tile-icon" style="background:linear-gradient(135deg,#3D3D3D,#5A5A5A);"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></div>
             <div class="tile-title">ניהול מערכת</div>
             <div class="tile-desc">ניהול תכנים, מעקב שבועי, משתמשים והרשאות</div>
         </a>
@@ -1053,17 +1076,17 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="card-title"><div class="icon">🛡️</div> כשירות אישית</div>
             <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר נושא כדי להתחיל:</p>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;">
-                <div onclick="switchSoldierTab('learning')" style="cursor:pointer;background:linear-gradient(135deg,rgba(14,116,144,0.8),rgba(6,182,212,0.8)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/115551_the_kinneret_basin_PikiWiki_Israel.jpg/400px-115551_the_kinneret_basin_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(14,116,144,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(14,116,144,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(14,116,144,0.25)'">
+                <div class="soldier-menu-tile" onclick="switchSoldierTab('learning')" style="cursor:pointer;background:linear-gradient(135deg,rgba(74,93,58,0.88),rgba(107,140,84,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/115551_the_kinneret_basin_PikiWiki_Israel.jpg/400px-115551_the_kinneret_basin_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(74,93,58,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(74,93,58,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(74,93,58,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.5rem;margin-bottom:10px;">📖</div>
                     <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">והגית בו</div>
                     <div style="font-size:0.78rem;opacity:0.9;line-height:1.4;">לוח קביעויות ופרסים — למידה יומית</div>
                 </div>
-                <div onclick="switchSoldierTab('hebrew')" style="cursor:pointer;background:linear-gradient(135deg,rgba(124,58,237,0.8),rgba(167,139,250,0.8)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg/400px-123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(124,58,237,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(124,58,237,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.25)'">
+                <div class="soldier-menu-tile" onclick="switchSoldierTab('hebrew')" style="cursor:pointer;background:linear-gradient(135deg,rgba(92,74,30,0.88),rgba(139,115,53,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg/400px-123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(92,74,30,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(92,74,30,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(92,74,30,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.5rem;margin-bottom:10px;">🔤</div>
                     <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">לימוד עברית</div>
                     <div style="font-size:0.78rem;opacity:0.9;line-height:1.4;">חידוני אוצר מילים ותרגול</div>
                 </div>
-                <div onclick="switchSoldierTab('internet')" style="cursor:pointer;background:linear-gradient(135deg,rgba(220,38,38,0.8),rgba(248,113,113,0.8)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/126398_golan_heights_PikiWiki_Israel.jpg/400px-126398_golan_heights_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(220,38,38,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(220,38,38,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(220,38,38,0.25)'">
+                <div class="soldier-menu-tile" onclick="switchSoldierTab('internet')" style="cursor:pointer;background:linear-gradient(135deg,rgba(139,32,32,0.85),rgba(180,60,60,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/126398_golan_heights_PikiWiki_Israel.jpg/400px-126398_golan_heights_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:28px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(139,32,32,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(139,32,32,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(139,32,32,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.5rem;margin-bottom:10px;">🛡️</div>
                     <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">שולטים ברשת</div>
                     <div style="font-size:0.78rem;opacity:0.9;line-height:1.4;">ביטחון ברשת הפנימית</div>
@@ -1319,37 +1342,37 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="card-title"><div class="icon">🛠️</div> כלים למפקד</div>
             <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר כלי כדי להתחיל:</p>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;">
-                <div class="geo-menu-tile" onclick="setGeoMode('sakal')" style="cursor:pointer;background:linear-gradient(135deg,rgba(14,116,144,0.82),rgba(8,145,178,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/126398_golan_heights_PikiWiki_Israel.jpg/400px-126398_golan_heights_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(14,116,144,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(14,116,144,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(14,116,144,0.25)'">
+                <div class="geo-menu-tile" onclick="setGeoMode('sakal')" style="cursor:pointer;background:linear-gradient(135deg,rgba(74,93,58,0.88),rgba(107,140,84,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/126398_golan_heights_PikiWiki_Israel.jpg/400px-126398_golan_heights_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(74,93,58,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(74,93,58,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(74,93,58,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.2rem;margin-bottom:8px;">📋</div>
                     <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">סק"ג</div>
                     <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">סקירה גיאוגרפית לאזור פעילות</div>
                 </div>
-                <div class="geo-menu-tile" onclick="setGeoMode('morak')" style="cursor:pointer;background:linear-gradient(135deg,rgba(124,58,237,0.82),rgba(139,92,246,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Masada_BW_1.JPG/400px-Masada_BW_1.JPG') center/cover;border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(124,58,237,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(124,58,237,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.25)'">
+                <div class="geo-menu-tile" onclick="setGeoMode('morak')" style="cursor:pointer;background:linear-gradient(135deg,rgba(92,74,30,0.88),rgba(139,115,53,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Masada_BW_1.JPG/400px-Masada_BW_1.JPG') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(92,74,30,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(92,74,30,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(92,74,30,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.2rem;margin-bottom:8px;">⭐</div>
                     <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">מור"ק</div>
                     <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">מורשת קרב — סיפורי גבורה</div>
                 </div>
-                <div class="geo-menu-tile" onclick="setGeoMode('lesson')" style="cursor:pointer;background:linear-gradient(135deg,rgba(5,150,105,0.82),rgba(16,185,129,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/115551_the_kinneret_basin_PikiWiki_Israel.jpg/400px-115551_the_kinneret_basin_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(5,150,105,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(5,150,105,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(5,150,105,0.25)'">
+                <div class="geo-menu-tile" onclick="setGeoMode('lesson')" style="cursor:pointer;background:linear-gradient(135deg,rgba(61,107,61,0.88),rgba(90,140,90,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/115551_the_kinneret_basin_PikiWiki_Israel.jpg/400px-115551_the_kinneret_basin_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(61,107,61,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(61,107,61,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(61,107,61,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.2rem;margin-bottom:8px;">📖</div>
                     <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">מערך שיעור</div>
                     <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">בניית מערך שיעור עם AI</div>
                 </div>
-                <div class="geo-menu-tile" onclick="setGeoMode('trivia')" style="cursor:pointer;background:linear-gradient(135deg,rgba(217,119,6,0.82),rgba(245,158,11,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/119601_sunrise_over_moshav_neve_zohar_PikiWiki_Israel.jpg/400px-119601_sunrise_over_moshav_neve_zohar_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(217,119,6,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(217,119,6,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(217,119,6,0.25)'">
+                <div class="geo-menu-tile" onclick="setGeoMode('trivia')" style="cursor:pointer;background:linear-gradient(135deg,rgba(74,93,58,0.88),rgba(139,115,53,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/119601_sunrise_over_moshav_neve_zohar_PikiWiki_Israel.jpg/400px-119601_sunrise_over_moshav_neve_zohar_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(74,93,58,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(74,93,58,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(74,93,58,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.2rem;margin-bottom:8px;">🧠</div>
                     <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">טריוויה</div>
                     <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">חידוני ידע בנושאים מגוונים</div>
                 </div>
-                <div class="geo-menu-tile" onclick="setGeoMode('dilemma')" style="cursor:pointer;background:linear-gradient(135deg,rgba(190,24,93,0.82),rgba(236,72,153,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/125090_upper_galilee_PikiWiki_Israel.jpg/400px-125090_upper_galilee_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(190,24,93,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(190,24,93,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(190,24,93,0.25)'">
+                <div class="geo-menu-tile" onclick="setGeoMode('dilemma')" style="cursor:pointer;background:linear-gradient(135deg,rgba(92,74,30,0.88),rgba(74,93,58,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/125090_upper_galilee_PikiWiki_Israel.jpg/400px-125090_upper_galilee_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(92,74,30,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(92,74,30,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(92,74,30,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.2rem;margin-bottom:8px;">⚖️</div>
                     <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">דילמות</div>
                     <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">דילמות ערכיות לדיון</div>
                 </div>
-                <div class="geo-menu-tile" onclick="setGeoMode('library')" style="cursor:pointer;background:linear-gradient(135deg,rgba(30,64,175,0.82),rgba(59,130,246,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/120565_yeruham_lake_park_PikiWiki_Israel.jpg/400px-120565_yeruham_lake_park_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(30,64,175,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(30,64,175,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(30,64,175,0.25)'">
-                    <div style="font-size:2.2rem;margin-bottom:8px;">📚</div>
-                    <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">ספרייה</div>
-                    <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">תכנים שנוצרו ונשמרו</div>
+                <div class="geo-menu-tile" onclick="setGeoMode('library')" style="cursor:pointer;background:linear-gradient(135deg,rgba(212,168,67,0.92),rgba(232,195,100,0.92)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/120565_yeruham_lake_park_PikiWiki_Israel.jpg/400px-120565_yeruham_lake_park_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#1A2E1A;transition:all 0.25s;box-shadow:0 4px 16px rgba(212,168,67,0.35);border:3px solid rgba(212,168,67,0.8);" onmouseenter="this.style.transform='translateY(-4px) scale(1.02)';this.style.boxShadow='0 8px 28px rgba(212,168,67,0.5)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(212,168,67,0.35)'">
+                    <div style="font-size:2.4rem;margin-bottom:8px;">📚</div>
+                    <div style="font-weight:800;font-size:1rem;margin-bottom:4px;">ספרייה</div>
+                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;font-weight:600;">תכנים שנוצרו ונשמרו</div>
                 </div>
-                <div class="geo-menu-tile" onclick="setGeoMode('mapquiz')" style="cursor:pointer;background:linear-gradient(135deg,rgba(146,64,14,0.82),rgba(212,168,67,0.82)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Jerusalem_Panorama.jpg/400px-Jerusalem_Panorama.jpg') center/cover;border-radius:16px;padding:22px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(146,64,14,0.25);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(146,64,14,0.35)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(146,64,14,0.25)'">
+                <div class="geo-menu-tile" onclick="setGeoMode('mapquiz')" style="cursor:pointer;background:linear-gradient(135deg,rgba(45,59,45,0.88),rgba(61,90,61,0.88)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Jerusalem_Panorama.jpg/400px-Jerusalem_Panorama.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(45,59,45,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(45,59,45,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(45,59,45,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.2rem;margin-bottom:8px;">🗺️</div>
                     <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">מפה אילמת</div>
                     <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">מבחני התמצאות במפה</div>
@@ -17048,9 +17071,15 @@ async function modalSakagGenerate(lat, lng, placeName) {
         '<div style="font-size:2rem;margin-bottom:10px;animation:spin-slow 2s linear infinite;display:inline-block;">🤖</div>' +
         '<p id="modal-sakag-step" style="font-weight:700;color:var(--primary);font-size:1rem;">שלב 1/2 — חוקר את המרחב סביב ' + placeName + '...</p>' +
         '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">הסוכן מחפש אתרים, שבילים ומקומות מעניינים ברדיוס ' + _standaloneRadius + '</p>' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">אפשר להמשיך לגלוש — נודיע כשיהיה מוכן</p>' +
         '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
             '<div id="modal-sakag-progress" style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
         '</div></div>';
+
+    // Start floating progress widget
+    var _sakagTaskId = 'ai_' + (++_aiTaskCounter);
+    _aiTasks[_sakagTaskId] = { done: false };
+    aiFloatShow(_sakagTaskId, 'סק"ג: ' + placeName, 55);
 
     // Ensure animation styles exist
     if (!document.getElementById('sakag-anim-style')) {
@@ -17166,11 +17195,16 @@ async function modalSakagGenerate(lat, lng, placeName) {
 
         // Render result in modal
         modalSakagRenderResult(sakagData, lat, lng, placeName);
+        aiFloatComplete(_sakagTaskId, 'צפה בסק"ג', function() {
+            navigate('geography');
+            setTimeout(function() { setGeoMode('sakal'); }, 200);
+        });
 
     } catch(err) {
         contentEl.innerHTML = '<div style="padding:20px;text-align:center;">' +
             '<p style="color:#d32f2f;font-weight:700;">⚠️ ' + err.message + '</p>' +
             '<button class="btn-primary btn-sm" onclick="modalSakagGenerate(' + lat + ',' + lng + ',\'' + placeName.replace(/'/g, "\\'") + '\')" style="margin-top:10px;">🔄 נסה שוב</button></div>';
+        aiFloatError(_sakagTaskId, err.message);
     }
 }
 
@@ -17201,6 +17235,10 @@ function modalSakagRenderResult(sakagData, lat, lng, placeName) {
 async function modalSakagSaveAndPDF() {
     if (!window._modalSakagData) { showToast('❌ אין נתוני סק"ג לשמירה'); return; }
     if (!currentUser) { showToast('❌ יש להתחבר למערכת כדי לשמור'); return; }
+    // Ensure anonymous auth for Firestore access
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+    }
     var d = window._modalSakagData;
 
     // Disable button while processing
@@ -17962,7 +18000,12 @@ function exportSakalText() {
 }
 
 async function sakalSaveGenerated() {
-    if (!sakalLastGenerated || !currentUser) return;
+    if (!sakalLastGenerated) { showToast('אין נתוני סק"ג לשמירה'); return; }
+    if (!currentUser) { showToast('יש להתחבר כדי לשמור'); return; }
+    // Ensure anonymous auth for Firestore access
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+    }
     var d = sakalLastGenerated;
 
     try {
@@ -18217,12 +18260,20 @@ async function morakGenerate() {
     if (btn) btn.disabled = true;
 
     var subjectType = d.type === 'person' ? 'גיבור/חלל' : 'קרב/מבצע';
+
+    // Show in-place loading + floating widget
     templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
         '<div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
         '<p style="font-weight:700;color:var(--primary);font-size:1rem;">חוקר מידע על "' + d.subject + '"...</p>' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:8px;">אפשר להמשיך לגלוש — נודיע כשיהיה מוכן</p>' +
         '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
             '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
         '</div></div>';
+
+    // Start floating progress widget
+    var _morakTaskId = 'ai_' + (++_aiTaskCounter);
+    _aiTasks[_morakTaskId] = { done: false };
+    aiFloatShow(_morakTaskId, 'מור"ק: ' + d.subject, 50);
 
     try {
         var configDoc = await db.collection('config').doc('ai').get();
@@ -18267,9 +18318,14 @@ async function morakGenerate() {
         }
 
         morakRenderGenerated(morakData);
+        aiFloatComplete(_morakTaskId, 'צפה במור"ק', function() {
+            navigate('geography');
+            setTimeout(function() { setGeoMode('morak'); }, 200);
+        });
     } catch(err) {
         templateEl.innerHTML = '<div style="padding:20px;text-align:center;"><p style="color:#d32f2f;font-weight:700;">⚠️ שגיאה</p><p style="font-size:0.85rem;">' + err.message + '</p>' +
             '<button class="btn-primary btn-sm" onclick="morakGenerate()" style="margin-top:10px;">🔄 נסה שוב</button></div>';
+        aiFloatError(_morakTaskId, err.message);
     } finally { if (btn) btn.disabled = false; }
 }
 
@@ -18294,7 +18350,12 @@ function morakRenderGenerated(data) {
 }
 
 async function morakSave() {
-    if (!morakLastGenerated || !currentUser) return;
+    if (!morakLastGenerated) { showToast('אין נתוני מור"ק לשמירה'); return; }
+    if (!currentUser) { showToast('יש להתחבר כדי לשמור'); return; }
+    // Ensure anonymous auth for Firestore access
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+    }
     var d = morakLastGenerated;
     try {
         await db.collection('commander_tools').add({
@@ -18445,8 +18506,14 @@ async function lessonGenerate() {
 
     templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
         '<p style="font-weight:700;color:var(--primary);">בונה מערך שיעור על "' + topic + '"...</p>' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:8px;">אפשר להמשיך לגלוש — נודיע כשיהיה מוכן</p>' +
         '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
         '<div style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 40s ease-out forwards;"></div></div></div>';
+
+    // Start floating progress widget
+    var _lessonTaskId = 'ai_' + (++_aiTaskCounter);
+    _aiTasks[_lessonTaskId] = { done: false };
+    aiFloatShow(_lessonTaskId, 'מערך שיעור: ' + topic, 40);
 
     try {
         var configDoc = await db.collection('config').doc('ai').get();
@@ -18476,9 +18543,14 @@ async function lessonGenerate() {
         }
 
         lessonRenderGenerated(lessonData, { topic: topic, goals: goals, audience: audience, duration: duration, style: style, notes: notes });
+        aiFloatComplete(_lessonTaskId, 'צפה בשיעור', function() {
+            navigate('geography');
+            setTimeout(function() { setGeoMode('lesson'); }, 200);
+        });
     } catch(err) {
         templateEl.innerHTML = '<div style="padding:20px;text-align:center;"><p style="color:#d32f2f;font-weight:700;">⚠️ שגיאה</p><p style="font-size:0.85rem;">' + err.message + '</p>' +
             '<button class="btn-primary btn-sm" onclick="lessonGenerate()" style="margin-top:10px;">🔄 נסה שוב</button></div>';
+        aiFloatError(_lessonTaskId, err.message);
     } finally { if (btn) btn.disabled = false; }
 }
 
@@ -18503,7 +18575,12 @@ function lessonRenderGenerated(data, wizardData) {
 }
 
 async function lessonSave() {
-    if (!lessonLastGenerated || !currentUser) return;
+    if (!lessonLastGenerated) { showToast('אין נתוני שיעור לשמירה'); return; }
+    if (!currentUser) { showToast('יש להתחבר כדי לשמור'); return; }
+    // Ensure anonymous auth for Firestore access
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+    }
     var d = lessonLastGenerated;
     try {
         await db.collection('commander_tools').add({
@@ -18559,6 +18636,10 @@ async function loadLibrary(filter) {
     if (!container) return;
     if (!db) { try { db = firebase.firestore(); } catch(e) {} }
     if (!db) { container.innerHTML = '<div style="text-align:center;color:#d32f2f;padding:30px;">שגיאה: אין חיבור למסד הנתונים. נסה לרענן את הדף.</div>'; return; }
+    // Ensure anonymous auth for Firestore access
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) { console.warn('Library: anon auth failed', ae); }
+    }
     // Update filter buttons
     ['all','sakag','morak','lesson','trivia'].forEach(function(f) {
         var btn = document.getElementById('lib-filter-' + f);
@@ -18999,7 +19080,12 @@ async function triviaGenerateAI() {
     var btn = document.getElementById('trivia-generate-btn');
     var status = document.getElementById('trivia-create-status');
     btn.disabled = true; btn.textContent = '⏳ מייצר טריוויה...';
-    status.textContent = 'מחפש מידע ויוצר שאלות — עלול לקחת עד 30 שניות...';
+    status.textContent = 'מחפש מידע ויוצר שאלות — אפשר להמשיך לגלוש';
+
+    // Start floating progress widget
+    var _triviaTaskId = 'ai_' + (++_aiTaskCounter);
+    _aiTasks[_triviaTaskId] = { done: false };
+    aiFloatShow(_triviaTaskId, 'טריוויה: ' + topic, 35);
 
     var prompt = `אתה מומחה ליצירת חידוני טריוויה איכותיים בעברית לחיילי צה"ל בחטיבת חשמונאים.
 
@@ -19069,9 +19155,14 @@ async function triviaGenerateAI() {
         triviaShowAIResult(triviaData, topic, subtopic);
         triviaHideCreateWizard();
         status.textContent = '';
+        aiFloatComplete(_triviaTaskId, 'צפה בטריוויה', function() {
+            navigate('geography');
+            setTimeout(function() { setGeoMode('trivia'); }, 200);
+        });
     } catch(e) {
         status.innerHTML = '<span style="color:#d32f2f;">שגיאה: ' + e.message + '</span>';
         console.error('Trivia AI error:', e);
+        aiFloatError(_triviaTaskId, e.message);
     }
     btn.disabled = false; btn.textContent = '🧠 צור טריוויה';
 }
@@ -19135,7 +19226,12 @@ function triviaPlayAIQuiz() {
 async function triviaSaveAIQuiz() {
     var data = window._lastAITrivia;
     var meta = window._lastAITriviaMeta || {};
-    if (!data || !currentUser) { showToast('לא ניתן לשמור'); return; }
+    if (!data) { showToast('אין נתוני טריוויה לשמירה'); return; }
+    if (!currentUser) { showToast('יש להתחבר כדי לשמור'); return; }
+    // Ensure anonymous auth for Firestore access
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+    }
     try {
         await db.collection('commander_tools').add({
             type: 'trivia',
@@ -22952,6 +23048,124 @@ function updateHebrewDate() {
 updateHebrewDate();
 setInterval(updateHebrewDate, 3600000); // Update every hour
 
+// ============================================================
+// FLOATING AI PROGRESS WIDGET — Background content generation
+// ============================================================
+var _aiTasks = {};
+var _aiTaskCounter = 0;
+
+function aiFloatShow(taskId, title, estimatedSecs) {
+    var el = document.getElementById('ai-progress-float');
+    if (!el) return;
+    el.style.display = '';
+    el.dataset.taskId = taskId;
+    el.querySelector('.ai-float-title').textContent = title;
+    el.querySelector('.ai-float-status').textContent = 'מכין תוכן...';
+    el.querySelector('.ai-float-bar-fill').style.width = '0%';
+    el.querySelector('.ai-float-done').style.display = 'none';
+    el.querySelector('.ai-float-bar').style.display = '';
+    el.querySelector('.ai-float-timer').style.display = '';
+    // Start countdown
+    var secsLeft = estimatedSecs || 45;
+    var timerEl = el.querySelector('.ai-float-timer');
+    var barEl = el.querySelector('.ai-float-bar-fill');
+    var totalSecs = secsLeft;
+    function tick() {
+        if (!_aiTasks[taskId] || _aiTasks[taskId].done) return;
+        secsLeft = Math.max(0, secsLeft - 1);
+        var pct = Math.min(95, ((totalSecs - secsLeft) / totalSecs) * 100);
+        barEl.style.width = pct + '%';
+        timerEl.textContent = '~' + secsLeft + ' שניות נותרו';
+        if (secsLeft > 0) setTimeout(tick, 1000);
+        else timerEl.textContent = 'עוד רגע...';
+    }
+    tick();
+}
+
+function aiFloatComplete(taskId, label, onClickAction) {
+    if (_aiTasks[taskId]) _aiTasks[taskId].done = true;
+    var el = document.getElementById('ai-progress-float');
+    if (!el || el.dataset.taskId !== taskId) return;
+    el.querySelector('.ai-float-bar-fill').style.width = '100%';
+    el.querySelector('.ai-float-status').textContent = 'הושלם בהצלחה!';
+    el.querySelector('.ai-float-timer').style.display = 'none';
+    var doneEl = el.querySelector('.ai-float-done');
+    doneEl.style.display = '';
+    doneEl.innerHTML = '<button class="btn-primary btn-sm" onclick="aiFloatOpen(\'' + taskId + '\')" style="margin-left:6px;">📄 ' + (label || 'פתח') + '</button>' +
+        '<button class="btn-secondary btn-sm" onclick="aiFloatHide()" style="font-size:0.78rem;padding:4px 10px;">סגור</button>';
+    _aiTasks[taskId].onOpen = onClickAction;
+    // Play a subtle notification
+    showToast('✅ ' + el.querySelector('.ai-float-title').textContent + ' — הושלם!');
+}
+
+function aiFloatError(taskId, errorMsg) {
+    if (_aiTasks[taskId]) _aiTasks[taskId].done = true;
+    var el = document.getElementById('ai-progress-float');
+    if (!el || el.dataset.taskId !== taskId) return;
+    el.querySelector('.ai-float-status').innerHTML = '<span style="color:var(--danger);">שגיאה: ' + errorMsg + '</span>';
+    el.querySelector('.ai-float-timer').style.display = 'none';
+    el.querySelector('.ai-float-bar-fill').style.width = '100%';
+    el.querySelector('.ai-float-bar-fill').style.background = 'var(--danger)';
+    var doneEl = el.querySelector('.ai-float-done');
+    doneEl.style.display = '';
+    doneEl.innerHTML = '<button class="btn-secondary btn-sm" onclick="aiFloatHide()">סגור</button>';
+}
+
+function aiFloatOpen(taskId) {
+    if (_aiTasks[taskId] && _aiTasks[taskId].onOpen) {
+        _aiTasks[taskId].onOpen();
+    }
+    aiFloatHide();
+}
+
+function aiFloatHide() {
+    var el = document.getElementById('ai-progress-float');
+    if (el) el.style.display = 'none';
+}
+
+function aiFloatUpdateStatus(taskId, statusText) {
+    var el = document.getElementById('ai-progress-float');
+    if (!el || el.dataset.taskId !== taskId) return;
+    el.querySelector('.ai-float-status').textContent = statusText;
+}
+
+// Wrapper to run AI generation in background
+function runAIInBackground(opts) {
+    // opts: { title, estimatedSecs, generateFn, onComplete, onError, targetPage, targetMode }
+    var taskId = 'ai_' + (++_aiTaskCounter);
+    _aiTasks[taskId] = { done: false };
+    aiFloatShow(taskId, opts.title, opts.estimatedSecs || 50);
+
+    // Allow user to keep browsing
+    opts.generateFn().then(function(result) {
+        aiFloatComplete(taskId, 'צפה בתוכן', function() {
+            if (opts.targetPage) navigate(opts.targetPage);
+            if (opts.targetMode) setTimeout(function() { setGeoMode(opts.targetMode); }, 200);
+            if (opts.onComplete) opts.onComplete(result);
+        });
+    }).catch(function(err) {
+        aiFloatError(taskId, err.message || 'שגיאה לא ידועה');
+        if (opts.onError) opts.onError(err);
+    });
+
+    return taskId;
+}
+
 </script>
+
+<!-- Floating AI Progress Widget -->
+<div id="ai-progress-float">
+    <div class="ai-float-header">
+        <span class="ai-float-title">יוצר תוכן...</span>
+        <button class="ai-float-close" onclick="aiFloatHide()" title="מזער">&times;</button>
+    </div>
+    <div class="ai-float-body">
+        <div class="ai-float-status">מכין תוכן...</div>
+        <div class="ai-float-bar"><div class="ai-float-bar-fill" style="width:0%"></div></div>
+        <div class="ai-float-timer"></div>
+        <div class="ai-float-done"></div>
+    </div>
+</div>
+
 </body>
 </html>
