@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.0 - כלים למפקד, 4 modules, permissions overhaul -->
+<!-- v3.1 - כלים למפקד, AI content generation, floating widget -->
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -14,6 +14,30 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <script>
+    // Emergency SW cleanup — runs BEFORE anything else
+    // Forces old service workers to update immediately
+    (function() {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            // Unregister and re-register to force fresh SW
+            navigator.serviceWorker.getRegistration().then(function(reg) {
+                if (reg) reg.update();
+            });
+        }
+        // Nuke old caches that don't match current version
+        if ('caches' in window) {
+            caches.keys().then(function(keys) {
+                var currentCache = 'ruach-v22';
+                keys.forEach(function(k) {
+                    if (k.startsWith('ruach-') && k !== currentCache) {
+                        caches.delete(k);
+                        console.log('Deleted old cache:', k);
+                    }
+                });
+            });
+        }
+    })();
+    </script>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png?v=2">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png?v=2">
