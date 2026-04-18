@@ -1,9 +1,10 @@
-const CACHE_NAME = 'ruach-v14';
+const CACHE_NAME = 'ruach-v15';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './firebase/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
   'https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap'
 ];
 

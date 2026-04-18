@@ -26,6 +26,8 @@
         onerror="var s=document.createElement('script');s.src='firebase/firebase-firestore-compat.js';document.head.appendChild(s);"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"
         onerror="var s=document.createElement('script');s.src='firebase/firebase-storage-compat.js';document.head.appendChild(s);"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"
+        onerror="var s=document.createElement('script');s.src='firebase/firebase-auth-compat.js';document.head.appendChild(s);"></script>
     <script>
     (function(){var s=document.createElement('script');s.src='https://unpkg.com/@hebcal/core@5.4.11/dist/bundle.min.js';s.onerror=function(){};document.head.appendChild(s);})();
     </script>
@@ -21691,6 +21693,15 @@ async function initApp() {
         if (!ready) { console.warn('Firebase not loaded'); return; }
         if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.firestore();
+        // Anonymous Auth — gives valid request.auth for Firestore security rules
+        if (firebase.auth) {
+            try {
+                await firebase.auth().signInAnonymously();
+                console.log('Firebase Anonymous Auth: signed in');
+            } catch(authErr) {
+                console.warn('Anonymous auth failed (library may show empty):', authErr.message);
+            }
+        }
         if (firebase.storage) {
             storage = firebase.storage();
             console.log('Firebase Storage initialized');
