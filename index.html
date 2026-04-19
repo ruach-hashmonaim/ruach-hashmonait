@@ -27,7 +27,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v29';
+                var currentCache = 'ruach-v30';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -12503,7 +12503,7 @@ async function loadCmgmtContent() {
                     <td>מ"כ/מ"מ</td>
                     <td>0.5</td>
                     <td><a href="${deepLink}" style="color:var(--primary-lighter);font-size:0.8rem;">${typeLabel}</a></td>
-                    <td><button class="btn-sm" style="font-size:0.72rem;background:#D97706;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;" onclick="openMoveEmetItem('${item.id}','${item.type}','${item.title.replace(/'/g,"\\'")}','${item.icon}','${prog}',${week})">📦 העבר</button></td>
+                    <td><button class="btn-sm" style="font-size:0.72rem;background:#D97706;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;" onclick="openMoveEmetItem('${item.id}','${item.type}','${item.title.replace(/'/g,"\\'").replace(/"/g,"&quot;")}','${item.icon}','${prog}',${week})">📦 העבר</button></td>
                 </tr>`;
             }
             html += '</tbody></table></div>';
@@ -13029,7 +13029,7 @@ async function loadAdminTrainingContent() {
                 <td>מ"כ/מ"מ</td>
                 <td>0.5</td>
                 <td><a href="${deepLink}" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 ${typeLabel}</a></td>
-                <td><button class="btn-sm" style="font-size:0.72rem;background:#D97706;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;" onclick="openMoveEmetItem('${item.id}','${item.type}','${item.title.replace(/'/g,"\\'")}','${item.icon}','${prog}',${week})">📦 העבר</button></td>
+                <td><button class="btn-sm" style="font-size:0.72rem;background:#D97706;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;" onclick="openMoveEmetItem('${item.id}','${item.type}','${item.title.replace(/'/g,"\\'").replace(/"/g,"&quot;")}','${item.icon}','${prog}',${week})">📦 העבר</button></td>
             </tr>`;
         });
 
