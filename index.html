@@ -27,7 +27,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v22';
+                var currentCache = 'ruach-v23';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -17089,12 +17089,13 @@ function modalSakagFromSearch() {
 }
 
 async function modalSakagGenerate(lat, lng, placeName) {
+    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
     var _modalCtx = getSakagContext('modal-sakag');
     var contentEl = document.getElementById('modal-sakag-content');
     contentEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
         '<div style="font-size:2rem;margin-bottom:10px;animation:spin-slow 2s linear infinite;display:inline-block;">🤖</div>' +
         '<p id="modal-sakag-step" style="font-weight:700;color:var(--primary);font-size:1rem;">שלב 1/2 — חוקר את המרחב סביב ' + placeName + '...</p>' +
-        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">הסוכן מחפש אתרים, שבילים ומקומות מעניינים ברדיוס ' + _standaloneRadius + '</p>' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">הסוכן מחפש אתרים, שבילים ומקומות מעניינים ברדיוס 5 ק"מ</p>' +
         '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">אפשר להמשיך לגלוש — נודיע כשיהיה מוכן</p>' +
         '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
             '<div id="modal-sakag-progress" style="width:0%;height:100%;background:var(--primary);border-radius:4px;animation:sakagProgress 50s ease-out forwards;"></div>' +
@@ -18288,6 +18289,7 @@ const MORAK_AI_PROMPT = `אתה בונה מורשת קרב (מור"ק) עבור 
 חשוב: החזר אך ורק JSON תקני. אין טקסט לפני או אחרי.` + JEWISH_SOURCES_RESTRICTION;
 
 async function morakGenerate() {
+    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
     var d = morakWizardData;
     if (!d.subject) { showToast('יש להזין נושא'); morakShowStep(1); return; }
 
@@ -18404,8 +18406,8 @@ async function morakSave() {
             sections: d.data.sections || [],
             audience: d.wizardData.audience || '',
             duration: d.wizardData.duration || '',
-            createdBy: currentUser.id || currentUser.email,
-            createdByName: currentUser.name || '',
+            createdBy: currentUser.id || currentUser.uid || currentUser.email,
+            createdByName: currentUser.name || currentUser.email || '',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
@@ -18529,6 +18531,7 @@ const LESSON_AI_PROMPT = `אתה מפתח תכני חינוך וערכים עב�
 חשוב: החזר אך ורק JSON תקני.` + JEWISH_SOURCES_RESTRICTION;
 
 async function lessonGenerate() {
+    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
     var topic = (document.getElementById('lesson-topic')||{}).value || '';
     var goals = (document.getElementById('lesson-goals')||{}).value || '';
     var audience = (document.getElementById('lesson-audience')||{}).value || '';
@@ -18559,14 +18562,34 @@ async function lessonGenerate() {
         var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
         if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
 
+        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+
+        // Step 1: Research with Google Search grounding
+        aiFloatUpdateStatus(_lessonTaskId, 'חוקר מידע על "' + topic + '"...');
+        var researchPrompt = 'חקור באינטרנט ומצא מידע מדויק ומפורט על הנושא: "' + topic + '".\n' +
+            'חפש: מקורות יהודיים (תנ"ך, תלמוד, מדרש), אירועים היסטוריים, דוגמאות, סיפורים רלוונטיים, ציטוטים.\n' +
+            'הבא רק מידע שמצאת בפועל. אל תמציא מקורות, ציטוטים, או שמות ספרים.\nכתוב בעברית.' + JEWISH_SOURCES_RESTRICTION;
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
+
+        // Step 2: Build lesson from research
+        aiFloatUpdateStatus(_lessonTaskId, 'בונה מערך שיעור...');
         var prompt = LESSON_AI_PROMPT.replace('[TOPIC]', topic).replace('[AUDIENCE]', audience).replace('[DURATION]', duration).replace('[STYLE]', style)
             .replace('[GOALS_SECTION]', goals ? 'מטרות ויעדים: ' + goals : '')
             .replace('[NOTES_SECTION]', notes ? 'הערות נוספות: ' + notes : '');
+        prompt += '\n\n=== מידע שנאסף ממחקר באינטרנט ===\n' + researchText +
+            '\n\nהשתמש אך ורק במידע שמופיע למעלה. אל תמציא עובדות, ציטוטים, או מקורות נוספים.';
 
-        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
         var resp = await fetch(geminiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
         });
         if (!resp.ok) throw new Error('שגיאת Gemini');
         var data = await resp.json();
@@ -18631,8 +18654,8 @@ async function lessonSave() {
             audience: d.wizardData.audience || '',
             duration: d.wizardData.duration || '',
             style: d.wizardData.style || '',
-            createdBy: currentUser.id || currentUser.email,
-            createdByName: currentUser.name || '',
+            createdBy: currentUser.id || currentUser.uid || currentUser.email,
+            createdByName: currentUser.name || currentUser.email || '',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
@@ -18732,6 +18755,7 @@ async function loadLibrary(filter) {
                 withTimeout(db.collection('user_sakag').get(), 15000, 'סק"ג')
                     .then(function(sakagSnap) {
                         console.log('Library: loaded ' + sakagSnap.size + ' sakag docs');
+                        if (_libStatusEl) _libStatusEl.textContent = 'נטענו ' + sakagSnap.size + ' סק"גים... ממשיך...';
                         sakagSnap.forEach(function(doc) {
                             var d = doc.data();
                             if (d.status && d.status !== 'active') return;
@@ -18743,6 +18767,7 @@ async function loadLibrary(filter) {
                 withTimeout(db.collection('commander_tools').get(), 15000, 'כלים')
                     .then(function(toolsSnap) {
                         console.log('Library: loaded ' + toolsSnap.size + ' tools docs');
+                        if (_libStatusEl) _libStatusEl.textContent = 'נטענו ' + toolsSnap.size + ' כלים נוספים...';
                         toolsSnap.forEach(function(doc) {
                             var d = doc.data();
                             if (d.status && d.status !== 'active') return;
@@ -19167,6 +19192,7 @@ function triviaSetDifficulty(btn, diff) {
 }
 
 async function triviaGenerateAI() {
+    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
     var topicSelect = document.getElementById('trivia-create-topic');
     var topic = topicSelect.value;
     if (topic === 'other') topic = document.getElementById('trivia-create-topic-other').value.trim();
@@ -19238,26 +19264,46 @@ async function triviaGenerateAI() {
         if (!apiKey) { showToast('מפתח API חסר — פנה למנהל'); btn.disabled = false; btn.textContent = '🧠 צור טריוויה'; status.textContent = ''; return; }
 
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
-        var resp = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.3, maxOutputTokens: 8192 },
-                tools: [{ googleSearch: {} }]
-            })
-        });
-        var data = await resp.json();
-        if (!resp.ok) throw new Error(data.error?.message || 'Gemini error');
 
-        var text = '';
-        if (data.candidates && data.candidates[0]) {
-            data.candidates[0].content.parts.forEach(function(p) { if (p.text) text += p.text; });
+        // Step 1: Research with Google Search grounding
+        aiFloatUpdateStatus(_triviaTaskId, 'חוקר מידע בנושא...');
+        var researchPrompt = 'חקור באינטרנט ומצא מידע מדויק ומאומת על הנושא: "' + topic + '"' +
+            (subtopic ? ' (התמקדות: ' + subtopic + ')' : '') +
+            (sources ? ' (מקורות: ' + sources + ')' : '') +
+            '.\n\nהבא עובדות מדויקות, שמות, תאריכים, פרטים מעניינים. ציין מקור לכל עובדה. אל תמציא שום פרט.' +
+            '\nכתוב בעברית.' + JEWISH_SOURCES_RESTRICTION;
+        var researchResp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+        });
+        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
+        var researchData = await researchResp.json();
+        var researchParts = researchData.candidates?.[0]?.content?.parts || [];
+        var researchText = '';
+        for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
+
+        // Step 2: Generate trivia JSON based on research
+        aiFloatUpdateStatus(_triviaTaskId, 'יוצר שאלות טריוויה...');
+        var buildPrompt = prompt + '\n\n=== מידע שנאסף ממחקר באינטרנט ===\n' + researchText +
+            '\n\nהשתמש אך ורק במידע שמופיע למעלה ליצירת השאלות. אל תמציא עובדות נוספות.';
+        var resp = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192, responseMimeType: 'application/json' } })
+        });
+        if (!resp.ok) { var errBody = await resp.json().catch(function() { return {}; }); throw new Error(errBody.error?.message || 'שגיאת Gemini'); }
+        var data = await resp.json();
+
+        // Extract text — skip thought parts (Gemini 2.5 Flash thinking)
+        var aiText = '';
+        var parts = data.candidates?.[0]?.content?.parts || [];
+        for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').trim();
+        var triviaData;
+        try { triviaData = JSON.parse(aiText); } catch(pe) {
+            var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
+            if (bs !== -1 && be > bs) try { triviaData = JSON.parse(aiText.substring(bs, be + 1)); } catch(pe2) {}
+            if (!triviaData) throw new Error('לא ניתן לנתח את תשובת ה-AI');
         }
-        // Parse JSON
-        var jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error('לא התקבל JSON תקני');
-        var triviaData = JSON.parse(jsonMatch[0]);
 
         if (!triviaData.questions || triviaData.questions.length === 0) throw new Error('לא נוצרו שאלות');
 
@@ -23226,15 +23272,21 @@ setInterval(updateHebrewDate, 3600000); // Update every hour
 // ============================================================
 var _aiTasks = {};
 var _aiTaskCounter = 0;
+var _aiGenerating = false; // Prevent parallel AI generations
+
+function isAIGenerating() { return _aiGenerating; }
 
 function aiFloatShow(taskId, title, estimatedSecs) {
+    _aiGenerating = true;
     var el = document.getElementById('ai-progress-float');
-    if (!el) return;
-    el.style.display = '';
+    if (!el) { console.error('AI Float: element #ai-progress-float not found!'); return; }
+    el.style.display = 'block';
     el.dataset.taskId = taskId;
     el.querySelector('.ai-float-title').textContent = title;
     el.querySelector('.ai-float-status').textContent = 'מכין תוכן...';
-    el.querySelector('.ai-float-bar-fill').style.width = '0%';
+    var barFill = el.querySelector('.ai-float-bar-fill');
+    barFill.style.width = '0%';
+    barFill.style.background = ''; // Reset error color (Bug 11 fix)
     el.querySelector('.ai-float-done').style.display = 'none';
     el.querySelector('.ai-float-bar').style.display = '';
     el.querySelector('.ai-float-timer').style.display = '';
@@ -23256,6 +23308,7 @@ function aiFloatShow(taskId, title, estimatedSecs) {
 }
 
 function aiFloatComplete(taskId, label, onClickAction) {
+    _aiGenerating = false;
     if (_aiTasks[taskId]) _aiTasks[taskId].done = true;
     var el = document.getElementById('ai-progress-float');
     if (!el || el.dataset.taskId !== taskId) return;
@@ -23272,6 +23325,7 @@ function aiFloatComplete(taskId, label, onClickAction) {
 }
 
 function aiFloatError(taskId, errorMsg) {
+    _aiGenerating = false;
     if (_aiTasks[taskId]) _aiTasks[taskId].done = true;
     var el = document.getElementById('ai-progress-float');
     if (!el || el.dataset.taskId !== taskId) return;
