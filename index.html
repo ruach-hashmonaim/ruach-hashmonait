@@ -27,7 +27,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v25';
+                var currentCache = 'ruach-v26';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -2509,13 +2509,13 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 // CONFIG
 // ============================================================
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDpuUq6hpSV6MJv9-7-YMJDEr-tmSWuy9c",
-    authDomain: "ruach-hashmonait.firebaseapp.com",
-    projectId: "ruach-hashmonait",
-    storageBucket: "ruach-hashmonait.firebasestorage.app",
-    messagingSenderId: "996341650604",
-    appId: "1:996341650604:web:6b942f30a35c5e865ebb09",
-    measurementId: "G-K4TYMQSKBR"
+    apiKey: "AIzaSyD5BpvTTzJiE3LYFMWuWNEywnVwJUc6HfY",
+    authDomain: "hamatzpen-io.firebaseapp.com",
+    projectId: "hamatzpen-io",
+    storageBucket: "hamatzpen-io.firebasestorage.app",
+    messagingSenderId: "1013906795250",
+    appId: "1:1013906795250:web:7c4dade3acae858056fe6b",
+    measurementId: "G-SNKZKSM4TM"
 };
 
 const PROXY_URL = 'https://api.ruach-hashmonaim.org';
