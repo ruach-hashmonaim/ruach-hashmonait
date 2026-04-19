@@ -27,7 +27,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v23';
+                var currentCache = 'ruach-v24';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -555,6 +555,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .loading-overlay { display:none; position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:9998; align-items:center; justify-content:center; }
 .spinner { width:40px; height:40px; border:4px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
+@keyframes spin-slow { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+@keyframes sakagProgress { 0%{width:0%} 30%{width:40%} 60%{width:65%} 80%{width:80%} 100%{width:95%} }
+.spin-icon { animation:spin-slow 2s linear infinite; display:inline-block; }
 
 /* FOOTER */
 .app-footer { text-align:center; padding:20px; font-size:0.75rem; color:var(--text-secondary); border-top:1px solid var(--border); margin-top:30px; }
@@ -1364,6 +1367,16 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <!-- Menu grid — shown by default, hidden when a mode is active -->
         <div id="geo-menu-grid">
             <div class="card-title"><div class="icon">🛠️</div> כלים למפקד</div>
+            <!-- ספריה — נפרד מהכלים, מעל -->
+            <div onclick="setGeoMode('library')" style="cursor:pointer;background:linear-gradient(135deg,rgba(212,168,67,0.12),rgba(232,195,100,0.08));border:2px solid var(--accent);border-radius:16px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;transition:all 0.25s;" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(212,168,67,0.25)'" onmouseleave="this.style.transform='';this.style.boxShadow=''">
+                <div style="font-size:2rem;">📚</div>
+                <div style="flex:1;text-align:right;">
+                    <div style="font-weight:800;font-size:1rem;color:var(--text);">ספרייה</div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary);">כל התכנים שנוצרו ונשמרו — סק"גים, מור"קים, שיעורים, טריוויות</div>
+                </div>
+                <div style="color:var(--accent);font-size:1.2rem;">←</div>
+            </div>
+
             <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:18px;">בחר כלי כדי להתחיל:</p>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;">
                 <div class="geo-menu-tile" onclick="setGeoMode('sakal')" style="cursor:pointer;background:linear-gradient(135deg,rgba(14,116,144,0.85),rgba(8,145,178,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/126398_golan_heights_PikiWiki_Israel.jpg/400px-126398_golan_heights_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(14,116,144,0.3);border:2px solid rgba(6,182,212,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(14,116,144,0.4)';this.style.borderColor='rgba(6,182,212,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(14,116,144,0.3)';this.style.borderColor='rgba(6,182,212,0.3)'">
@@ -1390,11 +1403,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                     <div style="font-size:2.2rem;margin-bottom:8px;">⚖️</div>
                     <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">דילמות</div>
                     <div style="font-size:0.75rem;opacity:0.9;line-height:1.4;">דילמות ערכיות לדיון</div>
-                </div>
-                <div class="geo-menu-tile" onclick="setGeoMode('library')" style="cursor:pointer;background:linear-gradient(135deg,rgba(212,168,67,0.92),rgba(232,195,100,0.92)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/120565_yeruham_lake_park_PikiWiki_Israel.jpg/400px-120565_yeruham_lake_park_PikiWiki_Israel.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#1A2E1A;transition:all 0.25s;box-shadow:0 4px 16px rgba(212,168,67,0.35);border:3px solid rgba(212,168,67,0.8);" onmouseenter="this.style.transform='translateY(-4px) scale(1.02)';this.style.boxShadow='0 8px 28px rgba(212,168,67,0.5)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(212,168,67,0.35)'">
-                    <div style="font-size:2.4rem;margin-bottom:8px;">📚</div>
-                    <div style="font-weight:800;font-size:1rem;margin-bottom:4px;">ספרייה</div>
-                    <div style="font-size:0.75rem;opacity:0.85;line-height:1.4;font-weight:600;">תכנים שנוצרו ונשמרו</div>
                 </div>
                 <div class="geo-menu-tile" onclick="setGeoMode('mapquiz')" style="cursor:pointer;background:linear-gradient(135deg,rgba(146,64,14,0.85),rgba(180,120,40,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Jerusalem_Panorama.jpg/400px-Jerusalem_Panorama.jpg') center/cover;border-radius:16px;padding:24px 16px;text-align:center;color:#fff;transition:all 0.25s;box-shadow:0 4px 16px rgba(146,64,14,0.3);border:2px solid rgba(212,168,67,0.3);" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(146,64,14,0.4)';this.style.borderColor='rgba(212,168,67,0.7)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(146,64,14,0.3)';this.style.borderColor='rgba(212,168,67,0.3)'">
                     <div style="font-size:2.2rem;margin-bottom:8px;">🗺️</div>
@@ -18721,10 +18729,16 @@ async function loadLibrary(filter) {
         var btn = document.getElementById('lib-filter-' + f);
         if (btn) { btn.style.background = f === filter ? 'var(--primary)' : ''; btn.style.color = f === filter ? '#fff' : ''; }
     });
-    container.innerHTML = '<div style="text-align:center;padding:30px;">' +
-        '<div style="display:inline-block;width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin-slow 0.8s linear infinite;"></div>' +
-        '<p style="margin-top:12px;color:var(--text-secondary);font-size:0.88rem;">טוען ספריה...</p>' +
-        '<p id="lib-load-status" style="margin-top:6px;color:#aaa;font-size:0.72rem;"></p></div>';
+    container.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
+        '<div style="position:relative;width:56px;height:56px;margin:0 auto 16px;">' +
+            '<div style="position:absolute;inset:0;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>' +
+            '<div style="position:absolute;inset:6px;border:3px solid transparent;border-bottom-color:var(--primary-lighter);border-radius:50%;animation:spin 1.2s linear infinite reverse;"></div>' +
+        '</div>' +
+        '<p style="font-weight:600;color:var(--primary);font-size:0.95rem;">טוען ספריה...</p>' +
+        '<p id="lib-load-status" style="margin-top:8px;color:var(--text-secondary);font-size:0.8rem;transition:all 0.3s;"></p>' +
+        '<div style="margin-top:14px;width:180px;height:4px;background:var(--border);border-radius:4px;margin-left:auto;margin-right:auto;overflow:hidden;">' +
+            '<div id="lib-load-bar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-lighter));border-radius:4px;animation:sakagProgress 15s ease-out forwards;"></div>' +
+        '</div></div>';
     // Show auth status while loading
     var _libStatusEl = document.getElementById('lib-load-status');
     if (_libStatusEl) {
@@ -18754,7 +18768,7 @@ async function loadLibrary(filter) {
             promises.push(
                 withTimeout(db.collection('user_sakag').get(), 15000, 'סק"ג')
                     .then(function(sakagSnap) {
-                        console.log('Library: loaded ' + sakagSnap.size + ' sakag docs');
+                        console.log('Library: user_sakag returned ' + sakagSnap.size + ' docs');
                         if (_libStatusEl) _libStatusEl.textContent = 'נטענו ' + sakagSnap.size + ' סק"גים... ממשיך...';
                         sakagSnap.forEach(function(doc) {
                             var d = doc.data();
@@ -18780,6 +18794,7 @@ async function loadLibrary(filter) {
             );
             await Promise.all(promises);
             console.log('Library: total items=' + items.length + ', errors=' + loadErrors.length);
+            if (_libStatusEl) _libStatusEl.textContent = 'נמצאו ' + items.length + ' פריטים' + (loadErrors.length > 0 ? ' (' + loadErrors.length + ' שגיאות)' : '');
 
             // Cache the full result set
             _libCache = items.slice();
@@ -18796,11 +18811,24 @@ async function loadLibrary(filter) {
         items = items.slice(0, 50);
 
         if (items.length === 0) {
-            var authStatus = firebase.auth && firebase.auth().currentUser ? 'מחובר (uid: ' + firebase.auth().currentUser.uid.substring(0,8) + '...)' : 'לא מחובר — יש להפעיל Anonymous Auth ב-Firebase Console';
-            var msg = loadErrors.length > 0
-                ? '<div style="text-align:center;padding:30px;"><div style="color:#d32f2f;margin-bottom:8px;font-weight:700;">שגיאה בטעינת הספרייה:</div><div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:8px;">' + loadErrors.join('<br>') + '</div><div style="font-size:0.75rem;color:#999;margin-bottom:12px;">סטטוס אימות: ' + authStatus + '</div><button onclick="_libCache=null;loadLibrary(\'' + filter + '\')" style="padding:8px 18px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-family:inherit;">🔄 נסה שוב</button></div>'
-                : '<div style="text-align:center;padding:30px;"><div style="color:var(--text-secondary);margin-bottom:8px;">אין תכנים עדיין — השתמש בכלים למעלה ליצירת תוכן!</div><div style="font-size:0.75rem;color:#999;">סטטוס אימות: ' + authStatus + '</div><button onclick="_libCache=null;loadLibrary(\'' + filter + '\')" style="margin-top:10px;padding:6px 14px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.82rem;">🔄 רענן</button></div>';
-            container.innerHTML = msg;
+            var authStatus = firebase.auth && firebase.auth().currentUser ? 'מחובר (uid: ' + firebase.auth().currentUser.uid.substring(0,8) + '...)' : 'לא מחובר';
+            var errInfo = loadErrors.length > 0 ? '<div style="color:#d32f2f;font-size:0.8rem;margin-bottom:8px;">' + loadErrors.join('<br>') + '</div>' : '';
+            // Check Firestore rules — try a direct test read
+            var rulesNote = '';
+            try {
+                await db.collection('commander_tools').limit(1).get();
+            } catch(testErr) {
+                rulesNote = '<div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:8px;padding:10px;margin:12px 0;font-size:0.78rem;color:#856404;text-align:right;">' +
+                    '⚠️ <b>חוקי Firestore חוסמים קריאה:</b> ' + testErr.message + '<br>' +
+                    'יש לעדכן חוקי Firestore ב-Firebase Console → Firestore → Rules:<br>' +
+                    '<code style="background:#f8f9fa;padding:2px 6px;border-radius:4px;">allow read: if true;</code></div>';
+            }
+            container.innerHTML = '<div style="text-align:center;padding:30px;">' +
+                '<div style="font-size:2rem;margin-bottom:12px;">📚</div>' +
+                errInfo + rulesNote +
+                '<div style="color:var(--text-secondary);margin-bottom:8px;font-size:0.9rem;">אין תכנים עדיין — צור תוכן באמצעות הכלים למפקד!</div>' +
+                '<div style="font-size:0.72rem;color:#999;margin-bottom:12px;">סטטוס: ' + authStatus + '</div>' +
+                '<button onclick="_libCache=null;loadLibrary(\'' + (filter||'all') + '\')" style="padding:10px 24px;border:none;background:var(--primary);color:#fff;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600;">🔄 רענן</button></div>';
             return;
         }
 
