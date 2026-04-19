@@ -27,7 +27,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v26';
+                var currentCache = 'ruach-v27';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -18714,16 +18714,108 @@ async function lessonLoadList() {
 // ספרייה משותפת + תצוגת תוכן שנוצר
 // ============================================================
 
-// In-memory library cache — avoids re-downloading on every filter switch
-var _libCache = null;
-var _libCacheTime = 0;
-var _libCacheMaxAge = 60000; // 1 minute
+// Real-time library data — updated automatically via onSnapshot listeners
+var _libCache = null;       // Array of all library items (kept in sync by listeners)
+var _libListeners = null;   // { unsubSakag, unsubTools } — active snapshot listeners
+var _libCurrentFilter = 'all';
+var _libInitialLoadDone = false;
+
+// Render the library UI from the current _libCache
+function _renderLibrary(filter) {
+    var container = document.getElementById('library-content');
+    if (!container) return;
+    _libCurrentFilter = filter || _libCurrentFilter || 'all';
+    filter = _libCurrentFilter;
+
+    // Update filter buttons
+    ['all','sakag','morak','lesson','trivia'].forEach(function(f) {
+        var btn = document.getElementById('lib-filter-' + f);
+        if (btn) { btn.style.background = f === filter ? 'var(--primary)' : ''; btn.style.color = f === filter ? '#fff' : ''; }
+    });
+
+    var items = (_libCache || []).slice();
+
+    // Apply filter
+    if (filter !== 'all') {
+        items = items.filter(function(item) { return item.type === filter; });
+    }
+
+    // Sort by timestamp desc
+    items.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
+    items = items.slice(0, 50);
+
+    if (items.length === 0) {
+        var authStatus = firebase.auth && firebase.auth().currentUser ? 'מחובר (uid: ' + firebase.auth().currentUser.uid.substring(0,8) + '...)' : 'לא מחובר';
+        container.innerHTML = '<div style="text-align:center;padding:30px;">' +
+            '<div style="font-size:2rem;margin-bottom:12px;">📚</div>' +
+            '<div style="color:var(--text-secondary);margin-bottom:8px;font-size:0.9rem;">אין תכנים עדיין — צור תוכן באמצעות הכלים למפקד!</div>' +
+            '<div style="font-size:0.72rem;color:#999;margin-bottom:12px;">סטטוס: ' + authStatus + ' · עדכון אוטומטי פעיל 🟢</div>' +
+            '<button onclick="_libCache=null;_stopLibraryListeners();loadLibrary(\'' + filter + '\')" style="padding:10px 24px;border:none;background:var(--primary);color:#fff;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600;">🔄 רענן</button></div>';
+        var libMapEl = document.getElementById('library-map');
+        if (libMapEl) libMapEl.style.display = 'none';
+        return;
+    }
+
+    // Show map with סק"ג locations
+    var sakagItems = items.filter(function(i) { return i.type === 'sakag' && i.lat; });
+    var libMapEl = document.getElementById('library-map');
+    if (sakagItems.length > 0 && libMapEl) {
+        libMapEl.style.display = '';
+        if (window._libMap) { window._libMap.remove(); window._libMap = null; }
+        window._libMap = L.map(libMapEl, { zoomControl: true, attributionControl: false }).setView([31.5, 35.0], 8);
+        L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(window._libMap);
+        var bounds = [];
+        sakagItems.forEach(function(s) {
+            bounds.push([s.lat, s.lng]);
+            L.marker([s.lat, s.lng], {
+                icon: L.divIcon({ className:'', html:'<div style="background:#D97706;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer;">📋</div>', iconSize:[30,30], iconAnchor:[15,15] })
+            }).addTo(window._libMap).bindPopup('<b>' + s.title + '</b><br><span style="font-size:0.8rem;">' + (s.subtitle||'') + '</span><br><button onclick="viewGeneratedContent(\''+s.id+'\',\''+s.collection+'\')" style="margin-top:6px;padding:4px 10px;border:none;background:var(--primary);color:#fff;border-radius:6px;cursor:pointer;font-family:inherit;font-size:0.8rem;">📖 פתח</button>');
+        });
+        if (bounds.length > 1) window._libMap.fitBounds(bounds, { padding: [30, 30] });
+        else if (bounds.length === 1) window._libMap.setView(bounds[0], 12);
+        setTimeout(function() { try { window._libMap.invalidateSize(); } catch(e) {} }, 300);
+    } else if (libMapEl) { libMapEl.style.display = 'none'; }
+
+    var isAdmin = hasPermission('admin') || hasPermission('manage-permissions');
+    container.innerHTML = items.map(function(item) {
+        var deleteBtn = isAdmin ? '<button onclick="event.stopPropagation();deleteLibraryItem(\''+item.id+'\',\''+item.collection+'\')" style="position:absolute;top:8px;left:8px;background:#DC2626;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:0.7rem;cursor:pointer;font-family:inherit;" title="מחק">🗑️</button>' : '';
+        return '<div class="card" style="cursor:pointer;border-right:4px solid ' + item.color + ';position:relative;" onclick="viewGeneratedContent(\''+item.id+'\',\''+item.collection+'\')">' +
+            deleteBtn +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                '<span style="font-size:1.4rem;">' + item.icon + '</span>' +
+                '<span style="font-size:0.72rem;background:' + item.color + '22;color:' + item.color + ';padding:2px 8px;border-radius:8px;font-weight:600;">' + item.label + '</span>' +
+            '</div>' +
+            '<div style="font-weight:700;font-size:0.95rem;">' + item.title + '</div>' +
+            '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + item.subtitle + '</div>' +
+            '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">נוצר ע"י ' + item.author + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// Stop active snapshot listeners
+function _stopLibraryListeners() {
+    if (_libListeners) {
+        if (_libListeners.unsubSakag) { try { _libListeners.unsubSakag(); } catch(e) {} }
+        if (_libListeners.unsubTools) { try { _libListeners.unsubTools(); } catch(e) {} }
+        _libListeners = null;
+    }
+    _libInitialLoadDone = false;
+}
 
 async function loadLibrary(filter) {
     var container = document.getElementById('library-content');
     if (!container) return;
+    _libCurrentFilter = filter || 'all';
+
     if (!db) { try { db = firebase.firestore(); } catch(e) {} }
     if (!db) { container.innerHTML = '<div style="text-align:center;color:#d32f2f;padding:30px;">שגיאה: אין חיבור למסד הנתונים. נסה לרענן את הדף.</div>'; return; }
+
+    // If listeners are already active and we have cached data, just re-render with new filter
+    if (_libListeners && _libCache) {
+        _renderLibrary(filter);
+        return;
+    }
+
     // Ensure anonymous auth for Firestore access
     if (firebase.auth && !firebase.auth().currentUser) {
         try {
@@ -18731,153 +18823,81 @@ async function loadLibrary(filter) {
             console.log('Library: anonymous auth success, uid=' + firebase.auth().currentUser.uid);
         } catch(ae) {
             console.warn('Library: anon auth failed:', ae.code, ae.message);
-            // Continue anyway — Firestore rules might allow public read
         }
-    } else if (firebase.auth && firebase.auth().currentUser) {
-        console.log('Library: already authenticated, uid=' + firebase.auth().currentUser.uid);
     }
+
     // Update filter buttons
     ['all','sakag','morak','lesson','trivia'].forEach(function(f) {
         var btn = document.getElementById('lib-filter-' + f);
         if (btn) { btn.style.background = f === filter ? 'var(--primary)' : ''; btn.style.color = f === filter ? '#fff' : ''; }
     });
+
+    // Show loading spinner (only on initial load)
     container.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
         '<div style="position:relative;width:56px;height:56px;margin:0 auto 16px;">' +
             '<div style="position:absolute;inset:0;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>' +
             '<div style="position:absolute;inset:6px;border:3px solid transparent;border-bottom-color:var(--primary-lighter);border-radius:50%;animation:spin 1.2s linear infinite reverse;"></div>' +
         '</div>' +
         '<p style="font-weight:600;color:var(--primary);font-size:0.95rem;">טוען ספריה...</p>' +
-        '<p id="lib-load-status" style="margin-top:8px;color:var(--text-secondary);font-size:0.8rem;transition:all 0.3s;"></p>' +
+        '<p id="lib-load-status" style="margin-top:8px;color:var(--text-secondary);font-size:0.8rem;transition:all 0.3s;">מתחבר לעדכונים בזמן אמת...</p>' +
         '<div style="margin-top:14px;width:180px;height:4px;background:var(--border);border-radius:4px;margin-left:auto;margin-right:auto;overflow:hidden;">' +
             '<div id="lib-load-bar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-lighter));border-radius:4px;animation:sakagProgress 15s ease-out forwards;"></div>' +
         '</div></div>';
-    // Show auth status while loading
-    var _libStatusEl = document.getElementById('lib-load-status');
-    if (_libStatusEl) {
-        var authOk = firebase.auth && firebase.auth().currentUser;
-        _libStatusEl.textContent = authOk ? 'מחובר ✓ — שולח שאילתות...' : 'ממתין לאימות...';
+
+    // Real-time data stores
+    var _sakagItems = [];
+    var _toolsItems = [];
+    var _sakagReady = false;
+    var _toolsReady = false;
+
+    function _mergeAndRender() {
+        _libCache = _sakagItems.concat(_toolsItems);
+        console.log('Library realtime: total items=' + _libCache.length + ' (sakag=' + _sakagItems.length + ', tools=' + _toolsItems.length + ')');
+        if (!_libInitialLoadDone) {
+            _libInitialLoadDone = true;
+            console.log('Library: initial snapshot load complete');
+        }
+        _renderLibrary(_libCurrentFilter);
     }
 
     try {
-        var items = [];
-        var loadErrors = [];
-
-        // Use cache if fresh (< 1 minute old)
-        var useCache = _libCache && (Date.now() - _libCacheTime < _libCacheMaxAge);
-
-        if (useCache) {
-            items = _libCache.slice(); // shallow copy
-        } else {
-            // Timeout wrapper — 15 second max wait
-            function withTimeout(promise, ms, label) {
-                return Promise.race([
-                    promise,
-                    new Promise(function(_, reject) { setTimeout(function() { reject(new Error(label + ': timeout אחרי ' + (ms/1000) + ' שניות')); }, ms); })
-                ]);
-            }
-            // Run BOTH queries in parallel for speed — with timeout
-            var promises = [];
-            promises.push(
-                withTimeout(db.collection('user_sakag').get(), 15000, 'סק"ג')
-                    .then(function(sakagSnap) {
-                        console.log('Library: user_sakag returned ' + sakagSnap.size + ' docs');
-                        if (_libStatusEl) _libStatusEl.textContent = 'נטענו ' + sakagSnap.size + ' סק"גים... ממשיך...';
-                        sakagSnap.forEach(function(doc) {
-                            var d = doc.data();
-                            if (d.status && d.status !== 'active') return;
-                            items.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt, lat: d.lat, lng: d.lng });
-                        });
-                    }).catch(function(e) { loadErrors.push('סק"ג: ' + e.message); console.error('Library: sakag load error', e); })
-            );
-            promises.push(
-                withTimeout(db.collection('commander_tools').get(), 15000, 'כלים')
-                    .then(function(toolsSnap) {
-                        console.log('Library: loaded ' + toolsSnap.size + ' tools docs');
-                        if (_libStatusEl) _libStatusEl.textContent = 'נטענו ' + toolsSnap.size + ' כלים נוספים...';
-                        toolsSnap.forEach(function(doc) {
-                            var d = doc.data();
-                            if (d.status && d.status !== 'active') return;
-                            var icon = d.type === 'morak' ? '⭐' : d.type === 'trivia' ? '🧠' : '📖';
-                            var color = d.type === 'morak' ? '#7C3AED' : d.type === 'trivia' ? '#D97706' : '#059669';
-                            var label = d.type === 'morak' ? 'מור"ק' : d.type === 'trivia' ? 'טריוויה' : 'מערך שיעור';
-                            items.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
-                        });
-                    }).catch(function(e) { loadErrors.push('כלים: ' + e.message); console.error('Library: tools load error', e); })
-            );
-            await Promise.all(promises);
-            console.log('Library: total items=' + items.length + ', errors=' + loadErrors.length);
-            if (_libStatusEl) _libStatusEl.textContent = 'נמצאו ' + items.length + ' פריטים' + (loadErrors.length > 0 ? ' (' + loadErrors.length + ' שגיאות)' : '');
-
-            // Cache the full result set
-            _libCache = items.slice();
-            _libCacheTime = Date.now();
-        }
-
-        // Apply filter client-side (from cache or fresh data)
-        if (filter !== 'all') {
-            items = items.filter(function(item) { return item.type === filter; });
-        }
-
-        // Sort by timestamp desc
-        items.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
-        items = items.slice(0, 50);
-
-        if (items.length === 0) {
-            var authStatus = firebase.auth && firebase.auth().currentUser ? 'מחובר (uid: ' + firebase.auth().currentUser.uid.substring(0,8) + '...)' : 'לא מחובר';
-            var errInfo = loadErrors.length > 0 ? '<div style="color:#d32f2f;font-size:0.8rem;margin-bottom:8px;">' + loadErrors.join('<br>') + '</div>' : '';
-            // Check Firestore rules — try a direct test read
-            var rulesNote = '';
-            try {
-                await db.collection('commander_tools').limit(1).get();
-            } catch(testErr) {
-                rulesNote = '<div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:8px;padding:10px;margin:12px 0;font-size:0.78rem;color:#856404;text-align:right;">' +
-                    '⚠️ <b>חוקי Firestore חוסמים קריאה:</b> ' + testErr.message + '<br>' +
-                    'יש לעדכן חוקי Firestore ב-Firebase Console → Firestore → Rules:<br>' +
-                    '<code style="background:#f8f9fa;padding:2px 6px;border-radius:4px;">allow read: if true;</code></div>';
-            }
-            container.innerHTML = '<div style="text-align:center;padding:30px;">' +
-                '<div style="font-size:2rem;margin-bottom:12px;">📚</div>' +
-                errInfo + rulesNote +
-                '<div style="color:var(--text-secondary);margin-bottom:8px;font-size:0.9rem;">אין תכנים עדיין — צור תוכן באמצעות הכלים למפקד!</div>' +
-                '<div style="font-size:0.72rem;color:#999;margin-bottom:12px;">סטטוס: ' + authStatus + '</div>' +
-                '<button onclick="_libCache=null;loadLibrary(\'' + (filter||'all') + '\')" style="padding:10px 24px;border:none;background:var(--primary);color:#fff;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600;">🔄 רענן</button></div>';
-            return;
-        }
-
-        // Show map with סק"ג locations
-        var sakagItems = items.filter(function(i) { return i.type === 'sakag' && i.lat; });
-        var libMapEl = document.getElementById('library-map');
-        if (sakagItems.length > 0 && libMapEl) {
-            libMapEl.style.display = '';
-            if (window._libMap) { window._libMap.remove(); window._libMap = null; }
-            window._libMap = L.map(libMapEl, { zoomControl: true, attributionControl: false }).setView([31.5, 35.0], 8);
-            L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', { maxZoom: 18, subdomains: '0123' }).addTo(window._libMap);
-            var bounds = [];
-            sakagItems.forEach(function(s) {
-                bounds.push([s.lat, s.lng]);
-                L.marker([s.lat, s.lng], {
-                    icon: L.divIcon({ className:'', html:'<div style="background:#D97706;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);cursor:pointer;">📋</div>', iconSize:[30,30], iconAnchor:[15,15] })
-                }).addTo(window._libMap).bindPopup('<b>' + s.title + '</b><br><span style="font-size:0.8rem;">' + (s.subtitle||'') + '</span><br><button onclick="viewGeneratedContent(\''+s.id+'\',\''+s.collection+'\')" style="margin-top:6px;padding:4px 10px;border:none;background:var(--primary);color:#fff;border-radius:6px;cursor:pointer;font-family:inherit;font-size:0.8rem;">📖 פתח</button>');
+        // Set up real-time listeners
+        var unsubSakag = db.collection('user_sakag').onSnapshot(function(snapshot) {
+            _sakagItems = [];
+            snapshot.forEach(function(doc) {
+                var d = doc.data();
+                if (d.status && d.status !== 'active') return;
+                _sakagItems.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt, lat: d.lat, lng: d.lng });
             });
-            if (bounds.length > 1) window._libMap.fitBounds(bounds, { padding: [30, 30] });
-            else if (bounds.length === 1) window._libMap.setView(bounds[0], 12);
-            setTimeout(function() { try { window._libMap.invalidateSize(); } catch(e) {} }, 300);
-        } else if (libMapEl) { libMapEl.style.display = 'none'; }
+            console.log('Library: user_sakag snapshot — ' + _sakagItems.length + ' active docs');
+            _sakagReady = true;
+            if (_toolsReady) _mergeAndRender();
+        }, function(err) {
+            console.error('Library: sakag listener error', err);
+            _sakagReady = true;
+            if (_toolsReady) _mergeAndRender();
+        });
 
-        var isAdmin = hasPermission('admin') || hasPermission('manage-permissions');
-        container.innerHTML = items.map(function(item) {
-            var deleteBtn = isAdmin ? '<button onclick="event.stopPropagation();deleteLibraryItem(\''+item.id+'\',\''+item.collection+'\')" style="position:absolute;top:8px;left:8px;background:#DC2626;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:0.7rem;cursor:pointer;font-family:inherit;" title="מחק">🗑️</button>' : '';
-            return '<div class="card" style="cursor:pointer;border-right:4px solid ' + item.color + ';position:relative;" onclick="viewGeneratedContent(\''+item.id+'\',\''+item.collection+'\')">' +
-                deleteBtn +
-                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-                    '<span style="font-size:1.4rem;">' + item.icon + '</span>' +
-                    '<span style="font-size:0.72rem;background:' + item.color + '22;color:' + item.color + ';padding:2px 8px;border-radius:8px;font-weight:600;">' + item.label + '</span>' +
-                '</div>' +
-                '<div style="font-weight:700;font-size:0.95rem;">' + item.title + '</div>' +
-                '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + item.subtitle + '</div>' +
-                '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">נוצר ע"י ' + item.author + '</div>' +
-            '</div>';
-        }).join('');
+        var unsubTools = db.collection('commander_tools').onSnapshot(function(snapshot) {
+            _toolsItems = [];
+            snapshot.forEach(function(doc) {
+                var d = doc.data();
+                if (d.status && d.status !== 'active') return;
+                var icon = d.type === 'morak' ? '⭐' : d.type === 'trivia' ? '🧠' : '📖';
+                var color = d.type === 'morak' ? '#7C3AED' : d.type === 'trivia' ? '#D97706' : '#059669';
+                var label = d.type === 'morak' ? 'מור"ק' : d.type === 'trivia' ? 'טריוויה' : 'מערך שיעור';
+                _toolsItems.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
+            });
+            console.log('Library: commander_tools snapshot — ' + _toolsItems.length + ' active docs');
+            _toolsReady = true;
+            if (_sakagReady) _mergeAndRender();
+        }, function(err) {
+            console.error('Library: tools listener error', err);
+            _toolsReady = true;
+            if (_sakagReady) _mergeAndRender();
+        });
+
+        _libListeners = { unsubSakag: unsubSakag, unsubTools: unsubTools };
     } catch(e) {
         var isOffline = e.message && (e.message.includes('offline') || e.message.includes('timeout'));
         var authStatus = firebase.auth && firebase.auth().currentUser ? 'מחובר' : 'לא מחובר — יש להפעיל Anonymous Auth';
@@ -18887,7 +18907,7 @@ async function loadLibrary(filter) {
             '<div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:4px;">' + e.message + '</div>' +
             '<div style="font-size:0.75rem;color:#999;margin-bottom:12px;">סטטוס אימות: ' + authStatus + '</div>' +
             (isOffline ? '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:12px;">💡 נסה: רענון דף (Ctrl+Shift+R) כדי לעדכן את ה-Service Worker</div>' : '') +
-            '<button onclick="_libCache=null;loadLibrary(\'' + (filter||'all') + '\')" style="padding:10px 24px;border:none;background:var(--primary);color:#fff;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.9rem;font-weight:600;">🔄 נסה שוב</button></div>';
+            '<button onclick="_libCache=null;_stopLibraryListeners();loadLibrary(\'' + (filter||'all') + '\')" style="padding:10px 24px;border:none;background:var(--primary);color:#fff;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.9rem;font-weight:600;">🔄 נסה שוב</button></div>';
     }
 }
 
@@ -18895,9 +18915,8 @@ async function deleteLibraryItem(docId, collection) {
     if (!confirm('למחוק תוכן זה לצמיתות?')) return;
     try {
         await db.collection(collection).doc(docId).update({ status: 'deleted' });
-        _libCache = null; // invalidate library cache
+        // No need to manually refresh — onSnapshot listener will update automatically
         showToast('✅ התוכן נמחק');
-        loadLibrary('all');
     } catch(e) { showToast('שגיאה במחיקה: ' + e.message); }
 }
 
