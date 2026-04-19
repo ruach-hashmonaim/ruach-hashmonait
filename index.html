@@ -27,7 +27,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v27';
+                var currentCache = 'ruach-v28';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -2394,6 +2394,18 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="card-title"><div class="icon">🤖</div> סק"גים עצמאיים שנוצרו</div>
             <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">סק"גים שנוצרו על ידי מפקדים באמצעות סוכן ה-AI</p>
             <div id="admin-user-sakag-list">טוען...</div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+            <div class="card-title"><div class="icon">📚</div> כל התכנים שנוצרו (כלים למפקד)</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;">מור"קים, מערכי שיעור, טריוויות ודילמות שנוצרו באמצעות כלים למפקד</p>
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                <button class="btn-sm" id="admin-ct-all" style="background:var(--primary);color:#fff;" onclick="loadAdminCommanderTools('all')">הכל</button>
+                <button class="btn-sm btn-secondary" id="admin-ct-morak" onclick="loadAdminCommanderTools('morak')">מור"קים</button>
+                <button class="btn-sm btn-secondary" id="admin-ct-lesson" onclick="loadAdminCommanderTools('lesson')">מערכי שיעור</button>
+                <button class="btn-sm btn-secondary" id="admin-ct-trivia" onclick="loadAdminCommanderTools('trivia')">טריוויות</button>
+                <button class="btn-sm btn-secondary" id="admin-ct-dilemma" onclick="loadAdminCommanderTools('dilemma')">דילמות</button>
+            </div>
+            <div id="admin-commander-tools-list">טוען...</div>
         </div>
     </div>
 
@@ -12441,6 +12453,7 @@ async function loadCmgmtContent() {
                     <td>${linkHtml}</td>
                     <td style="white-space:nowrap;">
                         <button class="btn-sm btn-secondary" onclick="openEditLesson('${doc.id}','cmgmt')">ערוך</button>
+                        <button class="btn-sm btn-secondary" style="background:#EEF2FF;color:#4F46E5;border-color:#C7D2FE;" onclick="openMoveLesson('${doc.id}','cmgmt')">📦 העבר</button>
                         <button class="btn-sm btn-danger" onclick="cmgmtDeleteLesson('${doc.id}')">מחק</button>
                     </td>
                 </tr>`;
@@ -12542,6 +12555,91 @@ window._doSaveEditLesson = function() {
     if (!docId) { alert('שגיאה: לא נמצא מזהה תוכן'); return; }
     saveEditLesson(docId, source);
 };
+
+// --- Move lesson to a different week ---
+function openMoveLesson(docId, source) {
+    var old = document.getElementById('move-lesson-modal');
+    if (old) old.remove();
+
+    db.collection('training_content').doc(docId).get().then(function(doc) {
+        if (!doc.exists) { showToast('תוכן לא נמצא'); return; }
+        var d = doc.data();
+        var program = d.program || 'basic';
+        var currentWeek = d.week || 1;
+        var maxWeeks = program === 'basic' ? 30 : program === 'nco' ? 20 : 16;
+
+        var weekOptions = '';
+        for (var w = 1; w <= maxWeeks; w++) {
+            var wInfo = (TRAINING_WEEK_NAMES[program] || {})[w];
+            var wLabel = wInfo ? w + ' — ' + wInfo.name : 'שבוע ' + w;
+            var selected = w === currentWeek ? ' selected' : '';
+            weekOptions += '<option value="' + w + '"' + selected + '>' + wLabel + '</option>';
+        }
+
+        var programNames = { basic: 'הכשרת יסוד', nco: 'קורס מ"כים', officer: 'קורס קצינים' };
+        var programOptions = Object.entries(programNames).map(function(e) {
+            return '<option value="' + e[0] + '"' + (e[0] === program ? ' selected' : '') + '>' + e[1] + '</option>';
+        }).join('');
+
+        var modal = document.createElement('div');
+        modal.id = 'move-lesson-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10001;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+
+        modal.innerHTML = '<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:400px;width:92%;direction:rtl;" onclick="event.stopPropagation()">' +
+            '<h3 style="margin-bottom:6px;color:var(--primary);">📦 העברת תוכן לשבוע אחר</h3>' +
+            '<p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">"' + (d.title||'') + '"</p>' +
+            '<div style="display:flex;flex-direction:column;gap:14px;">' +
+                '<div><label style="font-weight:600;font-size:0.88rem;">תוכנית הכשרה:</label>' +
+                '<select id="move-program" onchange="updateMoveWeeks()" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;">' + programOptions + '</select></div>' +
+                '<div><label style="font-weight:600;font-size:0.88rem;">העבר לשבוע:</label>' +
+                '<select id="move-week" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;">' + weekOptions + '</select></div>' +
+                '<div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:8px;padding:8px;font-size:0.8rem;color:#856404;">' +
+                    '💡 התוכן יועבר מ<b>שבוע ' + currentWeek + '</b> (' + (programNames[program]||program) + ') לשבוע שתבחר.' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;margin-top:4px;">' +
+                    '<button class="btn-primary btn-sm" onclick="doMoveLesson(\'' + docId + '\',\'' + source + '\')">העבר</button>' +
+                    '<button class="btn-secondary btn-sm" onclick="document.getElementById(\'move-lesson-modal\').remove()">ביטול</button>' +
+                '</div>' +
+            '</div></div>';
+
+        document.body.appendChild(modal);
+    }).catch(function(e) { showToast('שגיאה: ' + e.message); });
+}
+
+function updateMoveWeeks() {
+    var program = document.getElementById('move-program').value;
+    var maxWeeks = program === 'basic' ? 30 : program === 'nco' ? 20 : 16;
+    var weekSelect = document.getElementById('move-week');
+    weekSelect.innerHTML = '';
+    for (var w = 1; w <= maxWeeks; w++) {
+        var wInfo = (TRAINING_WEEK_NAMES[program] || {})[w];
+        var wLabel = wInfo ? w + ' — ' + wInfo.name : 'שבוע ' + w;
+        weekSelect.innerHTML += '<option value="' + w + '">' + wLabel + '</option>';
+    }
+}
+
+async function doMoveLesson(docId, source) {
+    var newProgram = document.getElementById('move-program').value;
+    var newWeek = parseInt(document.getElementById('move-week').value);
+    if (!newWeek || newWeek < 1) { showToast('יש לבחור שבוע תקין'); return; }
+
+    try {
+        await db.collection('training_content').doc(docId).update({
+            program: newProgram,
+            week: newWeek
+        });
+        document.getElementById('move-lesson-modal').remove();
+        var programNames = { basic: 'הכשרת יסוד', nco: 'קורס מ"כים', officer: 'קורס קצינים' };
+        showToast('✓ התוכן הועבר לשבוע ' + newWeek + ' (' + (programNames[newProgram]||newProgram) + ')');
+        // Refresh the page that triggered the move
+        if (source === 'cmgmt') {
+            loadContentManagement();
+        } else {
+            loadTrainingPage(newProgram);
+        }
+    } catch(e) { showToast('שגיאה בהעברה: ' + e.message); }
+}
 
 // Helper: preview a file in a modal with download option
 function previewFile(fileUrl, fileName, fileData) {
@@ -12819,6 +12917,7 @@ async function loadAdminTrainingContent() {
                 <td>${linkHtml}</td>
                 <td style="white-space:nowrap;">
                     <button class="btn-sm btn-secondary" onclick="openEditLesson('${doc.id}','admin')">ערוך</button>
+                    <button class="btn-sm btn-secondary" style="background:#EEF2FF;color:#4F46E5;border-color:#C7D2FE;" onclick="openMoveLesson('${doc.id}','admin')">📦 העבר</button>
                     <button class="btn-sm btn-danger" onclick="adminDeleteLesson('${doc.id}')">מחק</button>
                 </td>
             </tr>`;
@@ -19884,7 +19983,7 @@ function showAdminTab(tab) {
     if (tab === 'surveys-mgmt') loadAdminSurveys();
     if (tab === 'training-mgmt') { adminTrainingChanged(); }
     if (tab === 'cw-videos') cwAdminLoadVideos();
-    if (tab === 'user-sakag') loadAdminUserSakag();
+    if (tab === 'user-sakag') { loadAdminUserSakag(); loadAdminCommanderTools('all'); }
     if (tab === 'completion') loadAdminCompletion('basic');
     if (tab === 'duplicates') scanDuplicateUsers();
     if (tab === 'rm-reports') initRmReportsTab();
@@ -20416,6 +20515,65 @@ async function loadAdminUserSakag() {
         html += '<p style="margin-top:8px;font-size:0.82rem;color:var(--text-secondary);">סה"כ: ' + snap.size + ' סק"גים</p>';
         listEl.innerHTML = html;
     } catch(e) { listEl.innerHTML = '<p style="color:var(--danger);">שגיאה: '+e.message+'</p>'; }
+}
+
+// --- Admin: Load all commander_tools content ---
+async function loadAdminCommanderTools(filter) {
+    var listEl = document.getElementById('admin-commander-tools-list');
+    if (!listEl) return;
+    listEl.innerHTML = 'טוען...';
+
+    // Update filter buttons
+    ['all','morak','lesson','trivia','dilemma'].forEach(function(f) {
+        var btn = document.getElementById('admin-ct-' + f);
+        if (btn) { btn.style.background = f === filter ? 'var(--primary)' : ''; btn.style.color = f === filter ? '#fff' : ''; btn.className = f === filter ? 'btn-sm' : 'btn-sm btn-secondary'; }
+    });
+
+    try {
+        var snap = await db.collection('commander_tools').orderBy('createdAt','desc').get();
+        var items = [];
+        snap.forEach(function(doc) { items.push({ id: doc.id, ...doc.data() }); });
+
+        if (filter && filter !== 'all') {
+            items = items.filter(function(item) { return item.type === filter; });
+        }
+
+        if (items.length === 0) { listEl.innerHTML = '<p style="color:var(--text-secondary);">לא נמצאו תכנים</p>'; return; }
+
+        var typeLabels = { morak: 'מור"ק', lesson: 'מערך שיעור', trivia: 'טריוויה', dilemma: 'דילמה' };
+        var typeColors = { morak: '#7C3AED', lesson: '#059669', trivia: '#D97706', dilemma: '#4F46E5' };
+        var typeIcons = { morak: '⭐', lesson: '📖', trivia: '🧠', dilemma: '⚖️' };
+
+        var html = '<table class="admin-table"><thead><tr><th>סוג</th><th>שם</th><th>נוצר ע"י</th><th>תאריך</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>';
+        items.forEach(function(d) {
+            var date = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
+            var typeBadge = '<span style="color:' + (typeColors[d.type]||'#666') + ';font-weight:600;">' + (typeIcons[d.type]||'') + ' ' + (typeLabels[d.type]||d.type||'—') + '</span>';
+            var statusBadge = d.status === 'deleted' ? '<span style="color:#999;">מושבת</span>' : '<span style="color:#2E7D32;font-weight:600;">פעיל</span>';
+            html += '<tr>' +
+                '<td>' + typeBadge + '</td>' +
+                '<td style="font-weight:600;">' + (d.title||'—') + '</td>' +
+                '<td>' + (d.createdByName||'—') + '</td>' +
+                '<td>' + date + '</td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td style="white-space:nowrap;">' +
+                    '<button class="btn-sm btn-secondary" onclick="viewGeneratedContent(\''+d.id+'\',\'commander_tools\')">👁️ צפייה</button> ' +
+                    '<button class="btn-sm btn-danger" onclick="adminDeleteCommanderTool(\''+d.id+'\')">🗑️</button>' +
+                '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<p style="margin-top:8px;font-size:0.82rem;color:var(--text-secondary);">סה"כ: ' + items.length + ' תכנים</p>';
+        listEl.innerHTML = html;
+    } catch(e) { listEl.innerHTML = '<p style="color:var(--danger);">שגיאה: '+e.message+'</p>'; }
+}
+
+async function adminDeleteCommanderTool(docId) {
+    if (!confirm('למחוק תוכן זה?')) return;
+    try {
+        await db.collection('commander_tools').doc(docId).update({ status: 'deleted' });
+        showToast('✅ התוכן הוסתר');
+        loadAdminCommanderTools('all');
+    } catch(e) { showToast('שגיאה: ' + e.message); }
 }
 
 // View a user sakag from admin panel — open in a fullscreen modal
