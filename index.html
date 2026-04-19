@@ -27,7 +27,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v28';
+                var currentCache = 'ruach-v29';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -3385,6 +3385,9 @@ function onLoginSuccess() {
     // Show/hide nav items based on role
     updateUIForRole();
 
+    // Load EMET overrides (moved items) from Firestore
+    loadEmetOverrides().catch(function(e) { console.warn('EMET overrides:', e); });
+
     if (cwLoginRedirect) {
         const target = cwLoginRedirect;
         cwLoginRedirect = null;
@@ -3897,6 +3900,31 @@ const EMET_CURRICULUM = {
         29: [{ type: 'sakal', id: 'emek_haelah', title: 'סק"ג עמק האלה עד מקום המקדש', icon: '🏛️' }]
     }
 };
+
+// Apply EMET overrides from Firestore — allows moving items between weeks
+async function loadEmetOverrides() {
+    try {
+        if (!db) return;
+        var doc = await db.collection('config').doc('emet_overrides').get();
+        if (!doc.exists) return;
+        var overrides = doc.data().moves || [];
+        // Each override: { id, type, fromProgram, fromWeek, toProgram, toWeek }
+        overrides.forEach(function(ov) {
+            // Remove from original location
+            var src = EMET_CURRICULUM[ov.fromProgram];
+            if (src && src[ov.fromWeek]) {
+                src[ov.fromWeek] = src[ov.fromWeek].filter(function(item) { return item.id !== ov.id; });
+                if (src[ov.fromWeek].length === 0) delete src[ov.fromWeek];
+            }
+            // Add to new location
+            if (!EMET_CURRICULUM[ov.toProgram]) EMET_CURRICULUM[ov.toProgram] = {};
+            if (!EMET_CURRICULUM[ov.toProgram][ov.toWeek]) EMET_CURRICULUM[ov.toProgram][ov.toWeek] = [];
+            // Find original item data from the override
+            EMET_CURRICULUM[ov.toProgram][ov.toWeek].push({ type: ov.type, id: ov.id, title: ov.title, icon: ov.icon || '' });
+        });
+        console.log('EMET overrides applied:', overrides.length);
+    } catch(e) { console.warn('Failed to load EMET overrides:', e); }
+}
 
 let currentTrainingProgram = 'basic';
 let currentOfficerTrack = 'sade';
@@ -12464,7 +12492,7 @@ async function loadCmgmtContent() {
         const emetItems = (EMET_CURRICULUM[prog] && EMET_CURRICULUM[prog][week]) || [];
         if (emetItems.length > 0) {
             html += `<div style="margin-top:14px;border-top:1.5px dashed #D97706;padding-top:10px;">
-                <div style="font-weight:700;font-size:0.88rem;color:#B45309;margin-bottom:8px;">📍 אמת מארץ תצמח (מוטמע בקוד — קריאה בלבד)</div>
+                <div style="font-weight:700;font-size:0.88rem;color:#B45309;margin-bottom:8px;">📍 אמת מארץ תצמח (מוטמע — ניתן להעברה)</div>
                 <table class="admin-table"><thead><tr><th>אחריות</th><th>שם</th><th>מעביר</th><th>שעות</th><th>קישור</th><th>סטטוס</th></tr></thead><tbody>`;
             for (const item of emetItems) {
                 const deepLink = item.type === 'sakal' ? '#geography/sakal/' + item.id : '#geography/quiz/' + item.id;
@@ -12475,7 +12503,7 @@ async function loadCmgmtContent() {
                     <td>מ"כ/מ"מ</td>
                     <td>0.5</td>
                     <td><a href="${deepLink}" style="color:var(--primary-lighter);font-size:0.8rem;">${typeLabel}</a></td>
-                    <td style="font-size:0.78rem;color:#B45309;">🔒 מוטמע</td>
+                    <td><button class="btn-sm" style="font-size:0.72rem;background:#D97706;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;" onclick="openMoveEmetItem('${item.id}','${item.type}','${item.title.replace(/'/g,"\\'")}','${item.icon}','${prog}',${week})">📦 העבר</button></td>
                 </tr>`;
             }
             html += '</tbody></table></div>';
@@ -12639,6 +12667,111 @@ async function doMoveLesson(docId, source) {
             loadTrainingPage(newProgram);
         }
     } catch(e) { showToast('שגיאה בהעברה: ' + e.message); }
+}
+
+// --- Move EMET (אמת מארץ תצמח) item to a different week ---
+function openMoveEmetItem(id, type, title, icon, fromProgram, fromWeek) {
+    var old = document.getElementById('move-lesson-modal');
+    if (old) old.remove();
+
+    var program = fromProgram;
+    var currentWeek = fromWeek;
+    var maxWeeks = program === 'basic' ? 30 : program === 'nco' ? 20 : 16;
+
+    var weekOptions = '';
+    for (var w = 1; w <= maxWeeks; w++) {
+        var wInfo = (TRAINING_WEEK_NAMES[program] || {})[w];
+        var wLabel = wInfo ? w + ' — ' + wInfo.name : 'שבוע ' + w;
+        var selected = w === currentWeek ? ' selected' : '';
+        weekOptions += '<option value="' + w + '"' + selected + '>' + wLabel + '</option>';
+    }
+
+    var programNames = { basic: 'הכשרת יסוד', nco: 'קורס מ"כים', officer: 'קורס קצינים' };
+    var programOptions = Object.entries(programNames).map(function(e) {
+        return '<option value="' + e[0] + '"' + (e[0] === program ? ' selected' : '') + '>' + e[1] + '</option>';
+    }).join('');
+
+    // Store EMET move data globally
+    window._emetMoveData = { id: id, type: type, title: title, icon: icon, fromProgram: fromProgram, fromWeek: fromWeek };
+
+    var modal = document.createElement('div');
+    modal.id = 'move-lesson-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10001;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+
+    modal.innerHTML = '<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:400px;width:92%;direction:rtl;" onclick="event.stopPropagation()">' +
+        '<h3 style="margin-bottom:6px;color:#D97706;">📦 העברת פריט אמ"ת לשבוע אחר</h3>' +
+        '<p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">"' + title + '"</p>' +
+        '<div style="display:flex;flex-direction:column;gap:14px;">' +
+            '<div><label style="font-weight:600;font-size:0.88rem;">תוכנית הכשרה:</label>' +
+            '<select id="move-program" onchange="updateMoveWeeks()" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;">' + programOptions + '</select></div>' +
+            '<div><label style="font-weight:600;font-size:0.88rem;">העבר לשבוע:</label>' +
+            '<select id="move-week" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;">' + weekOptions + '</select></div>' +
+            '<div style="background:#FFF3CD;border:1px solid #FFC107;border-radius:8px;padding:8px;font-size:0.8rem;color:#856404;">' +
+                '💡 פריט אמ"ת יועבר מ<b>שבוע ' + currentWeek + '</b> (' + (programNames[program]||program) + ') לשבוע שתבחר. השינוי נשמר בענן.' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;margin-top:4px;">' +
+                '<button class="btn-primary btn-sm" onclick="doMoveEmetItem()">העבר</button>' +
+                '<button class="btn-secondary btn-sm" onclick="document.getElementById(\'move-lesson-modal\').remove()">ביטול</button>' +
+            '</div>' +
+        '</div></div>';
+
+    document.body.appendChild(modal);
+}
+
+async function doMoveEmetItem() {
+    var data = window._emetMoveData;
+    if (!data) { showToast('שגיאה: לא נמצאו נתוני פריט'); return; }
+    var newProgram = document.getElementById('move-program').value;
+    var newWeek = parseInt(document.getElementById('move-week').value);
+    if (!newWeek || newWeek < 1) { showToast('יש לבחור שבוע תקין'); return; }
+
+    // Same location — no move needed
+    if (newProgram === data.fromProgram && newWeek === data.fromWeek) {
+        showToast('הפריט כבר נמצא בשבוע זה');
+        return;
+    }
+
+    try {
+        // Read existing overrides
+        var docRef = db.collection('config').doc('emet_overrides');
+        var doc = await docRef.get();
+        var moves = doc.exists ? (doc.data().moves || []) : [];
+
+        // Remove any previous override for this item
+        moves = moves.filter(function(m) { return m.id !== data.id; });
+
+        // Add new override
+        moves.push({
+            id: data.id,
+            type: data.type,
+            title: data.title,
+            icon: data.icon,
+            fromProgram: data.fromProgram,
+            fromWeek: data.fromWeek,
+            toProgram: newProgram,
+            toWeek: newWeek
+        });
+
+        await docRef.set({ moves: moves });
+
+        // Apply override to in-memory EMET_CURRICULUM immediately
+        var src = EMET_CURRICULUM[data.fromProgram];
+        if (src && src[data.fromWeek]) {
+            src[data.fromWeek] = src[data.fromWeek].filter(function(item) { return item.id !== data.id; });
+            if (src[data.fromWeek].length === 0) delete src[data.fromWeek];
+        }
+        if (!EMET_CURRICULUM[newProgram]) EMET_CURRICULUM[newProgram] = {};
+        if (!EMET_CURRICULUM[newProgram][newWeek]) EMET_CURRICULUM[newProgram][newWeek] = [];
+        EMET_CURRICULUM[newProgram][newWeek].push({ type: data.type, id: data.id, title: data.title, icon: data.icon });
+
+        document.getElementById('move-lesson-modal').remove();
+        var programNames = { basic: 'הכשרת יסוד', nco: 'קורס מ"כים', officer: 'קורס קצינים' };
+        showToast('✓ פריט אמ"ת הועבר לשבוע ' + newWeek + ' (' + (programNames[newProgram]||newProgram) + ')');
+
+        // Refresh content management view
+        if (typeof loadContentManagement === 'function') loadContentManagement();
+    } catch(e) { showToast('שגיאה בהעברה: ' + e.message); console.error(e); }
 }
 
 // Helper: preview a file in a modal with download option
@@ -12896,7 +13029,7 @@ async function loadAdminTrainingContent() {
                 <td>מ"כ/מ"מ</td>
                 <td>0.5</td>
                 <td><a href="${deepLink}" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 ${typeLabel}</a></td>
-                <td style="font-size:0.72rem;color:var(--text-secondary);">מערכי — לא ניתן לעריכה</td>
+                <td><button class="btn-sm" style="font-size:0.72rem;background:#D97706;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;" onclick="openMoveEmetItem('${item.id}','${item.type}','${item.title.replace(/'/g,"\\'")}','${item.icon}','${prog}',${week})">📦 העבר</button></td>
             </tr>`;
         });
 
