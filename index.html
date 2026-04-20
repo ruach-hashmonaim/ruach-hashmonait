@@ -4,7 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>המצפן</title>
+    <title>המצפן — חטיבת החשמונאים | הכשרה, זהות וחוסן</title>
+    <meta name="description" content="המצפן — מערכת ההכשרה והזהות של חטיבת החשמונאים. תוכניות הכשרה, רוח מכבי, גיאוגרפיית ארץ ישראל, כלים למפקדים וספריית תכנים לחיילים ומפקדים.">
+    <meta name="keywords" content="המצפן, חטיבת החשמונאים, חשמונאים, הכשרה צבאית, רוח מכבי, זהות יהודית, גיאוגרפיה, סק״ג, ארץ ישראל, צה״ל, חוסן, מפקדים">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://ruach-hashmonaim.org/">
+
+    <!-- Open Graph (Facebook, WhatsApp, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="המצפן — חטיבת החשמונאים">
+    <meta property="og:description" content="מערכת ההכשרה והזהות של חטיבת החשמונאים. תוכניות הכשרה, רוח מכבי, גיאוגרפיה, כלים למפקדים וספריית תכנים.">
+    <meta property="og:url" content="https://ruach-hashmonaim.org/">
+    <meta property="og:site_name" content="המצפן — חטיבת החשמונאים">
+    <meta property="og:locale" content="he_IL">
+    <meta property="og:image" content="https://ruach-hashmonaim.org/icons/icon-512x512.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="המצפן — חטיבת החשמונאים">
+    <meta name="twitter:description" content="מערכת ההכשרה והזהות של חטיבת החשמונאים. הכשרה, רוח מכבי, גיאוגרפיה וכלים למפקדים.">
+    <meta name="twitter:image" content="https://ruach-hashmonaim.org/icons/icon-512x512.png">
+
     <meta name="theme-color" content="#0C4A6E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,7 +47,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v30';
+                var currentCache = 'ruach-v31';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
