@@ -47,7 +47,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v31';
+                var currentCache = 'ruach-v32';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -2161,6 +2161,33 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
                 <label style="font-size:0.85rem;font-weight:600;">📎 קובץ:</label>
                 <input type="file" id="cmgmt-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+            </div>
+            <div style="margin-top:10px;border:1px dashed var(--border);border-radius:8px;padding:10px;">
+                <label style="cursor:pointer;font-size:0.88rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+                    <input type="checkbox" id="cmgmt-recurring" onchange="toggleRecurrence('cmgmt')"> 🔄 תוכן מחזורי (שכפול למספר שבועות)
+                </label>
+                <div id="cmgmt-recurrence-opts" style="display:none;margin-top:10px;">
+                    <div style="display:flex;gap:12px;margin-bottom:8px;">
+                        <label style="font-size:0.84rem;cursor:pointer;"><input type="radio" name="cmgmt-rec-mode" value="fixed" checked onchange="updateRecurrencePreview('cmgmt')"> תדירות קבועה</label>
+                        <label style="font-size:0.84rem;cursor:pointer;"><input type="radio" name="cmgmt-rec-mode" value="manual" onchange="updateRecurrencePreview('cmgmt')"> בחירה ידנית</label>
+                    </div>
+                    <div id="cmgmt-rec-fixed" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <select id="cmgmt-rec-freq" onchange="updateRecurrencePreview('cmgmt')" style="padding:6px;border:1px solid var(--border);border-radius:6px;">
+                            <option value="1">כל שבוע</option>
+                            <option value="2" selected>כל שבועיים</option>
+                            <option value="3">כל 3 שבועות</option>
+                            <option value="4">כל 4 שבועות</option>
+                        </select>
+                        <label style="font-size:0.82rem;">משבוע</label>
+                        <input type="number" id="cmgmt-rec-from" min="1" max="30" value="1" style="width:55px;padding:6px;border:1px solid var(--border);border-radius:6px;" onchange="updateRecurrencePreview('cmgmt')">
+                        <label style="font-size:0.82rem;">עד שבוע</label>
+                        <input type="number" id="cmgmt-rec-to" min="1" max="30" value="30" style="width:55px;padding:6px;border:1px solid var(--border);border-radius:6px;" onchange="updateRecurrencePreview('cmgmt')">
+                    </div>
+                    <div id="cmgmt-rec-manual" style="display:none;max-height:120px;overflow-y:auto;display:none;flex-wrap:wrap;gap:4px;"></div>
+                    <div id="cmgmt-rec-preview" style="margin-top:8px;font-size:0.8rem;color:var(--text-secondary);"></div>
+                </div>
+            </div>
+            <div style="margin-top:10px;text-align:start;">
                 <button class="btn-primary btn-sm" onclick="cmgmtAddLesson()">הוסף תוכן</button>
             </div>
         </div>
@@ -2370,6 +2397,33 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
                     <label style="font-size:0.85rem;font-weight:600;">📎 קובץ:</label>
                     <input type="file" id="admin-lesson-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+                </div>
+                <div style="margin-top:10px;border:1px dashed var(--border);border-radius:8px;padding:10px;">
+                    <label style="cursor:pointer;font-size:0.88rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" id="admin-recurring" onchange="toggleRecurrence('admin')"> 🔄 תוכן מחזורי (שכפול למספר שבועות)
+                    </label>
+                    <div id="admin-recurrence-opts" style="display:none;margin-top:10px;">
+                        <div style="display:flex;gap:12px;margin-bottom:8px;">
+                            <label style="font-size:0.84rem;cursor:pointer;"><input type="radio" name="admin-rec-mode" value="fixed" checked onchange="updateRecurrencePreview('admin')"> תדירות קבועה</label>
+                            <label style="font-size:0.84rem;cursor:pointer;"><input type="radio" name="admin-rec-mode" value="manual" onchange="updateRecurrencePreview('admin')"> בחירה ידנית</label>
+                        </div>
+                        <div id="admin-rec-fixed" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                            <select id="admin-rec-freq" onchange="updateRecurrencePreview('admin')" style="padding:6px;border:1px solid var(--border);border-radius:6px;">
+                                <option value="1">כל שבוע</option>
+                                <option value="2" selected>כל שבועיים</option>
+                                <option value="3">כל 3 שבועות</option>
+                                <option value="4">כל 4 שבועות</option>
+                            </select>
+                            <label style="font-size:0.82rem;">משבוע</label>
+                            <input type="number" id="admin-rec-from" min="1" max="30" value="1" style="width:55px;padding:6px;border:1px solid var(--border);border-radius:6px;" onchange="updateRecurrencePreview('admin')">
+                            <label style="font-size:0.82rem;">עד שבוע</label>
+                            <input type="number" id="admin-rec-to" min="1" max="30" value="30" style="width:55px;padding:6px;border:1px solid var(--border);border-radius:6px;" onchange="updateRecurrencePreview('admin')">
+                        </div>
+                        <div id="admin-rec-manual" style="display:none;max-height:120px;overflow-y:auto;display:none;flex-wrap:wrap;gap:4px;"></div>
+                        <div id="admin-rec-preview" style="margin-top:8px;font-size:0.8rem;color:var(--text-secondary);"></div>
+                    </div>
+                </div>
+                <div style="margin-top:10px;text-align:start;">
                     <button class="btn-primary btn-sm" onclick="adminAddLesson()">הוסף תוכן</button>
                 </div>
             </div>
@@ -12944,6 +12998,83 @@ async function saveEditLesson(docId, source) {
     }
 }
 
+// --- Recurrence UI helpers ---
+function toggleRecurrence(prefix) {
+    var checked = document.getElementById(prefix + '-recurring').checked;
+    document.getElementById(prefix + '-recurrence-opts').style.display = checked ? 'block' : 'none';
+    if (checked) updateRecurrencePreview(prefix);
+}
+
+function getRecurrenceMode(prefix) {
+    var radios = document.querySelectorAll('input[name="' + prefix + '-rec-mode"]');
+    for (var i = 0; i < radios.length; i++) { if (radios[i].checked) return radios[i].value; }
+    return 'fixed';
+}
+
+function updateRecurrencePreview(prefix) {
+    var mode = getRecurrenceMode(prefix);
+    var fixedDiv = document.getElementById(prefix + '-rec-fixed');
+    var manualDiv = document.getElementById(prefix + '-rec-manual');
+    var progSelect = prefix === 'cmgmt' ? 'cmgmt-program' : 'admin-train-program';
+    var prog = document.getElementById(progSelect).value;
+    var maxWeeks = (TRAINING_CONFIG[prog] || {}).weeks || 30;
+
+    if (mode === 'fixed') {
+        fixedDiv.style.display = 'flex';
+        manualDiv.style.display = 'none';
+        document.getElementById(prefix + '-rec-to').max = maxWeeks;
+        if (parseInt(document.getElementById(prefix + '-rec-to').value) > maxWeeks) {
+            document.getElementById(prefix + '-rec-to').value = maxWeeks;
+        }
+    } else {
+        fixedDiv.style.display = 'none';
+        manualDiv.style.display = 'flex';
+        // Build week checkboxes
+        var html = '';
+        var wNames = TRAINING_WEEK_NAMES[prog] || {};
+        for (var w = 1; w <= maxWeeks; w++) {
+            var wI = wNames[w];
+            var label = wI ? w + ' — ' + wI.name : 'שבוע ' + w;
+            html += '<label style="font-size:0.78rem;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 6px;white-space:nowrap;">' +
+                '<input type="checkbox" class="' + prefix + '-rec-week-cb" value="' + w + '" onchange="updateRecurrencePreview(\'' + prefix + '\')" style="margin-left:3px;">' + label + '</label>';
+        }
+        manualDiv.innerHTML = html;
+    }
+
+    // Show preview
+    var weeks = getRecurrenceWeeks(prefix);
+    var preview = document.getElementById(prefix + '-rec-preview');
+    if (weeks.length === 0) {
+        preview.innerHTML = '<span style="color:var(--danger);">לא נבחרו שבועות</span>';
+    } else {
+        preview.innerHTML = '📋 ייווצרו <b>' + weeks.length + '</b> עותקים בשבועות: ' + weeks.join(', ');
+    }
+}
+
+function getRecurrenceWeeks(prefix) {
+    var mode = getRecurrenceMode(prefix);
+    var progSelect = prefix === 'cmgmt' ? 'cmgmt-program' : 'admin-train-program';
+    var prog = document.getElementById(progSelect).value;
+    var maxWeeks = (TRAINING_CONFIG[prog] || {}).weeks || 30;
+
+    if (mode === 'fixed') {
+        var freq = parseInt(document.getElementById(prefix + '-rec-freq').value) || 2;
+        var from = parseInt(document.getElementById(prefix + '-rec-from').value) || 1;
+        var to = parseInt(document.getElementById(prefix + '-rec-to').value) || maxWeeks;
+        if (to > maxWeeks) to = maxWeeks;
+        if (from < 1) from = 1;
+        var weeks = [];
+        for (var w = from; w <= to; w += freq) { weeks.push(w); }
+        return weeks;
+    } else {
+        var cbs = document.querySelectorAll('.' + prefix + '-rec-week-cb:checked');
+        var weeks = [];
+        cbs.forEach(function(cb) { weeks.push(parseInt(cb.value)); });
+        weeks.sort(function(a,b) { return a - b; });
+        return weeks;
+    }
+}
+
 async function cmgmtAddLesson() {
     const prog = document.getElementById('cmgmt-program').value;
     const track = prog === 'officer' ? document.getElementById('cmgmt-track').value : '';
@@ -12956,33 +13087,51 @@ async function cmgmtAddLesson() {
     const url = document.getElementById('cmgmt-url').value.trim();
     const fileInput = document.getElementById('cmgmt-file');
     if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
+
+    // Determine target weeks (recurring or single)
+    const isRecurring = document.getElementById('cmgmt-recurring').checked;
+    var targetWeeks = isRecurring ? getRecurrenceWeeks('cmgmt') : [week];
+    if (targetWeeks.length === 0) { showToast('יש לבחור לפחות שבוע אחד'); return; }
+    if (isRecurring && !confirm('ייווצרו ' + targetWeeks.length + ' עותקים בשבועות: ' + targetWeeks.join(', ') + '\nלהמשיך?')) return;
+
     try {
-        const docData = {
-            program: prog, week, track,
-            category, title, instructor, hours, url,
-            createdBy: currentUser.name, createdAt: new Date(),
-            order: Date.now()
-        };
-        // Upload file if selected
+        // Upload file once if selected (shared across copies)
+        var fileData = {};
         if (fileInput && fileInput.files.length > 0) {
             try {
                 showToast('מעלה קובץ...');
-                var fileRes = await uploadTrainingFile(fileInput.files[0], 'content_files/' + prog + '_' + week);
-                if (fileRes.fileUrl) { docData.fileUrl = fileRes.fileUrl; docData.fileName = fileRes.fileName; }
-                else if (fileRes.fileData) { docData.fileData = fileRes.fileData; docData.fileName = fileRes.fileName; docData.fileType = fileRes.fileType; }
+                var fileRes = await uploadTrainingFile(fileInput.files[0], 'content_files/' + prog + '_recurring');
+                if (fileRes.fileUrl) { fileData.fileUrl = fileRes.fileUrl; fileData.fileName = fileRes.fileName; }
+                else if (fileRes.fileData) { fileData.fileData = fileRes.fileData; fileData.fileName = fileRes.fileName; fileData.fileType = fileRes.fileType; }
             } catch(ue) {
                 console.error('Upload failed:', ue);
                 showToast('שגיאה בהעלאת קובץ: ' + ue.message);
                 return;
             }
         }
-        await db.collection('training_content').add(docData);
-        showToast('✅ המערך נוסף בהצלחה!');
+
+        var recurrenceGroup = isRecurring ? 'rec_' + Date.now() : null;
+        for (var i = 0; i < targetWeeks.length; i++) {
+            var docData = {
+                program: prog, week: targetWeeks[i], track,
+                category, title, instructor, hours, url,
+                createdBy: currentUser.name, createdAt: new Date(),
+                order: Date.now() + i
+            };
+            Object.assign(docData, fileData);
+            if (recurrenceGroup) docData.recurrenceGroup = recurrenceGroup;
+            await db.collection('training_content').add(docData);
+        }
+
+        var msg = isRecurring ? '✅ נוצרו ' + targetWeeks.length + ' עותקים בהצלחה!' : '✅ המערך נוסף בהצלחה!';
+        showToast(msg);
         document.getElementById('cmgmt-title').value = '';
         document.getElementById('cmgmt-instructor').value = '';
         document.getElementById('cmgmt-hours').value = '';
         document.getElementById('cmgmt-url').value = '';
         if (fileInput) fileInput.value = '';
+        document.getElementById('cmgmt-recurring').checked = false;
+        toggleRecurrence('cmgmt');
         loadCmgmtContent();
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
@@ -13092,32 +13241,51 @@ async function adminAddLesson() {
     const url = document.getElementById('admin-lesson-url').value.trim();
     const fileInput = document.getElementById('admin-lesson-file');
     if (!title) { showToast('יש למלא שם יחידת לימוד'); return; }
+
+    // Determine target weeks (recurring or single)
+    const isRecurring = document.getElementById('admin-recurring').checked;
+    var targetWeeks = isRecurring ? getRecurrenceWeeks('admin') : [week];
+    if (targetWeeks.length === 0) { showToast('יש לבחור לפחות שבוע אחד'); return; }
+    if (isRecurring && !confirm('ייווצרו ' + targetWeeks.length + ' עותקים בשבועות: ' + targetWeeks.join(', ') + '\nלהמשיך?')) return;
+
     try {
-        const docData = {
-            program: prog, week, track,
-            category, title, instructor, hours, url,
-            createdBy: currentUser.name, createdAt: new Date(),
-            order: Date.now()
-        };
+        // Upload file once if selected
+        var fileData = {};
         if (fileInput && fileInput.files.length > 0) {
             try {
                 showToast('מעלה קובץ...');
-                var fileRes = await uploadTrainingFile(fileInput.files[0], 'content_files/' + prog + '_' + week);
-                if (fileRes.fileUrl) { docData.fileUrl = fileRes.fileUrl; docData.fileName = fileRes.fileName; }
-                else if (fileRes.fileData) { docData.fileData = fileRes.fileData; docData.fileName = fileRes.fileName; docData.fileType = fileRes.fileType; }
+                var fileRes = await uploadTrainingFile(fileInput.files[0], 'content_files/' + prog + '_recurring');
+                if (fileRes.fileUrl) { fileData.fileUrl = fileRes.fileUrl; fileData.fileName = fileRes.fileName; }
+                else if (fileRes.fileData) { fileData.fileData = fileRes.fileData; fileData.fileName = fileRes.fileName; fileData.fileType = fileRes.fileType; }
             } catch(ue) {
                 console.error('Upload failed:', ue);
                 showToast('שגיאה בהעלאת קובץ: ' + ue.message);
                 return;
             }
         }
-        await db.collection('training_content').add(docData);
-        showToast('✅ המערך נוסף בהצלחה!');
+
+        var recurrenceGroup = isRecurring ? 'rec_' + Date.now() : null;
+        for (var i = 0; i < targetWeeks.length; i++) {
+            var docData = {
+                program: prog, week: targetWeeks[i], track,
+                category, title, instructor, hours, url,
+                createdBy: currentUser.name, createdAt: new Date(),
+                order: Date.now() + i
+            };
+            Object.assign(docData, fileData);
+            if (recurrenceGroup) docData.recurrenceGroup = recurrenceGroup;
+            await db.collection('training_content').add(docData);
+        }
+
+        var msg = isRecurring ? '✅ נוצרו ' + targetWeeks.length + ' עותקים בהצלחה!' : '✅ המערך נוסף בהצלחה!';
+        showToast(msg);
         document.getElementById('admin-lesson-title').value = '';
         document.getElementById('admin-lesson-instructor').value = '';
         document.getElementById('admin-lesson-hours').value = '';
         document.getElementById('admin-lesson-url').value = '';
         if (fileInput) fileInput.value = '';
+        document.getElementById('admin-recurring').checked = false;
+        toggleRecurrence('admin');
         loadAdminTrainingContent();
     } catch(e) { showToast('שגיאה: ' + e.message); }
 }
