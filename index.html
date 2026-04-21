@@ -47,7 +47,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v33';
+                var currentCache = 'ruach-v34';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -13076,6 +13076,8 @@ function getRecurrenceWeeks(prefix) {
 }
 
 async function cmgmtAddLesson() {
+    if (!db) { showToast('אין חיבור למסד נתונים — נסה לרענן את הדף'); return; }
+    if (!currentUser) { showToast('יש להתחבר קודם'); return; }
     const prog = document.getElementById('cmgmt-program').value;
     const track = prog === 'officer' ? document.getElementById('cmgmt-track').value : '';
     const week = parseInt(document.getElementById('cmgmt-week').value) || 1;
@@ -13230,6 +13232,8 @@ async function loadAdminTrainingContent() {
 }
 
 async function adminAddLesson() {
+    if (!db) { showToast('אין חיבור למסד נתונים — נסה לרענן את הדף'); return; }
+    if (!currentUser) { showToast('יש להתחבר קודם'); return; }
     const prog = document.getElementById('admin-train-program').value;
     const track = prog === 'officer' ? document.getElementById('admin-train-track').value : '';
     const week = parseInt(document.getElementById('admin-train-week').value) || 1;
@@ -19219,6 +19223,7 @@ function _stopLibraryListeners() {
         if (_libListeners.unsubTools) { try { _libListeners.unsubTools(); } catch(e) {} }
         _libListeners = null;
     }
+    if (window._libCacheTimeout) { clearTimeout(window._libCacheTimeout); window._libCacheTimeout = null; }
     _libInitialLoadDone = false;
 }
 
@@ -19281,11 +19286,8 @@ async function loadLibrary(filter) {
     }
 
     try {
-        // Set up real-time listeners
-        var _sakagFromServer = false;
-        var _toolsFromServer = false;
-
-        var unsubSakag = db.collection('user_sakag').onSnapshot(function(snapshot) {
+        // Set up real-time listeners with includeMetadataChanges for immediate server re-fire
+        var unsubSakag = db.collection('user_sakag').onSnapshot({ includeMetadataChanges: true }, function(snapshot) {
             var isFromCache = snapshot.metadata.fromCache;
             _sakagItems = [];
             snapshot.forEach(function(doc) {
@@ -19294,21 +19296,7 @@ async function loadLibrary(filter) {
                 _sakagItems.push({ id: doc.id, collection: 'user_sakag', type: 'sakag', icon: '📋', color: '#D97706', label: 'סק"ג', title: d.title || d.placeName || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt, lat: d.lat, lng: d.lng });
             });
             console.log('Library: user_sakag snapshot — ' + _sakagItems.length + ' active docs (fromCache=' + isFromCache + ')');
-            if (!isFromCache) _sakagFromServer = true;
             _sakagReady = true;
-            // If first snapshot is from cache with 0 items, wait for server data (up to 8s)
-            if (isFromCache && _sakagItems.length === 0 && !_sakagFromServer) {
-                console.log('Library: sakag — empty cache snapshot, waiting for server...');
-                if (!window._libCacheTimeout) {
-                    window._libCacheTimeout = setTimeout(function() {
-                        console.log('Library: cache timeout — rendering with available data');
-                        _sakagReady = true; _toolsReady = true;
-                        _mergeAndRender();
-                    }, 8000);
-                }
-                return;
-            }
-            if (window._libCacheTimeout) { clearTimeout(window._libCacheTimeout); window._libCacheTimeout = null; }
             if (_toolsReady) _mergeAndRender();
         }, function(err) {
             console.error('Library: sakag listener error', err);
@@ -19316,7 +19304,7 @@ async function loadLibrary(filter) {
             if (_toolsReady) _mergeAndRender();
         });
 
-        var unsubTools = db.collection('commander_tools').onSnapshot(function(snapshot) {
+        var unsubTools = db.collection('commander_tools').onSnapshot({ includeMetadataChanges: true }, function(snapshot) {
             var isFromCache = snapshot.metadata.fromCache;
             _toolsItems = [];
             snapshot.forEach(function(doc) {
@@ -19328,14 +19316,7 @@ async function loadLibrary(filter) {
                 _toolsItems.push({ id: doc.id, collection: 'commander_tools', type: d.type, icon: icon, color: color, label: label, title: d.title || '', subtitle: d.subtitle || '', author: d.createdByName || '', ts: d.createdAt });
             });
             console.log('Library: commander_tools snapshot — ' + _toolsItems.length + ' active docs (fromCache=' + isFromCache + ')');
-            if (!isFromCache) _toolsFromServer = true;
             _toolsReady = true;
-            // Same cache-wait logic
-            if (isFromCache && _toolsItems.length === 0 && !_toolsFromServer) {
-                console.log('Library: tools — empty cache snapshot, waiting for server...');
-                return;
-            }
-            if (window._libCacheTimeout) { clearTimeout(window._libCacheTimeout); window._libCacheTimeout = null; }
             if (_sakagReady) _mergeAndRender();
         }, function(err) {
             console.error('Library: tools listener error', err);
