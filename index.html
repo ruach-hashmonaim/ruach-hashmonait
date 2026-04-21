@@ -47,7 +47,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v34';
+                var currentCache = 'ruach-v35';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -18406,52 +18406,116 @@ async function exportSakalPDF() {
     var d = sg.data;
     var sections = d.sections || [];
 
-    showToast('מכין PDF עם מפה...');
+    showToast('מכין PDF...');
 
-    // Capture the live map as image
-    var mapDataUrl = await captureMapImage('sakal-result-map');
-    var mapImg = '';
-    if (mapDataUrl) {
-        mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + mapDataUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;"><p style="font-size:0.7rem;color:#999;">📍 ' + (sg.placeName || '') + ' (' + sg.lat.toFixed(4) + ', ' + sg.lng.toFixed(4) + ')</p></div>';
-    } else {
-        // Fallback to static map
-        var staticUrl = buildStaticMapUrl(sg.lat, sg.lng);
-        mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + staticUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;" onerror="this.style.display=\'none\'"><p style="font-size:0.7rem;color:#999;">📍 ' + (sg.placeName || '') + '</p></div>';
-    }
+    try {
+        // Load html2canvas + jsPDF if needed
+        if (typeof html2canvas === 'undefined') {
+            await new Promise(function(resolve, reject) {
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+        if (typeof jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+            await new Promise(function(resolve, reject) {
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
 
-    // POI list
-    var poiHtml = '';
-    if (sg.pois && sg.pois.length > 0) {
-        poiHtml = '<div style="margin:10px 0;padding:10px;background:#f5f5f5;border-radius:8px;"><b style="font-size:0.85rem;color:#0E7490;">נקודות עניין שנמצאו במרחב (' + sg.pois.length + '):</b><div style="font-size:0.8rem;color:#555;columns:2;margin:8px 0;">';
-        sg.pois.slice(0, 20).forEach(function(p) { poiHtml += '<div>• ' + p.name + ' (' + (p.dist||'?') + ' מ׳)</div>'; });
-        poiHtml += '</div></div>';
-    }
+        var PDF = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
+        var pdfDoc = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var pageW = 210, pageH = 297, margin = 12;
+        var contentW = pageW - 2 * margin;
+        var pageContentH = pageH - 2 * margin;
+        var curY = margin;
 
-    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}</style></head><body>';
-    html += '<h1>' + (d.title || '') + '</h1>';
-    if (d.subtitle) html += '<p class="subtitle">' + d.subtitle + '</p>';
-    html += mapImg + poiHtml;
-    sections.forEach(function(sec) {
-        html += '<h2>' + (sec.icon||'') + ' ' + sec.title + '</h2>';
-        html += '<div>' + sec.content + '</div>';
-    });
-    html += '<div class="warning">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>';
-    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — חטיבת החשמונאים</p></body></html>';
-    var win = window.open('', '_blank');
-    if (win) {
-        win.document.write(html);
-        win.document.close();
-        setTimeout(function() { try { win.print(); } catch(e) {} }, 1000);
-    } else {
-        // Fallback for popup blockers (mobile) — download as HTML file
-        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = (d.title || 'סקג').replace(/[^א-תa-zA-Z0-9 ]/g, '') + '.html';
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('הקובץ הורד — פתח אותו בדפדפן ובחר "הדפס" לשמירה כ-PDF');
+        async function addBlock(htmlContent) {
+            var el = document.createElement('div');
+            el.style.cssText = 'position:fixed;top:-9999px;left:0;width:571px;padding:0;background:#fff;direction:rtl;font-family:Arial,sans-serif;color:#222;box-sizing:border-box;';
+            el.innerHTML = htmlContent;
+            document.body.appendChild(el);
+            try {
+                var canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                var pxPerMm = canvas.width / contentW;
+                var blockHmm = canvas.height / pxPerMm;
+                if (curY + blockHmm <= pageH - margin) {
+                    pdfDoc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, curY, contentW, blockHmm);
+                    curY += blockHmm + 2;
+                } else if (blockHmm <= pageContentH) {
+                    pdfDoc.addPage(); curY = margin;
+                    pdfDoc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, curY, contentW, blockHmm);
+                    curY += blockHmm + 2;
+                } else {
+                    var sliceHpx = pageContentH * pxPerMm;
+                    var remainH = (pageH - margin - curY) * pxPerMm;
+                    var offsetPx = 0, firstSlice = true;
+                    while (offsetPx < canvas.height) {
+                        var availPx = firstSlice ? remainH : sliceHpx;
+                        if (!firstSlice) { pdfDoc.addPage(); curY = margin; }
+                        var thisSlice = Math.min(availPx, canvas.height - offsetPx);
+                        var sliceCanvas = document.createElement('canvas');
+                        sliceCanvas.width = canvas.width; sliceCanvas.height = thisSlice;
+                        var ctx = sliceCanvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                        ctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSlice, 0, 0, canvas.width, thisSlice);
+                        var sliceHmm = thisSlice / pxPerMm;
+                        pdfDoc.addImage(sliceCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, curY, contentW, sliceHmm);
+                        curY += sliceHmm + 2; offsetPx += thisSlice; firstSlice = false;
+                    }
+                }
+            } finally { document.body.removeChild(el); }
+        }
+
+        // Header
+        await addBlock(
+            '<div style="text-align:center;padding:10px 20px;">' +
+                '<div style="font-size:20px;font-weight:700;color:#0C4A6E;">' + (d.title || '') + '</div>' +
+                (d.subtitle ? '<div style="font-size:12px;color:#666;margin-top:4px;">' + d.subtitle + '</div>' : '') +
+                '<hr style="border:none;border-top:2px solid #0E7490;margin:10px 0 6px;">' +
+                '<div style="font-size:9px;color:#999;">נוצר באמצעות סוכן AI — המצפן — חטיבת החשמונאים</div>' +
+                '<div style="font-size:8px;color:#c62828;margin-top:4px;">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות</div>' +
+            '</div>'
+        );
+
+        // Map image block
+        var mapDataUrl = await captureMapImage('sakal-result-map');
+        if (mapDataUrl) {
+            await addBlock('<div style="text-align:center;padding:6px 20px;"><img src="' + mapDataUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;"><p style="font-size:9px;color:#999;">📍 ' + (sg.placeName || '') + ' (' + sg.lat.toFixed(4) + ', ' + sg.lng.toFixed(4) + ')</p></div>');
+        }
+
+        // POI block
+        if (sg.pois && sg.pois.length > 0) {
+            var poiHtml = '<div style="padding:6px 20px;"><div style="padding:10px;background:#f5f5f5;border-radius:8px;"><b style="font-size:12px;color:#0E7490;">נקודות עניין שנמצאו במרחב (' + sg.pois.length + '):</b><div style="font-size:11px;color:#555;columns:2;margin:8px 0;">';
+            sg.pois.slice(0, 20).forEach(function(p) { poiHtml += '<div>• ' + p.name + ' (' + (p.dist||'?') + ' מ׳)</div>'; });
+            poiHtml += '</div></div></div>';
+            await addBlock(poiHtml);
+        }
+
+        // Sections
+        for (var i = 0; i < sections.length; i++) {
+            var sec = sections[i];
+            await addBlock(
+                '<div style="padding:6px 20px 10px;">' +
+                    '<div style="font-weight:700;color:#0E7490;font-size:14px;margin-bottom:4px;">' + (sec.icon||'📌') + ' ' + sec.title + '</div>' +
+                    '<div style="background:#f5f5f5;border-radius:8px;padding:10px;font-size:11px;line-height:1.8;">' + sec.content + '</div>' +
+                '</div>'
+            );
+        }
+
+        // Footer
+        await addBlock('<div style="text-align:center;padding:8px 20px;font-size:8px;color:#aaa;border-top:1px solid #ddd;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</div>');
+
+        var filename = (d.title || 'סקג').replace(/[^א-תa-zA-Z0-9 ]/g, '') + '.pdf';
+        pdfDoc.save(filename);
+        showToast('✅ PDF נוצר בהצלחה');
+    } catch(e) {
+        console.error('Export PDF error:', e);
+        showToast('שגיאה ביצירת PDF: ' + e.message);
     }
 }
 
@@ -19424,57 +19488,123 @@ async function viewGeneratedContent(docId, collection) {
 
 // Export content as PDF (using browser print)
 async function exportContentPDF(docId, collection) {
-    var doc = await db.collection(collection).doc(docId).get();
-    if (!doc.exists) return;
-    var d = doc.data();
+    var docSnap = await db.collection(collection).doc(docId).get();
+    if (!docSnap.exists) return;
+    var d = docSnap.data();
     var sections = d.sections || [];
 
     showToast('מכין PDF...');
 
-    // Capture map if visible
-    var mapImg = '';
-    if (d.lat && d.lng) {
-        var mapDataUrl = await captureMapImage('view-content-map');
-        if (mapDataUrl) {
-            mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + mapDataUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;"><p style="font-size:0.7rem;color:#999;">📍 ' + (d.placeName||'') + '</p></div>';
-        } else {
-            var staticUrl = buildStaticMapUrl(d.lat, d.lng);
-            mapImg = '<div style="text-align:center;margin:16px 0;"><img src="' + staticUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;" onerror="this.style.display=\'none\'"><p style="font-size:0.7rem;color:#999;">📍 ' + (d.placeName||'') + '</p></div>';
+    try {
+        // Load html2canvas + jsPDF if needed
+        if (typeof html2canvas === 'undefined') {
+            await new Promise(function(resolve, reject) {
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
         }
-    }
+        if (typeof jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+            await new Promise(function(resolve, reject) {
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
 
-    var poiHtml = '';
-    if (d.pois && d.pois.length > 0) {
-        poiHtml = '<div style="margin:10px 0;padding:10px;background:#f5f5f5;border-radius:8px;"><b style="font-size:0.85rem;color:#0E7490;">נקודות עניין (' + d.pois.length + '):</b><div style="font-size:0.8rem;columns:2;margin:8px 0;">';
-        d.pois.slice(0, 20).forEach(function(p) { poiHtml += '<div>• ' + p.name + ' (' + (p.dist||'?') + ' מ׳)</div>'; });
-        poiHtml += '</div></div>';
-    }
+        var PDF = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
+        var pdfDoc = new PDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var pageW = 210, pageH = 297, margin = 12;
+        var contentW = pageW - 2 * margin;
+        var pageContentH = pageH - 2 * margin;
+        var curY = margin;
 
-    var html = '<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;line-height:1.8;}h1{color:#0C4A6E;font-size:1.4rem;text-align:center;}h2{color:#0E7490;font-size:1rem;margin-top:20px;border-bottom:2px solid #0E7490;padding-bottom:4px;}.subtitle{text-align:center;color:#666;font-size:0.9rem;}.warning{background:#FFF3CD;border:1px solid #FFC107;padding:8px;border-radius:6px;font-size:0.8rem;color:#856404;text-align:center;margin-top:20px;}</style></head><body>';
-    html += '<h1>' + (d.title || '') + '</h1>';
-    if (d.subtitle) html += '<p class="subtitle">' + d.subtitle + '</p>';
-    html += mapImg + poiHtml;
-    sections.forEach(function(sec) {
-        html += '<h2>' + (sec.icon||'') + ' ' + sec.title + '</h2>';
-        html += '<div>' + sec.content + '</div>';
-    });
-    html += '<div class="warning">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות.</div>';
-    html += '<p style="text-align:center;font-size:0.7rem;color:#999;margin-top:20px;">המצפן — חטיבת החשמונאים</p></body></html>';
-    var win = window.open('', '_blank');
-    if (win) {
-        win.document.write(html);
-        win.document.close();
-        setTimeout(function() { try { win.print(); } catch(e) {} }, 1000);
-    } else {
-        // Fallback for popup blockers (mobile) — download as HTML file
-        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = (d.title || 'content').replace(/[^א-תa-zA-Z0-9 ]/g, '') + '.html';
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('הקובץ הורד — פתח אותו בדפדפן ובחר "הדפס" לשמירה כ-PDF');
+        async function addBlock(htmlContent) {
+            var el = document.createElement('div');
+            el.style.cssText = 'position:fixed;top:-9999px;left:0;width:571px;padding:0;background:#fff;direction:rtl;font-family:Arial,sans-serif;color:#222;box-sizing:border-box;';
+            el.innerHTML = htmlContent;
+            document.body.appendChild(el);
+            try {
+                var canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                var pxPerMm = canvas.width / contentW;
+                var blockHmm = canvas.height / pxPerMm;
+                if (curY + blockHmm <= pageH - margin) {
+                    pdfDoc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, curY, contentW, blockHmm);
+                    curY += blockHmm + 2;
+                } else if (blockHmm <= pageContentH) {
+                    pdfDoc.addPage(); curY = margin;
+                    pdfDoc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, curY, contentW, blockHmm);
+                    curY += blockHmm + 2;
+                } else {
+                    var sliceHpx = pageContentH * pxPerMm;
+                    var remainH = (pageH - margin - curY) * pxPerMm;
+                    var offsetPx = 0, firstSlice = true;
+                    while (offsetPx < canvas.height) {
+                        var availPx = firstSlice ? remainH : sliceHpx;
+                        if (!firstSlice) { pdfDoc.addPage(); curY = margin; }
+                        var thisSlice = Math.min(availPx, canvas.height - offsetPx);
+                        var sliceCanvas = document.createElement('canvas');
+                        sliceCanvas.width = canvas.width; sliceCanvas.height = thisSlice;
+                        var ctx = sliceCanvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                        ctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSlice, 0, 0, canvas.width, thisSlice);
+                        var sliceHmm = thisSlice / pxPerMm;
+                        pdfDoc.addImage(sliceCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, curY, contentW, sliceHmm);
+                        curY += sliceHmm + 2; offsetPx += thisSlice; firstSlice = false;
+                    }
+                }
+            } finally { document.body.removeChild(el); }
+        }
+
+        // Header
+        await addBlock(
+            '<div style="text-align:center;padding:10px 20px;">' +
+                '<div style="font-size:20px;font-weight:700;color:#0C4A6E;">' + (d.title || '') + '</div>' +
+                (d.subtitle ? '<div style="font-size:12px;color:#666;margin-top:4px;">' + d.subtitle + '</div>' : '') +
+                '<hr style="border:none;border-top:2px solid #0E7490;margin:10px 0 6px;">' +
+                '<div style="font-size:9px;color:#999;">המצפן — חטיבת החשמונאים</div>' +
+                '<div style="font-size:8px;color:#c62828;margin-top:4px;">⚠️ תוכן זה הוכן באמצעות AI — יש לוודא נכונות</div>' +
+            '</div>'
+        );
+
+        // Map image block
+        if (d.lat && d.lng) {
+            var mapDataUrl = await captureMapImage('view-content-map');
+            if (mapDataUrl) {
+                await addBlock('<div style="text-align:center;padding:6px 20px;"><img src="' + mapDataUrl + '" style="max-width:100%;border-radius:8px;border:1px solid #ccc;"><p style="font-size:9px;color:#999;">📍 ' + (d.placeName||'') + '</p></div>');
+            }
+        }
+
+        // POI block
+        if (d.pois && d.pois.length > 0) {
+            var poiHtml = '<div style="padding:6px 20px;"><div style="padding:10px;background:#f5f5f5;border-radius:8px;"><b style="font-size:12px;color:#0E7490;">נקודות עניין (' + d.pois.length + '):</b><div style="font-size:11px;columns:2;margin:8px 0;">';
+            d.pois.slice(0, 20).forEach(function(p) { poiHtml += '<div>• ' + p.name + ' (' + (p.dist||'?') + ' מ׳)</div>'; });
+            poiHtml += '</div></div></div>';
+            await addBlock(poiHtml);
+        }
+
+        // Sections
+        for (var i = 0; i < sections.length; i++) {
+            var sec = sections[i];
+            await addBlock(
+                '<div style="padding:6px 20px 10px;">' +
+                    '<div style="font-weight:700;color:#0E7490;font-size:14px;margin-bottom:4px;">' + (sec.icon||'📌') + ' ' + sec.title + '</div>' +
+                    '<div style="background:#f5f5f5;border-radius:8px;padding:10px;font-size:11px;line-height:1.8;">' + sec.content + '</div>' +
+                '</div>'
+            );
+        }
+
+        // Footer
+        await addBlock('<div style="text-align:center;padding:8px 20px;font-size:8px;color:#aaa;border-top:1px solid #ddd;">המצפן — רוח · חוסן · חינוך — חטיבת החשמונאים</div>');
+
+        var filename = (d.title || 'content').replace(/[^א-תa-zA-Z0-9 ]/g, '') + '.pdf';
+        pdfDoc.save(filename);
+        showToast('✅ PDF נוצר בהצלחה');
+    } catch(e) {
+        console.error('Export PDF error:', e);
+        showToast('שגיאה ביצירת PDF: ' + e.message);
     }
 }
 
