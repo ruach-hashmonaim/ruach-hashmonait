@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ruach-v35';
+const CACHE_NAME = 'ruach-v36';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -57,6 +57,8 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('openstreetmap') ||
       url.hostname.includes('unpkg.com') ||
       url.hostname.includes('cdnjs.cloudflare.com') ||
+      url.hostname.includes('amudanan') ||
+      url.hostname.includes('overpass-api') ||
       url.protocol === 'chrome-extension:') {
     return; // Let browser handle natively — no SW interference
   }

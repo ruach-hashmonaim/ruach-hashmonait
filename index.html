@@ -47,7 +47,7 @@
         // Nuke old caches that don't match current version
         if ('caches' in window) {
             caches.keys().then(function(keys) {
-                var currentCache = 'ruach-v35';
+                var currentCache = 'ruach-v36';
                 keys.forEach(function(k) {
                     if (k.startsWith('ruach-') && k !== currentCache) {
                         caches.delete(k);
@@ -13076,8 +13076,13 @@ function getRecurrenceWeeks(prefix) {
 }
 
 async function cmgmtAddLesson() {
+    if (!db) { try { db = firebase.firestore(); } catch(e) {} }
     if (!db) { showToast('אין חיבור למסד נתונים — נסה לרענן את הדף'); return; }
     if (!currentUser) { showToast('יש להתחבר קודם'); return; }
+    // Ensure anonymous auth for Firestore writes
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+    }
     const prog = document.getElementById('cmgmt-program').value;
     const track = prog === 'officer' ? document.getElementById('cmgmt-track').value : '';
     const week = parseInt(document.getElementById('cmgmt-week').value) || 1;
@@ -13232,8 +13237,13 @@ async function loadAdminTrainingContent() {
 }
 
 async function adminAddLesson() {
+    if (!db) { try { db = firebase.firestore(); } catch(e) {} }
     if (!db) { showToast('אין חיבור למסד נתונים — נסה לרענן את הדף'); return; }
     if (!currentUser) { showToast('יש להתחבר קודם'); return; }
+    // Ensure anonymous auth for Firestore writes
+    if (firebase.auth && !firebase.auth().currentUser) {
+        try { await firebase.auth().signInAnonymously(); } catch(ae) {}
+    }
     const prog = document.getElementById('admin-train-program').value;
     const track = prog === 'officer' ? document.getElementById('admin-train-track').value : '';
     const week = parseInt(document.getElementById('admin-train-week').value) || 1;
@@ -17725,7 +17735,6 @@ async function modalSakagSaveAndPDF() {
     try {
         // Generate PDF regardless of save status
         await generateSakagPDF(d.data, d.placeName);
-        if (saved) _libCache = null; // invalidate library cache
         showToast(saved ? '✅ הסק"ג נשמר והורד כ-PDF!' : '✅ ה-PDF הורד (השמירה נכשלה)');
 
         // Close modal after short delay
@@ -17949,10 +17958,97 @@ function formatPOIsForPrompt(pois) {
     return pois.map(function(p, i) {
         var line = (i+1) + '. **' + p.name + '** (' + p.dist + ' מ׳)';
         if (p.type) line += ' [' + p.type + ']';
+        if (p.source === 'amudanan') line += ' [מקור: עמוד ענן]';
         if (p.desc) line += ' — ' + p.desc.substring(0, 120);
         line += ' (' + p.lat.toFixed(5) + ', ' + p.lng.toFixed(5) + ')';
         return line;
     }).join('\n');
+}
+
+// Amud Anan Integration — fetch POIs from amudanan.co.il
+async function fetchAmudAnanPOIs(lat, lng, placeName) {
+    var results = [];
+    try {
+        // Search by place name
+        var searchResp = await fetch('https://amudanan.co.il/services/findLocation.php?q=' + encodeURIComponent(placeName));
+        if (!searchResp.ok) return [];
+        var locations = await searchResp.json();
+        if (!locations || !locations.length) return [];
+
+        // Convert ITM results to WGS84 and filter by distance
+        for (var i = 0; i < Math.min(locations.length, 8); i++) {
+            var loc = locations[i];
+            if (loc.name) {
+                var wgsCoords = itmToWgs84(loc.x, loc.y);
+                var dist = Math.round(haversine(lat, lng, wgsCoords.lat, wgsCoords.lng));
+                if (dist <= 5000) {
+                    results.push({
+                        name: loc.name, lat: wgsCoords.lat, lng: wgsCoords.lng,
+                        dist: dist, type: 'amudanan', desc: 'נקודת עניין מעמוד ענן', source: 'amudanan'
+                    });
+                }
+            }
+        }
+
+        // Also search heritage-specific terms around the location
+        var heritageTerms = [placeName + ' חורבה', placeName + ' מעין', placeName + ' תל', placeName + ' מצודה'];
+        for (var t = 0; t < heritageTerms.length; t++) {
+            try {
+                var hResp = await fetch('https://amudanan.co.il/services/findLocation.php?q=' + encodeURIComponent(heritageTerms[t]));
+                if (hResp.ok) {
+                    var hLocs = await hResp.json();
+                    for (var j = 0; j < Math.min((hLocs || []).length, 3); j++) {
+                        var hl = hLocs[j];
+                        if (hl.name && !results.find(function(r) { return r.name === hl.name; })) {
+                            var hCoords = itmToWgs84(hl.x, hl.y);
+                            var hDist = Math.round(haversine(lat, lng, hCoords.lat, hCoords.lng));
+                            if (hDist <= 5000) {
+                                results.push({
+                                    name: hl.name, lat: hCoords.lat, lng: hCoords.lng,
+                                    dist: hDist, type: 'amudanan-heritage', desc: 'אתר מורשת מעמוד ענן', source: 'amudanan'
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch(he) { /* ignore individual search failures */ }
+        }
+
+        results.sort(function(a,b){ return a.dist - b.dist; });
+        return results;
+    } catch(e) {
+        console.warn('Amud Anan fetch error:', e);
+        return [];
+    }
+}
+
+// Fetch elevation from Amud Anan elevation API
+async function fetchAmudAnanElevation(lat, lng) {
+    try {
+        var resp = await fetch('https://elev1.amudanan.co.il/api/v1/lookup?locations=' + lat + ',' + lng);
+        if (!resp.ok) return null;
+        var data = await resp.json();
+        if (data.results && data.results.length > 0) return Math.round(data.results[0].elevation);
+        return null;
+    } catch(e) { return null; }
+}
+
+// ITM (Israeli Transverse Mercator) to WGS84 — approximate conversion for Israel
+function itmToWgs84(x, y) {
+    var e2 = 0.00669437999014;
+    var a = 6378137.0;
+    var lat0 = 31.7343936111;
+    var lon0 = 35.2045169444;
+    var k0 = 1.0000067;
+    var x0 = 219529.584;
+    var y0 = 2885516.9488;
+    var dx = x - x0;
+    var dy = y - y0;
+    var latRad = lat0 * Math.PI / 180;
+    var N = a / Math.sqrt(1 - e2 * Math.sin(latRad) * Math.sin(latRad));
+    var latDeg = lat0 + (dy / (N * k0)) * (180 / Math.PI);
+    var lonDeg = lon0 + (dx / (N * k0 * Math.cos(latRad))) * (180 / Math.PI);
+    return { lat: latDeg, lng: lonDeg };
 }
 
 // ============================================================
@@ -18094,7 +18190,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
     templateEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
         '<div style="font-size:2rem;margin-bottom:10px;" class="spin-icon">🤖</div>' +
         '<p id="sakal-ai-step-label" style="font-weight:700;color:var(--primary);font-size:1rem;">שלב 1/3 — הצפה גיאוגרפית סביב '+placeName+'...</p>' +
-        '<p id="sakal-ai-step-desc" style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">שולף נקודות עניין מ-OpenStreetMap</p>' +
+        '<p id="sakal-ai-step-desc" style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">שולף נקודות עניין מ-OpenStreetMap ומעמוד ענן</p>' +
         '<div id="sakal-poi-count" style="font-size:0.82rem;color:var(--primary);margin-top:8px;font-weight:600;"></div>' +
         '<div style="margin-top:14px;width:200px;height:4px;background:#e0e0e0;border-radius:4px;margin:14px auto;overflow:hidden;">' +
             '<div id="sakal-progress-bar" style="width:5%;height:100%;background:var(--primary);border-radius:4px;transition:width 0.5s;"></div>' +
@@ -18106,11 +18202,31 @@ async function sakalGenerateAI(lat, lng, placeName) {
         // STEP 1: Geographic Flood — Fetch REAL POIs from Overpass API
         // ============================================================
         var radiusMeters = areaMode === 'point' ? 1000 : 3000;
-        var pois = await fetchOverpassPOIs(lat, lng, radiusMeters, sakalWizardData.routePoints, sakalWizardData.polygonPoints, areaMode);
+
+        // Fetch POIs from both Overpass (OpenStreetMap) and Amud Anan in parallel
+        var [overpassPois, amudAnanPois, elevation] = await Promise.all([
+            fetchOverpassPOIs(lat, lng, radiusMeters, sakalWizardData.routePoints, sakalWizardData.polygonPoints, areaMode),
+            fetchAmudAnanPOIs(lat, lng, placeName),
+            fetchAmudAnanElevation(lat, lng)
+        ]);
+
+        // Merge POIs — avoid duplicates by name
+        var seenNames = new Set(overpassPois.map(function(p) { return p.name; }));
+        var mergedPois = overpassPois.slice();
+        amudAnanPois.forEach(function(ap) {
+            if (!seenNames.has(ap.name)) {
+                seenNames.add(ap.name);
+                mergedPois.push(ap);
+            }
+        });
+        mergedPois.sort(function(a,b){ return a.dist - b.dist; });
+
+        var pois = mergedPois;
         window._lastSakalPois = pois; // Store for save
         var poiText = formatPOIsForPrompt(pois);
         var poiCountEl = document.getElementById('sakal-poi-count');
-        if (poiCountEl) poiCountEl.textContent = '📍 נמצאו ' + pois.length + ' נקודות עניין';
+        var amudCount = amudAnanPois.filter(function(ap) { return !overpassPois.find(function(op) { return op.name === ap.name; }); }).length;
+        if (poiCountEl) poiCountEl.textContent = '📍 נמצאו ' + pois.length + ' נקודות עניין' + (amudCount > 0 ? ' (כולל ' + amudCount + ' מעמוד ענן)' : '') + (elevation ? ' | גובה: ' + elevation + ' מ׳' : '');
 
         var configDoc = await db.collection('config').doc('ai').get();
         var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
@@ -18119,6 +18235,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
 
         // Build area context
         var areaContext = '=== מרחב חקירה ===\n' + areaDesc;
+        if (elevation) areaContext += '\nגובה המיקום: ' + elevation + ' מטר מעל פני הים.';
         if (areaMode === 'point') areaContext += '\nדגש: התחל מהנקודה הספציפית ' + placeName + ' עצמה.';
         else if (areaMode === 'route') areaContext += '\nדגש: עבור לאורך ציר התנועה מהתחלה לסוף.';
         else if (areaMode === 'polygon') areaContext += '\nדגש: רק אתרים בתוך האזור המוגדר.';
@@ -18129,7 +18246,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
         var stepLabel = document.getElementById('sakal-ai-step-label');
         var stepDesc = document.getElementById('sakal-ai-step-desc');
         if (stepLabel) stepLabel.textContent = 'שלב 2/3 — חוקר היסטוריה ומקורות...';
-        if (stepDesc) stepDesc.textContent = 'מזהה אתרים בעלי משמעות היסטורית ויהודית מתוך ' + pois.length + ' נקודות';
+        if (stepDesc) stepDesc.textContent = 'מזהה אתרים בעלי משמעות היסטורית ויהודית מתוך ' + pois.length + ' נקודות (OSM + עמוד ענן)';
         var progressBar = document.getElementById('sakal-progress-bar');
         if (progressBar) progressBar.style.width = '35%';
 
@@ -18562,7 +18679,6 @@ async function sakalSaveGenerated() {
             status: 'active'
         });
 
-        _libCache = null; // invalidate library cache
         showToast('✅ הסק"ג נשמר בהצלחה!');
 
         // Auto-mark training completion if applicable
@@ -18919,7 +19035,6 @@ async function morakSave() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
-        _libCache = null; // invalidate library cache
         showToast('✅ המור"ק נשמר בהצלחה!');
         var templateEl = document.getElementById('morak-create-template');
         templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">המור"ק נשמר!</p>' +
@@ -19167,7 +19282,6 @@ async function lessonSave() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
-        _libCache = null; // invalidate library cache
         showToast('✅ מערך השיעור נשמר!');
         var templateEl = document.getElementById('lesson-create-template');
         templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">מערך השיעור נשמר!</p>' +
@@ -19303,6 +19417,11 @@ async function loadLibrary(filter) {
     if (_libListeners && _libCache) {
         _renderLibrary(filter);
         return;
+    }
+
+    // Safety: stop any existing listeners before creating new ones to prevent duplicates
+    if (_libListeners) {
+        _stopLibraryListeners();
     }
 
     // Ensure anonymous auth for Firestore access
@@ -20027,7 +20146,6 @@ async function triviaSaveAIQuiz() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
-        _libCache = null; // invalidate library cache
         showToast('✅ הטריוויה נשמרה בספרייה!');
     } catch(e) { showToast('שגיאה בשמירה: ' + e.message); }
 }
@@ -23966,7 +24084,7 @@ function isAIGenerating() { return _aiGenerating; }
 function aiFloatShow(taskId, title, estimatedSecs) {
     _aiGenerating = true;
     var el = document.getElementById('ai-progress-float');
-    if (!el) { console.error('AI Float: element #ai-progress-float not found!'); return; }
+    if (!el) { console.error('AI Float: element #ai-progress-float not found!'); _aiGenerating = false; return; }
     el.style.display = 'block';
     el.dataset.taskId = taskId;
     el.querySelector('.ai-float-title').textContent = title;
