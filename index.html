@@ -13142,15 +13142,20 @@ async function saveEditLesson(docId, source) {
 
         // === Upload new files (if any) ===
         var newFiles = [];
+        var attemptedUploadCount = 0;
         if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            attemptedUploadCount = fileInput.files.length;
             try {
-                showToast('מעלה ' + fileInput.files.length + ' קבצים...');
+                showToast('מעלה ' + attemptedUploadCount + ' קבצים...');
                 newFiles = await uploadTrainingFiles(fileInput.files, 'content_files/edit_' + docId);
-                console.log('[saveEditLesson] uploaded', newFiles.length, 'new files');
+                console.log('[saveEditLesson] uploaded', newFiles.length, 'of', attemptedUploadCount, 'files');
             } catch(uploadErr) {
                 console.error('[saveEditLesson] file upload error:', uploadErr);
-                showToast('שגיאה בהעלאת קובץ: ' + uploadErr.message);
-                // Continue saving without files (or stop? — continuing per legacy behavior)
+                // Total failure — abort the save so the user is not misled by a "success" popup
+                throw new Error('העלאת הקבצים נכשלה: ' + (uploadErr.message || ''));
+            }
+            if (newFiles.length === 0) {
+                throw new Error('הקובץ לא הועלה — נסה שוב או בדוק הרשאות Storage');
             }
         }
 
@@ -13200,15 +13205,32 @@ async function saveEditLesson(docId, source) {
         var modal = document.getElementById('edit-lesson-modal');
         if (modal) modal.remove();
 
-        var subtext = '';
-        if (allFiles.length === 1) subtext = '📄 ' + _htmlEsc(allFiles[0].fileName);
-        else if (allFiles.length > 1) subtext = '📄 ' + allFiles.length + ' קבצים מצורפים';
-        showSuccessPopup('התוכן הועלה בהצלחה!', 'השיעור נשמר' + (subtext ? ' · ' + subtext : ''));
+        // Build subtext describing what was actually saved
+        var popupTitle = 'השיעור נשמר בהצלחה!';
+        var subtext;
+        if (allFiles.length === 0) {
+            subtext = 'לא צורפו קבצים';
+        } else if (allFiles.length === 1) {
+            subtext = '📄 ' + _htmlEsc(allFiles[0].fileName);
+        } else {
+            subtext = '📄 ' + allFiles.length + ' קבצים מצורפים';
+        }
+        showSuccessPopup(popupTitle, subtext);
 
         // Cleanup transient state
         window._editLessonFiles = null;
+        // Refresh whichever list view the user came from + the live training page if open
         if (source === 'admin') loadAdminTrainingContent();
         else loadCmgmtContent();
+        // Also refresh the public training view if it's currently displayed
+        try {
+            var hash = (location.hash || '').replace(/^#/, '');
+            if (hash === 'training' || hash.indexOf('training') === 0) {
+                if (typeof loadTrainingPage === 'function' && typeof currentTrainingProgram !== 'undefined') {
+                    loadTrainingPage(currentTrainingProgram);
+                }
+            }
+        } catch(e) { console.warn('[saveEditLesson] training refresh skipped:', e); }
     } catch(e) {
         console.error('[saveEditLesson] error:', e);
         showToast('שגיאה בשמירה: ' + (e.code || e.message || ''));
