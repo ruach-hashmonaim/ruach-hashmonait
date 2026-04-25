@@ -392,21 +392,38 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .geo-menu-tile::after, .soldier-menu-tile::after { content:''; position:absolute; bottom:0; left:10%; right:10%; height:3px; background:var(--brigade-gold); border-radius:3px 3px 0 0; opacity:0; transition:opacity 0.3s; }
 .geo-menu-tile:hover::after, .soldier-menu-tile:hover::after { opacity:1; }
 
-/* Floating AI Progress Widget */
-#ai-progress-float { position:fixed; bottom:20px; left:20px; z-index:9999; display:none; min-width:280px; max-width:340px; background:var(--card); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.18); border:2px solid var(--brigade-gold); overflow:hidden; direction:rtl; font-family:'Heebo',sans-serif; animation:floatSlideUp 0.4s ease-out; }
-#ai-progress-float .ai-float-header { background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
-#ai-progress-float .ai-float-header .ai-float-title { font-size:0.85rem; font-weight:700; }
-#ai-progress-float .ai-float-body { padding:12px 14px; }
-#ai-progress-float .ai-float-status { font-size:0.82rem; color:var(--text-secondary); margin-bottom:8px; }
-#ai-progress-float .ai-float-bar { height:6px; background:var(--sand); border-radius:3px; overflow:hidden; margin-bottom:8px; }
-#ai-progress-float .ai-float-bar-fill { height:100%; background:linear-gradient(90deg,var(--primary),var(--primary-lighter)); border-radius:3px; transition:width 0.5s ease; }
-#ai-progress-float .ai-float-timer { font-size:0.78rem; color:var(--text-secondary); text-align:center; }
-#ai-progress-float .ai-float-done { display:none; text-align:center; padding:8px 0; }
-#ai-progress-float .ai-float-done .btn-sm { font-size:0.82rem; padding:6px 16px; }
-#ai-progress-float .ai-float-close { background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer; font-size:1rem; padding:2px 4px; }
-#ai-progress-float .ai-float-close:hover { color:#fff; }
+/* Floating AI Progress Widget — Multi-task Stack */
+#ai-progress-float { position:fixed; bottom:20px; left:20px; z-index:100000; display:none; flex-direction:column; width:320px; max-width:calc(100vw - 40px); max-height:calc(100vh - 40px); direction:rtl; font-family:'Heebo',sans-serif; animation:floatSlideUp 0.4s ease-out; }
+#ai-progress-float.ai-float-visible { display:flex; }
+#ai-progress-float.ai-float-collapsed .ai-float-stack-body { display:none; }
+.ai-float-stack-header { background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.18); border:2px solid var(--brigade-gold); user-select:none; }
+.ai-float-stack-header:hover { filter:brightness(1.06); }
+.ai-float-stack-header .ai-float-stack-title { font-size:0.86rem; font-weight:700; display:flex; align-items:center; gap:6px; }
+.ai-float-stack-header .badge-count { background:var(--brigade-gold); color:var(--primary); font-size:0.72rem; border-radius:10px; padding:1px 7px; font-weight:800; min-width:20px; text-align:center; line-height:1.4; }
+.ai-float-stack-header .ai-float-stack-toggle { background:none; border:none; color:#fff; cursor:pointer; font-size:0.95rem; padding:2px 6px; }
+.ai-float-stack-body { margin-top:8px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:60vh; padding:2px; }
+.ai-float-task { background:var(--card); border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,0.14); border:2px solid var(--brigade-gold); overflow:hidden; animation:floatSlideUp 0.3s ease-out; }
+.ai-float-task.completed { border-color:var(--success); }
+.ai-float-task.errored { border-color:var(--danger); }
+.ai-float-task .ai-float-header { background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.ai-float-task.completed .ai-float-header { background:linear-gradient(135deg,#0D9488,#14B8A6); }
+.ai-float-task.errored .ai-float-header { background:linear-gradient(135deg,#B91C1C,#DC2626); }
+.ai-float-task .ai-float-title { font-size:0.82rem; font-weight:700; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ai-float-task .ai-float-body { padding:10px 12px; }
+.ai-float-task .ai-float-status { font-size:0.78rem; color:var(--text-secondary); margin-bottom:6px; }
+.ai-float-task .ai-float-bar { height:6px; background:var(--sand); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+.ai-float-task .ai-float-bar-fill { height:100%; background:linear-gradient(90deg,var(--primary),var(--primary-lighter)); border-radius:3px; transition:width 0.5s ease; }
+.ai-float-task .ai-float-timer { font-size:0.74rem; color:var(--text-secondary); text-align:center; }
+.ai-float-task .ai-float-done { display:none; text-align:center; padding:4px 0; }
+.ai-float-task .ai-float-done .btn-sm { font-size:0.78rem; padding:5px 12px; margin:0 3px; }
+.ai-float-task .ai-float-close { background:none; border:none; color:rgba(255,255,255,0.85); cursor:pointer; font-size:0.95rem; padding:2px 4px; }
+.ai-float-task .ai-float-close:hover { color:#fff; }
 @keyframes floatSlideUp { from { transform:translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 @keyframes floatPulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+@keyframes aiTaskComplete { 0% { transform:scale(1); } 30% { transform:scale(1.03); } 100% { transform:scale(1); } }
+.ai-float-task.completed { animation:aiTaskComplete 0.5s ease-out; }
+@keyframes cwSuccessPop { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+@keyframes cwSuccessFade { from { opacity:0; } to { opacity:1; } }
 
 /* LEARNING */
 .program-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
@@ -2160,7 +2177,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
                 <label style="font-size:0.85rem;font-weight:600;">📎 קובץ:</label>
-                <input type="file" id="cmgmt-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+                <input type="file" id="cmgmt-file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+                <span style="font-size:0.72rem;color:var(--text-secondary);">(ניתן לבחור כמה קבצים)</span>
             </div>
             <div style="margin-top:10px;border:1px dashed var(--border);border-radius:8px;padding:10px;">
                 <label style="cursor:pointer;font-size:0.88rem;font-weight:600;display:flex;align-items:center;gap:6px;">
@@ -2396,7 +2414,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
                     <label style="font-size:0.85rem;font-weight:600;">📎 קובץ:</label>
-                    <input type="file" id="admin-lesson-file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+                    <input type="file" id="admin-lesson-file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="font-size:0.82rem;flex:1;">
+                    <span style="font-size:0.72rem;color:var(--text-secondary);">(ניתן לבחור כמה קבצים)</span>
                 </div>
                 <div style="margin-top:10px;border:1px dashed var(--border);border-radius:8px;padding:10px;">
                     <label style="cursor:pointer;font-size:0.88rem;font-weight:600;display:flex;align-items:center;gap:6px;">
@@ -4432,9 +4451,22 @@ async function loadTrainingPage(program) {
                         </div>
                     </div>
                     ${(() => {
-                        if (lesson.fileUrl) return `<button onclick="previewFile('${lesson.fileUrl}','${(lesson.fileName||'קובץ').replace(/'/g,"\\'")}')" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">📄 ${lesson.fileName || 'קובץ מצורף'}</button>`;
-                        if (lesson.fileData) { var k='_fd_'+Math.random().toString(36).substr(2,8); window[k]=lesson.fileData; return `<button onclick="previewFile('','${(lesson.fileName||'קובץ').replace(/'/g,"\\'")}',window['${k}'])" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">📄 ${lesson.fileName || 'קובץ מצורף'}</button>`; }
-                        return '';
+                        var lessonFiles = normalizeDocFiles(lesson);
+                        if (!lessonFiles.length) return '';
+                        return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">' +
+                            lessonFiles.map(function(f) {
+                                var dispName = _htmlEsc(f.fileName || 'קובץ מצורף');
+                                var safeName = _attrEsc(f.fileName || 'קובץ מצורף');
+                                if (f.fileUrl) {
+                                    return '<button onclick="previewFile(\'' + _attrEsc(f.fileUrl) + '\',\'' + safeName + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">📄 ' + dispName + '</button>';
+                                } else if (f.fileData) {
+                                    var k='_fd_'+Math.random().toString(36).substr(2,8);
+                                    window[k]=f.fileData;
+                                    return '<button onclick="previewFile(\'\',\'' + safeName + '\',window[\'' + k + '\'])" style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--primary-lighter);background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">📄 ' + dispName + '</button>';
+                                }
+                                return '';
+                            }).filter(Boolean).join('') +
+                            '</div>';
                     })()}
                     ${lesson.url ? renderContentLink(lesson.url) : ''}
                 </div>`;
@@ -12539,14 +12571,11 @@ async function loadCmgmtContent() {
                 const d = doc.data();
                 const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
                 const color = catColors[d.category] || '#666';
-                let linkHtml = '—';
-                if (d.fileUrl) linkHtml = `<a href="javascript:void(0)" onclick="previewFile('${d.fileUrl}','${(d.fileName||'קובץ').replace(/'/g,"\\'")}')" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;">📄 ${d.fileName||'קובץ'}</a>`;
-                else if (d.fileData) {
-                    var fdKey = '_fd_' + Math.random().toString(36).substr(2,8);
-                    window[fdKey] = d.fileData;
-                    linkHtml = `<a href="javascript:void(0)" onclick="previewFile('','${(d.fileName||'קובץ').replace(/'/g,"\\'")}',window['${fdKey}'])" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;">📄 ${d.fileName||'קובץ'}</a>`;
-                }
-                if (d.url) linkHtml += ((d.fileUrl||d.fileData) ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
+                var filesHtml = renderDocFilesHtml(d);
+                var hasAnyFiles = !!filesHtml;
+                let linkHtml = filesHtml || '—';
+                if (d.url) linkHtml = (linkHtml === '—' ? '' : linkHtml + (hasAnyFiles ? '<br>' : '')) + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
+                if (linkHtml === '') linkHtml = '—';
                 html += `<tr>
                     <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
                     <td>${d.title}</td>
@@ -12606,16 +12635,35 @@ function openEditLesson(docId, source) {
 
         function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-        var existingFile = d.fileUrl || d.fileData || '';
-        var fileInfo = '';
-        if (existingFile) {
-            var fName = esc(d.fileName || 'הורד');
-            if (d.fileUrl) {
-                fileInfo = '<div style="margin-top:4px;"><a href="javascript:void(0)" onclick="previewFile(\'' + esc(d.fileUrl).replace(/'/g,"\\'") + '\',\'' + fName.replace(/'/g,"\\'") + '\')" style="font-size:0.82rem;color:var(--primary-lighter);cursor:pointer;">📄 קובץ נוכחי: ' + fName + ' (לחץ לתצוגה)</a></div>';
-            } else {
-                fileInfo = '<div style="margin-top:4px;"><span style="font-size:0.82rem;color:var(--primary-lighter);">📄 קובץ נוכחי: ' + fName + '</span></div>';
+        // Build the existing-files list with individual remove toggles
+        var existingFilesArr = normalizeDocFiles(d);
+        window._editLessonFiles = existingFilesArr.slice(); // canonical list, accessed in saveEditLesson
+        var filesListHtml = '';
+        if (existingFilesArr.length) {
+            filesListHtml = '<div id="edit-files-list" style="margin-top:6px;display:flex;flex-direction:column;gap:6px;">';
+            for (var fi = 0; fi < existingFilesArr.length; fi++) {
+                var ff = existingFilesArr[fi];
+                var fnDisplay = _htmlEsc(ff.fileName || 'קובץ');
+                var fnAttr = _attrEsc(ff.fileName || 'קובץ');
+                var previewLink = '';
+                if (ff.fileUrl) {
+                    previewLink = '<a href="javascript:void(0)" onclick="previewFile(\'' + _attrEsc(ff.fileUrl) + '\',\'' + fnAttr + '\')" style="color:var(--primary-lighter);font-size:0.82rem;flex:1;text-decoration:none;">📄 ' + fnDisplay + '</a>';
+                } else if (ff.fileData) {
+                    var fdKey = '_fd_edit_' + fi + '_' + Math.random().toString(36).substr(2,6);
+                    window[fdKey] = ff.fileData;
+                    previewLink = '<a href="javascript:void(0)" onclick="previewFile(\'\',\'' + fnAttr + '\',window[\'' + fdKey + '\'])" style="color:var(--primary-lighter);font-size:0.82rem;flex:1;text-decoration:none;">📄 ' + fnDisplay + '</a>';
+                } else {
+                    previewLink = '<span style="font-size:0.82rem;color:var(--text-secondary);flex:1;">📄 ' + fnDisplay + '</span>';
+                }
+                filesListHtml +=
+                    '<div class="edit-file-row" data-idx="' + fi + '" data-removed="false" style="display:flex;align-items:center;gap:8px;background:var(--surface,#f7f7f7);padding:6px 10px;border-radius:8px;border:1px solid var(--border);">' +
+                        previewLink +
+                        '<button type="button" onclick="toggleEditFileRemoved(' + fi + ')" title="הסר" style="background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:0.85rem;line-height:1;color:var(--danger);">✕</button>' +
+                    '</div>';
             }
+            filesListHtml += '</div>';
         }
+        var fileInfo = filesListHtml;
 
         var modalHtml = '<div style="background:#ffffff;border-radius:14px;padding:24px;max-width:480px;width:92%;direction:rtl;max-height:85vh;overflow-y:auto;" onclick="event.stopPropagation()">' +
             '<h3 style="margin-bottom:16px;color:var(--primary);">✏️ עריכת תוכן</h3>' +
@@ -12632,9 +12680,11 @@ function openEditLesson(docId, source) {
                 '<select id="edit-category" style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;">' + catOptions + '</select></div>' +
                 '<div><label style="font-weight:600;font-size:0.88rem;">קישור:</label>' +
                 '<input type="text" id="edit-url" value="' + esc(d.url) + '" placeholder="https://..." style="width:100%;margin-top:4px;padding:8px;border:1px solid var(--border);border-radius:8px;direction:ltr;text-align:left;box-sizing:border-box;"></div>' +
-                '<div><label style="font-weight:600;font-size:0.88rem;">העלאת / החלפת קובץ:</label>' +
-                '<input type="file" id="edit-file" style="margin-top:4px;font-size:0.85rem;">' +
-                fileInfo + '</div>' +
+                '<div><label style="font-weight:600;font-size:0.88rem;">קבצים מצורפים:</label>' +
+                fileInfo +
+                '<div style="margin-top:8px;"><label style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);">➕ הוסף קבצים חדשים:</label>' +
+                '<input type="file" id="edit-file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" style="margin-top:4px;font-size:0.85rem;width:100%;">' +
+                '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">ניתן לבחור כמה קבצים יחד</div></div></div>' +
                 '<div style="display:flex;gap:8px;justify-content:flex-start;margin-top:10px;">' +
                     '<button type="button" class="btn-primary btn-sm" onclick="window._doSaveEditLesson()">שמור</button>' +
                     '<button type="button" class="btn-secondary btn-sm" onclick="var m=document.getElementById(\'edit-lesson-modal\');if(m)m.remove();">ביטול</button>' +
@@ -12656,6 +12706,23 @@ window._doSaveEditLesson = function() {
     var source = window._editLessonSource;
     if (!docId) { alert('שגיאה: לא נמצא מזהה תוכן'); return; }
     saveEditLesson(docId, source);
+};
+
+// Toggle a file as "removed" (visual only — actual removal happens on save)
+window.toggleEditFileRemoved = function(idx) {
+    var row = document.querySelector('.edit-file-row[data-idx="' + idx + '"]');
+    if (!row) return;
+    var isRemoved = row.dataset.removed === 'true';
+    row.dataset.removed = isRemoved ? 'false' : 'true';
+    row.style.opacity = isRemoved ? '1' : '0.5';
+    var link = row.querySelector('a, span');
+    if (link) link.style.textDecoration = isRemoved ? 'none' : 'line-through';
+    var btn = row.querySelector('button');
+    if (btn) {
+        btn.textContent = isRemoved ? '✕' : '↩';
+        btn.title = isRemoved ? 'הסר' : 'שחזר';
+        btn.style.color = isRemoved ? 'var(--danger)' : 'var(--primary)';
+    }
 };
 
 // --- Move lesson to a different week ---
@@ -12895,33 +12962,141 @@ function previewFile(fileUrl, fileName, fileData) {
     document.body.appendChild(modal);
 }
 
+// Centered success popup — auto-dismisses after a short delay.
+// Usage: showSuccessPopup('כותרת', 'טקסט משני אופציונלי')
+function showSuccessPopup(message, subtext, durationMs) {
+    durationMs = durationMs || 2200;
+    var existing = document.getElementById('cw-success-popup');
+    if (existing) existing.remove();
+    // Backdrop overlay
+    var backdrop = document.createElement('div');
+    backdrop.id = 'cw-success-popup';
+    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.18);z-index:100001;display:flex;align-items:center;justify-content:center;direction:rtl;font-family:"Heebo",sans-serif;animation:cwSuccessFade 0.25s ease-out;';
+    var pop = document.createElement('div');
+    pop.style.cssText = 'background:#fff;border:2px solid var(--success,#0D9488);border-radius:18px;padding:32px 44px;text-align:center;box-shadow:0 18px 60px rgba(0,0,0,0.22);min-width:280px;max-width:90vw;animation:cwSuccessPop 0.3s ease-out;';
+    pop.innerHTML =
+        '<div style="font-size:3.2rem;margin-bottom:10px;line-height:1;">✅</div>' +
+        '<div style="font-size:1.1rem;font-weight:700;color:var(--success,#0D9488);">' + _htmlEsc(message || 'הושלם בהצלחה!') + '</div>' +
+        (subtext ? '<div style="font-size:0.86rem;color:var(--text-secondary);margin-top:8px;">' + _htmlEsc(subtext) + '</div>' : '');
+    backdrop.appendChild(pop);
+    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) backdrop.remove(); });
+    document.body.appendChild(backdrop);
+    setTimeout(function() {
+        if (!backdrop.parentNode) return;
+        backdrop.style.transition = 'opacity 0.3s ease';
+        backdrop.style.opacity = '0';
+        setTimeout(function() { if (backdrop.parentNode) backdrop.remove(); }, 320);
+    }, durationMs);
+}
+
+// === Multi-file helpers ===
+// A doc may have legacy single-file fields (fileUrl/fileData/fileName/fileType)
+// OR a new files[] array. normalizeDocFiles unifies them into an array.
+function normalizeDocFiles(d) {
+    if (!d) return [];
+    if (Array.isArray(d.files)) return d.files.slice();
+    if (d.fileUrl) return [{ fileUrl: d.fileUrl, fileName: d.fileName || 'קובץ' }];
+    if (d.fileData) return [{ fileData: d.fileData, fileName: d.fileName || 'קובץ', fileType: d.fileType || '' }];
+    return [];
+}
+
+function _attrEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'"); }
+function _htmlEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// Build HTML showing all attached files (used in tables, lesson cards, etc.)
+function renderDocFilesHtml(d, opts) {
+    var files = normalizeDocFiles(d);
+    if (!files.length) return '';
+    opts = opts || {};
+    var sep = opts.joiner || '<br>';
+    return files.map(function(f) {
+        var displayName = _htmlEsc(f.fileName || 'קובץ');
+        var safeName = _attrEsc(f.fileName || 'קובץ');
+        if (f.fileUrl) {
+            var safeUrl = _attrEsc(f.fileUrl);
+            return '<a href="javascript:void(0)" onclick="previewFile(\'' + safeUrl + '\',\'' + safeName + '\')" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;text-decoration:none;">📄 ' + displayName + '</a>';
+        } else if (f.fileData) {
+            var k = '_fd_' + Math.random().toString(36).substr(2, 8);
+            window[k] = f.fileData;
+            return '<a href="javascript:void(0)" onclick="previewFile(\'\',\'' + safeName + '\',window[\'' + k + '\'])" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;text-decoration:none;">📄 ' + displayName + '</a>';
+        }
+        return '';
+    }).filter(Boolean).join(sep);
+}
+
+// Uploads multiple files in parallel using uploadTrainingFile.
+// Returns array of file records: [{fileUrl, fileName} | {fileData, fileName, fileType}]
+async function uploadTrainingFiles(fileList, pathPrefix) {
+    if (!fileList || !fileList.length) return [];
+    var arr = Array.prototype.slice.call(fileList);
+    console.log('[upload] starting', arr.length, 'files to', pathPrefix);
+    var promises = arr.map(function(f, idx) {
+        return uploadTrainingFile(f, pathPrefix + '_' + idx).then(function(rec) {
+            console.log('[upload] success:', f.name, rec.fileUrl ? '→ Storage' : '→ base64');
+            return rec;
+        }).catch(function(e) {
+            console.error('[upload] failed for', f.name, e);
+            return { __error: true, fileName: f.name, message: e.message || String(e) };
+        });
+    });
+    var raw = await Promise.all(promises);
+    var errors = raw.filter(function(r) { return r && r.__error; });
+    if (errors.length === arr.length) {
+        // All failed
+        throw new Error('כל הקבצים נכשלו: ' + errors.map(function(e){ return e.fileName; }).join(', '));
+    }
+    if (errors.length) {
+        // Some failed — toast the partial failure but return successes
+        try { showToast('⚠️ ' + errors.length + ' קבצים נכשלו: ' + errors.map(function(e){ return e.fileName; }).join(', ')); } catch(_) {}
+    }
+    return raw.filter(function(r) { return r && !r.__error; });
+}
+
 // Helper: upload file to Firebase Storage with timeout, fallback to base64 in Firestore
 async function uploadTrainingFile(file, pathPrefix) {
-    // Try Firebase Storage first
+    console.log('[uploadTrainingFile]', file.name, 'size:', file.size, 'type:', file.type);
+    window._lastStorageError = null;
+
+    // Try Firebase Storage first (preferred — supports any size)
     if (storage) {
         try {
-            var path = pathPrefix + '_' + Date.now() + '_' + file.name;
+            // Sanitize file name for storage path (keep extension, strip risky chars)
+            var safeName = (file.name || 'file').replace(/[^\w\u0590-\u05FF.\-]/g, '_');
+            var path = pathPrefix + '_' + Date.now() + '_' + safeName;
             var storageRef = storage.ref(path);
-            // Wrap in timeout
+            // Longer timeout for big files; storage rule denials reject fast anyway
             var uploadResult = await Promise.race([
                 storageRef.put(file).then(function(snap) { return snap.ref.getDownloadURL(); }),
-                new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 15000); })
+                new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 60000); })
             ]);
-            console.log('File uploaded to Storage:', uploadResult);
+            console.log('[uploadTrainingFile] Storage success:', uploadResult);
             return { fileUrl: uploadResult, fileName: file.name };
         } catch(e) {
-            console.warn('Storage upload failed (' + (e.code || e.message) + '), falling back to base64');
+            console.warn('[uploadTrainingFile] Storage upload failed:', e.code || '', e.message || e);
+            // Save the storage error so we can surface a better message if the base64 fallback also fails
+            window._lastStorageError = e;
         }
+    } else {
+        console.warn('[uploadTrainingFile] storage not initialized — using base64 fallback');
     }
 
-    // Fallback: convert to base64 and store in Firestore doc
-    if (file.size > 2 * 1024 * 1024) {
-        throw new Error('הקובץ גדול מדי (מעל 2MB). שירות האחסון לא זמין כרגע.');
+    // Fallback: convert to base64 and store in Firestore doc.
+    // Firestore doc limit is 1MB. Base64 expansion is ~33% so cap raw at ~700KB to leave room for other fields.
+    var FIRESTORE_BASE64_MAX = 700 * 1024;
+    if (file.size > FIRESTORE_BASE64_MAX) {
+        var storageMsg = '';
+        var lastErr = window._lastStorageError;
+        if (lastErr && (lastErr.code === 'storage/unauthorized' || lastErr.code === 'storage/unauthenticated' || /permission|denied|unauthor/i.test(String(lastErr.message||'')))) {
+            storageMsg = ' (אין הרשאה ל-Firebase Storage — יש לבדוק את חוקי ה-Storage בקונסולת Firebase)';
+        } else if (lastErr) {
+            storageMsg = ' (Storage error: ' + (lastErr.code || lastErr.message || 'unknown') + ')';
+        }
+        throw new Error('הקובץ גדול מדי (' + (file.size/1024/1024).toFixed(1) + 'MB) להעלאה' + storageMsg);
     }
     return new Promise(function(resolve, reject) {
         var reader = new FileReader();
         reader.onload = function() {
-            console.log('File converted to base64, size:', reader.result.length);
+            console.log('[uploadTrainingFile] base64 size:', reader.result.length);
             resolve({ fileData: reader.result, fileName: file.name, fileType: file.type });
         };
         reader.onerror = function() { reject(new Error('שגיאה בקריאת הקובץ')); };
@@ -12953,47 +13128,89 @@ async function saveEditLesson(docId, source) {
     try {
         var update = { title: title, instructor: instructor, hours: hours, category: category, url: url, updatedBy: (currentUser && currentUser.name) || 'unknown', updatedAt: new Date() };
 
-        // File upload (optional)
+        // === Determine kept existing files (those NOT marked as removed in the UI) ===
+        var existingFiles = window._editLessonFiles || [];
+        var keptFiles = [];
+        for (var i = 0; i < existingFiles.length; i++) {
+            var row = document.querySelector('.edit-file-row[data-idx="' + i + '"]');
+            if (row && row.dataset.removed === 'true') {
+                console.log('[saveEditLesson] removing existing file:', existingFiles[i].fileName);
+                continue;
+            }
+            keptFiles.push(existingFiles[i]);
+        }
+
+        // === Upload new files (if any) ===
+        var newFiles = [];
         if (fileInput && fileInput.files && fileInput.files.length > 0) {
             try {
-                showToast('מעלה קובץ...');
-                var result = await uploadTrainingFile(fileInput.files[0], 'content_files/edit_' + docId);
-                if (result.fileUrl) {
-                    update.fileUrl = result.fileUrl;
-                    update.fileName = result.fileName;
-                } else if (result.fileData) {
-                    update.fileData = result.fileData;
-                    update.fileName = result.fileName;
-                    update.fileType = result.fileType;
-                }
+                showToast('מעלה ' + fileInput.files.length + ' קבצים...');
+                newFiles = await uploadTrainingFiles(fileInput.files, 'content_files/edit_' + docId);
+                console.log('[saveEditLesson] uploaded', newFiles.length, 'new files');
             } catch(uploadErr) {
-                console.error('File upload error:', uploadErr);
+                console.error('[saveEditLesson] file upload error:', uploadErr);
                 showToast('שגיאה בהעלאת קובץ: ' + uploadErr.message);
-                // Continue saving without file
+                // Continue saving without files (or stop? — continuing per legacy behavior)
             }
         }
 
-        console.log('Saving to Firestore:', docId);
+        // === Combine into canonical files[] array ===
+        var allFiles = keptFiles.concat(newFiles);
+
+        // Defensive sanitization: Firestore rejects undefined values inside arrays.
+        // Build clean objects with only the fields we want.
+        allFiles = allFiles.map(function(f) {
+            if (!f) return null;
+            var clean = {};
+            if (f.fileUrl) {
+                clean.fileUrl = String(f.fileUrl);
+                clean.fileName = String(f.fileName || 'קובץ');
+            } else if (f.fileData) {
+                clean.fileData = String(f.fileData);
+                clean.fileName = String(f.fileName || 'קובץ');
+                clean.fileType = String(f.fileType || '');
+            } else {
+                return null;
+            }
+            return clean;
+        }).filter(Boolean);
+
+        update.files = allFiles;
+
+        // Mirror first file into legacy single-file fields for backward compatibility.
+        // We don't try to delete stale legacy fields — normalizeDocFiles prefers files[]
+        // over legacy, so any leftover stale legacy values are harmless and never displayed.
+        if (allFiles.length > 0) {
+            var first = allFiles[0];
+            if (first.fileUrl) {
+                update.fileUrl = first.fileUrl;
+                update.fileName = first.fileName;
+            } else if (first.fileData) {
+                update.fileData = first.fileData;
+                update.fileName = first.fileName;
+                update.fileType = first.fileType || '';
+            }
+        }
+
+        console.log('[saveEditLesson] Saving to Firestore:', docId, 'files:', allFiles.length, 'update keys:', Object.keys(update));
         await db.collection('training_content').doc(docId).update(update);
+        console.log('[saveEditLesson] Saved successfully');
 
-        // Show success inside the modal before closing
+        // Close the edit modal immediately and show a centered success popup
         var modal = document.getElementById('edit-lesson-modal');
-        if (modal) {
-            var inner = modal.querySelector('div');
-            if (inner) {
-                inner.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
-                    '<div style="font-size:3rem;margin-bottom:12px;">✅</div>' +
-                    '<div style="font-size:1.2rem;font-weight:700;color:#2E7D32;">המערך נשמר בהצלחה!</div>' +
-                    (update.fileName ? '<div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;">📄 קובץ: ' + update.fileName + '</div>' : '') +
-                '</div>';
-            }
-            setTimeout(function() { if (modal.parentNode) modal.remove(); }, 1500);
-        }
-        showToast('✅ תוכן עודכן');
+        if (modal) modal.remove();
+
+        var subtext = '';
+        if (allFiles.length === 1) subtext = '📄 ' + _htmlEsc(allFiles[0].fileName);
+        else if (allFiles.length > 1) subtext = '📄 ' + allFiles.length + ' קבצים מצורפים';
+        showSuccessPopup('התוכן הועלה בהצלחה!', 'השיעור נשמר' + (subtext ? ' · ' + subtext : ''));
+
+        // Cleanup transient state
+        window._editLessonFiles = null;
         if (source === 'admin') loadAdminTrainingContent();
         else loadCmgmtContent();
     } catch(e) {
-        console.error('saveEditLesson error:', e);
+        console.error('[saveEditLesson] error:', e);
         showToast('שגיאה בשמירה: ' + (e.code || e.message || ''));
     }
 }
@@ -13102,19 +13319,26 @@ async function cmgmtAddLesson() {
     if (isRecurring && !confirm('ייווצרו ' + targetWeeks.length + ' עותקים בשבועות: ' + targetWeeks.join(', ') + '\nלהמשיך?')) return;
 
     try {
-        // Upload file once if selected (shared across copies)
-        var fileData = {};
-        if (fileInput && fileInput.files.length > 0) {
+        // Upload all selected files once (shared across recurring copies)
+        var uploadedFiles = [];
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
             try {
-                showToast('מעלה קובץ...');
-                var fileRes = await uploadTrainingFile(fileInput.files[0], 'content_files/' + prog + '_recurring');
-                if (fileRes.fileUrl) { fileData.fileUrl = fileRes.fileUrl; fileData.fileName = fileRes.fileName; }
-                else if (fileRes.fileData) { fileData.fileData = fileRes.fileData; fileData.fileName = fileRes.fileName; fileData.fileType = fileRes.fileType; }
+                showToast('מעלה ' + fileInput.files.length + ' קבצים...');
+                uploadedFiles = await uploadTrainingFiles(fileInput.files, 'content_files/' + prog + '_recurring');
+                console.log('[cmgmtAddLesson] uploaded', uploadedFiles.length, 'files');
             } catch(ue) {
-                console.error('Upload failed:', ue);
+                console.error('[cmgmtAddLesson] upload failed:', ue);
                 showToast('שגיאה בהעלאת קובץ: ' + ue.message);
                 return;
             }
+        }
+
+        // Build file fields once
+        var fileFields = { files: uploadedFiles };
+        if (uploadedFiles.length > 0) {
+            var f0 = uploadedFiles[0];
+            if (f0.fileUrl) { fileFields.fileUrl = f0.fileUrl; fileFields.fileName = f0.fileName; }
+            else if (f0.fileData) { fileFields.fileData = f0.fileData; fileFields.fileName = f0.fileName; fileFields.fileType = f0.fileType || ''; }
         }
 
         var recurrenceGroup = isRecurring ? 'rec_' + Date.now() : null;
@@ -13125,7 +13349,7 @@ async function cmgmtAddLesson() {
                 createdBy: currentUser.name, createdAt: new Date(),
                 order: Date.now() + i
             };
-            Object.assign(docData, fileData);
+            Object.assign(docData, fileFields);
             if (recurrenceGroup) docData.recurrenceGroup = recurrenceGroup;
             await db.collection('training_content').add(docData);
         }
@@ -13214,10 +13438,11 @@ async function loadAdminTrainingContent() {
             const d = doc.data();
             const catLabel = CONTENT_RESPONSIBILITY[d.category] || d.category;
             const color = catColors[d.category] || '#666';
-            let linkHtml = '—';
-            if (d.fileUrl) linkHtml = `<a href="javascript:void(0)" onclick="previewFile('${d.fileUrl}','${(d.fileName||'קובץ').replace(/'/g,"\\'")}')" style="color:var(--primary-lighter);font-size:0.8rem;cursor:pointer;">📄 ${d.fileName||'קובץ'}</a>`;
-            else if (d.fileData) linkHtml = `<a href="${d.fileData}" download="${d.fileName||'file'}" style="color:var(--primary-lighter);font-size:0.8rem;">📄 ${d.fileName||'קובץ'}</a>`;
-            if (d.url) linkHtml += ((d.fileUrl||d.fileData) ? '<br>' : '') + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
+            var filesHtml2 = renderDocFilesHtml(d);
+            var hasAnyFiles2 = !!filesHtml2;
+            let linkHtml = filesHtml2 || '—';
+            if (d.url) linkHtml = (linkHtml === '—' ? '' : linkHtml + (hasAnyFiles2 ? '<br>' : '')) + `<a href="${d.url}" target="_blank" style="color:var(--primary-lighter);font-size:0.8rem;">🔗 קישור</a>`;
+            if (linkHtml === '') linkHtml = '—';
             html += `<tr>
                 <td><span style="color:${color};font-weight:600;">${catLabel}</span></td>
                 <td>${d.title}</td>
@@ -13263,19 +13488,26 @@ async function adminAddLesson() {
     if (isRecurring && !confirm('ייווצרו ' + targetWeeks.length + ' עותקים בשבועות: ' + targetWeeks.join(', ') + '\nלהמשיך?')) return;
 
     try {
-        // Upload file once if selected
-        var fileData = {};
-        if (fileInput && fileInput.files.length > 0) {
+        // Upload all selected files once
+        var uploadedFiles = [];
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
             try {
-                showToast('מעלה קובץ...');
-                var fileRes = await uploadTrainingFile(fileInput.files[0], 'content_files/' + prog + '_recurring');
-                if (fileRes.fileUrl) { fileData.fileUrl = fileRes.fileUrl; fileData.fileName = fileRes.fileName; }
-                else if (fileRes.fileData) { fileData.fileData = fileRes.fileData; fileData.fileName = fileRes.fileName; fileData.fileType = fileRes.fileType; }
+                showToast('מעלה ' + fileInput.files.length + ' קבצים...');
+                uploadedFiles = await uploadTrainingFiles(fileInput.files, 'content_files/' + prog + '_recurring');
+                console.log('[adminAddLesson] uploaded', uploadedFiles.length, 'files');
             } catch(ue) {
-                console.error('Upload failed:', ue);
+                console.error('[adminAddLesson] upload failed:', ue);
                 showToast('שגיאה בהעלאת קובץ: ' + ue.message);
                 return;
             }
+        }
+
+        // Build file fields once
+        var fileFields = { files: uploadedFiles };
+        if (uploadedFiles.length > 0) {
+            var f0 = uploadedFiles[0];
+            if (f0.fileUrl) { fileFields.fileUrl = f0.fileUrl; fileFields.fileName = f0.fileName; }
+            else if (f0.fileData) { fileFields.fileData = f0.fileData; fileFields.fileName = f0.fileName; fileFields.fileType = f0.fileType || ''; }
         }
 
         var recurrenceGroup = isRecurring ? 'rec_' + Date.now() : null;
@@ -13286,7 +13518,7 @@ async function adminAddLesson() {
                 createdBy: currentUser.name, createdAt: new Date(),
                 order: Date.now() + i
             };
-            Object.assign(docData, fileData);
+            Object.assign(docData, fileFields);
             if (recurrenceGroup) docData.recurrenceGroup = recurrenceGroup;
             await db.collection('training_content').add(docData);
         }
@@ -17531,7 +17763,7 @@ function modalSakagFromSearch() {
 }
 
 async function modalSakagGenerate(lat, lng, placeName) {
-    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
+    if (typeof aiFloatActiveCount === 'function' && aiFloatActiveCount() >= AI_MAX_PARALLEL) { showToast('⏳ יש כבר ' + AI_MAX_PARALLEL + ' משימות פעילות — המתן לסיום אחת מהן'); return; }
     var _modalCtx = getSakagContext('modal-sakag');
     var contentEl = document.getElementById('modal-sakag-content');
     contentEl.innerHTML = '<div style="text-align:center;padding:30px;">' +
@@ -18883,12 +19115,8 @@ const MORAK_RESEARCH_PROMPT = `אתה חוקר היסטוריה צבאית יש�
 
 כתוב בעברית.` + JEWISH_SOURCES_RESTRICTION;
 
-const MORAK_AI_PROMPT = `אתה בונה מורשת קרב (מור"ק) עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
-משימתך: לבנות מור"ק מדויק, מרגש ואינפורמטיבי עבור [SUBJECT_TYPE] "[SUBJECT_NAME]".
-
-קהל יעד: [AUDIENCE]
-משך: [DURATION]
-
+// Common rules shared by both person & battle prompts
+const MORAK_COMMON_RULES = `
 כללים:
 1. אמינות: הבא רק עובדות שמופיעות במידע המחקרי שלהלן. אם חסר מידע — ציין "לא נמצא מידע מאומת" ואל תמציא.
 2. כבוד: התייחס בכבוד רב לזכר הנופלים ולמשפחותיהם.
@@ -18896,7 +19124,15 @@ const MORAK_AI_PROMPT = `אתה בונה מורשת קרב (מור"ק) עבור 
 4. מעשיות: כלול פעילויות מוצעות למפקד — שאלות לדיון, הפנמה, לקחים.
 5. מקורות ערכיים: שאב השראה אך ורק ממקורות יהודיים מקובלים בציבור החרדי (תנ"ך, משנה, תלמוד, מדרש, ראשונים, אחרונים). אסור בתכלית האיסור לצטט ברית חדשה, קוראן, או כל מקור דתי לא-יהודי. מידע עובדתי (היסטוריה, ארכיאולוגיה) — כן מותר מכל מקור.
 6. אל תמציא שום דבר: לא עדויות, לא ציטוטים, לא שמות, לא תאריכים, לא ספרים. השתמש רק במה שמופיע במחקר.
+`;
 
+// Prompt for a person/hero/fallen soldier
+const MORAK_AI_PROMPT_PERSON = `אתה בונה מורשת קרב (מור"ק) עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
+משימתך: לבנות מור"ק מדויק, מרגש ואינפורמטיבי עבור גיבור/חלל "[SUBJECT_NAME]".
+
+קהל יעד: [AUDIENCE]
+משך: [DURATION]
+` + MORAK_COMMON_RULES + `
 פורמט JSON:
 {
   "title": "מורשת קרב — [שם]",
@@ -18912,8 +19148,33 @@ const MORAK_AI_PROMPT = `אתה בונה מורשת קרב (מור"ק) עבור 
 
 חשוב: החזר אך ורק JSON תקני. אין טקסט לפני או אחרי.` + JEWISH_SOURCES_RESTRICTION;
 
+// Prompt for a battle/operation — DIFFERENT sections (no biographical "life story")
+const MORAK_AI_PROMPT_BATTLE = `אתה בונה מורשת קרב (מור"ק) עבור חטיבת "חשמונאים" (לוחמים חרדים בצה"ל).
+משימתך: לבנות מור"ק מדויק, מרגש ואינפורמטיבי על קרב/מבצע "[SUBJECT_NAME]".
+
+קהל יעד: [AUDIENCE]
+משך: [DURATION]
+` + MORAK_COMMON_RULES + `
+חשוב: זהו מור"ק על **אירוע / קרב**, לא על אדם. אין לכלול ביוגרפיה אישית או "סיפור חיים". התמקד בקרב, נסיבותיו, מהלכו, התוצאות והערכים שעולים ממנו. ניתן לציין שמות מפקדים ולוחמים מרכזיים שהיו חלק מהקרב, אך לא לכתוב סעיף ביוגרפי.
+
+פורמט JSON:
+{
+  "title": "מורשת קרב — [שם הקרב/המבצע]",
+  "subtitle": "[משפט תיאורי קצר על האירוע — תאריך, מקום, חשיבות]",
+  "sections": [
+    { "title": "1. רקע ונסיבות", "icon": "🗺️", "content": "[רקע היסטורי-אסטרטגי לקרב, מצב טרום-הקרב, סיבות שהובילו אליו, יחידות שהשתתפו. HTML עם <p> ו-<b>]" },
+    { "title": "2. מהלך הקרב", "icon": "⚔️", "content": "[תיאור כרונולוגי מפורט של הקרב — שלבים, החלטות מבצעיות, נקודות מפנה. HTML]" },
+    { "title": "3. גילויי גבורה ומסירות", "icon": "🎖️", "content": "[מעשי גבורה אישיים וקבוצתיים בתוך הקרב — לוחמים שגילו אומץ, חוליות שהצילו חברים, החלטות מנהיגותיות במצוקה. ציין שמות אם מופיעים במחקר. HTML]" },
+    { "title": "4. תוצאות והשפעה", "icon": "🏆", "content": "[תוצאות הקרב — צבאית, אסטרטגית, ולאומית. השפעה על המשך המערכה ועל הזיכרון הקולקטיבי. HTML]" },
+    { "title": "5. ערכים ולקחים", "icon": "💡", "content": "[ערכים שעולים מהאירוע — גבורה, מנהיגות, יחד, נחישות, אחריות. קשר תורני אם רלוונטי. HTML]" },
+    { "title": "6. פעילות מוצעת למפקד", "icon": "📋", "content": "[3-5 פעילויות/שאלות לדיון מותאמות לקהל היעד. שאלת הפנמה לסיום. HTML]" }
+  ]
+}
+
+חשוב: החזר אך ורק JSON תקני. אין טקסט לפני או אחרי.` + JEWISH_SOURCES_RESTRICTION;
+
 async function morakGenerate() {
-    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
+    if (typeof aiFloatActiveCount === 'function' && aiFloatActiveCount() >= AI_MAX_PARALLEL) { showToast('⏳ יש כבר ' + AI_MAX_PARALLEL + ' משימות פעילות — המתן לסיום אחת מהן'); return; }
     var d = morakWizardData;
     if (!d.subject) { showToast('יש להזין נושא'); morakShowStep(1); return; }
 
@@ -18951,14 +19212,20 @@ async function morakGenerate() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.4, maxOutputTokens: 8192 } })
         });
-        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
+        if (!researchResp.ok) {
+            var researchErrBody = await researchResp.text().catch(function() { return ''; });
+            console.error('[morak] research API error', researchResp.status, researchErrBody);
+            throw new Error('שגיאה בשלב המחקר (' + researchResp.status + ')');
+        }
         var researchData = await researchResp.json();
         var researchParts = researchData.candidates?.[0]?.content?.parts || [];
         var researchText = '';
         for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
+        if (!researchText) console.warn('[morak] research returned no text');
 
-        // Step 2: Build מור"ק
-        var buildPrompt = MORAK_AI_PROMPT.replace(/\[SUBJECT_TYPE\]/g, subjectType).replace(/\[SUBJECT_NAME\]/g, d.subject)
+        // Step 2: Build מור"ק — choose the right prompt template based on type
+        var basePrompt = (d.type === 'battle') ? MORAK_AI_PROMPT_BATTLE : MORAK_AI_PROMPT_PERSON;
+        var buildPrompt = basePrompt.replace(/\[SUBJECT_NAME\]/g, d.subject)
             .replace('[AUDIENCE]', d.audience || 'כלל הלוחמים').replace('[DURATION]', d.duration || '45 דקות');
         if (d.context) buildPrompt += '\n\n=== דגשים של המפקד ===\n' + d.context;
         buildPrompt += '\n\n=== מידע שנאסף ממחקר ===\n' + researchText;
@@ -18967,17 +19234,24 @@ async function morakGenerate() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
         });
-        if (!resp.ok) throw new Error('שגיאת Gemini');
+        if (!resp.ok) {
+            var errBody = await resp.text().catch(function() { return ''; });
+            console.error('[morak] build API error', resp.status, errBody);
+            throw new Error('שגיאת Gemini (' + resp.status + ')');
+        }
         var data = await resp.json();
         var parts = data.candidates?.[0]?.content?.parts || [];
         var aiText = '';
         for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
-        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').trim();
+        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
         var morakData;
         try { morakData = JSON.parse(aiText); } catch(e) {
             var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
             if (bs !== -1 && be > bs) try { morakData = JSON.parse(aiText.substring(bs, be + 1)); } catch(e2) {}
-            if (!morakData) throw new Error('לא ניתן לנתח את תשובת ה-AI');
+            if (!morakData) {
+                console.error('[morak] failed to parse AI JSON. Raw text:', aiText.substring(0, 500));
+                throw new Error('לא ניתן לנתח את תשובת ה-AI');
+            }
         }
 
         morakRenderGenerated(morakData);
@@ -18986,6 +19260,7 @@ async function morakGenerate() {
             setTimeout(function() { setGeoMode('morak'); }, 200);
         });
     } catch(err) {
+        console.error('[morak] generation error:', err);
         templateEl.innerHTML = '<div style="padding:20px;text-align:center;"><p style="color:#d32f2f;font-weight:700;">⚠️ שגיאה</p><p style="font-size:0.85rem;">' + err.message + '</p>' +
             '<button class="btn-primary btn-sm" onclick="morakGenerate()" style="margin-top:10px;">🔄 נסה שוב</button></div>';
         aiFloatError(_morakTaskId, err.message);
@@ -19154,7 +19429,7 @@ const LESSON_AI_PROMPT = `אתה מפתח תכני חינוך וערכים עב�
 חשוב: החזר אך ורק JSON תקני.` + JEWISH_SOURCES_RESTRICTION;
 
 async function lessonGenerate() {
-    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
+    if (typeof aiFloatActiveCount === 'function' && aiFloatActiveCount() >= AI_MAX_PARALLEL) { showToast('⏳ יש כבר ' + AI_MAX_PARALLEL + ' משימות פעילות — המתן לסיום אחת מהן'); return; }
     var topic = (document.getElementById('lesson-topic')||{}).value || '';
     var goals = (document.getElementById('lesson-goals')||{}).value || '';
     var audience = (document.getElementById('lesson-audience')||{}).value || '';
@@ -19939,7 +20214,7 @@ function triviaSetDifficulty(btn, diff) {
 }
 
 async function triviaGenerateAI() {
-    if (_aiGenerating) { showToast('⏳ יצירת תוכן כבר בתהליך — יש להמתין'); return; }
+    if (typeof aiFloatActiveCount === 'function' && aiFloatActiveCount() >= AI_MAX_PARALLEL) { showToast('⏳ יש כבר ' + AI_MAX_PARALLEL + ' משימות פעילות — המתן לסיום אחת מהן'); return; }
     var topicSelect = document.getElementById('trivia-create-topic');
     var topic = topicSelect.value;
     if (topic === 'other') topic = document.getElementById('trivia-create-topic-other').value.trim();
@@ -24073,99 +24348,238 @@ updateHebrewDate();
 setInterval(updateHebrewDate, 3600000); // Update every hour
 
 // ============================================================
-// FLOATING AI PROGRESS WIDGET — Background content generation
+// FLOATING AI PROGRESS WIDGET — Multi-task background generation
+// Allows multiple AI generations to run in parallel and shows
+// each one in a stacked floating widget. Toast + audio cue on done.
 // ============================================================
 var _aiTasks = {};
 var _aiTaskCounter = 0;
-var _aiGenerating = false; // Prevent parallel AI generations
+var _aiGenerating = false; // legacy flag — kept always false (parallel allowed)
+var AI_MAX_PARALLEL = 5;   // soft cap on concurrent generations
 
-function isAIGenerating() { return _aiGenerating; }
+function isAIGenerating() { return false; }
+
+function aiFloatActiveCount() {
+    var n = 0;
+    for (var k in _aiTasks) {
+        if (_aiTasks.hasOwnProperty(k) && _aiTasks[k] && !_aiTasks[k].done) n++;
+    }
+    return n;
+}
+
+function aiFloatGetContainer() { return document.getElementById('ai-progress-float'); }
+function aiFloatGetStackBody() { return document.getElementById('ai-float-stack-body'); }
+
+function aiFloatRefreshStackHeader() {
+    var body = aiFloatGetStackBody();
+    if (!body) return;
+    var taskEls = body.querySelectorAll('.ai-float-task');
+    var n = taskEls.length;
+    var countEl = document.getElementById('ai-float-stack-count');
+    var textEl = document.getElementById('ai-float-stack-text');
+    if (countEl) countEl.textContent = n;
+
+    var running = 0, done = 0, err = 0;
+    taskEls.forEach(function(t) {
+        if (t.classList.contains('completed')) done++;
+        else if (t.classList.contains('errored')) err++;
+        else running++;
+    });
+    if (textEl) {
+        if (running > 0 && done + err === 0) textEl.textContent = (running === 1 ? 'משימה פעילה' : running + ' משימות פעילות');
+        else if (running > 0) textEl.textContent = running + ' פעיל / ' + (done + err) + ' הושלם';
+        else if (done > 0 && err === 0) textEl.textContent = (done === 1 ? 'הושלם' : done + ' הושלמו');
+        else if (err > 0 && done === 0) textEl.textContent = err + ' נכשל' + (err > 1 ? 'ו' : '');
+        else textEl.textContent = done + ' הושלמו / ' + err + ' נכשל' + (err > 1 ? 'ו' : '');
+    }
+
+    var container = aiFloatGetContainer();
+    if (container) {
+        if (n === 0) {
+            container.classList.remove('ai-float-visible');
+            container.classList.remove('ai-float-collapsed');
+            var t = document.getElementById('ai-float-stack-toggle');
+            if (t) t.textContent = '▼';
+        } else {
+            container.classList.add('ai-float-visible');
+        }
+    }
+}
+
+function aiFloatToggleAll() {
+    var c = aiFloatGetContainer();
+    if (!c) return;
+    c.classList.toggle('ai-float-collapsed');
+    var t = document.getElementById('ai-float-stack-toggle');
+    if (t) t.textContent = c.classList.contains('ai-float-collapsed') ? '▲' : '▼';
+}
 
 function aiFloatShow(taskId, title, estimatedSecs) {
-    _aiGenerating = true;
-    var el = document.getElementById('ai-progress-float');
-    if (!el) { console.error('AI Float: element #ai-progress-float not found!'); _aiGenerating = false; return; }
-    el.style.display = 'block';
-    el.dataset.taskId = taskId;
-    el.querySelector('.ai-float-title').textContent = title;
-    el.querySelector('.ai-float-status').textContent = 'מכין תוכן...';
-    var barFill = el.querySelector('.ai-float-bar-fill');
-    barFill.style.width = '0%';
-    barFill.style.background = ''; // Reset error color (Bug 11 fix)
-    el.querySelector('.ai-float-done').style.display = 'none';
-    el.querySelector('.ai-float-bar').style.display = '';
-    el.querySelector('.ai-float-timer').style.display = '';
+    var body = aiFloatGetStackBody();
+    if (!body) { console.error('AI Float: stack body not found'); return; }
+
+    // If a card with the same id already exists, remove it (re-issue)
+    var existing = body.querySelector('[data-task-id="' + taskId + '"]');
+    if (existing) existing.remove();
+
+    var card = document.createElement('div');
+    card.className = 'ai-float-task';
+    card.setAttribute('data-task-id', taskId);
+    card.innerHTML =
+        '<div class="ai-float-header">' +
+            '<span class="ai-float-title"></span>' +
+            '<button class="ai-float-close" onclick="aiFloatRemoveTask(\'' + taskId + '\')" title="הסתר">&times;</button>' +
+        '</div>' +
+        '<div class="ai-float-body">' +
+            '<div class="ai-float-status">מכין תוכן...</div>' +
+            '<div class="ai-float-bar"><div class="ai-float-bar-fill" style="width:0%"></div></div>' +
+            '<div class="ai-float-timer"></div>' +
+            '<div class="ai-float-done"></div>' +
+        '</div>';
+    card.querySelector('.ai-float-title').textContent = title;
+    body.appendChild(card);
+
+    // Track task state
+    if (!_aiTasks[taskId] || _aiTasks[taskId].done) _aiTasks[taskId] = { done: false };
+    _aiTasks[taskId].title = title;
+    _aiTasks[taskId].done = false;
+
+    aiFloatRefreshStackHeader();
+
+    // Make sure widget is expanded when a new task arrives
+    var c = aiFloatGetContainer();
+    if (c && c.classList.contains('ai-float-collapsed')) {
+        c.classList.remove('ai-float-collapsed');
+        var tg = document.getElementById('ai-float-stack-toggle');
+        if (tg) tg.textContent = '▼';
+    }
+
     // Start countdown
     var secsLeft = estimatedSecs || 45;
-    var timerEl = el.querySelector('.ai-float-timer');
-    var barEl = el.querySelector('.ai-float-bar-fill');
     var totalSecs = secsLeft;
     function tick() {
         if (!_aiTasks[taskId] || _aiTasks[taskId].done) return;
+        var stillThere = body.querySelector('[data-task-id="' + taskId + '"]');
+        if (!stillThere) return;
         secsLeft = Math.max(0, secsLeft - 1);
         var pct = Math.min(95, ((totalSecs - secsLeft) / totalSecs) * 100);
-        barEl.style.width = pct + '%';
-        timerEl.textContent = '~' + secsLeft + ' שניות נותרו';
+        var barFill = stillThere.querySelector('.ai-float-bar-fill');
+        var timerEl = stillThere.querySelector('.ai-float-timer');
+        if (barFill) barFill.style.width = pct + '%';
+        if (timerEl) timerEl.textContent = secsLeft > 0 ? '~' + secsLeft + ' שניות נותרו' : 'עוד רגע...';
         if (secsLeft > 0) setTimeout(tick, 1000);
-        else timerEl.textContent = 'עוד רגע...';
     }
     tick();
 }
 
 function aiFloatComplete(taskId, label, onClickAction) {
-    _aiGenerating = false;
-    if (_aiTasks[taskId]) _aiTasks[taskId].done = true;
-    var el = document.getElementById('ai-progress-float');
-    if (!el || el.dataset.taskId !== taskId) return;
-    el.querySelector('.ai-float-bar-fill').style.width = '100%';
-    el.querySelector('.ai-float-status').textContent = 'הושלם בהצלחה!';
-    el.querySelector('.ai-float-timer').style.display = 'none';
-    var doneEl = el.querySelector('.ai-float-done');
+    if (_aiTasks[taskId]) {
+        _aiTasks[taskId].done = true;
+        _aiTasks[taskId].onOpen = onClickAction;
+    }
+    var body = aiFloatGetStackBody();
+    if (!body) return;
+    var card = body.querySelector('[data-task-id="' + taskId + '"]');
+    if (!card) return;
+    card.classList.add('completed');
+    var fill = card.querySelector('.ai-float-bar-fill');
+    if (fill) fill.style.width = '100%';
+    card.querySelector('.ai-float-status').textContent = '✅ הושלם בהצלחה!';
+    var timerEl = card.querySelector('.ai-float-timer');
+    if (timerEl) timerEl.style.display = 'none';
+    var doneEl = card.querySelector('.ai-float-done');
     doneEl.style.display = '';
-    doneEl.innerHTML = '<button class="btn-primary btn-sm" onclick="aiFloatOpen(\'' + taskId + '\')" style="margin-left:6px;">📄 ' + (label || 'פתח') + '</button>' +
-        '<button class="btn-secondary btn-sm" onclick="aiFloatHide()" style="font-size:0.78rem;padding:4px 10px;">סגור</button>';
-    _aiTasks[taskId].onOpen = onClickAction;
-    // Play a subtle notification
-    showToast('✅ ' + el.querySelector('.ai-float-title').textContent + ' — הושלם!');
+    doneEl.innerHTML = '<button class="btn-primary btn-sm" onclick="aiFloatOpen(\'' + taskId + '\')">📄 ' + (label || 'פתח') + '</button>' +
+        '<button class="btn-secondary btn-sm" onclick="aiFloatRemoveTask(\'' + taskId + '\')">סגור</button>';
+
+    aiFloatRefreshStackHeader();
+    aiFloatNotifyComplete(_aiTasks[taskId] ? _aiTasks[taskId].title : 'תוכן');
 }
 
 function aiFloatError(taskId, errorMsg) {
-    _aiGenerating = false;
     if (_aiTasks[taskId]) _aiTasks[taskId].done = true;
-    var el = document.getElementById('ai-progress-float');
-    if (!el || el.dataset.taskId !== taskId) return;
-    el.querySelector('.ai-float-status').innerHTML = '<span style="color:var(--danger);">שגיאה: ' + errorMsg + '</span>';
-    el.querySelector('.ai-float-timer').style.display = 'none';
-    el.querySelector('.ai-float-bar-fill').style.width = '100%';
-    el.querySelector('.ai-float-bar-fill').style.background = 'var(--danger)';
-    var doneEl = el.querySelector('.ai-float-done');
+    var body = aiFloatGetStackBody();
+    if (!body) return;
+    var card = body.querySelector('[data-task-id="' + taskId + '"]');
+    if (!card) return;
+    card.classList.add('errored');
+    var statusEl = card.querySelector('.ai-float-status');
+    statusEl.innerHTML = '<span style="color:var(--danger);">⚠️ שגיאה: ' + (errorMsg || 'לא ידוע') + '</span>';
+    var timerEl = card.querySelector('.ai-float-timer');
+    if (timerEl) timerEl.style.display = 'none';
+    var fill = card.querySelector('.ai-float-bar-fill');
+    if (fill) { fill.style.width = '100%'; fill.style.background = 'var(--danger)'; }
+    var doneEl = card.querySelector('.ai-float-done');
     doneEl.style.display = '';
-    doneEl.innerHTML = '<button class="btn-secondary btn-sm" onclick="aiFloatHide()">סגור</button>';
+    doneEl.innerHTML = '<button class="btn-secondary btn-sm" onclick="aiFloatRemoveTask(\'' + taskId + '\')">סגור</button>';
+
+    aiFloatRefreshStackHeader();
+    try { showToast('⚠️ ' + (_aiTasks[taskId] ? _aiTasks[taskId].title : 'יצירה') + ' — שגיאה'); } catch(e) {}
 }
 
 function aiFloatOpen(taskId) {
-    if (_aiTasks[taskId] && _aiTasks[taskId].onOpen) {
-        _aiTasks[taskId].onOpen();
+    var t = _aiTasks[taskId];
+    if (t && typeof t.onOpen === 'function') {
+        try { t.onOpen(); } catch(e) { console.error('aiFloatOpen onOpen error:', e); }
     }
-    aiFloatHide();
+    aiFloatRemoveTask(taskId);
 }
 
+function aiFloatRemoveTask(taskId) {
+    var body = aiFloatGetStackBody();
+    if (body) {
+        var card = body.querySelector('[data-task-id="' + taskId + '"]');
+        if (card) card.remove();
+    }
+    if (_aiTasks[taskId]) {
+        _aiTasks[taskId].done = true; // ensure timers stop
+        delete _aiTasks[taskId];
+    }
+    aiFloatRefreshStackHeader();
+}
+
+// Backwards-compat: hide the entire widget without removing tasks
 function aiFloatHide() {
-    var el = document.getElementById('ai-progress-float');
-    if (el) el.style.display = 'none';
+    var c = aiFloatGetContainer();
+    if (c) c.classList.add('ai-float-collapsed');
+    var t = document.getElementById('ai-float-stack-toggle');
+    if (t) t.textContent = '▲';
 }
 
 function aiFloatUpdateStatus(taskId, statusText) {
-    var el = document.getElementById('ai-progress-float');
-    if (!el || el.dataset.taskId !== taskId) return;
-    el.querySelector('.ai-float-status').textContent = statusText;
+    var body = aiFloatGetStackBody();
+    if (!body) return;
+    var card = body.querySelector('[data-task-id="' + taskId + '"]');
+    if (!card) return;
+    var s = card.querySelector('.ai-float-status');
+    if (s) s.textContent = statusText;
+}
+
+function aiFloatNotifyComplete(title) {
+    try { showToast('✅ ' + (title || 'תוכן') + ' — הושלם!'); } catch(e) {}
+    // Subtle audio cue (two-note chime) — best effort, ignored if blocked
+    try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        var ctx = new Ctx();
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine';
+        o.frequency.setValueAtTime(880, ctx.currentTime);
+        o.frequency.setValueAtTime(1320, ctx.currentTime + 0.12);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.07, ctx.currentTime + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+        o.start(ctx.currentTime);
+        o.stop(ctx.currentTime + 0.5);
+        setTimeout(function() { try { ctx.close(); } catch(e) {} }, 800);
+    } catch(e) { /* ignore */ }
 }
 
 // Wrapper to run AI generation in background
 function runAIInBackground(opts) {
     // opts: { title, estimatedSecs, generateFn, onComplete, onError, targetPage, targetMode }
     var taskId = 'ai_' + (++_aiTaskCounter);
-    _aiTasks[taskId] = { done: false };
     aiFloatShow(taskId, opts.title, opts.estimatedSecs || 50);
 
     // Allow user to keep browsing
@@ -24185,18 +24599,16 @@ function runAIInBackground(opts) {
 
 </script>
 
-<!-- Floating AI Progress Widget -->
+<!-- Floating AI Progress Widget — Multi-task Stack -->
 <div id="ai-progress-float">
-    <div class="ai-float-header">
-        <span class="ai-float-title">יוצר תוכן...</span>
-        <button class="ai-float-close" onclick="aiFloatHide()" title="מזער">&times;</button>
+    <div class="ai-float-stack-header" onclick="aiFloatToggleAll()">
+        <span class="ai-float-stack-title">
+            🤖 <span id="ai-float-stack-text">משימות AI</span>
+            <span class="badge-count" id="ai-float-stack-count">0</span>
+        </span>
+        <button class="ai-float-stack-toggle" id="ai-float-stack-toggle" onclick="event.stopPropagation();aiFloatToggleAll();">▼</button>
     </div>
-    <div class="ai-float-body">
-        <div class="ai-float-status">מכין תוכן...</div>
-        <div class="ai-float-bar"><div class="ai-float-bar-fill" style="width:0%"></div></div>
-        <div class="ai-float-timer"></div>
-        <div class="ai-float-done"></div>
-    </div>
+    <div class="ai-float-stack-body" id="ai-float-stack-body"></div>
 </div>
 
 </body>
