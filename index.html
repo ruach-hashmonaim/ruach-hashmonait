@@ -13056,7 +13056,170 @@ async function uploadTrainingFiles(fileList, pathPrefix) {
     return raw.filter(function(r) { return r && !r.__error; });
 }
 
-// Helper: upload file to Firebase Storage with timeout, fallback to base64 in Firestore
+// === FILE COMPRESSION HELPERS ===
+// Lazy-load PDF.js (used to rasterize uploaded PDFs for compression)
+var _pdfJsLoading = null;
+async function ensurePdfJsLoaded() {
+    if (typeof pdfjsLib !== 'undefined') return;
+    if (_pdfJsLoading) return _pdfJsLoading;
+    _pdfJsLoading = new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload = function() {
+            try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } catch(e) {}
+            resolve();
+        };
+        s.onerror = function() { reject(new Error('טעינת PDF.js נכשלה')); };
+        document.head.appendChild(s);
+    });
+    return _pdfJsLoading;
+}
+
+// Lazy-load jsPDF (often already loaded for sakag/morak PDF export)
+async function ensureJsPdfLoaded() {
+    if (typeof jspdf !== 'undefined' || typeof jsPDF !== 'undefined') return;
+    return new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = resolve;
+        s.onerror = function() { reject(new Error('טעינת jsPDF נכשלה')); };
+        document.head.appendChild(s);
+    });
+}
+
+// Compress a PDF by rasterizing each page at progressively lower DPI/JPEG quality
+// until under target bytes (or attempts exhausted, returning the smallest version).
+async function compressPdfToTarget(file, targetBytes, progressFn) {
+    await ensurePdfJsLoaded();
+    await ensureJsPdfLoaded();
+    var arrayBuffer = await file.arrayBuffer();
+
+    var attempts = [
+        { dpi: 110, quality: 0.72 },
+        { dpi: 96,  quality: 0.62 },
+        { dpi: 84,  quality: 0.55 },
+        { dpi: 72,  quality: 0.48 },
+        { dpi: 60,  quality: 0.40 }
+    ];
+
+    var smallest = null;
+    for (var i = 0; i < attempts.length; i++) {
+        var s = attempts[i];
+        if (typeof progressFn === 'function') progressFn('דחיסה (ניסיון ' + (i+1) + '/' + attempts.length + ')…');
+        var blob = await rasterizePdf(arrayBuffer, s.dpi, s.quality);
+        console.log('[compressPdf] attempt', i+1, 'dpi=' + s.dpi, 'quality=' + s.quality, '->', (blob.size/1024).toFixed(1) + 'KB');
+        if (!smallest || blob.size < smallest.size) smallest = blob;
+        if (blob.size <= targetBytes) {
+            return new File([blob], file.name, { type: 'application/pdf' });
+        }
+    }
+    // Couldn't get under target — return the smallest we managed
+    return new File([smallest], file.name, { type: 'application/pdf' });
+}
+
+async function rasterizePdf(arrayBuffer, dpi, quality) {
+    // Clone the buffer because PDF.js consumes it
+    var bufCopy = arrayBuffer.slice(0);
+    var pdf = await pdfjsLib.getDocument({ data: bufCopy }).promise;
+    var PDFCtor = (typeof jspdf !== 'undefined') ? jspdf.jsPDF : jsPDF;
+    var newPdf = null;
+
+    for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        var page = await pdf.getPage(pageNum);
+        var scale = dpi / 72;
+        var viewport = page.getViewport({ scale: scale });
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        var ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        var dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+        // Convert pixel dims back to mm for jsPDF (jsPDF native unit is mm)
+        var widthMm = canvas.width * 25.4 / dpi;
+        var heightMm = canvas.height * 25.4 / dpi;
+
+        if (pageNum === 1) {
+            newPdf = new PDFCtor({
+                orientation: widthMm > heightMm ? 'l' : 'p',
+                unit: 'mm',
+                format: [widthMm, heightMm],
+                compress: true
+            });
+        } else {
+            newPdf.addPage([widthMm, heightMm], widthMm > heightMm ? 'l' : 'p');
+        }
+        newPdf.addImage(dataUrl, 'JPEG', 0, 0, widthMm, heightMm, undefined, 'FAST');
+        // Free canvas memory
+        canvas.width = canvas.height = 0;
+    }
+
+    var blob = newPdf.output('blob');
+    return blob;
+}
+
+// Compress an image (JPG/PNG/etc.) by progressive resize + quality reduction
+async function compressImageToTarget(file, targetBytes, progressFn) {
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            var img = new Image();
+            img.onload = async function() {
+                var attempts = [
+                    { scale: 1.0,  quality: 0.75 },
+                    { scale: 0.85, quality: 0.65 },
+                    { scale: 0.7,  quality: 0.55 },
+                    { scale: 0.55, quality: 0.45 },
+                    { scale: 0.4,  quality: 0.4 },
+                    { scale: 0.3,  quality: 0.35 }
+                ];
+                var smallest = null;
+                for (var i = 0; i < attempts.length; i++) {
+                    if (typeof progressFn === 'function') progressFn('דחיסה (ניסיון ' + (i+1) + '/' + attempts.length + ')…');
+                    var s = attempts[i];
+                    var canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(img.width * s.scale));
+                    canvas.height = Math.max(1, Math.round(img.height * s.scale));
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    var blob = await new Promise(function(res) { canvas.toBlob(res, 'image/jpeg', s.quality); });
+                    if (!smallest || blob.size < smallest.size) smallest = blob;
+                    if (blob.size <= targetBytes) {
+                        var newName = file.name.replace(/\.(jpe?g|png|gif|webp|bmp)$/i, '.jpg');
+                        if (newName === file.name) newName = file.name + '.jpg';
+                        resolve(new File([blob], newName, { type: 'image/jpeg' }));
+                        return;
+                    }
+                }
+                var fallbackName = file.name.replace(/\.(jpe?g|png|gif|webp|bmp)$/i, '.jpg');
+                resolve(new File([smallest], fallbackName, { type: 'image/jpeg' }));
+            };
+            img.onerror = function() { reject(new Error('שגיאה בטעינת התמונה')); };
+            img.src = reader.result;
+        };
+        reader.onerror = function() { reject(new Error('שגיאה בקריאת קובץ התמונה')); };
+        reader.readAsDataURL(file);
+    });
+}
+
+// Top-level dispatcher: route to PDF / image compressor; throw for unsupported types
+async function compressFileToTarget(file, targetBytes, progressFn) {
+    var type = (file.type || '').toLowerCase();
+    var name = (file.name || '').toLowerCase();
+    if (type === 'application/pdf' || name.endsWith('.pdf')) {
+        return await compressPdfToTarget(file, targetBytes, progressFn);
+    }
+    if (type.indexOf('image/') === 0 || /\.(jpe?g|png|gif|webp|bmp)$/.test(name)) {
+        return await compressImageToTarget(file, targetBytes, progressFn);
+    }
+    var err = new Error('סוג הקובץ "' + (type || 'לא ידוע') + '" לא נתמך לדחיסה אוטומטית — רק PDF ותמונות. יש להעלות גרסה קטנה יותר ידנית.');
+    err.unsupported = true;
+    throw err;
+}
+
+// Helper: upload file to Firebase Storage with timeout, fallback to base64 in Firestore.
+// If the file is too big for the base64 fallback, automatically attempt to compress
+// (PDFs by rasterizing pages, images by resizing) before giving up.
 async function uploadTrainingFile(file, pathPrefix) {
     console.log('[uploadTrainingFile]', file.name, 'size:', file.size, 'type:', file.type);
     window._lastStorageError = null;
@@ -13064,11 +13227,9 @@ async function uploadTrainingFile(file, pathPrefix) {
     // Try Firebase Storage first (preferred — supports any size)
     if (storage) {
         try {
-            // Sanitize file name for storage path (keep extension, strip risky chars)
             var safeName = (file.name || 'file').replace(/[^\w\u0590-\u05FF.\-]/g, '_');
             var path = pathPrefix + '_' + Date.now() + '_' + safeName;
             var storageRef = storage.ref(path);
-            // Longer timeout for big files; storage rule denials reject fast anyway
             var uploadResult = await Promise.race([
                 storageRef.put(file).then(function(snap) { return snap.ref.getDownloadURL(); }),
                 new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 60000); })
@@ -13077,34 +13238,54 @@ async function uploadTrainingFile(file, pathPrefix) {
             return { fileUrl: uploadResult, fileName: file.name };
         } catch(e) {
             console.warn('[uploadTrainingFile] Storage upload failed:', e.code || '', e.message || e);
-            // Save the storage error so we can surface a better message if the base64 fallback also fails
             window._lastStorageError = e;
         }
     } else {
         console.warn('[uploadTrainingFile] storage not initialized — using base64 fallback');
     }
 
-    // Fallback: convert to base64 and store in Firestore doc.
-    // Firestore doc limit is 1MB. Base64 expansion is ~33% so cap raw at ~700KB to leave room for other fields.
+    // Base64 fallback. Firestore doc limit is 1MB; base64 expansion ~33%; cap raw at 700KB.
     var FIRESTORE_BASE64_MAX = 700 * 1024;
-    if (file.size > FIRESTORE_BASE64_MAX) {
-        var storageMsg = '';
-        var lastErr = window._lastStorageError;
-        if (lastErr && (lastErr.code === 'storage/unauthorized' || lastErr.code === 'storage/unauthenticated' || /permission|denied|unauthor/i.test(String(lastErr.message||'')))) {
-            storageMsg = ' (אין הרשאה ל-Firebase Storage — יש לבדוק את חוקי ה-Storage בקונסולת Firebase)';
-        } else if (lastErr) {
-            storageMsg = ' (Storage error: ' + (lastErr.code || lastErr.message || 'unknown') + ')';
+    var workingFile = file;
+    var wasCompressed = false;
+
+    if (workingFile.size > FIRESTORE_BASE64_MAX) {
+        // Try auto-compression
+        try {
+            showToast('🗜️ מקטין את "' + file.name + '" (' + (file.size/1024/1024).toFixed(1) + 'MB)…');
+            var compressed = await compressFileToTarget(workingFile, FIRESTORE_BASE64_MAX, function(stage) {
+                showToast('🗜️ ' + stage);
+            });
+            console.log('[uploadTrainingFile] compressed', workingFile.size, '→', compressed.size);
+            if (compressed.size > FIRESTORE_BASE64_MAX) {
+                throw new Error('גם אחרי דחיסה הקובץ עדיין גדול מדי (' + (compressed.size/1024/1024).toFixed(2) + 'MB). יש לוודא הרשאות ב-Firebase Storage או להעלות גרסה קטנה יותר.');
+            }
+            var savedKb = ((file.size - compressed.size)/1024).toFixed(0);
+            showToast('✓ "' + file.name + '" הוקטן: ' + (file.size/1024/1024).toFixed(1) + 'MB → ' + (compressed.size/1024).toFixed(0) + 'KB (חסכון ' + savedKb + 'KB)');
+            workingFile = compressed;
+            wasCompressed = true;
+        } catch(compressErr) {
+            console.error('[uploadTrainingFile] compression failed:', compressErr);
+            var storageMsg = '';
+            var lastErr = window._lastStorageError;
+            if (lastErr && (lastErr.code === 'storage/unauthorized' || lastErr.code === 'storage/unauthenticated' || /permission|denied|unauthor/i.test(String(lastErr.message||'')))) {
+                storageMsg = ' (אין הרשאה ל-Firebase Storage — יש לבדוק את חוקי ה-Storage)';
+            } else if (lastErr) {
+                storageMsg = ' (Storage: ' + (lastErr.code || lastErr.message || 'unknown') + ')';
+            }
+            throw new Error('הקובץ גדול מדי (' + (file.size/1024/1024).toFixed(1) + 'MB) ולא ניתן לדחוס: ' + compressErr.message + storageMsg);
         }
-        throw new Error('הקובץ גדול מדי (' + (file.size/1024/1024).toFixed(1) + 'MB) להעלאה' + storageMsg);
     }
+
+    // Convert (possibly compressed) file to base64
     return new Promise(function(resolve, reject) {
         var reader = new FileReader();
         reader.onload = function() {
-            console.log('[uploadTrainingFile] base64 size:', reader.result.length);
-            resolve({ fileData: reader.result, fileName: file.name, fileType: file.type });
+            console.log('[uploadTrainingFile] base64 size:', reader.result.length, wasCompressed ? '(compressed)' : '');
+            resolve({ fileData: reader.result, fileName: file.name, fileType: workingFile.type, _compressed: wasCompressed });
         };
         reader.onerror = function() { reject(new Error('שגיאה בקריאת הקובץ')); };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(workingFile);
     });
 }
 
