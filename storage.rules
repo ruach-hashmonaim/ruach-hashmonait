@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// Permissive rules — match the open Firestore rules.
+// The app uses anonymous auth + custom user collection for permissions; Storage
+// access is gated by the app UI, not by these rules.
+//
+// Deploy with:  firebase deploy --only storage
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
