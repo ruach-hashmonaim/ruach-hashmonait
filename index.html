@@ -1059,6 +1059,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <a onclick="navigate('home')" data-page="home"><span class="nav-icon">&#9678;</span> דף הבית</a>
 
         <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי</a>
+        <a onclick="navigate('yonatan-resilience')" data-page="yonatan-resilience" class="nav-yonatan-resilience" style="display:none;"><span class="nav-icon">&#9702;</span> חוסן יונתן</a>
         <a onclick="navigate('geography')" data-page="geography" class="nav-geography" style="display:none;"><span class="nav-icon">&#9702;</span> כלים למפקד</a>
         <!-- כשירות אישית — temporarily hidden (TODO: restore when ready) -->
         <a onclick="navigate('soldier-tools')" data-page="soldier-tools" style="display:none;"><span class="nav-icon">&#9702;</span> כשירות אישית</a>
@@ -1126,6 +1127,11 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
             <div class="tile-title">רוח מכבי</div>
             <div class="tile-desc">תוכנית הרוח והחינוך — הכשרת יסוד, קורס מ״כים, קורס קצינים</div>
+        </a>
+        <a class="home-tile tile-yonatan-resilience" style="display:none;background:linear-gradient(rgba(227,242,253,0.78),rgba(227,242,253,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Givat_HaKippim%2C_Israel.jpg/400px-Givat_HaKippim%2C_Israel.jpg') center/cover;" onclick="navigate('yonatan-resilience')">
+            <div class="tile-icon" style="background:linear-gradient(135deg,#1565C0,#42A5F5);"><svg viewBox="0 0 24 24"><path d="M12 1l-9 4v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 5.5l4 4-1.41 1.41L13 10.33V17h-2v-6.67l-1.59 1.58L8 10.5l4-4z"/></svg></div>
+            <div class="tile-title">חוסן יונתן</div>
+            <div class="tile-desc">תוכנית החוסן והרוח של גדוד יונתן</div>
         </a>
         <a class="home-tile tile-geography" style="display:none;background:linear-gradient(rgba(240,249,255,0.78),rgba(240,249,255,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg/400px-123354_jerusalem_valley_of_ben_hinnom_PikiWiki_Israel.jpg') center/cover;" onclick="navigate('geography')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#0369A1,#0891B2);"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
@@ -1289,6 +1295,33 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
 
     <div id="training-content"></div>
+</div>
+
+<!-- ====== חוסן יונתן — Yonatan Battalion Resilience & Spirit Program ====== -->
+<div class="page-section" id="page-yonatan-resilience">
+    <div class="card" style="background:linear-gradient(135deg,#1565C0,#1976D2);color:#fff;margin-bottom:18px;border-right:5px solid var(--brigade-gold);">
+        <h2 style="font-size:1.25rem;margin-bottom:6px;">🛡️ חוסן יונתן</h2>
+        <p style="opacity:0.9;font-size:0.9rem;">תוכנית החוסן והרוח של גדוד יונתן — חיזוק זהות, מנהיגות ועוצמה אישית</p>
+    </div>
+
+    <!-- Sub-modules grid (placeholder — to be filled with actual content) -->
+    <div id="yonatan-resilience-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
+        <div class="card" style="text-align:center;padding:36px 20px;border:2px dashed var(--border);background:#FAFAFA;">
+            <div style="font-size:3rem;margin-bottom:14px;opacity:0.7;">🚧</div>
+            <h3 style="color:var(--primary);font-size:1.05rem;margin-bottom:8px;">בקרוב</h3>
+            <p style="font-size:0.86rem;color:var(--text-secondary);line-height:1.6;">
+                כאן תיכנס תוכנית החוסן והרוח של גדוד יונתן.<br>
+                מערכי שיעור, סדנאות חוסן, פעילויות צוות, סקרים פנים-גדודיים, ועוד —<br>
+                בקרוב!
+            </p>
+        </div>
+    </div>
+
+    <!-- Optional links area for quick access — visible to admins only -->
+    <div id="yonatan-resilience-admin-tools" style="display:none;margin-top:20px;padding:14px 16px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:12px;">
+        <div style="font-size:0.85rem;color:#9A3412;font-weight:600;margin-bottom:6px;">🛠️ כלי מנהל</div>
+        <p style="font-size:0.82rem;color:var(--text-secondary);">תכני המודול ינוהלו דרך "ניהול תכנים" כשיעלו לשימוש. בינתיים — ניתן לתכנן את התכנים מראש.</p>
+    </div>
 </div>
 
 <!-- ====== HEBREW — Hebrew Learning ====== -->
@@ -2917,6 +2950,7 @@ const PAGE_TITLES = {
     'learning': 'והגית בו — למידה יומית',
     'hebrew': 'לימוד עברית',
     'training': 'רוח מכבי',
+    'yonatan-resilience': 'חוסן יונתן',
     'geography': 'כלים למפקד',
     'internet-safety': 'שולטים ברשת הפנימית',
     'soldier-tools': 'כשירות אישית',
@@ -3623,6 +3657,16 @@ function updateUIForRole() {
     document.querySelectorAll('.nav-geography, .tile-geography').forEach(el => {
         el.style.display = canGeo ? '' : 'none';
     });
+
+    // חוסן יונתן — visible to gdud Yonatan members + brigade-level admins
+    var fw = (currentUser && currentUser.framework) || '';
+    var isSysAdmin = currentUser && currentUser.role === 'menahel' && !currentUser.framework;
+    var canSeeYonatan = fw === 'yonatan' || fw === 'mifhat' || isSysAdmin;
+    document.querySelectorAll('.nav-yonatan-resilience, .tile-yonatan-resilience').forEach(el => {
+        el.style.display = canSeeYonatan ? '' : 'none';
+    });
+    var yonAdminTools = document.getElementById('yonatan-resilience-admin-tools');
+    if (yonAdminTools) yonAdminTools.style.display = (isSysAdmin || fw === 'mifhat') ? '' : 'none';
 }
 
 // --- Change Password ---
