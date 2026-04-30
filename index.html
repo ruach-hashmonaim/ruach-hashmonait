@@ -3345,10 +3345,60 @@ function normalizeGmail(email) {
 }
 
 // --- Staff Login via Google ---
-// Pops up Google sign-in, then matches the returned email to an existing
-// user document in Firestore by `email` field. Existing users keep all
-// their permissions, role, framework, pluga, etc. — only the auth method
-// changes. New (unmatched) emails are rejected with a clear message.
+// Strategy:
+//   * Desktop browsers → signInWithPopup (good UX, no full-page reload)
+//   * Mobile devices   → signInWithRedirect (popups are unreliable / blocked
+//     on iOS Safari, embedded WebViews, etc.). After Google authenticates,
+//     the page reloads and getRedirectResult() picks up the result on boot.
+
+function _isMobileDevice() {
+    if (typeof navigator === 'undefined') return false;
+    var ua = navigator.userAgent || '';
+    var coarse = (typeof window.matchMedia === 'function') && window.matchMedia('(pointer:coarse)').matches;
+    var mobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
+    return mobileUA || coarse || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && /Mac/i.test(ua));
+}
+
+// Shared completion flow — used by both popup result and redirect result.
+// Takes a Firebase user object, looks up the matching staff doc by email,
+// and finalizes the in-app session. Returns true on success.
+async function _completeGoogleLogin(fbUser) {
+    var rawEmail = (fbUser && fbUser.email) ? fbUser.email : '';
+    if (!rawEmail) throw new Error('Google לא החזיר כתובת מייל');
+    var email = normalizeGmail(rawEmail);
+
+    var snap = await db.collection('users').where('email', '==', email).limit(1).get();
+    var userDoc = null;
+    if (!snap.empty) {
+        userDoc = snap.docs[0];
+    } else {
+        // Try the raw (non-normalized) email too, in case the doc was saved with dots
+        var altSnap = await db.collection('users').where('email', '==', rawEmail.toLowerCase()).limit(1).get();
+        if (!altSnap.empty) userDoc = altSnap.docs[0];
+    }
+    if (!userDoc) {
+        try { await firebase.auth().signOut(); } catch(_) {}
+        showToast('המייל ' + rawEmail + ' אינו רשום כצוות במערכת. פנה למנהל המערכת.');
+        return false;
+    }
+
+    var ud = userDoc.data();
+    currentUser = _buildCurrentUserFromDoc(userDoc.id, ud, ud.email || email);
+
+    try {
+        await db.collection('users').doc(currentUser.id).update({
+            googleAuthLinked: true,
+            lastGoogleLogin: new Date()
+        });
+    } catch(updateErr) { console.warn('[completeGoogleLogin] non-fatal:', updateErr); }
+
+    localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+    _failedLogins = 0;
+    onLoginSuccess();
+    showToast('שלום ' + currentUser.name + '! 👋');
+    return true;
+}
+
 async function loginWithGoogle() {
     if (!firebase || !firebase.auth) {
         showToast('שירות ההתחברות אינו זמין כרגע');
@@ -3361,58 +3411,45 @@ async function loginWithGoogle() {
     }
     showLoading(true);
     try {
-        // If a previous session is anonymous, sign it out so popup gets a clean slate
+        // If a previous session is anonymous, sign it out for a clean slate
         if (firebase.auth().currentUser && firebase.auth().currentUser.isAnonymous) {
             try { await firebase.auth().signOut(); } catch(_) {}
         }
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
-        const result = await firebase.auth().signInWithPopup(provider);
-        const fbUser = result.user;
-        const rawEmail = (fbUser && fbUser.email) ? fbUser.email : '';
-        if (!rawEmail) throw new Error('Google לא החזיר כתובת מייל');
-        const email = normalizeGmail(rawEmail);
 
-        // Look up matching user document — existing users keep all their data
-        const snap = await db.collection('users').where('email', '==', email).limit(1).get();
-        if (snap.empty) {
-            // Try the raw (non-normalized) email too, in case the doc was saved with dots
-            const altSnap = await db.collection('users').where('email', '==', rawEmail.toLowerCase()).limit(1).get();
-            if (altSnap.empty) {
-                // Sign the Google user out — they shouldn't stay authenticated to Firebase
-                try { await firebase.auth().signOut(); } catch(_) {}
-                showLoading(false);
-                showToast('המייל ' + rawEmail + ' אינו רשום כצוות במערכת. פנה למנהל המערכת.');
-                return;
-            }
-            const userDoc = altSnap.docs[0];
-            const ud = userDoc.data();
-            currentUser = _buildCurrentUserFromDoc(userDoc.id, ud, ud.email || rawEmail.toLowerCase());
-        } else {
-            const userDoc = snap.docs[0];
-            const ud = userDoc.data();
-            currentUser = _buildCurrentUserFromDoc(userDoc.id, ud, email);
+        if (_isMobileDevice()) {
+            // Redirect flow — page navigates to Google, then back here. Result
+            // will be picked up by handleGoogleRedirectResult() on next load.
+            console.log('[loginWithGoogle] mobile detected — using redirect flow');
+            // Set a session marker so we know we initiated this redirect
+            try { sessionStorage.setItem('_pendingGoogleRedirect', '1'); } catch(_) {}
+            await firebase.auth().signInWithRedirect(provider);
+            // Code below this line will not run — the page navigates away.
+            return;
         }
 
-        // Mark this user as having a Google-linked account (informational, non-breaking)
-        try {
-            await db.collection('users').doc(currentUser.id).update({
-                googleAuthLinked: true,
-                lastGoogleLogin: new Date()
-            });
-        } catch(updateErr) { console.warn('[loginWithGoogle] non-fatal: could not mark googleAuthLinked', updateErr); }
-
-        localStorage.setItem('ruach-user', JSON.stringify(currentUser));
-        _failedLogins = 0;
-        onLoginSuccess();
-        showToast('שלום ' + currentUser.name + '! 👋');
+        // Desktop: popup flow
+        const result = await firebase.auth().signInWithPopup(provider);
+        const ok = await _completeGoogleLogin(result.user);
+        if (!ok) showLoading(false);
     } catch(e) {
         console.error('[loginWithGoogle] error:', e);
         // Differentiate user cancellation from real errors
         if (e && (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request')) {
             // Silent — user closed the popup intentionally
         } else if (e && e.code === 'auth/popup-blocked') {
-            showToast('הדפדפן חסם את חלון ה-Google. אפשר Pop-ups לאתר זה ונסה שוב.');
+            // Fall back to redirect if popup was blocked
+            showToast('המערכת עוברת לכניסה במצב מסך מלא…');
+            try {
+                const provider2 = new firebase.auth.GoogleAuthProvider();
+                provider2.setCustomParameters({ prompt: 'select_account' });
+                try { sessionStorage.setItem('_pendingGoogleRedirect', '1'); } catch(_) {}
+                await firebase.auth().signInWithRedirect(provider2);
+                return;
+            } catch(re) {
+                showToast('שגיאה: ' + (re.message || re.code || 'לא ניתן לפתוח חלון Google'));
+            }
         } else if (e && e.code === 'auth/operation-not-allowed') {
             showToast('שירות Google Sign-In לא מופעל ב-Firebase. פנה למנהל המערכת.');
         } else if (e && e.code === 'auth/unauthorized-domain') {
@@ -3422,6 +3459,38 @@ async function loginWithGoogle() {
         }
     }
     showLoading(false);
+}
+
+// Called on every page load. If a Google sign-in redirect is pending,
+// finalizes the login.  Returns true if a redirect result was processed.
+async function handleGoogleRedirectResult() {
+    if (!firebase || !firebase.auth) return false;
+    var hadPending = false;
+    try { hadPending = sessionStorage.getItem('_pendingGoogleRedirect') === '1'; } catch(_) {}
+    try {
+        var result = await firebase.auth().getRedirectResult();
+        try { sessionStorage.removeItem('_pendingGoogleRedirect'); } catch(_) {}
+        if (result && result.user) {
+            console.log('[handleGoogleRedirectResult] redirect result received:', result.user.email);
+            showLoading(true);
+            try { await _completeGoogleLogin(result.user); }
+            finally { showLoading(false); }
+            return true;
+        }
+    } catch(e) {
+        try { sessionStorage.removeItem('_pendingGoogleRedirect'); } catch(_) {}
+        console.error('[handleGoogleRedirectResult] error:', e);
+        if (hadPending) {
+            if (e.code === 'auth/operation-not-allowed') {
+                showToast('שירות Google Sign-In לא מופעל ב-Firebase.');
+            } else if (e.code === 'auth/unauthorized-domain') {
+                showToast('הדומיין הזה לא מורשה ב-Firebase.');
+            } else {
+                showToast('שגיאה בכניסה דרך Google: ' + (e.message || e.code || 'לא ידוע'));
+            }
+        }
+    }
+    return false;
 }
 
 // Helper: build the in-app user object from a Firestore user doc
@@ -23775,7 +23844,20 @@ function showLoading(show) { document.getElementById('loading').style.display = 
 // ============================================================
 // START
 // ============================================================
-initApp().then(() => {
+initApp().then(async () => {
+    // First — check if we just came back from a Google sign-in redirect
+    // (mobile flow). If yes, finalize the login and show the app.
+    try {
+        var redirected = await handleGoogleRedirectResult();
+        if (redirected) {
+            // _completeGoogleLogin already called onLoginSuccess() which
+            // showed the app. Honor any deep link.
+            var h = window.location.hash.slice(1);
+            if (h && h !== 'home') activatePage(h);
+            return;
+        }
+    } catch(e) { console.warn('[boot] redirect-result check failed:', e); }
+
     // Check if user has saved login — skip splash if so
     const savedUser = localStorage.getItem('ruach-user') || localStorage.getItem('ruach-participant');
     if (savedUser) {
@@ -23790,7 +23872,7 @@ initApp().then(() => {
             }
         }, 300);
     }
-    // Otherwise: splash screen stays visible, user clicks "כניסה לאתר"
+    // Otherwise: splash screen stays visible, waiting for Google sign-in
 });
 
 if ('serviceWorker' in navigator) {
