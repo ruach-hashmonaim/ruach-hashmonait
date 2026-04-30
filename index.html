@@ -897,7 +897,19 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="splash-title">המצפן</div>
         <div class="splash-subtitle">רוח · חוסן · חינוך<br><span style="font-size:0.85em;opacity:0.85;">חטיבת החשמונאים</span></div>
         <div class="splash-buttons">
-            <button class="splash-btn splash-btn-login" onclick="splashEnter()">כניסה לאתר</button>
+            <!-- Primary: Google sign-in -->
+            <button class="splash-btn" onclick="splashGoogleLogin()" style="background:#fff;color:#3c4043;box-shadow:0 6px 25px rgba(0,0,0,0.25);">
+                <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M16.51 8.18c0-.59-.05-1.16-.15-1.7H9v3.21h4.19a3.58 3.58 0 0 1-1.55 2.35v1.95h2.51c1.47-1.36 2.36-3.36 2.36-5.81z" fill="#4285F4"/><path d="M9 17c2.1 0 3.86-.7 5.15-1.89l-2.51-1.95c-.7.47-1.59.74-2.64.74-2.03 0-3.75-1.37-4.36-3.21H2.04v2.01A8 8 0 0 0 9 17z" fill="#34A853"/><path d="M4.64 10.69A4.8 4.8 0 0 1 4.39 9c0-.59.1-1.16.25-1.69V5.3H2.04A7.99 7.99 0 0 0 1 9c0 1.3.31 2.5.85 3.61l2.79-1.92z" fill="#FBBC05"/><path d="M9 3.58c1.14 0 2.16.39 2.97 1.16l2.22-2.22A8 8 0 0 0 9 1a8 8 0 0 0-6.96 4.3l2.6 2.01C5.25 4.95 6.97 3.58 9 3.58z" fill="#EA4335"/></svg>
+                <span>התחברות עם Google</span>
+            </button>
+            <!-- Secondary: email + password (hidden by default) -->
+            <a onclick="splashShowPasswordForm()" style="color:rgba(255,255,255,0.85);font-size:0.85rem;text-decoration:underline;cursor:pointer;text-align:center;display:block;margin-top:4px;">כניסה עם מייל וסיסמה</a>
+            <div id="splash-password-form" style="display:none;margin-top:14px;background:rgba(255,255,255,0.95);border-radius:14px;padding:14px;direction:rtl;text-align:right;">
+                <input type="email" id="splash-email" placeholder="כתובת מייל" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:0.92rem;direction:ltr;text-align:left;box-sizing:border-box;font-family:inherit;" onkeydown="if(event.key==='Enter')document.getElementById('splash-password').focus()">
+                <input type="password" id="splash-password" placeholder="סיסמה" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:8px;font-size:0.92rem;direction:ltr;text-align:left;box-sizing:border-box;font-family:inherit;" onkeydown="if(event.key==='Enter')splashPasswordLogin()">
+                <button class="btn-primary" style="width:100%;padding:9px;font-size:0.92rem;font-family:inherit;" onclick="splashPasswordLogin()">כניסה</button>
+            </div>
+            <div id="splash-status" style="margin-top:10px;font-size:0.82rem;color:#FFE082;text-align:center;min-height:20px;"></div>
         </div>
         <div class="splash-credit">פותח ע״י IAB-Smart AI Solutions</div>
     </div>
@@ -2960,8 +2972,9 @@ const PAGE_TITLES = {
     'content-mgmt': 'ניהול תכנים'
 };
 
-// Public pages — accessible to everyone without login
-const PUBLIC_PAGES = ['home', 'learning', 'hebrew', 'internet-safety', 'surveys', 'soldier-tools'];
+// Public pages — none. The system is now fully gated by login (since v48+).
+// Kept as a constant so legacy code paths that check it still work.
+const PUBLIC_PAGES = [];
 
 // Participant user (self-registered)
 let currentParticipant = null;
@@ -2984,15 +2997,31 @@ function switchSoldierTab(tab) {
 function navigate(page) {
     // Block navigation when in deep link locked mode (shared quiz)
     if (window._deepLinkLocked) return;
-    // Staff-only pages require login with correct permissions
+    // === LOGIN GATE ===
+    // The entire system requires login. If no user is signed in, show the
+    // splash and remember the requested page so we can restore it after login.
+    if (!currentUser) {
+        window._pendingPostLoginPage = page;
+        showSplashLogin();
+        return;
+    }
+    // Staff-only pages also require the right permission
     const requiredPerm = PAGE_PERMISSIONS[page];
-    if (requiredPerm) {
-        if (!currentUser) { openLoginModal(page); return; }
-        if (!hasPermission(requiredPerm)) { showToast('אין הרשאה לעמוד זה'); return; }
+    if (requiredPerm && !hasPermission(requiredPerm)) {
+        showToast('אין הרשאה לעמוד זה');
+        return;
     }
     window.location.hash = page;
     activatePage(page);
     closeSidebar();
+}
+
+// Show the splash/login screen and hide the app
+function showSplashLogin() {
+    var splash = document.getElementById('splash-screen');
+    var app = document.getElementById('app-layout');
+    if (splash) splash.style.display = '';
+    if (app) app.style.display = 'none';
 }
 
 function activatePage(page) {
@@ -3578,8 +3607,67 @@ function logoutParticipant() {
     document.getElementById('home-greeting').textContent = '';
 }
 
+// Real-time listener that watches the current user's Firestore doc.
+// If the doc is deleted or marked disabled, the user is logged out
+// immediately. If role/permissions/framework change, currentUser is
+// refreshed without forcing a logout.
+var _userSnapshotUnsubscribe = null;
+function setupCurrentUserSnapshot() {
+    try {
+        if (_userSnapshotUnsubscribe) { _userSnapshotUnsubscribe(); _userSnapshotUnsubscribe = null; }
+        if (!currentUser || !currentUser.id || !db) return;
+        _userSnapshotUnsubscribe = db.collection('users').doc(currentUser.id).onSnapshot(function(snap) {
+            if (!snap.exists) {
+                console.warn('[userSnapshot] doc deleted — forcing logout');
+                showToast('המשתמש שלך הוסר מהמערכת — מתבצע ניתוק');
+                logout();
+                showSplashLogin();
+                return;
+            }
+            var d = snap.data();
+            if (d.disabled === true) {
+                console.warn('[userSnapshot] account disabled — forcing logout');
+                showToast('החשבון שלך הושבת — פנה למנהל המערכת');
+                logout();
+                showSplashLogin();
+                return;
+            }
+            // Refresh in-memory user with latest data
+            currentUser.role = d.role || currentUser.role;
+            currentUser.permissions = d.permissions || [];
+            currentUser.pluga = d.pluga || '';
+            currentUser.framework = d.framework || '';
+            currentUser.name = d.name || currentUser.name;
+            try { localStorage.setItem('ruach-user', JSON.stringify(currentUser)); } catch(e) {}
+            try { updateUIForRole(); } catch(e) {}
+        }, function(err) {
+            console.warn('[userSnapshot] listener error (non-fatal):', err);
+        });
+    } catch(err) { console.warn('[setupCurrentUserSnapshot] error:', err); }
+}
+
 function onLoginSuccess() {
     closeLoginModal();
+    // Hide splash + show app (in case we came from there)
+    var splash = document.getElementById('splash-screen');
+    var app = document.getElementById('app-layout');
+    if (splash) splash.style.display = 'none';
+    if (app) app.style.display = '';
+    // Attach a real-time listener so admin removals/permission changes
+    // take effect immediately without waiting for session expiry.
+    setupCurrentUserSnapshot();
+    // If a navigation was pending (user clicked a link before logging in), honor it
+    if (window._pendingPostLoginPage) {
+        var p = window._pendingPostLoginPage;
+        window._pendingPostLoginPage = null;
+        try { setTimeout(function() { navigate(p); }, 0); } catch(e) {}
+    }
+    _onLoginSuccessOriginal();
+}
+
+// Renamed original implementation — kept identical, just split out so we can
+// run additional pre-steps (snapshot listener, splash hide) above.
+function _onLoginSuccessOriginal() {
 
     // If a participant was logged in, log them out (staff takes precedence)
     if (currentParticipant) {
@@ -3731,10 +3819,15 @@ function logout() {
     currentUser = null;
     localStorage.removeItem('ruach-user');
 
-    // Sign out of Firebase Auth too — important when user logged in via
-    // Google, otherwise the next page load would auto-restore the session.
-    // Don't await — the UI shouldn't block on this. Re-establishes anonymous
-    // auth in the background so Firestore writes still work.
+    // Detach the real-time user listener
+    try {
+        if (typeof _userSnapshotUnsubscribe === 'function') {
+            _userSnapshotUnsubscribe();
+        }
+        _userSnapshotUnsubscribe = null;
+    } catch(e) {}
+
+    // Sign out of Firebase Auth too (Google sessions otherwise auto-restore)
     try {
         if (firebase && firebase.auth && firebase.auth().currentUser && !firebase.auth().currentUser.isAnonymous) {
             firebase.auth().signOut().then(function() {
@@ -3749,12 +3842,12 @@ function logout() {
     document.getElementById('home-framework-badge').style.display = 'none';
 
     // Hide role-based elements
-    document.querySelectorAll('.nav-training, .tile-training').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-training, .nav-yonatan-resilience, .tile-training, .tile-yonatan-resilience').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-admin, .tile-admin').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-geography, .tile-geography').forEach(el => el.style.display = 'none');
 
-    // Stay in the app — just go to home (no splash needed)
-    navigate('home');
+    // Show the splash so the user can sign in again (system is fully gated)
+    showSplashLogin();
 }
 
 // ============================================================
@@ -23484,6 +23577,50 @@ function splashEnter() {
     }
 }
 
+// Show the email+password form on splash (default hidden behind a link)
+function splashShowPasswordForm() {
+    var f = document.getElementById('splash-password-form');
+    if (f) {
+        f.style.display = (f.style.display === 'none' || !f.style.display) ? '' : 'none';
+        if (f.style.display !== 'none') {
+            setTimeout(function() { var i = document.getElementById('splash-email'); if (i) i.focus(); }, 50);
+        }
+    }
+}
+
+// Trigger Google sign-in directly from the splash screen
+async function splashGoogleLogin() {
+    var statusEl = document.getElementById('splash-status');
+    if (statusEl) statusEl.textContent = 'פותח חלון Google…';
+    try {
+        await loginWithGoogle();
+        if (statusEl) statusEl.textContent = '';
+    } catch(e) {
+        console.error('[splashGoogleLogin] error:', e);
+        if (statusEl) statusEl.textContent = e.message || 'שגיאה בהתחברות';
+    }
+}
+
+// Email + password login from the splash form
+async function splashPasswordLogin() {
+    var emailEl = document.getElementById('splash-email');
+    var passEl = document.getElementById('splash-password');
+    var statusEl = document.getElementById('splash-status');
+    var emailInput = document.getElementById('login-email');
+    var passInput = document.getElementById('login-password');
+    if (!emailEl || !passEl) return;
+    // Bridge to the existing modal-based login function
+    if (emailInput) emailInput.value = emailEl.value;
+    if (passInput) passInput.value = passEl.value;
+    if (statusEl) statusEl.textContent = 'מתחבר…';
+    try {
+        await loginWithPassword();
+        if (statusEl) statusEl.textContent = '';
+    } catch(e) {
+        if (statusEl) statusEl.textContent = e.message || 'שגיאה בהתחברות';
+    }
+}
+
 // Firestore offline recovery — detects offline state and re-enables network
 function setupFirestoreRecovery() {
     if (!db) return;
@@ -23570,6 +23707,7 @@ async function tryAutoLogin() {
             if (parsed.sessionExpiry && Date.now() > parsed.sessionExpiry) {
                 localStorage.removeItem('ruach-user');
                 showToast('הסשן פג תוקף — יש להתחבר מחדש');
+                showSplashLogin();
                 return;
             }
             // Migrate old format
@@ -23584,20 +23722,34 @@ async function tryAutoLogin() {
             }
             // Show UI immediately with cached permissions
             onLoginSuccess();
-            // Then refresh permissions from Firestore in background (non-blocking)
+            // Then verify the user still exists in Firestore. If the doc is gone
+            // (admin removed them) or marked disabled, force a logout immediately.
             if (currentUser.id && db) {
                 db.collection('users').doc(currentUser.id).get().then(function(freshDoc) {
-                    if (freshDoc.exists) {
-                        var fresh = freshDoc.data();
-                        currentUser.permissions = fresh.permissions || [];
-                        currentUser.role = fresh.role || currentUser.role;
-                        currentUser.pluga = fresh.pluga || currentUser.pluga;
-                        currentUser.framework = fresh.framework || currentUser.framework;
-                        currentUser.name = fresh.name || currentUser.name;
-                        localStorage.setItem('ruach-user', JSON.stringify(currentUser));
-                        onLoginSuccess(); // re-render with fresh permissions
+                    if (!freshDoc.exists) {
+                        console.warn('[tryAutoLogin] user doc no longer exists — logging out');
+                        showToast('המשתמש שלך הוסר מהמערכת — יש להתחבר מחדש');
+                        logout();
+                        return;
                     }
-                }).catch(function(e) { console.warn('Permission refresh failed:', e); });
+                    var fresh = freshDoc.data();
+                    if (fresh.disabled === true) {
+                        console.warn('[tryAutoLogin] user disabled — logging out');
+                        showToast('החשבון שלך הושבת — פנה למנהל המערכת');
+                        logout();
+                        return;
+                    }
+                    currentUser.permissions = fresh.permissions || [];
+                    currentUser.role = fresh.role || currentUser.role;
+                    currentUser.pluga = fresh.pluga || currentUser.pluga;
+                    currentUser.framework = fresh.framework || currentUser.framework;
+                    currentUser.name = fresh.name || currentUser.name;
+                    localStorage.setItem('ruach-user', JSON.stringify(currentUser));
+                    onLoginSuccess(); // re-render with fresh permissions
+                }).catch(function(e) {
+                    // Network-level errors should NOT log the user out — keep cached session
+                    console.warn('[tryAutoLogin] permission refresh failed (using cached):', e);
+                });
             }
             const page = window.location.hash.slice(1) || 'home';
             if (PAGE_PERMISSIONS[page] && hasPermission(PAGE_PERMISSIONS[page])) activatePage(page);
