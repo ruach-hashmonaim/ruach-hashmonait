@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ruach-v44';
+const CACHE_NAME = 'ruach-v45';
 const STATIC_ASSETS = [
   './',
   './index.html',
