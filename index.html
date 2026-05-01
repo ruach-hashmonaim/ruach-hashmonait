@@ -3331,6 +3331,7 @@ async function loginWithPassword() {
         localStorage.setItem('ruach-user', JSON.stringify(currentUser));
         _failedLogins = 0; // Reset failed login counter
         onLoginSuccess();
+        try { analyticsTrackEvent('login', { method: 'password', framework: currentUser.framework || '', role: currentUser.role || '' }); } catch(e) {}
     } catch(e) {
         showToast('שגיאה בכניסה — בדוק חיבור');
     }
@@ -3395,6 +3396,7 @@ async function _completeGoogleLogin(fbUser) {
     localStorage.setItem('ruach-user', JSON.stringify(currentUser));
     _failedLogins = 0;
     onLoginSuccess();
+    try { analyticsTrackEvent('login', { method: 'google', framework: currentUser.framework || '', role: currentUser.role || '' }); } catch(e) {}
     showToast('שלום ' + currentUser.name + '! 👋');
     return true;
 }
@@ -23187,7 +23189,7 @@ async function loadAdminDashboard() {
         window._dashDays = days;
         c.innerHTML = '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:1.5rem;">📊</div><div style="margin-top:8px;">טוען נתונים...</div></div>';
 
-        var stats = null, usersSnap = null;
+        var stats = null, usersSnap = null, contentStats = null, activeUsers = [];
         try {
             stats = await analyticsGetStats(days);
         } catch(err) {
@@ -23197,6 +23199,16 @@ async function loadAdminDashboard() {
             if (db) usersSnap = await db.collection('users').get();
         } catch(err) {
             console.warn('Dashboard: users query failed', err.message);
+        }
+        try {
+            contentStats = await getContentCreationStats(days);
+        } catch(err) {
+            console.warn('Dashboard: getContentCreationStats failed', err.message);
+        }
+        try {
+            activeUsers = await getActiveUsersStats();
+        } catch(err) {
+            console.warn('Dashboard: getActiveUsersStats failed', err.message);
         }
 
         var staffCount = usersSnap ? usersSnap.size : 0;
@@ -23262,6 +23274,123 @@ async function loadAdminDashboard() {
             h += '</div>';
         });
         h += '</div></div>';
+
+        // === LOGINS BY FRAMEWORK ===
+        if (stats.activeUsersByFramework && Object.keys(stats.activeUsersByFramework).length > 0) {
+            h += '<div class="card" style="margin-bottom:16px;">';
+            h += '<h3 style="margin-bottom:14px;">🏛️ מסגרות פעילות בטווח הנבחר</h3>';
+            h += '<p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;">משתמשים ייחודיים שנכנסו, מפוצלים לפי מסגרת ארגונית</p>';
+            var fwLabels = (typeof FRAMEWORKS !== 'undefined' && FRAMEWORKS) ? FRAMEWORKS : {};
+            var sortedFw = Object.entries(stats.activeUsersByFramework).sort(function(a,b){ return b[1]-a[1]; });
+            var maxFw = sortedFw.length > 0 ? sortedFw[0][1] : 1;
+            sortedFw.forEach(function(e){
+                var fwKey = e[0], count = e[1];
+                var label = fwLabels[fwKey] || fwKey || 'לא מוגדר';
+                var pct = (count / maxFw) * 100;
+                h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
+                h += '<div style="width:140px;font-size:0.85rem;font-weight:600;text-align:right;">' + _htmlEsc(label) + '</div>';
+                h += '<div style="flex:1;background:#e5e7eb;border-radius:4px;height:22px;overflow:hidden;">';
+                h += '<div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-light));border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;">';
+                h += '<span style="font-size:0.78rem;color:#fff;font-weight:700;">' + count + '</span>';
+                h += '</div></div></div>';
+            });
+            // Login methods breakdown
+            if (stats.loginEventCount > 0) {
+                h += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:0.82rem;color:var(--text-secondary);">';
+                h += '🔐 ' + stats.loginEventCount + ' כניסות בטווח · ';
+                h += '<b>Google:</b> ' + (stats.loginsByMethod.google || 0) + ' · ';
+                h += '<b>סיסמה:</b> ' + (stats.loginsByMethod.password || 0);
+                h += '</div>';
+            }
+            h += '</div>';
+        }
+
+        // === CONTENT CREATED ===
+        if (contentStats) {
+            h += '<div class="card" style="margin-bottom:16px;">';
+            h += '<h3 style="margin-bottom:14px;">📝 תוכן שנוצר בטווח הנבחר</h3>';
+            h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">';
+            var contentItems = [
+                { icon:'📚', value: contentStats.training_content, label:'יחידות לימוד', color:'#3b82f6' },
+                { icon:'📍', value: contentStats.sakag, label:'סק"גים', color:'#0E7490' },
+                { icon:'🎖️', value: contentStats.morak, label:'מור"קים', color:'#7C3AED' },
+                { icon:'📋', value: contentStats.lesson, label:'מערכי שיעור', color:'#059669' },
+                { icon:'🧠', value: contentStats.trivia, label:'טריוויה', color:'#D97706' },
+                { icon:'📎', value: contentStats.files_uploaded, label:'קבצים שצורפו', color:'#6B7280' }
+            ];
+            contentItems.forEach(function(item) {
+                h += '<div style="background:#FAFAFA;border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">';
+                h += '<div style="font-size:1.2rem;margin-bottom:2px;">' + item.icon + '</div>';
+                h += '<div style="font-size:1.5rem;font-weight:800;color:' + item.color + ';">' + item.value + '</div>';
+                h += '<div style="font-size:0.75rem;color:var(--text-secondary);">' + item.label + '</div>';
+                h += '</div>';
+            });
+            h += '</div>';
+            h += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:0.85rem;color:var(--text-secondary);text-align:center;">';
+            h += 'סה"כ פריטי תוכן שנוצרו בטווח: <b style="color:var(--primary);">' + contentStats.total + '</b>';
+            h += '</div>';
+            h += '</div>';
+        }
+
+        // === ACTIVE USERS LIST ===
+        if (activeUsers && activeUsers.length > 0) {
+            // Compute "active in last X days" cutoff
+            var cutoffMs = Date.now() - (days * 24 * 60 * 60 * 1000);
+            var recentlyActive = activeUsers.filter(function(u) {
+                if (!u.lastSeen) return false;
+                var ts = u.lastSeen.toMillis ? u.lastSeen.toMillis() : new Date(u.lastSeen).getTime();
+                return ts >= cutoffMs;
+            });
+            var neverSeen = activeUsers.filter(function(u){ return !u.lastSeen; });
+
+            h += '<div class="card" style="margin-bottom:16px;">';
+            h += '<h3 style="margin-bottom:6px;">👥 משתמשים פעילים</h3>';
+            h += '<p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:14px;">';
+            h += '<b style="color:var(--success,#0D9488);">' + recentlyActive.length + '</b> נכנסו בטווח · ';
+            h += '<b>' + activeUsers.length + '</b> משתמשי צוות סה"כ · ';
+            h += '<b style="color:var(--danger,#DC2626);">' + neverSeen.length + '</b> מעולם לא נכנסו';
+            h += '</p>';
+            h += '<div style="overflow-x:auto;max-height:380px;overflow-y:auto;"><table style="width:100%;font-size:0.82rem;border-collapse:collapse;">';
+            h += '<thead style="position:sticky;top:0;background:var(--bg,#f5f5f4);z-index:1;"><tr>';
+            h += '<th style="padding:8px;text-align:right;border-bottom:2px solid var(--border);">שם</th>';
+            h += '<th style="padding:8px;text-align:right;border-bottom:2px solid var(--border);">מסגרת</th>';
+            h += '<th style="padding:8px;text-align:right;border-bottom:2px solid var(--border);">תפקיד</th>';
+            h += '<th style="padding:8px;text-align:right;border-bottom:2px solid var(--border);">כניסה אחרונה</th>';
+            h += '<th style="padding:8px;text-align:center;border-bottom:2px solid var(--border);">Google</th>';
+            h += '</tr></thead><tbody>';
+            var fwLabels2 = (typeof FRAMEWORKS !== 'undefined' && FRAMEWORKS) ? FRAMEWORKS : {};
+            var roleLabelsDash = (typeof ROLES !== 'undefined' && ROLES) ? ROLES : {};
+            activeUsers.slice(0, 100).forEach(function(u){
+                var lastTxt = '—';
+                var lastColor = 'var(--text-secondary)';
+                if (u.lastSeen) {
+                    var ts = u.lastSeen.toMillis ? u.lastSeen.toMillis() : new Date(u.lastSeen).getTime();
+                    var diff = Date.now() - ts;
+                    var hours = Math.floor(diff / (60*60*1000));
+                    if (hours < 1) { lastTxt = 'עכשיו'; lastColor = 'var(--success,#0D9488)'; }
+                    else if (hours < 24) { lastTxt = 'לפני ' + hours + ' שעות'; lastColor = 'var(--success,#0D9488)'; }
+                    else if (hours < 24*7) { lastTxt = 'לפני ' + Math.floor(hours/24) + ' ימים'; lastColor = 'var(--text)'; }
+                    else { lastTxt = u.lastSeenDate || (new Date(ts).toISOString().split('T')[0]); lastColor = 'var(--text-secondary)'; }
+                } else {
+                    lastTxt = 'מעולם לא';
+                    lastColor = 'var(--danger,#DC2626)';
+                }
+                var fwLabel = fwLabels2[u.framework] || u.framework || '—';
+                var roleLabel = (roleLabelsDash[u.role] && roleLabelsDash[u.role].label) || u.role || '—';
+                h += '<tr style="border-bottom:1px solid var(--border);">';
+                h += '<td style="padding:8px;text-align:right;font-weight:600;">' + _htmlEsc(u.name) + '</td>';
+                h += '<td style="padding:8px;text-align:right;font-size:0.78rem;">' + _htmlEsc(fwLabel) + '</td>';
+                h += '<td style="padding:8px;text-align:right;font-size:0.78rem;">' + _htmlEsc(roleLabel) + '</td>';
+                h += '<td style="padding:8px;text-align:right;color:' + lastColor + ';font-size:0.78rem;">' + lastTxt + '</td>';
+                h += '<td style="padding:8px;text-align:center;">' + (u.googleAuthLinked ? '✓' : '') + '</td>';
+                h += '</tr>';
+            });
+            h += '</tbody></table></div>';
+            if (activeUsers.length > 100) {
+                h += '<p style="font-size:0.75rem;color:var(--text-secondary);margin-top:8px;text-align:center;">מציג 100 משתמשים ראשונים מתוך ' + activeUsers.length + '</p>';
+            }
+            h += '</div>';
+        }
 
         // === HOURLY ACTIVITY ===
         h += '<div class="card" style="margin-bottom:16px;">';
@@ -23374,6 +23503,15 @@ var _analyticsCurrentPage = null;
 function analyticsInit() {
     _analyticsSessionId = 'ses_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     _analyticsSessionStart = Date.now();
+    // Update lastSeen on the user doc (best-effort) so the dashboard can show "active recently"
+    try {
+        if (currentUser && currentUser.id && db) {
+            db.collection('users').doc(currentUser.id).update({
+                lastSeen: new Date(),
+                lastSeenDate: new Date().toISOString().split('T')[0]
+            }).catch(function() {});
+        }
+    } catch(e) {}
     // Track session start
     analyticsTrackEvent('session_start', {
         userAgent: navigator.userAgent,
@@ -23411,12 +23549,18 @@ async function analyticsTrackEvent(eventName, data) {
     var hour = new Date().getHours();
     var userId = currentUser ? (currentUser.id || currentUser.name) : currentParticipant ? ('p_' + currentParticipant.id) : 'guest';
     var userName = currentUser ? currentUser.name : currentParticipant ? currentParticipant.fullName : 'אורח';
+    var userFramework = currentUser ? (currentUser.framework || '') : '';
+    var userRole = currentUser ? (currentUser.role || '') : '';
+    var userPluga = currentUser ? (currentUser.pluga || '') : '';
     var eventObj = {
         event: eventName,
         data: data || {},
         sessionId: _analyticsSessionId,
         userId: userId,
         userName: userName,
+        userFramework: userFramework,
+        userRole: userRole,
+        userPluga: userPluga,
         date: today,
         hour: hour,
         ts: Date.now(),
@@ -23448,6 +23592,107 @@ function analyticsLocalGet(sinceDateStr) {
         if (sinceDateStr) arr = arr.filter(function(e) { return e.date >= sinceDateStr; });
         return arr;
     } catch(e) { return []; }
+}
+
+// Count content created in the last N days, broken down by type.
+// Reads training_content (lessons), user_sakag (Sakags), and commander_tools
+// (Morak / Lesson plan / Trivia) — only items with createdAt within range.
+async function getContentCreationStats(days) {
+    var sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - days);
+    var sinceTs = sinceDate.getTime();
+
+    var counts = {
+        training_content: 0,
+        sakag: 0,
+        morak: 0,
+        lesson: 0,
+        trivia: 0,
+        files_uploaded: 0,
+        total: 0
+    };
+
+    if (!db) return counts;
+
+    function _toMillis(ca) {
+        if (!ca) return 0;
+        if (typeof ca.toMillis === 'function') return ca.toMillis();
+        if (ca.seconds) return ca.seconds * 1000;
+        if (typeof ca === 'number') return ca;
+        if (ca instanceof Date) return ca.getTime();
+        try { return new Date(ca).getTime(); } catch(e) { return 0; }
+    }
+
+    try {
+        var snap = await db.collection('training_content').get();
+        snap.forEach(function(doc) {
+            var d = doc.data();
+            var ts = _toMillis(d.createdAt);
+            if (ts >= sinceTs) {
+                counts.training_content++;
+                if (d.fileUrl || d.fileData || (Array.isArray(d.files) && d.files.length)) counts.files_uploaded++;
+            }
+        });
+    } catch(e) { console.warn('[contentStats] training_content failed:', e.message); }
+
+    try {
+        var snap2 = await db.collection('user_sakag').get();
+        snap2.forEach(function(doc) {
+            var d = doc.data();
+            var ts = _toMillis(d.createdAt);
+            if (ts >= sinceTs) counts.sakag++;
+        });
+    } catch(e) { console.warn('[contentStats] user_sakag failed:', e.message); }
+
+    try {
+        var snap3 = await db.collection('commander_tools').get();
+        snap3.forEach(function(doc) {
+            var d = doc.data();
+            var ts = _toMillis(d.createdAt);
+            if (ts >= sinceTs) {
+                var t = (d.type || '').toLowerCase();
+                if (t === 'morak' || t === 'מורק') counts.morak++;
+                else if (t === 'lesson' || t === 'שיעור') counts.lesson++;
+                else if (t === 'trivia' || t === 'טריוויה') counts.trivia++;
+            }
+        });
+    } catch(e) { console.warn('[contentStats] commander_tools failed:', e.message); }
+
+    counts.total = counts.training_content + counts.sakag + counts.morak + counts.lesson + counts.trivia;
+    return counts;
+}
+
+// List all staff users with last-seen, role, framework. Sorted by lastSeen desc.
+async function getActiveUsersStats() {
+    if (!db) return [];
+    try {
+        var snap = await db.collection('users').get();
+        var arr = [];
+        snap.forEach(function(doc) {
+            var d = doc.data();
+            arr.push({
+                id: doc.id,
+                name: d.name || doc.id,
+                email: d.email || '',
+                role: d.role || '',
+                framework: d.framework || '',
+                pluga: d.pluga || '',
+                lastSeen: d.lastSeen || null,
+                lastSeenDate: d.lastSeenDate || '',
+                googleAuthLinked: !!d.googleAuthLinked
+            });
+        });
+        // Sort: most recent first; users with no lastSeen go to the bottom
+        arr.sort(function(a, b) {
+            var ta = a.lastSeen && a.lastSeen.toMillis ? a.lastSeen.toMillis() : (a.lastSeen ? new Date(a.lastSeen).getTime() : 0);
+            var tb = b.lastSeen && b.lastSeen.toMillis ? b.lastSeen.toMillis() : (b.lastSeen ? new Date(b.lastSeen).getTime() : 0);
+            return tb - ta;
+        });
+        return arr;
+    } catch(e) {
+        console.warn('[activeUsersStats] failed:', e.message);
+        return [];
+    }
 }
 
 // Aggregate daily stats (runs once per dashboard load for efficiency)
@@ -23515,11 +23760,23 @@ async function analyticsGetStats(days) {
         const sessionFirstSeen = {};
         const userNames = {};
 
+        // New aggregations: logins by framework / role / method, active users by framework
+        const loginsByFramework = {};
+        const loginsByRole = {};
+        const loginsByMethod = { google: 0, password: 0 };
+        const activeUsersByFramework = {}; // framework → Set of userIds
+        let loginEventCount = 0;
+        let dailyLogins = {};
+
         events.forEach(e => {
             if (e.sessionId) sessions.add(e.sessionId);
             if (e.userId && e.userId !== 'guest') {
                 uniqueUsers.add(e.userId);
                 if (e.userName) userNames[e.userId] = e.userName;
+                // Bucket by framework — counts unique users active in the period
+                var fw = e.userFramework || (e.data && e.data.framework) || 'אחר';
+                if (!activeUsersByFramework[fw]) activeUsersByFramework[fw] = new Set();
+                activeUsersByFramework[fw].add(e.userId);
             }
             if (e.event === 'page_view' && e.data && e.data.page) {
                 pageViews[e.data.page] = (pageViews[e.data.page] || 0) + 1;
@@ -23536,6 +23793,17 @@ async function analyticsGetStats(days) {
             if (e.event === 'session_start' && e.data) {
                 if (e.data.isMobile) mobileCount++; else desktopCount++;
             }
+            // Login events — explicit user logins (Google or password)
+            if (e.event === 'login') {
+                loginEventCount++;
+                var fwL = (e.data && e.data.framework) || e.userFramework || 'אחר';
+                var roleL = (e.data && e.data.role) || e.userRole || 'אחר';
+                var method = (e.data && e.data.method) || 'unknown';
+                loginsByFramework[fwL] = (loginsByFramework[fwL] || 0) + 1;
+                loginsByRole[roleL] = (loginsByRole[roleL] || 0) + 1;
+                if (loginsByMethod[method] !== undefined) loginsByMethod[method]++;
+                if (e.date) dailyLogins[e.date] = (dailyLogins[e.date] || 0) + 1;
+            }
             // First seen tracking
             if (e.event === 'session_start' && e.sessionId && e.date) {
                 if (!sessionFirstSeen[e.userId] || e.date < sessionFirstSeen[e.userId]) {
@@ -23543,6 +23811,10 @@ async function analyticsGetStats(days) {
                 }
             }
         });
+
+        // Convert active-user sets to counts
+        const activeUsersByFrameworkCount = {};
+        Object.entries(activeUsersByFramework).forEach(([fw, set]) => activeUsersByFrameworkCount[fw] = set.size);
 
         // Convert dailyVisits sets to counts
         const dailyCounts = {};
@@ -23612,7 +23884,14 @@ async function analyticsGetStats(days) {
             mobilePercent: totalSessions > 0 ? Math.round((mobileCount / (mobileCount + desktopCount || 1)) * 100) : 0,
             pagesPerSession: totalSessions > 0 ? (Object.values(pageViews).reduce((a,b) => a+b, 0) / totalSessions).toFixed(1) : 0,
             cwStats,
-            userNames
+            userNames,
+            // New aggregations
+            loginEventCount,
+            loginsByFramework,
+            loginsByRole,
+            loginsByMethod,
+            activeUsersByFramework: activeUsersByFrameworkCount,
+            dailyLogins
         };
     } catch(e) {
         console.error('Analytics error:', e);
