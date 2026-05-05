@@ -2068,7 +2068,15 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 </div>
             </div>
         </div>
-        <div class="card" style="padding:0;overflow:hidden;"><div id="geo-map"></div></div>
+        <div class="card" style="padding:0;overflow:hidden;position:relative;">
+            <div id="geo-map"></div>
+            <!-- GovMap widget container — populated lazily by openGovmapView() -->
+            <div id="govmap-container" style="display:none;width:100%;height:500px;"></div>
+            <!-- Toggle button: switch between Leaflet (default) and GovMap -->
+            <button id="govmap-toggle-btn" onclick="toggleGovmapView()" style="position:absolute;top:8px;right:8px;z-index:1002;background:linear-gradient(135deg,#0E7490,#06B6D4);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.18);font-family:inherit;display:flex;align-items:center;gap:6px;">
+                🇮🇱 <span id="govmap-toggle-label">פתח ב-GovMap</span>
+            </button>
+        </div>
         <div class="card geo-results" id="geo-results-container" style="display:none;">
             <div class="card-title"><div class="icon">📌</div> אתרים בקרבת מקום</div>
             <div id="geo-results-list"></div>
@@ -14229,6 +14237,90 @@ async function govmapInit() {
 
 // Helper: get the GovMap API key (for downstream uses — search, geocoding, etc.)
 function govmapGetToken() { return (_govmapConfig && _govmapConfig.apiKey) || null; }
+
+// === GovMap widget integration (native SDK) ===
+// GovMap doesn't expose XYZ tile URLs that Leaflet can consume — they use ITM
+// projection (EPSG:2039) with custom tile paths. Their official path is the
+// JS SDK at https://www.govmap.gov.il/govmap/api/govmap.api.js. We lazy-load
+// it on demand and render the widget in a dedicated container, alongside (and
+// toggleable with) our Leaflet map.
+var _govmapSdkLoaded = false;
+var _govmapWidget = null;
+var _govmapViewActive = false;
+
+function _loadGovmapSdk() {
+    if (_govmapSdkLoaded || (window.govmap && typeof window.govmap.createMap === 'function')) {
+        _govmapSdkLoaded = true;
+        return Promise.resolve();
+    }
+    return new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://www.govmap.gov.il/govmap/api/govmap.api.js';
+        s.async = true;
+        s.onload = function() { _govmapSdkLoaded = true; resolve(); };
+        s.onerror = function() { reject(new Error('טעינת ה-SDK של GovMap נכשלה')); };
+        document.head.appendChild(s);
+    });
+}
+
+async function _initGovmapWidget() {
+    var token = govmapGetToken();
+    if (!token) { showToast('טוקן GovMap לא נטען. נסה לרענן.'); return false; }
+    await _loadGovmapSdk();
+    // The SDK exposes a global `govmap` object once loaded
+    if (!window.govmap || typeof window.govmap.createMap !== 'function') {
+        showToast('ה-SDK של GovMap נטען אבל אינו זמין');
+        return false;
+    }
+    if (_govmapWidget) return true; // already initialized
+    try {
+        _govmapWidget = window.govmap.createMap('govmap-container', {
+            token: token,
+            background: '4',          // 4 = aerial / orthophoto
+            showXY: true,
+            identifyOnClick: true,
+            zoomButtons: true,
+            layersMode: 1,
+            onClick: function(e) {
+                console.log('[govmap] click event:', e);
+                // Future: capture clicked location for Sakag generation
+            }
+        });
+        console.log('[govmap] widget initialized');
+        return true;
+    } catch(e) {
+        console.error('[govmap] createMap failed:', e);
+        showToast('שגיאה באתחול GovMap: ' + (e.message || e));
+        return false;
+    }
+}
+
+async function toggleGovmapView() {
+    var leafletEl = document.getElementById('geo-map');
+    var govmapEl = document.getElementById('govmap-container');
+    var label = document.getElementById('govmap-toggle-label');
+    if (!leafletEl || !govmapEl) return;
+
+    if (!_govmapViewActive) {
+        // Switch TO GovMap
+        showToast('טוען GovMap…');
+        var ok = await _initGovmapWidget();
+        if (!ok) return;
+        leafletEl.style.display = 'none';
+        govmapEl.style.display = 'block';
+        _govmapViewActive = true;
+        if (label) label.textContent = 'חזרה למפת Leaflet';
+    } else {
+        // Switch back to Leaflet
+        govmapEl.style.display = 'none';
+        leafletEl.style.display = 'block';
+        _govmapViewActive = false;
+        if (label) label.textContent = 'פתח ב-GovMap';
+        if (typeof geoMap !== 'undefined' && geoMap) {
+            setTimeout(function() { geoMap.invalidateSize(); }, 100);
+        }
+    }
+}
 
 const GEO_SITES = [];
 
