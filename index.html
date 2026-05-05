@@ -2061,14 +2061,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                     <img src="https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/13/3318/4829" style="width:100%;height:65px;object-fit:cover;display:block;" />
                     <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">קלאסית</div>
                 </div>
-                <div class="geo-bg-item" onclick="geoSwitchRasterVisual('govmap_aerial',this)" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;text-align:center;background:linear-gradient(135deg,#0E7490,#06B6D4);">
-                    <div style="width:100%;height:65px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.78rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">GovMap<br>תצ״א</div>
-                    <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">תצלום ישראל</div>
-                </div>
-                <div class="geo-bg-item" onclick="geoSwitchRasterVisual('govmap_base',this)" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;text-align:center;background:linear-gradient(135deg,#0C4A6E,#0E7490);">
-                    <div style="width:100%;height:65px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.78rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">GovMap<br>בסיס</div>
-                    <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">מפת ממשל</div>
-                </div>
+                <!-- GovMap option pending exact tile URL from GovMap docs -->
                 <div class="geo-bg-item" onclick="geoSwitchRasterVisual('none',this)" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;text-align:center;background:#f0f0f0;">
                     <div style="width:100%;height:65px;display:flex;align-items:center;justify-content:center;color:#999;font-size:1.5rem;">∅</div>
                     <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">ללא רקע</div>
@@ -14199,10 +14192,11 @@ const GEO_TILE_LAYERS = {
     'hebrew': { name: 'מפה', url: 'https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', opts: { attribution: '&copy; Google Maps', maxZoom: 20, minZoom: 3, subdomains: '0123' } },
     'satellite': { name: 'לוויין', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, Maxar, Earthstar', maxZoom: 19, minZoom: 3 } },
     'topo': { name: 'טופו', url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, minZoom: 3 } },
-    'historic': { name: 'קלאסית', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, National Geographic', maxZoom: 16, minZoom: 3 } },
-    // GovMap layers — registered dynamically by govmapInit() once the token is loaded
-    'govmap_aerial': { name: 'GovMap תצ״א', url: 'https://ags.govmap.gov.il/arcgis/rest/services/Basemaps/Orthophoto/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; <a href="https://www.govmap.gov.il">GovMap</a>', maxZoom: 19, minZoom: 7 } },
-    'govmap_base':   { name: 'GovMap', url: 'https://ags.govmap.gov.il/arcgis/rest/services/Basemaps/gov/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; <a href="https://www.govmap.gov.il">GovMap</a>', maxZoom: 19, minZoom: 7 } }
+    'historic': { name: 'קלאסית', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, National Geographic', maxZoom: 16, minZoom: 3 } }
+    // GovMap layers — pending. Need exact tile URL pattern from GovMap docs
+    // (the public ArcGIS REST paths I tried all return empty/404). Token is
+    // saved in Firestore at config/govmap and loaded by govmapInit() — ready
+    // to plug in once we have the right URL.
 };
 
 // === GovMap config — loaded from Firestore at startup ===
