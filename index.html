@@ -2061,6 +2061,14 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                     <img src="https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/13/3318/4829" style="width:100%;height:65px;object-fit:cover;display:block;" />
                     <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">קלאסית</div>
                 </div>
+                <div class="geo-bg-item" onclick="geoSwitchRasterVisual('govmap_aerial',this)" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;text-align:center;background:linear-gradient(135deg,#0E7490,#06B6D4);">
+                    <div style="width:100%;height:65px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.78rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">GovMap<br>תצ״א</div>
+                    <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">תצלום ישראל</div>
+                </div>
+                <div class="geo-bg-item" onclick="geoSwitchRasterVisual('govmap_base',this)" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;text-align:center;background:linear-gradient(135deg,#0C4A6E,#0E7490);">
+                    <div style="width:100%;height:65px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.78rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">GovMap<br>בסיס</div>
+                    <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">מפת ממשל</div>
+                </div>
                 <div class="geo-bg-item" onclick="geoSwitchRasterVisual('none',this)" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;text-align:center;background:#f0f0f0;">
                     <div style="width:100%;height:65px;display:flex;align-items:center;justify-content:center;color:#999;font-size:1.5rem;">∅</div>
                     <div style="font-size:0.72rem;padding:4px 2px;font-weight:600;">ללא רקע</div>
@@ -14191,8 +14199,42 @@ const GEO_TILE_LAYERS = {
     'hebrew': { name: 'מפה', url: 'https://mt{s}.google.com/vt/lyrs=m&hl=iw&x={x}&y={y}&z={z}', opts: { attribution: '&copy; Google Maps', maxZoom: 20, minZoom: 3, subdomains: '0123' } },
     'satellite': { name: 'לוויין', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, Maxar, Earthstar', maxZoom: 19, minZoom: 3 } },
     'topo': { name: 'טופו', url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png', opts: { attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, minZoom: 3 } },
-    'historic': { name: 'קלאסית', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, National Geographic', maxZoom: 16, minZoom: 3 } }
+    'historic': { name: 'קלאסית', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; Esri, National Geographic', maxZoom: 16, minZoom: 3 } },
+    // GovMap layers — registered dynamically by govmapInit() once the token is loaded
+    'govmap_aerial': { name: 'GovMap תצ״א', url: 'https://ags.govmap.gov.il/arcgis/rest/services/Basemaps/Orthophoto/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; <a href="https://www.govmap.gov.il">GovMap</a>', maxZoom: 19, minZoom: 7 } },
+    'govmap_base':   { name: 'GovMap', url: 'https://ags.govmap.gov.il/arcgis/rest/services/Basemaps/gov/MapServer/tile/{z}/{y}/{x}', opts: { attribution: '&copy; <a href="https://www.govmap.gov.il">GovMap</a>', maxZoom: 19, minZoom: 7 } }
 };
+
+// === GovMap config — loaded from Firestore at startup ===
+var _govmapConfig = null;
+
+async function govmapInit() {
+    if (!db) return;
+    try {
+        var doc = await db.collection('config').doc('govmap').get();
+        if (doc.exists) {
+            _govmapConfig = doc.data();
+            console.log('[govmap] config loaded — token present:', !!_govmapConfig.apiKey);
+            // If GovMap layers in GEO_TILE_LAYERS need the token appended,
+            // do it here. Most public ArcGIS REST tiles work without it,
+            // but premium services may require ?token=...
+            if (_govmapConfig.apiKey) {
+                ['govmap_aerial', 'govmap_base'].forEach(function(k) {
+                    if (GEO_TILE_LAYERS[k] && GEO_TILE_LAYERS[k].url.indexOf('?token=') < 0) {
+                        // Save the bare URL for fallback; build the with-token URL on demand
+                        GEO_TILE_LAYERS[k]._urlBare = GEO_TILE_LAYERS[k].url;
+                        GEO_TILE_LAYERS[k].url = GEO_TILE_LAYERS[k]._urlBare + '?token=' + encodeURIComponent(_govmapConfig.apiKey);
+                    }
+                });
+            }
+        } else {
+            console.log('[govmap] no config doc — GovMap layers may not work for premium services');
+        }
+    } catch(e) { console.warn('[govmap] init failed:', e.message); }
+}
+
+// Helper: get the GovMap API key (for downstream uses — search, geocoding, etc.)
+function govmapGetToken() { return (_govmapConfig && _govmapConfig.apiKey) || null; }
 
 const GEO_SITES = [];
 
@@ -24040,6 +24082,7 @@ async function initApp() {
         // Firestore offline recovery — if connection drops, re-enable network
         setupFirestoreRecovery();
         analyticsInit();
+        govmapInit();
         // If standalone sakag, re-activate now that Firebase is ready
         if (page === 'sakag-create') activatePage(page);
     } catch(e) { console.error('Init error:', e); }
