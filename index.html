@@ -14263,11 +14263,12 @@ function _loadGovmapSdk() {
     });
 }
 
+var _govmapLastClick = null;
+
 async function _initGovmapWidget() {
     var token = govmapGetToken();
     if (!token) { showToast('טוקן GovMap לא נטען. נסה לרענן.'); return false; }
     await _loadGovmapSdk();
-    // The SDK exposes a global `govmap` object once loaded
     if (!window.govmap || typeof window.govmap.createMap !== 'function') {
         showToast('ה-SDK של GovMap נטען אבל אינו זמין');
         return false;
@@ -14283,7 +14284,7 @@ async function _initGovmapWidget() {
             layersMode: 1,
             onClick: function(e) {
                 console.log('[govmap] click event:', e);
-                // Future: capture clicked location for Sakag generation
+                _govmapHandleClick(e);
             }
         });
         console.log('[govmap] widget initialized');
@@ -14292,6 +14293,120 @@ async function _initGovmapWidget() {
         console.error('[govmap] createMap failed:', e);
         showToast('שגיאה באתחול GovMap: ' + (e.message || e));
         return false;
+    }
+}
+
+// Approximate ITM (EPSG:2039) → WGS84 conversion. Linear approximation good
+// to ~50m accuracy across Israel — enough to seed the Sakag flow at the right
+// place. For higher precision, the GovMap SDK or proj4js can be used.
+function govmapItmToWgs84(x, y) {
+    var lat0 = 31.7343936, lon0 = 35.2045169;
+    var x0 = 219529.584, y0 = 626907.39;
+    var dY = y - y0, dX = x - x0;
+    var lat = lat0 + (dY / 111000);
+    var lng = lon0 + (dX / (111000 * Math.cos(lat0 * Math.PI / 180)));
+    return { lat: lat, lng: lng };
+}
+
+// Pull WGS84 lat/lng out of GovMap's onClick event (handles multiple SDK shapes)
+function _govmapExtractLatLng(e) {
+    if (!e) return null;
+    if (typeof e.lat === 'number' && typeof e.lng === 'number') return { lat: e.lat, lng: e.lng };
+    if (e.latlng && typeof e.latlng.lat === 'number') return { lat: e.latlng.lat, lng: e.latlng.lng };
+    if (e.lonLat && e.lonLat.length === 2) return { lat: e.lonLat[1], lng: e.lonLat[0] };
+    if (typeof e.X === 'number' && typeof e.Y === 'number') {
+        var w = govmapItmToWgs84(e.X, e.Y);
+        return { lat: w.lat, lng: w.lng };
+    }
+    if (e.point && typeof e.point.x === 'number' && typeof e.point.y === 'number') {
+        var w2 = govmapItmToWgs84(e.point.x, e.point.y);
+        return { lat: w2.lat, lng: w2.lng };
+    }
+    return null;
+}
+
+function _govmapHandleClick(e) {
+    var coords = _govmapExtractLatLng(e);
+    if (!coords) {
+        console.warn('[govmap] could not extract coordinates from click event');
+        return;
+    }
+    _govmapLastClick = { lat: coords.lat, lng: coords.lng, raw: e };
+    _govmapShowClickAction(coords.lat, coords.lng);
+}
+
+function _govmapShowClickAction(lat, lng) {
+    var existing = document.getElementById('govmap-click-action');
+    if (existing) existing.remove();
+    var container = document.getElementById('govmap-container');
+    if (!container) return;
+    var badge = document.createElement('div');
+    badge.id = 'govmap-click-action';
+    badge.style.cssText = 'position:absolute;bottom:14px;right:14px;z-index:1003;background:#fff;border:2px solid #0E7490;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 22px rgba(0,0,0,0.25);font-family:"Heebo",sans-serif;direction:rtl;min-width:220px;animation:floatSlideUp 0.3s ease-out;';
+    badge.innerHTML =
+        '<div style="font-size:0.78rem;color:var(--text-secondary);">📍 נקודה נבחרה ב-GovMap</div>' +
+        '<div style="font-size:0.74rem;color:var(--text-secondary);direction:ltr;text-align:left;font-family:monospace;">' +
+            lat.toFixed(5) + ', ' + lng.toFixed(5) +
+        '</div>' +
+        '<button onclick="govmapStartSakagFromClick()" class="btn-primary btn-sm" style="font-size:0.85rem;font-family:inherit;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:none;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;">📋 צור סק"ג כאן</button>' +
+        '<button onclick="document.getElementById(\'govmap-click-action\').remove()" style="font-size:0.78rem;font-family:inherit;background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:2px;">סגור</button>';
+    container.appendChild(badge);
+}
+
+// Trigger Sakag creation flow with the captured GovMap click coordinates.
+// Uses the existing standalone generator with GovMap-derived lat/lng.
+async function govmapStartSakagFromClick() {
+    if (!_govmapLastClick) { showToast('בחר נקודה במפה תחילה'); return; }
+    var lat = _govmapLastClick.lat;
+    var lng = _govmapLastClick.lng;
+
+    // Try to enrich with a place name via GovMap's geocode if available
+    var placeName = 'נקודה ב-GovMap (' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ')';
+    try {
+        var raw = _govmapLastClick.raw || {};
+        if (window.govmap && typeof window.govmap.geocode === 'function' && (raw.X || raw.point)) {
+            var x = raw.X || (raw.point && raw.point.x);
+            var y = raw.Y || (raw.point && raw.point.y);
+            var geoResult = await window.govmap.geocode({ x: x, y: y });
+            if (geoResult && geoResult.length && geoResult[0].Name) {
+                placeName = geoResult[0].Name;
+            }
+        }
+    } catch(err) { console.warn('[govmap] geocode failed, falling back:', err); }
+
+    // Remove the action badge
+    var badge = document.getElementById('govmap-click-action');
+    if (badge) badge.remove();
+
+    // Switch back to Leaflet view (so the Sakag UI can render normally)
+    if (_govmapViewActive) {
+        var leafletEl = document.getElementById('geo-map');
+        var govmapEl = document.getElementById('govmap-container');
+        var label = document.getElementById('govmap-toggle-label');
+        if (govmapEl) govmapEl.style.display = 'none';
+        if (leafletEl) leafletEl.style.display = 'block';
+        _govmapViewActive = false;
+        if (label) label.textContent = 'פתח ב-GovMap';
+        if (typeof geoMap !== 'undefined' && geoMap) setTimeout(function() { geoMap.invalidateSize(); }, 100);
+    }
+
+    // Trigger Sakag generation with the GovMap-derived coordinates.
+    // Prefer the standalone generator (used in the כלים למפקד wizard).
+    if (typeof standaloneSakagGenerate === 'function') {
+        // Open the Sakag creation flow — uses geography → sakal mode
+        try { setGeoMode('sakal'); } catch(e) {}
+        try { if (typeof sakalStartCreate === 'function') sakalStartCreate(); } catch(e) {}
+        // Run the generator after the UI has had a chance to render
+        setTimeout(function() {
+            try { standaloneSakagGenerate(lat, lng, placeName); } catch(e) {
+                console.error('[govmap] standaloneSakagGenerate failed:', e);
+                if (typeof modalSakagGenerate === 'function') modalSakagGenerate(lat, lng, placeName);
+            }
+        }, 400);
+    } else if (typeof modalSakagGenerate === 'function') {
+        modalSakagGenerate(lat, lng, placeName);
+    } else {
+        showToast('יצירת סק"ג אינה זמינה כעת');
     }
 }
 
