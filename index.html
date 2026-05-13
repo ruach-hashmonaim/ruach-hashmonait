@@ -14238,40 +14238,58 @@ async function govmapInit() {
 // Helper: get the GovMap API key (for downstream uses — search, geocoding, etc.)
 function govmapGetToken() { return (_govmapConfig && _govmapConfig.apiKey) || null; }
 
-// === GovMap embed via iframe ===
-// GovMap doesn't expose XYZ tiles for Leaflet (custom ITM tiles + token-locked).
-// The native SDK was unreliable in our integration. The simplest robust approach
-// is an iframe pointing at govmap.gov.il — the user gets the FULL GovMap
-// interface (orthophoto, parcels, search, drawing, all layers) embedded in the
-// page. Cross-origin means we can't capture clicks, so the user picks the
-// location visually in GovMap and copies the coordinates back.
+// === GovMap embed via iframe (per official URL functions docs) ===
+// https://api.govmap.gov.il/docs/url-functions/add-layers
+// We confirmed with mapi.gov.il: there's NO REST API for layer data; the only
+// way to display GovMap rasters and feature layers is via the official site
+// URL (`https://www.govmap.gov.il/?...`). Token is already authorized for
+// hamatzpen.io. We pass WGS84 coordinates (which GovMap supports natively —
+// no ITM conversion needed), choose background `b=1` (aerial), and switch
+// layers via `lay=`.
+
 var _govmapViewActive = false;
 
-// Approximate WGS84 → ITM (EPSG:2039) — used to seed the iframe with the
-// current Leaflet center. Linear approximation, ~50m accuracy across Israel.
-function govmapWgs84ToItm(lat, lng) {
-    var lat0 = 31.7343936, lon0 = 35.2045169;
-    var x0 = 219529.584, y0 = 626907.39;
-    var dLat = lat - lat0, dLng = lng - lon0;
-    var x = x0 + dLng * 111000 * Math.cos(lat0 * Math.PI / 180);
-    var y = y0 + dLat * 111000;
-    return { x: Math.round(x), y: Math.round(y) };
+// Layer presets curated for educational Sakag use. Names come from
+// https://api.govmap.gov.il/docs/intro/attache-a — only those most useful for
+// Israeli heritage / archaeology / geography education.
+var GOVMAP_LAYER_PRESETS = {
+    'sakag':    { label: 'חבילת סק״ג (עתיקות + ישובים)', layers: ['atikot_sites_itm', 'LOCALITY_210410', 'Gazetteer'] },
+    'antiquities': { label: 'אתרי עתיקות', layers: ['atikot_sites_itm'] },
+    'heritage': { label: 'מורשת ותיירות', layers: ['atikot_sites_itm', 'tayarut', 'atractions'] },
+    'parks':    { label: 'גנים לאומיים ושמורות', layers: ['ganim_leumim', 'shmurot_teva_ganim', 'f_natural'] },
+    'topo':     { label: 'טופוגרפיה (קווי גובה)', layers: ['contour'] },
+    'names':    { label: 'שמות גאוגרפיים וישובים', layers: ['Gazetteer', 'LOCALITY_210410', 'LOCALITY'] },
+    'none':     { label: 'ללא שכבות (תצלום נקי)', layers: [] }
+};
+
+// Map Leaflet zoom (1-18) to GovMap zoom (0-10, per docs)
+function _govmapLeafletZoomToGovmapZ(leafletZoom) {
+    // GovMap range is 0-10. Leaflet z=6 ≈ regional, z=12 ≈ city, z=17 ≈ street.
+    // Empirically: subtract ~6 then clamp.
+    return Math.max(0, Math.min(10, Math.round((leafletZoom || 10) - 6)));
 }
 
-// Build the embed URL using the current Leaflet center
-function _govmapBuildEmbedUrl() {
-    var lat = 31.77, lng = 35.21, zoom = 8;
+// Build the embed URL using the current Leaflet center and the active layer preset
+function _govmapBuildEmbedUrl(presetKey) {
+    var lat = 31.77, lng = 35.21, leafletZoom = 10;
     try {
         if (typeof geoMap !== 'undefined' && geoMap) {
             var c = geoMap.getCenter();
             lat = c.lat; lng = c.lng;
-            // GovMap zoom range is similar to Leaflet's — clamp to safe bounds
-            zoom = Math.max(2, Math.min(16, geoMap.getZoom() - 1));
+            leafletZoom = geoMap.getZoom();
         }
     } catch(_) {}
-    var itm = govmapWgs84ToItm(lat, lng);
-    return 'https://www.govmap.gov.il/?z=' + zoom + '&c=' + itm.x + ',' + itm.y + '&b=4';
+    var z = _govmapLeafletZoomToGovmapZ(leafletZoom);
+    var preset = GOVMAP_LAYER_PRESETS[presetKey || 'sakag'] || GOVMAP_LAYER_PRESETS['sakag'];
+    var layers = (preset.layers || []).join(',');
+    // Per docs: c=lng,lat in WGS84 (X=34-36, Y=29.4-33.4). No ITM conversion needed.
+    // b=1 = aerial photo, the most useful background for sakag.
+    var url = 'https://www.govmap.gov.il/?c=' + lng.toFixed(4) + ',' + lat.toFixed(4) + '&z=' + z + '&b=1';
+    if (layers) url += '&lay=' + encodeURIComponent(layers);
+    return url;
 }
+
+var _govmapCurrentPreset = 'sakag';
 
 async function toggleGovmapView() {
     var leafletEl = document.getElementById('geo-map');
@@ -14280,29 +14298,15 @@ async function toggleGovmapView() {
     if (!leafletEl || !govmapEl) return;
 
     if (!_govmapViewActive) {
-        // Build the iframe lazily, seeded with the current Leaflet view
-        var url = _govmapBuildEmbedUrl();
-        govmapEl.innerHTML =
-            '<iframe id="govmap-iframe" src="' + url + '" ' +
-                'style="width:100%;height:100%;border:0;display:block;" ' +
-                'allow="geolocation" ' +
-                'sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox">' +
-            '</iframe>' +
-            // Floating "back" + "use this view for Sakag" controls overlaid on the iframe corner
-            '<div style="position:absolute;bottom:14px;right:14px;z-index:1003;display:flex;gap:8px;flex-wrap:wrap;background:rgba(255,255,255,0.95);padding:8px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,0.18);">' +
-                '<button onclick="govmapOpenExternal()" class="btn-secondary btn-sm" style="font-size:0.78rem;">🔗 פתח בלשונית חדשה</button>' +
-                '<button onclick="govmapPickLocationForSakag()" class="btn-primary btn-sm" style="font-size:0.78rem;font-weight:700;">📋 השתמש במיקום ליצירת סק״ג</button>' +
-            '</div>';
-        govmapEl.style.position = 'relative';
+        _govmapRenderIframe(_govmapCurrentPreset);
         leafletEl.style.display = 'none';
         govmapEl.style.display = 'block';
         _govmapViewActive = true;
         if (label) label.textContent = 'חזרה למפה רגילה';
-        showToast('GovMap נטען — נווט/חפש את המיקום הרצוי');
+        showToast('GovMap נטען עם שכבות חינוכיות — נווט/חפש מיקום');
     } else {
-        // Back to Leaflet
         govmapEl.style.display = 'none';
-        govmapEl.innerHTML = ''; // free the iframe
+        govmapEl.innerHTML = '';
         leafletEl.style.display = 'block';
         _govmapViewActive = false;
         if (label) label.textContent = 'פתח ב-GovMap';
@@ -14312,10 +14316,42 @@ async function toggleGovmapView() {
     }
 }
 
+// (Re-)render the GovMap iframe with the chosen layer preset
+function _govmapRenderIframe(presetKey) {
+    var govmapEl = document.getElementById('govmap-container');
+    if (!govmapEl) return;
+    _govmapCurrentPreset = presetKey || _govmapCurrentPreset || 'sakag';
+    var url = _govmapBuildEmbedUrl(_govmapCurrentPreset);
+    // Build the layer-preset dropdown options
+    var optsHtml = '';
+    Object.keys(GOVMAP_LAYER_PRESETS).forEach(function(k) {
+        var sel = k === _govmapCurrentPreset ? ' selected' : '';
+        optsHtml += '<option value="' + k + '"' + sel + '>' + GOVMAP_LAYER_PRESETS[k].label + '</option>';
+    });
+
+    govmapEl.style.position = 'relative';
+    govmapEl.innerHTML =
+        '<iframe id="govmap-iframe" src="' + url + '" ' +
+            'style="width:100%;height:100%;border:0;display:block;" ' +
+            'allow="geolocation" ' +
+            'sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox">' +
+        '</iframe>' +
+        // Top-right: layer preset selector
+        '<div style="position:absolute;top:8px;right:8px;z-index:1003;background:rgba(255,255,255,0.96);padding:6px 8px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.18);display:flex;align-items:center;gap:6px;">' +
+            '<label style="font-size:0.74rem;font-weight:700;color:var(--primary);">שכבות:</label>' +
+            '<select id="govmap-preset-select" onchange="_govmapRenderIframe(this.value)" style="font-size:0.78rem;font-family:inherit;border:1px solid var(--border);border-radius:6px;padding:4px 6px;background:#fff;">' + optsHtml + '</select>' +
+        '</div>' +
+        // Bottom-right: actions
+        '<div style="position:absolute;bottom:14px;right:14px;z-index:1003;display:flex;gap:8px;flex-wrap:wrap;background:rgba(255,255,255,0.95);padding:8px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,0.18);">' +
+            '<button onclick="govmapOpenExternal()" class="btn-secondary btn-sm" style="font-size:0.78rem;">🔗 פתח בלשונית חדשה</button>' +
+            '<button onclick="govmapPickLocationForSakag()" class="btn-primary btn-sm" style="font-size:0.78rem;font-weight:700;">📋 השתמש במיקום ליצירת סק״ג</button>' +
+        '</div>';
+}
+
 // Open the current GovMap iframe URL in a new tab
 function govmapOpenExternal() {
     var iframe = document.getElementById('govmap-iframe');
-    var url = (iframe && iframe.src) || _govmapBuildEmbedUrl();
+    var url = (iframe && iframe.src) || _govmapBuildEmbedUrl(_govmapCurrentPreset);
     window.open(url, '_blank', 'noopener,noreferrer');
 }
 
