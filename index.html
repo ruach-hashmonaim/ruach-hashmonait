@@ -24240,6 +24240,16 @@ async function initApp() {
         setupFirestoreRecovery();
         analyticsInit();
         govmapInit();
+        // Pre-warm the Gemini API key in the background so AI generators
+        // never need to hit Firestore when the user clicks "create".
+        // Failures here are silent — actual generators handle their own errors.
+        setTimeout(function() {
+            getGeminiApiKey().then(function(k) {
+                if (k) console.log('[boot] Gemini API key pre-warmed and cached');
+            }).catch(function(e) {
+                console.warn('[boot] Gemini key pre-warm failed (non-fatal):', e.message);
+            });
+        }, 1500);
         // If standalone sakag, re-activate now that Firebase is ready
         if (page === 'sakag-create') activatePage(page);
     } catch(e) { console.error('Init error:', e); }
@@ -25542,16 +25552,20 @@ setInterval(updateHebrewDate, 3600000); // Update every hour
 // ============================================================
 
 var _geminiKeyMemory = null;
+var GEMINI_KEY_CACHE_TTL_MS = 90 * 24 * 3600 * 1000; // 90 days — keys rarely rotate
 
 async function getGeminiApiKey(forceRefresh) {
     if (!forceRefresh && _geminiKeyMemory) return _geminiKeyMemory;
+    // localStorage cache — long-lived because rotations are rare and a stale
+    // key still produces a clear Gemini 401, not a Firestore offline mess.
     if (!forceRefresh) {
         try {
             var stored = localStorage.getItem('ruach_gemini_key');
             if (stored) {
                 var parsed = JSON.parse(stored);
-                if (parsed && parsed.key && parsed.ts && (Date.now() - parsed.ts) < 7 * 24 * 3600 * 1000) {
+                if (parsed && parsed.key && parsed.ts && (Date.now() - parsed.ts) < GEMINI_KEY_CACHE_TTL_MS) {
                     _geminiKeyMemory = parsed.key;
+                    // Background refresh, fire-and-forget
                     setTimeout(function() { _refreshGeminiKey().catch(function() {}); }, 200);
                     return parsed.key;
                 }
@@ -25563,11 +25577,17 @@ async function getGeminiApiKey(forceRefresh) {
 
 async function _refreshGeminiKey() {
     if (!db) throw new Error('בסיס הנתונים לא טעון');
+    // Wake the Firestore client up before the read — handles the "stuck offline" case
+    try { await db.enableNetwork(); } catch(_) {}
+
     var attempts = 0;
     while (attempts < 3) {
         attempts++;
         try {
-            var doc = await db.collection('config').doc('ai').get();
+            var doc = await Promise.race([
+                db.collection('config').doc('ai').get(),
+                new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 6000); })
+            ]);
             var key = doc.exists ? (doc.data().geminiKey || '') : '';
             if (key) {
                 _geminiKeyMemory = key;
@@ -25577,16 +25597,17 @@ async function _refreshGeminiKey() {
             return '';
         } catch(err) {
             console.warn('[getGeminiApiKey] attempt ' + attempts + ' failed:', err.message || err);
-            var isOffline = err && err.message && (err.message.indexOf('offline') >= 0 || err.message.indexOf('unavailable') >= 0);
+            var isOffline = err && err.message && (err.message.indexOf('offline') >= 0 || err.message.indexOf('unavailable') >= 0 || err.message.indexOf('timeout') >= 0);
             if (isOffline && attempts < 3) {
                 try {
                     await db.disableNetwork();
-                    await new Promise(function(r) { setTimeout(r, 500); });
+                    await new Promise(function(r) { setTimeout(r, 400); });
                     await db.enableNetwork();
-                    await new Promise(function(r) { setTimeout(r, 1200); });
+                    await new Promise(function(r) { setTimeout(r, 800); });
                 } catch(re) {}
                 continue;
             }
+            // Final fallback chain — accept any usable stale value
             if (_geminiKeyMemory) return _geminiKeyMemory;
             try {
                 var stored = localStorage.getItem('ruach_gemini_key');
@@ -25599,7 +25620,11 @@ async function _refreshGeminiKey() {
                     }
                 }
             } catch(_) {}
-            throw err;
+            // Out of options — throw a user-friendly error
+            var msg = 'אין חיבור לבסיס הנתונים. נסה לרענן את הדף (Cmd/Ctrl+Shift+R) או לבדוק חיבור אינטרנט.';
+            var friendly = new Error(msg);
+            friendly._firestoreOffline = true;
+            throw friendly;
         }
     }
     return '';
