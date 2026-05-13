@@ -18270,8 +18270,7 @@ async function standaloneSakagGenerate(lat, lng, placeName) {
     }
 
     try {
-        var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        var apiKey = await getGeminiApiKey();
         if (!apiKey) throw new Error('מפתח AI לא הוגדר');
 
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
@@ -18592,9 +18591,8 @@ async function modalSakagGenerate(lat, lng, placeName) {
     }
 
     try {
-        // Get Gemini API key from Firestore
-        var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        // Get Gemini API key (cached locally for offline resilience)
+        var apiKey = await getGeminiApiKey();
         if (!apiKey) throw new Error('מפתח Gemini לא הוגדר. בקש ממנהל המערכת להגדיר מפתח ב: ניהול מערכת → הגדרות AI');
 
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
@@ -19263,8 +19261,7 @@ async function sakalGenerateAI(lat, lng, placeName) {
         var amudCount = amudAnanPois.filter(function(ap) { return !overpassPois.find(function(op) { return op.name === ap.name; }); }).length;
         if (poiCountEl) poiCountEl.textContent = '📍 נמצאו ' + pois.length + ' נקודות עניין' + (amudCount > 0 ? ' (כולל ' + amudCount + ' מעמוד ענן)' : '') + (elevation ? ' | גובה: ' + elevation + ' מ׳' : '');
 
-        var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        var apiKey = await getGeminiApiKey();
         if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
 
@@ -20003,8 +20000,7 @@ async function morakGenerate() {
     aiFloatShow(_morakTaskId, 'מור"ק: ' + d.subject, 50);
 
     try {
-        var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        var apiKey = await getGeminiApiKey();
         if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
 
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
@@ -20099,7 +20095,7 @@ async function morakSave() {
     }
     var d = morakLastGenerated;
     try {
-        await db.collection('commander_tools').add({
+        var result = await safeSaveToFirestore('commander_tools', {
             type: 'morak',
             title: d.data.title || 'מור"ק',
             subtitle: d.data.subtitle || '',
@@ -20113,9 +20109,10 @@ async function morakSave() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
-        showToast('✅ המור"ק נשמר בהצלחה!');
+        showToast(result.queued ? '✅ המור"ק נשמר (יסונכרן כשהחיבור יחזור)' : '✅ המור"ק נשמר בהצלחה!');
         var templateEl = document.getElementById('morak-create-template');
         templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">המור"ק נשמר!</p>' +
+            (result.queued ? '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">החיבור איטי — הפריט בהמתנה לסנכרון אוטומטי</p>' : '') +
             '<div style="display:flex;gap:10px;justify-content:center;margin-top:14px;"><button class="btn-primary btn-sm" onclick="morakStartCreate()">➕ צור מור"ק נוסף</button><button class="btn-secondary btn-sm" onclick="morakBackToList()">← חזרה</button></div></div>';
     } catch(e) { showToast('❌ שגיאה: ' + e.message); }
 }
@@ -20259,8 +20256,7 @@ async function lessonGenerate() {
     aiFloatShow(_lessonTaskId, 'מערך שיעור: ' + topic, 40);
 
     try {
-        var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        var apiKey = await getGeminiApiKey();
         if (!apiKey) throw new Error('מפתח Gemini לא הוגדר');
 
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
@@ -20346,7 +20342,7 @@ async function lessonSave() {
     }
     var d = lessonLastGenerated;
     try {
-        await db.collection('commander_tools').add({
+        var result = await safeSaveToFirestore('commander_tools', {
             type: 'lesson',
             title: d.data.title || 'מערך שיעור',
             subtitle: d.data.subtitle || '',
@@ -20360,9 +20356,10 @@ async function lessonSave() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
-        showToast('✅ מערך השיעור נשמר!');
+        showToast(result.queued ? '✅ מערך השיעור נשמר (יסונכרן כשהחיבור יחזור)' : '✅ מערך השיעור נשמר!');
         var templateEl = document.getElementById('lesson-create-template');
         templateEl.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:3rem;margin-bottom:10px;">✅</div><p style="font-weight:700;color:#2E7D32;">מערך השיעור נשמר!</p>' +
+            (result.queued ? '<p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">החיבור איטי — הפריט בהמתנה לסנכרון אוטומטי</p>' : '') +
             '<div style="display:flex;gap:10px;justify-content:center;margin-top:14px;"><button class="btn-primary btn-sm" onclick="lessonStartCreate()">➕ צור מערך נוסף</button><button class="btn-secondary btn-sm" onclick="lessonBackToList()">← חזרה</button></div></div>';
     } catch(e) { showToast('❌ שגיאה: ' + e.message); }
 }
@@ -21084,8 +21081,7 @@ async function triviaGenerateAI() {
 החזר אך ורק JSON תקני.` + JEWISH_SOURCES_RESTRICTION;
 
     try {
-        var configDoc = await db.collection('config').doc('ai').get();
-        var apiKey = configDoc.exists ? (configDoc.data().geminiKey || '') : '';
+        var apiKey = await getGeminiApiKey();
         if (!apiKey) { showToast('מפתח API חסר — פנה למנהל'); btn.disabled = false; btn.textContent = '🧠 צור טריוויה'; status.textContent = ''; return; }
 
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
@@ -21214,7 +21210,7 @@ async function triviaSaveAIQuiz() {
         try { await firebase.auth().signInAnonymously(); } catch(ae) {}
     }
     try {
-        await db.collection('commander_tools').add({
+        var result = await safeSaveToFirestore('commander_tools', {
             type: 'trivia',
             title: data.title || 'טריוויה: ' + (meta.topic || ''),
             subtitle: meta.subtopic || '',
@@ -21224,7 +21220,7 @@ async function triviaSaveAIQuiz() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
         });
-        showToast('✅ הטריוויה נשמרה בספרייה!');
+        showToast(result.queued ? '✅ הטריוויה נשמרה (יסונכרן כשהחיבור יחזור)' : '✅ הטריוויה נשמרה בספרייה!');
     } catch(e) { showToast('שגיאה בשמירה: ' + e.message); }
 }
 
@@ -25499,6 +25495,167 @@ function updateHebrewDate() {
 }
 updateHebrewDate();
 setInterval(updateHebrewDate, 3600000); // Update every hour
+
+// ============================================================
+// RESILIENT FIRESTORE HELPERS
+// On mobile, Firestore can drop into a stuck "offline" state where every
+// .get() fails with "Failed to get document because the client is offline".
+// AI generation and content saving both depend on Firestore being reachable,
+// so we cache the API key, retry on offline, and back failed writes up to
+// localStorage so nothing is lost.
+// ============================================================
+
+var _geminiKeyMemory = null;
+
+async function getGeminiApiKey(forceRefresh) {
+    if (!forceRefresh && _geminiKeyMemory) return _geminiKeyMemory;
+    if (!forceRefresh) {
+        try {
+            var stored = localStorage.getItem('ruach_gemini_key');
+            if (stored) {
+                var parsed = JSON.parse(stored);
+                if (parsed && parsed.key && parsed.ts && (Date.now() - parsed.ts) < 7 * 24 * 3600 * 1000) {
+                    _geminiKeyMemory = parsed.key;
+                    setTimeout(function() { _refreshGeminiKey().catch(function() {}); }, 200);
+                    return parsed.key;
+                }
+            }
+        } catch(e) {}
+    }
+    return _refreshGeminiKey();
+}
+
+async function _refreshGeminiKey() {
+    if (!db) throw new Error('בסיס הנתונים לא טעון');
+    var attempts = 0;
+    while (attempts < 3) {
+        attempts++;
+        try {
+            var doc = await db.collection('config').doc('ai').get();
+            var key = doc.exists ? (doc.data().geminiKey || '') : '';
+            if (key) {
+                _geminiKeyMemory = key;
+                try { localStorage.setItem('ruach_gemini_key', JSON.stringify({ key: key, ts: Date.now() })); } catch(e) {}
+                return key;
+            }
+            return '';
+        } catch(err) {
+            console.warn('[getGeminiApiKey] attempt ' + attempts + ' failed:', err.message || err);
+            var isOffline = err && err.message && (err.message.indexOf('offline') >= 0 || err.message.indexOf('unavailable') >= 0);
+            if (isOffline && attempts < 3) {
+                try {
+                    await db.disableNetwork();
+                    await new Promise(function(r) { setTimeout(r, 500); });
+                    await db.enableNetwork();
+                    await new Promise(function(r) { setTimeout(r, 1200); });
+                } catch(re) {}
+                continue;
+            }
+            if (_geminiKeyMemory) return _geminiKeyMemory;
+            try {
+                var stored = localStorage.getItem('ruach_gemini_key');
+                if (stored) {
+                    var parsed = JSON.parse(stored);
+                    if (parsed && parsed.key) {
+                        console.warn('[getGeminiApiKey] using stale cached key after failures');
+                        _geminiKeyMemory = parsed.key;
+                        return parsed.key;
+                    }
+                }
+            } catch(_) {}
+            throw err;
+        }
+    }
+    return '';
+}
+
+// Resilient add — tries the write with a hard timeout; on failure backs up
+// to localStorage and a background loop keeps retrying until the network
+// is healthy. Nothing the user creates can be silently lost.
+async function safeSaveToFirestore(collectionName, data) {
+    if (!db) throw new Error('בסיס הנתונים לא טעון');
+    var stripFieldValues = function(obj) {
+        var out = {};
+        for (var k in obj) {
+            var v = obj[k];
+            if (v && typeof v === 'object' && v.constructor && v.constructor.name === 'FieldValue') continue;
+            out[k] = v;
+        }
+        return out;
+    };
+    try {
+        var ref = await Promise.race([
+            db.collection(collectionName).add(data),
+            new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 8000); })
+        ]);
+        return { id: ref.id, queued: false };
+    } catch(err) {
+        console.warn('[safeSave] add failed for ' + collectionName + ':', err.message || err);
+        try {
+            var backup = { collection: collectionName, data: stripFieldValues(data), createdLocal: Date.now(), id: 'pending_' + Math.random().toString(36).slice(2, 9) };
+            var queue = [];
+            try { queue = JSON.parse(localStorage.getItem('ruach_pending_writes') || '[]'); } catch(_) {}
+            queue.push(backup);
+            localStorage.setItem('ruach_pending_writes', JSON.stringify(queue));
+            console.log('[safeSave] queued for retry, queue size=' + queue.length);
+            _schedulePendingWriteRetry();
+            return { id: backup.id, queued: true };
+        } catch(bk) { throw err; }
+    }
+}
+
+var _pendingWriteTimer = null;
+function _schedulePendingWriteRetry() {
+    if (_pendingWriteTimer) return;
+    _pendingWriteTimer = setInterval(_flushPendingWrites, 15000);
+    setTimeout(_flushPendingWrites, 2000);
+}
+
+async function _flushPendingWrites() {
+    if (!db || !navigator.onLine) return;
+    var queue;
+    try { queue = JSON.parse(localStorage.getItem('ruach_pending_writes') || '[]'); } catch(e) { queue = []; }
+    if (!queue.length) {
+        if (_pendingWriteTimer) { clearInterval(_pendingWriteTimer); _pendingWriteTimer = null; }
+        return;
+    }
+    var remaining = [];
+    var flushed = 0;
+    for (var i = 0; i < queue.length; i++) {
+        var item = queue[i];
+        try {
+            var data = JSON.parse(JSON.stringify(item.data));
+            data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            data._queuedAt = item.createdLocal;
+            await Promise.race([
+                db.collection(item.collection).add(data),
+                new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 8000); })
+            ]);
+            flushed++;
+        } catch(err) {
+            console.warn('[safeSave] flush failed:', err.message);
+            remaining.push(item);
+        }
+    }
+    localStorage.setItem('ruach_pending_writes', JSON.stringify(remaining));
+    if (flushed > 0) {
+        try { showToast('✅ ' + flushed + ' פריט' + (flushed > 1 ? 'ים' : '') + ' מההמתנה נשמר' + (flushed > 1 ? 'ו' : '') + ' בענן'); } catch(e) {}
+    }
+    if (!remaining.length && _pendingWriteTimer) {
+        clearInterval(_pendingWriteTimer);
+        _pendingWriteTimer = null;
+    }
+}
+
+setTimeout(function() {
+    try {
+        var queue = JSON.parse(localStorage.getItem('ruach_pending_writes') || '[]');
+        if (queue.length) {
+            console.log('[safeSave] found ' + queue.length + ' pending writes from previous session');
+            _schedulePendingWriteRetry();
+        }
+    } catch(e) {}
+}, 3000);
 
 // ============================================================
 // FLOATING AI PROGRESS WIDGET — Multi-task background generation
