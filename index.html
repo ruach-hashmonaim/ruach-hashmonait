@@ -910,6 +910,20 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
                 <button class="btn-primary" style="width:100%;padding:9px;font-size:0.92rem;font-family:inherit;" onclick="splashPasswordLogin()">כניסה</button>
             </div>
             <div id="splash-status" style="margin-top:10px;font-size:0.82rem;color:#FFE082;text-align:center;min-height:20px;"></div>
+
+            <!-- Trivia code entry — for soldiers whose share link doesn't auto-open -->
+            <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.18);">
+                <div style="text-align:center;color:rgba(255,255,255,0.9);font-size:0.85rem;font-weight:700;margin-bottom:6px;">🎮 הצטרפות למשחק טריוויה</div>
+                <div style="text-align:center;color:rgba(255,255,255,0.65);font-size:0.72rem;margin-bottom:8px;">קיבלת קוד 5 תווים? הזן כאן:</div>
+                <div style="display:flex;gap:6px;">
+                    <input id="splash-trivia-code" type="text" maxlength="5" placeholder="ABC12"
+                        style="flex:1;padding:11px 12px;border:none;border-radius:10px;font-size:1.1rem;font-weight:800;font-family:inherit;text-align:center;letter-spacing:4px;text-transform:uppercase;direction:ltr;"
+                        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+                        onkeydown="if(event.key==='Enter')splashJoinTrivia()">
+                    <button onclick="splashJoinTrivia()"
+                        style="background:#FFD54F;color:#3B2A00;border:none;padding:0 16px;border-radius:10px;font-weight:800;cursor:pointer;font-family:inherit;font-size:0.9rem;">הצטרף</button>
+                </div>
+            </div>
         </div>
         <div class="splash-credit">פותח ע״י IAB-Smart AI Solutions</div>
     </div>
@@ -20955,11 +20969,23 @@ function triviaRenderCategories() {
             return;
         }
         savedTrivias.sort(function(a, b) { return (b.ts && b.ts.seconds || 0) - (a.ts && a.ts.seconds || 0); });
-        container.innerHTML = savedTrivias.map(function(t) {
+        // Admins (and trivia creators) can delete content + manage active sessions
+        var isAdmin = hasPermission('admin-panel') || hasPermission('manage-users');
+        var manageBar = isAdmin
+            ? '<div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;margin-bottom:8px;">' +
+                '<button onclick="triviaManageSessions()" style="background:#fff;border:1.5px solid var(--primary);color:var(--primary);padding:6px 14px;border-radius:10px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;">🎮 נהל משחקים פעילים</button>' +
+              '</div>'
+            : '';
+        container.innerHTML = manageBar + savedTrivias.map(function(t) {
             var pendingTag = t._pending ? '<div style="position:absolute;top:6px;left:6px;font-size:0.62rem;color:#92400E;background:#FEF3C7;padding:2px 6px;border-radius:8px;font-weight:700;">בהמתנה לסנכרון</div>' : '';
             var hostBtn = t._pending ? '' : '<button onclick="event.stopPropagation();triviaHostCreate(\''+t.id+'\')" style="margin-top:10px;width:100%;background:linear-gradient(135deg,#7C3AED,#A855F7);color:#fff;border:none;padding:8px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;">🎮 משחק קבוצתי</button>';
+            // Admin-only delete button (top-left corner of the card)
+            var deleteBtn = (isAdmin && !t._pending)
+                ? '<button onclick="event.stopPropagation();triviaDeleteContent(\''+t.id+'\',\''+_attrEsc(t.title)+'\')" title="מחק טריוויה" style="position:absolute;top:6px;right:6px;background:rgba(220,38,38,0.92);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;line-height:1;">×</button>'
+                : '';
             return '<div style="position:relative;background:#fff;border:2px solid #D9770633;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\'#D97706\'" onmouseout="this.style.borderColor=\'#D9770633\'">' +
                 pendingTag +
+                deleteBtn +
                 '<div onclick="triviaPlaySaved(\''+t.id+'\')" style="cursor:pointer;">' +
                     '<div style="font-size:2rem;margin-bottom:6px;">🧠</div>' +
                     '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + _htmlEsc(t.title) + '</div>' +
@@ -20988,6 +21014,132 @@ function triviaRenderCategories() {
     } catch(e) {
         console.error('[trivia] failed to attach listener:', e);
         container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">שגיאה: ' + e.message + '</div>';
+    }
+}
+
+// ============================================================
+// ADMIN: delete a saved trivia (content) — soft delete via status='deleted'
+// so it disappears from the list but stays recoverable in Firestore.
+// ============================================================
+async function triviaDeleteContent(docId, title) {
+    if (!confirm('למחוק את הטריוויה "' + title + '"?\nפעולה זו תסיר אותה מהרשימה לכולם.')) return;
+    try {
+        await db.collection('commander_tools').doc(docId).update({
+            status: 'deleted',
+            deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            deletedBy: (currentUser && (currentUser.name || currentUser.email)) || 'admin'
+        });
+        showToast('🗑️ הטריוויה נמחקה');
+    } catch(e) {
+        console.error('[admin] delete trivia failed:', e);
+        showToast('שגיאה במחיקה: ' + (e.message || e));
+    }
+}
+
+// ============================================================
+// ADMIN: manage active trivia game sessions — list all `trivia_sessions`,
+// allow bulk + individual deletion.
+// ============================================================
+async function triviaManageSessions() {
+    if (!db) { showToast('אין חיבור'); return; }
+    var existing = document.getElementById('trivia-manage-modal');
+    if (existing) existing.remove();
+    var modal = document.createElement('div');
+    modal.id = 'trivia-manage-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,0.55);display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto;direction:rtl;font-family:"Heebo",sans-serif;';
+    modal.innerHTML =
+        '<div style="background:#fff;border-radius:16px;padding:20px;max-width:560px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.25);" onclick="event.stopPropagation()">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+                '<h3 style="color:var(--primary);margin:0;font-size:1.05rem;">🎮 ניהול משחקי טריוויה פעילים</h3>' +
+                '<button onclick="document.getElementById(\'trivia-manage-modal\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#666;">✕</button>' +
+            '</div>' +
+            '<div id="trivia-manage-body" style="min-height:120px;"><div style="text-align:center;padding:30px;color:var(--text-secondary);">טוען…</div></div>' +
+            '<div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px;">' +
+                '<button onclick="triviaDeleteAllSessions()" style="background:#FEE2E2;color:#B91C1C;border:1.5px solid #FCA5A5;padding:8px 14px;border-radius:10px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;">🗑️ מחק את כל המשחקים</button>' +
+                '<button onclick="document.getElementById(\'trivia-manage-modal\').remove()" class="btn-secondary btn-sm">סגור</button>' +
+            '</div>' +
+        '</div>';
+    modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+    _triviaLoadManageSessions();
+}
+
+async function _triviaLoadManageSessions() {
+    var body = document.getElementById('trivia-manage-body');
+    if (!body) return;
+    try {
+        var snap = await db.collection('trivia_sessions').get();
+        if (snap.empty) {
+            body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary);"><div style="font-size:2rem;margin-bottom:6px;">📭</div>אין משחקים פעילים כרגע</div>';
+            return;
+        }
+        var sessions = [];
+        snap.forEach(function(d) { sessions.push(Object.assign({ id: d.id }, d.data())); });
+        sessions.sort(function(a, b) {
+            var aT = (a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0);
+            var bT = (b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0);
+            return bT - aT;
+        });
+        body.innerHTML = sessions.map(function(s) {
+            var status = s.status === 'lobby' ? '⏳ בלובי' : s.status === 'playing' ? '▶️ פעיל' : s.status === 'finished' ? '✅ הסתיים' : '❓ ' + (s.status || '');
+            var when = '';
+            if (s.createdAt && s.createdAt.toDate) {
+                try {
+                    var d = s.createdAt.toDate();
+                    when = d.toLocaleString('he-IL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+                } catch(_) {}
+            }
+            return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-weight:700;font-size:0.92rem;color:var(--primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _htmlEsc(s.triviaTitle || '—') + '</div>' +
+                    '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">קוד: <b>' + _htmlEsc(s.code || '???') + '</b> · ' + status + (when ? ' · ' + when : '') + (s.hostName ? ' · ' + _htmlEsc(s.hostName) : '') + '</div>' +
+                '</div>' +
+                '<button onclick="triviaDeleteSession(\'' + s.id + '\',\'' + _attrEsc(s.triviaTitle || '') + '\')" style="background:#FEE2E2;color:#B91C1C;border:none;padding:6px 12px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;margin-right:8px;">🗑️ מחק</button>' +
+            '</div>';
+        }).join('');
+    } catch(e) {
+        console.error('[admin] load sessions failed:', e);
+        body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">שגיאה: ' + (e.message || e) + '</div>';
+    }
+}
+
+async function triviaDeleteSession(sessionId, title) {
+    if (!confirm('למחוק את המשחק "' + title + '"?')) return;
+    try {
+        // Delete players sub-collection first
+        var playersSnap = await db.collection('trivia_sessions').doc(sessionId).collection('players').get();
+        var batch = db.batch();
+        playersSnap.forEach(function(d) { batch.delete(d.ref); });
+        await batch.commit();
+        await db.collection('trivia_sessions').doc(sessionId).delete();
+        showToast('🗑️ המשחק נמחק');
+        _triviaLoadManageSessions();
+    } catch(e) {
+        console.error('[admin] delete session failed:', e);
+        showToast('שגיאה במחיקה: ' + (e.message || e));
+    }
+}
+
+async function triviaDeleteAllSessions() {
+    if (!confirm('למחוק את כל משחקי הטריוויה הפעילים?\nפעולה זו לא הפיכה.')) return;
+    try {
+        var snap = await db.collection('trivia_sessions').get();
+        // Delete each session + its players one at a time (avoids batch-size limits)
+        for (var i = 0; i < snap.docs.length; i++) {
+            var d = snap.docs[i];
+            try {
+                var pSnap = await d.ref.collection('players').get();
+                var batch = db.batch();
+                pSnap.forEach(function(p) { batch.delete(p.ref); });
+                await batch.commit();
+                await d.ref.delete();
+            } catch(err) { console.warn('[admin] delete session ' + d.id + ' failed:', err); }
+        }
+        showToast('🗑️ כל המשחקים נמחקו');
+        _triviaLoadManageSessions();
+    } catch(e) {
+        console.error('[admin] delete-all failed:', e);
+        showToast('שגיאה: ' + (e.message || e));
     }
 }
 
@@ -22003,29 +22155,87 @@ function _triviaRenderHost() {
     } else if (s.status === 'playing' && s.currentQuestion >= 0) {
         var q = s.questions[s.currentQuestion];
         var total = s.questions.length;
-        var answeredCount = _triviaSessionPlayers.filter(function(p){ return p['answers_q' + s.currentQuestion]; }).length;
-        var leaderboard = _triviaSessionPlayers.slice(0, 5).map(function(p, i) {
-            var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.';
-            return '<div style="display:flex;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,0.1);border-radius:8px;margin-bottom:4px;font-size:0.85rem;color:#fff;"><span>' + medal + ' ' + _htmlEsc(p.name) + '</span><span style="font-weight:700;">' + (p.totalScore || 0) + '</span></div>';
-        }).join('');
+        var qIdx = s.currentQuestion;
+        var answeredCount = _triviaSessionPlayers.filter(function(p){ return p['answers_q' + qIdx]; }).length;
         var optColors = ['#EF4444', '#3B82F6', '#F59E0B', '#10B981'];
+
+        // === LIVE DASHBOARD: each player's status for the current question ===
+        // Sorted by total score; shows ✓/✗/⏳ + which option they chose + score earned
+        var sortedPlayers = _triviaSessionPlayers.slice().sort(function(a,b){ return (b.totalScore||0) - (a.totalScore||0); });
+        var dashboardRows = sortedPlayers.length === 0
+            ? '<div style="text-align:center;padding:14px;color:rgba(255,255,255,0.6);font-size:0.85rem;">אין שחקנים</div>'
+            : sortedPlayers.map(function(p, i) {
+                var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="opacity:0.6;">' + (i+1) + '.</span>';
+                var ans = p['answers_q' + qIdx];
+                var stateBadge, rowBg, optionChip = '';
+                if (!ans) {
+                    stateBadge = '<span style="background:rgba(255,255,255,0.18);color:rgba(255,255,255,0.85);padding:3px 9px;border-radius:8px;font-size:0.75rem;font-weight:700;">⏳ חושב…</span>';
+                    rowBg = 'rgba(255,255,255,0.08)';
+                } else if (ans.timeout) {
+                    stateBadge = '<span style="background:#7C2D12;color:#fff;padding:3px 9px;border-radius:8px;font-size:0.75rem;font-weight:700;">⏰ נגמר הזמן</span>';
+                    rowBg = 'rgba(220,38,38,0.18)';
+                } else if (ans.isCorrect) {
+                    stateBadge = '<span style="background:#059669;color:#fff;padding:3px 9px;border-radius:8px;font-size:0.75rem;font-weight:700;">✓ נכון +' + (ans.score||0) + '</span>';
+                    rowBg = 'rgba(16,185,129,0.22)';
+                    optionChip = '<span style="background:' + optColors[ans.optIdx % 4] + ';color:#fff;padding:2px 7px;border-radius:6px;font-size:0.7rem;font-weight:700;margin-right:6px;">' + _htmlEsc((q.options[ans.optIdx]||'').slice(0,18)) + '</span>';
+                } else {
+                    stateBadge = '<span style="background:#DC2626;color:#fff;padding:3px 9px;border-radius:8px;font-size:0.75rem;font-weight:700;">✗ לא נכון</span>';
+                    rowBg = 'rgba(220,38,38,0.18)';
+                    optionChip = '<span style="background:' + optColors[ans.optIdx % 4] + ';color:#fff;padding:2px 7px;border-radius:6px;font-size:0.7rem;font-weight:700;margin-right:6px;">' + _htmlEsc((q.options[ans.optIdx]||'').slice(0,18)) + '</span>';
+                }
+                return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:' + rowBg + ';border-radius:9px;margin-bottom:4px;color:#fff;font-size:0.85rem;">' +
+                    '<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">' +
+                        '<span style="min-width:24px;text-align:center;">' + medal + '</span>' +
+                        '<span style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _htmlEsc(p.name) + '</span>' +
+                        optionChip +
+                    '</div>' +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
+                        stateBadge +
+                        '<span style="background:rgba(255,213,79,0.2);color:#FFD54F;padding:3px 9px;border-radius:8px;font-size:0.8rem;font-weight:800;min-width:32px;text-align:center;">' + (p.totalScore || 0) + '</span>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+        // Options — host can see which one is the correct answer (small ✓ on the right one)
         var optsHtml = (q.options || []).map(function(opt, i) {
-            return '<div style="background:' + optColors[i % 4] + ';color:#fff;padding:14px;border-radius:12px;font-weight:700;font-size:1rem;text-align:center;">' + _htmlEsc(opt) + '</div>';
+            var isCorrectMark = (i === q.correct) ? '<span style="position:absolute;top:6px;left:8px;font-size:0.85rem;background:rgba(0,0,0,0.35);padding:2px 6px;border-radius:6px;">✓ נכון</span>' : '';
+            return '<div style="position:relative;background:' + optColors[i % 4] + ';color:#fff;padding:14px;border-radius:12px;font-weight:700;font-size:1rem;text-align:center;">' + isCorrectMark + _htmlEsc(opt) + '</div>';
         }).join('');
+
+        // Per-question summary strip (compact, shows how many got each prior question right)
+        var historyStrip = '';
+        if (qIdx > 0) {
+            var cells = [];
+            for (var hi = 0; hi < qIdx; hi++) {
+                var rightCount = _triviaSessionPlayers.filter(function(p){ var a = p['answers_q'+hi]; return a && a.isCorrect; }).length;
+                var totalAns = _triviaSessionPlayers.filter(function(p){ return p['answers_q'+hi]; }).length;
+                var pctCorrect = totalAns > 0 ? Math.round(100 * rightCount / totalAns) : 0;
+                var cellBg = pctCorrect >= 70 ? '#059669' : pctCorrect >= 40 ? '#D97706' : '#DC2626';
+                cells.push('<div title="שאלה ' + (hi+1) + ': ' + rightCount + '/' + totalAns + ' נכונים" style="background:' + cellBg + ';color:#fff;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;min-width:32px;text-align:center;">' + (hi+1) + ': ' + rightCount + '/' + totalAns + '</div>');
+            }
+            historyStrip = '<div style="background:rgba(0,0,0,0.18);padding:10px 12px;border-radius:12px;margin-bottom:12px;"><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);margin-bottom:6px;font-weight:700;">📊 שאלות קודמות:</div><div style="display:flex;gap:4px;flex-wrap:wrap;">' + cells.join('') + '</div></div>';
+        }
 
         content =
             '<div style="color:#fff;">' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:0.88rem;opacity:0.9;">' +
-                    '<span>שאלה ' + (s.currentQuestion + 1) + ' מתוך ' + total + '</span>' +
+                    '<span>שאלה ' + (qIdx + 1) + ' מתוך ' + total + '</span>' +
                     '<span>👥 ענו: ' + answeredCount + ' / ' + _triviaSessionPlayers.length + '</span>' +
                 '</div>' +
                 '<div id="trivia-timer-display" style="background:rgba(0,0,0,0.18);padding:10px 14px;border-radius:12px;margin-bottom:12px;color:#fff;text-align:center;"></div>' +
-                '<div style="background:rgba(255,255,255,0.95);color:var(--text);padding:24px;border-radius:18px;font-weight:700;font-size:1.25rem;line-height:1.5;text-align:center;margin-bottom:18px;">' + _htmlEsc(q.question) + '</div>' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">' + optsHtml + '</div>' +
-                (leaderboard ? '<div style="background:rgba(0,0,0,0.18);padding:12px;border-radius:14px;margin-bottom:14px;"><div style="font-weight:700;margin-bottom:8px;">🏆 דירוג נוכחי</div>' + leaderboard + '</div>' : '') +
+                '<div style="background:rgba(255,255,255,0.95);color:var(--text);padding:24px;border-radius:18px;font-weight:700;font-size:1.25rem;line-height:1.5;text-align:center;margin-bottom:14px;">' + _htmlEsc(q.question) + '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' + optsHtml + '</div>' +
+                historyStrip +
+                '<div style="background:rgba(0,0,0,0.22);padding:12px;border-radius:14px;margin-bottom:14px;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                        '<div style="font-weight:800;font-size:0.95rem;">🏆 לוח שחקנים חי</div>' +
+                        '<div style="font-size:0.75rem;opacity:0.75;">לחץ "שאלה הבאה" כשמוכן</div>' +
+                    '</div>' +
+                    dashboardRows +
+                '</div>' +
                 '<div style="display:flex;gap:8px;justify-content:center;">' +
                     '<button onclick="triviaHostNext()" style="background:linear-gradient(135deg,#FFD54F,#F9A825);color:#3B2A00;border:none;padding:12px 26px;font-size:1rem;font-weight:800;border-radius:12px;cursor:pointer;font-family:inherit;">' +
-                        (s.currentQuestion + 1 >= total ? '🏁 סיים' : 'שאלה הבאה ←') +
+                        (qIdx + 1 >= total ? '🏁 סיים' : 'שאלה הבאה ←') +
                     '</button>' +
                     '<button onclick="triviaHostEnd()" style="background:rgba(0,0,0,0.3);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:12px 18px;font-size:0.85rem;border-radius:12px;cursor:pointer;font-family:inherit;">✕ סיים מוקדם</button>' +
                 '</div>' +
@@ -24939,6 +25149,18 @@ function splashEnter() {
     } else {
         navigate('home');
     }
+}
+
+// Manual trivia-code entry from the splash screen — for users whose
+// shared link didn't auto-open (e.g., old service-worker cache).
+function splashJoinTrivia() {
+    var input = document.getElementById('splash-trivia-code');
+    var code = (input && input.value || '').trim().toUpperCase();
+    if (!code) { showToast('הזן קוד משחק'); return; }
+    if (code.length !== 5) { showToast('הקוד חייב להיות 5 תווים'); return; }
+    // Just delegate to the regular join flow
+    window.location.hash = 'play/' + code;
+    openTriviaPlayer(code);
 }
 
 // Show the email+password form on splash (default hidden behind a link)
