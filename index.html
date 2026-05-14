@@ -21287,18 +21287,38 @@ function triviaShowAIResult(data, topic, subtopic) {
 
 function triviaPlayAIQuiz() {
     var data = window._lastAITrivia;
-    if (!data || !data.questions) return;
+    console.log('[trivia] triviaPlayAIQuiz called, data:', data ? { title: data.title, questionCount: (data.questions||[]).length } : null);
+    if (!data || !data.questions || data.questions.length === 0) {
+        showToast('הטריוויה ריקה או פגומה');
+        console.error('[trivia] no questions to play. data:', data);
+        return;
+    }
 
-    // Convert to internal trivia format
-    var questions = data.questions.map(function(q) {
-        var correctIdx = typeof q.correct === 'number' ? q.correct : 0;
-        return {
-            question: q.question,
-            correct: q.options[correctIdx],
-            options: q.options.slice(),
-            explanation: q.explanation || ''
-        };
+    // Convert to internal trivia format — defensive: skip malformed questions
+    // instead of failing the whole map call.
+    var questions = [];
+    data.questions.forEach(function(q, idx) {
+        try {
+            if (!q || !Array.isArray(q.options) || q.options.length < 2) {
+                console.warn('[trivia] skipping malformed question ' + idx + ':', q);
+                return;
+            }
+            var correctIdx = typeof q.correct === 'number' ? q.correct : 0;
+            if (correctIdx < 0 || correctIdx >= q.options.length) correctIdx = 0;
+            questions.push({
+                question: String(q.question || '(שאלה ' + (idx+1) + ')').trim() || ('שאלה ' + (idx+1)),
+                correct: q.options[correctIdx],
+                options: q.options.slice(),
+                explanation: q.explanation || ''
+            });
+        } catch(e) { console.warn('[trivia] error processing question ' + idx + ':', e); }
     });
+
+    console.log('[trivia] mapped ' + questions.length + ' usable questions out of ' + data.questions.length);
+    if (questions.length === 0) {
+        showToast('כל השאלות בטריוויה פגומות — לא ניתן להפעיל');
+        return;
+    }
 
     // Shuffle
     for (var i = questions.length - 1; i > 0; i--) {
@@ -21312,8 +21332,8 @@ function triviaPlayAIQuiz() {
     triviaAnswered = false;
 
     document.getElementById('trivia-categories').style.display = 'none';
-    document.getElementById('trivia-create-section').style.display = 'none';
-    document.getElementById('trivia-ai-result').style.display = 'none';
+    var createSec = document.getElementById('trivia-create-section'); if (createSec) createSec.style.display = 'none';
+    var aiResult = document.getElementById('trivia-ai-result'); if (aiResult) aiResult.style.display = 'none';
     document.getElementById('trivia-active').style.display = '';
     document.getElementById('trivia-result').style.display = 'none';
     document.getElementById('trivia-quiz-title').textContent = triviaCurrentQuiz.title;
@@ -21346,23 +21366,15 @@ async function triviaSaveAIQuiz() {
 
 function triviaShowQuestion() {
     var quiz = triviaCurrentQuiz;
-    if (!quiz || triviaCurrentQ >= quiz.questions.length) { triviaShowResult(); return; }
+    if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+        var areaErr = document.getElementById('trivia-question-area');
+        if (areaErr) areaErr.innerHTML = '<div style="padding:30px;text-align:center;color:var(--danger);background:#FEF2F2;border-radius:12px;"><div style="font-size:2rem;">⚠️</div><div style="font-weight:700;margin-top:8px;">שגיאה: אין שאלות לטעון</div><div style="font-size:0.82rem;margin-top:6px;color:var(--text-secondary);">ייתכן שהטריוויה ניזוקה. נסה ליצור חדשה.</div><button onclick="triviaBackToCategories()" class="btn-primary btn-sm" style="margin-top:14px;">חזרה לקטגוריות</button></div>';
+        return;
+    }
+    if (triviaCurrentQ < 0) triviaCurrentQ = 0;
+    if (triviaCurrentQ >= quiz.questions.length) { triviaShowResult(); return; }
     triviaAnswered = false;
     var total = quiz.questions.length;
-
-    // Robust skip-over for any broken question (missing text or fewer than 2 options).
-    // This prevents the silent JS error that used to freeze the user mid-quiz.
-    var attempts = 0;
-    while (triviaCurrentQ < total && attempts < total) {
-        var qCheck = quiz.questions[triviaCurrentQ];
-        var ok = qCheck && typeof qCheck.question === 'string' && qCheck.question.trim().length > 0 &&
-                 Array.isArray(qCheck.options) && qCheck.options.length >= 2;
-        if (ok) break;
-        console.warn('[trivia] skipping malformed question at index ' + triviaCurrentQ + ':', qCheck);
-        triviaCurrentQ++;
-        attempts++;
-    }
-    if (triviaCurrentQ >= total) { triviaShowResult(); return; }
 
     var q = quiz.questions[triviaCurrentQ];
 
@@ -21382,21 +21394,39 @@ function triviaShowQuestion() {
 
     var areaEl = document.getElementById('trivia-question-area');
     if (!areaEl) { console.warn('[trivia] trivia-question-area element missing'); return; }
+    var isLast = (triviaCurrentQ === total - 1);
+    var isFirst = (triviaCurrentQ === 0);
     areaEl.innerHTML =
         '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;">שאלה ' + (triviaCurrentQ+1) + ' מתוך ' + total + '</div>' +
         '<div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:14px;line-height:1.6;">' + _htmlEsc(q.question) + '</div>' +
         '<div id="trivia-options">' + optionsHtml + '</div>' +
         '<div id="trivia-feedback" style="margin-top:10px;"></div>' +
-        // Always show a "skip" fallback so a stuck question never blocks the user
-        '<div style="margin-top:14px;text-align:center;"><button onclick="triviaSkipQuestion()" style="font-size:0.78rem;color:var(--text-secondary);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit;">⏩ דלג לשאלה הבאה</button></div>';
+        // Navigation row: prev / next / finish — user decides when to advance.
+        '<div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between;align-items:center;flex-wrap:wrap;">' +
+            '<button onclick="triviaPrevQuestion()" ' + (isFirst ? 'disabled style="opacity:0.4;cursor:not-allowed;' : 'style="') + 'font-size:0.85rem;padding:8px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;cursor:pointer;">← שאלה קודמת</button>' +
+            (isLast
+                ? '<button onclick="triviaShowResult()" style="font-size:0.92rem;padding:10px 24px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:700;font-family:inherit;cursor:pointer;">🏁 סיים וצפה בתוצאה</button>'
+                : '<button onclick="triviaNextQuestion()" style="font-size:0.92rem;padding:10px 24px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:700;font-family:inherit;cursor:pointer;">שאלה הבאה →</button>'
+            ) +
+        '</div>';
 }
 
-// Manual skip — moves to the next question without scoring.
-function triviaSkipQuestion() {
+function triviaPrevQuestion() {
+    if (!triviaCurrentQuiz || triviaCurrentQ <= 0) return;
+    triviaCurrentQ--;
+    triviaShowQuestion();
+}
+function triviaNextQuestion() {
     if (!triviaCurrentQuiz) return;
+    if (triviaCurrentQ >= triviaCurrentQuiz.questions.length - 1) {
+        triviaShowResult();
+        return;
+    }
     triviaCurrentQ++;
     triviaShowQuestion();
 }
+// Backwards-compat (in case anything still calls the old name)
+function triviaSkipQuestion() { triviaNextQuestion(); }
 
 // Click handler that looks up the option by its index, eliminating any need
 // to embed the option's text in the onclick attribute (which broke when the
@@ -21441,20 +21471,13 @@ function triviaAnswer(btn, answer) {
             feedbackEl.innerHTML = correct
                 ? '<div style="color:#059669;font-weight:700;">✅ נכון!</div>'
                 : '<div style="color:#DC2626;font-weight:700;">❌ לא נכון — התשובה: ' + _htmlEsc(q.correct || '—') + '</div>';
-            if (q.explanation) feedbackEl.innerHTML += '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + _htmlEsc(q.explanation) + '</div>';
+            if (q.explanation) feedbackEl.innerHTML += '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;line-height:1.6;">' + _htmlEsc(q.explanation) + '</div>';
         }
         var scoreEl = document.getElementById('trivia-score');
         if (scoreEl) scoreEl.textContent = triviaScore + '/' + triviaCurrentQuiz.questions.length + ' נכונות';
     } catch(e) { console.warn('[trivia] feedback render error:', e); }
-
-    // Advance exactly once, with timing based on right/wrong
-    setTimeout(function() {
-        triviaCurrentQ++;
-        try { triviaShowQuestion(); } catch(e) {
-            console.error('[trivia] could not show next question, ending quiz:', e);
-            triviaShowResult();
-        }
-    }, correct ? 1800 : 2800);
+    // No auto-advance — user clicks "שאלה הבאה" themselves so they have time
+    // to read the explanation.
 }
 
 function triviaShowResult() {
