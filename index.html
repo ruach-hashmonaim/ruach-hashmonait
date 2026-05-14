@@ -20870,44 +20870,72 @@ var triviaAnswered = false;
 
 // Build trivia categories from Gedolim periods + map quizzes
 // Load saved trivia quizzes from Firestore
-async function triviaRenderCategories() {
+// Real-time listener so all users see all trivias as soon as anyone creates one.
+// Previously this used a single .get() which served the local cache when
+// Firestore was offline — meaning users only ever saw their own creations.
+var _triviasListenerUnsub = null;
+function triviaRenderCategories() {
     var container = document.getElementById('trivia-categories');
     if (!container) return;
     container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">טוען טריוויות...</div>';
+    if (!db) { container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">אין חיבור לבסיס הנתונים — נסה לרענן</div>'; return; }
 
-    var savedTrivias = [];
-    try {
-        if (db) {
-            var snap = await db.collection('commander_tools').get();
-            snap.forEach(function(doc) {
-                var d = doc.data();
-                if (d.type === 'trivia' && d.status !== 'deleted' && d.questions && d.questions.length > 0) {
-                    savedTrivias.push({ id: doc.id, title: d.title || 'טריוויה', subtitle: d.subtitle || '', questions: d.questions, author: d.createdByName || '', ts: d.createdAt });
+    // Stop any previous listener — avoid double-firing if user revisits the page
+    if (_triviasListenerUnsub) { try { _triviasListenerUnsub(); } catch(_) {} _triviasListenerUnsub = null; }
+
+    function _renderTriviasFromSnapshot(snapshot) {
+        var savedTrivias = [];
+        snapshot.forEach(function(doc) {
+            var d = doc.data();
+            if (d.type === 'trivia' && d.status !== 'deleted' && d.questions && d.questions.length > 0) {
+                savedTrivias.push({ id: doc.id, title: d.title || 'טריוויה', subtitle: d.subtitle || '', questions: d.questions, author: d.createdByName || '', ts: d.createdAt });
+            }
+        });
+        // Pending writes from the current device (queued offline) — show them too
+        try {
+            var queue = JSON.parse(localStorage.getItem('ruach_pending_writes') || '[]');
+            queue.forEach(function(q) {
+                if (q.collection === 'commander_tools' && q.data && q.data.type === 'trivia' && q.data.questions && q.data.questions.length > 0) {
+                    savedTrivias.push({ id: q.id, title: (q.data.title || 'טריוויה') + ' ⏳', subtitle: q.data.subtitle || '', questions: q.data.questions, author: q.data.createdByName || '', ts: { seconds: Math.floor((q.createdLocal || Date.now())/1000) }, _pending: true });
                 }
             });
-        }
-    } catch(e) { console.warn('Trivia load error:', e); }
+        } catch(_) {}
 
-    if (savedTrivias.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);grid-column:1/-1;"><div style="font-size:2.5rem;margin-bottom:8px;">🧠</div><div style="font-weight:600;">אין טריוויות עדיין</div><div style="font-size:0.85rem;margin-top:6px;">לחץ על הכפתור למעלה כדי ליצור טריוויה חדשה!</div></div>';
-        return;
+        if (savedTrivias.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);grid-column:1/-1;"><div style="font-size:2.5rem;margin-bottom:8px;">🧠</div><div style="font-weight:600;">אין טריוויות עדיין</div><div style="font-size:0.85rem;margin-top:6px;">לחץ על הכפתור למעלה כדי ליצור טריוויה חדשה!</div></div>';
+            return;
+        }
+        savedTrivias.sort(function(a, b) { return (b.ts && b.ts.seconds || 0) - (a.ts && a.ts.seconds || 0); });
+        container.innerHTML = savedTrivias.map(function(t) {
+            var pendingTag = t._pending ? '<div style="position:absolute;top:6px;left:6px;font-size:0.62rem;color:#92400E;background:#FEF3C7;padding:2px 6px;border-radius:8px;font-weight:700;">בהמתנה לסנכרון</div>' : '';
+            return '<div onclick="triviaPlaySaved(\''+t.id+'\')" style="position:relative;cursor:pointer;background:#fff;border:2px solid #D9770633;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\'#D97706\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'#D9770633\';this.style.transform=\'\'">' +
+                pendingTag +
+                '<div style="font-size:2rem;margin-bottom:6px;">🧠</div>' +
+                '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + t.title + '</div>' +
+                (t.subtitle ? '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">' + t.subtitle + '</div>' : '') +
+                '<div style="font-size:0.75rem;color:#D97706;margin-top:4px;font-weight:600;">' + t.questions.length + ' שאלות</div>' +
+                '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:4px;">נוצר ע"י ' + (t.author || '—') + '</div>' +
+            '</div>';
+        }).join('');
+        window._savedTrivias = savedTrivias;
     }
 
-    // Sort by newest first
-    savedTrivias.sort(function(a, b) { return (b.ts?.seconds||0) - (a.ts?.seconds||0); });
-
-    container.innerHTML = savedTrivias.map(function(t) {
-        return '<div onclick="triviaPlaySaved(\''+t.id+'\')" style="cursor:pointer;background:#fff;border:2px solid #D9770633;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\'#D97706\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'#D9770633\';this.style.transform=\'\'">' +
-            '<div style="font-size:2rem;margin-bottom:6px;">🧠</div>' +
-            '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + t.title + '</div>' +
-            (t.subtitle ? '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">' + t.subtitle + '</div>' : '') +
-            '<div style="font-size:0.75rem;color:#D97706;margin-top:4px;font-weight:600;">' + t.questions.length + ' שאלות</div>' +
-            '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:4px;">נוצר ע"י ' + t.author + '</div>' +
-        '</div>';
-    }).join('');
-
-    // Store for playback
-    window._savedTrivias = savedTrivias;
+    try {
+        _triviasListenerUnsub = db.collection('commander_tools').onSnapshot(
+            { includeMetadataChanges: true },
+            function(snapshot) {
+                console.log('[trivia] snapshot — ' + snapshot.size + ' docs (fromCache=' + snapshot.metadata.fromCache + ')');
+                _renderTriviasFromSnapshot(snapshot);
+            },
+            function(err) {
+                console.error('[trivia] listener error:', err);
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">שגיאה בטעינת טריוויות: ' + (err.message || err) + '</div>';
+            }
+        );
+    } catch(e) {
+        console.error('[trivia] failed to attach listener:', e);
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">שגיאה: ' + e.message + '</div>';
+    }
 }
 
 async function triviaPlaySaved(docId) {
@@ -21155,13 +21183,31 @@ async function triviaGenerateAI() {
         var parts = data.candidates?.[0]?.content?.parts || [];
         for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').trim();
-        var triviaData;
-        try { triviaData = JSON.parse(aiText); } catch(pe) {
-            var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
-            if (bs !== -1 && be > bs) try { triviaData = JSON.parse(aiText.substring(bs, be + 1)); } catch(pe2) {}
-            if (!triviaData) throw new Error('לא ניתן לנתח את תשובת ה-AI');
+        var triviaData = _safeParseAIJson(aiText);
+
+        // If parse failed, retry the Gemini call once with a stricter JSON-only prompt
+        if (!triviaData) {
+            console.warn('[trivia] first parse failed, retrying with stricter prompt');
+            try {
+                var retryResp = await fetch(geminiUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: 'RESPOND WITH ONLY A VALID JSON OBJECT, no markdown, no prose, no preamble.\n\n' + buildPrompt }] }],
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: 'application/json' }
+                    })
+                });
+                if (retryResp.ok) {
+                    var retryData = await retryResp.json();
+                    var retryParts = retryData.candidates?.[0]?.content?.parts || [];
+                    var retryText = '';
+                    for (var rpi = retryParts.length - 1; rpi >= 0; rpi--) { if (!retryParts[rpi].thought && retryParts[rpi].text) { retryText = retryParts[rpi].text; break; } }
+                    retryText = retryText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+                    triviaData = _safeParseAIJson(retryText);
+                }
+            } catch(retryErr) { console.warn('[trivia] retry failed:', retryErr.message); }
         }
 
+        if (!triviaData) throw new Error('לא ניתן לנתח את תשובת ה-AI אחרי 2 ניסיונות');
         if (!triviaData.questions || triviaData.questions.length === 0) throw new Error('לא נוצרו שאלות');
 
         // Show result — let the user play the trivia or save it
@@ -21264,51 +21310,105 @@ function triviaShowQuestion() {
     var quiz = triviaCurrentQuiz;
     if (!quiz || triviaCurrentQ >= quiz.questions.length) { triviaShowResult(); return; }
     triviaAnswered = false;
-    var q = quiz.questions[triviaCurrentQ];
     var total = quiz.questions.length;
 
-    document.getElementById('trivia-score').textContent = triviaScore + '/' + total + ' נכונות';
-    document.getElementById('trivia-progress-bar').style.width = ((triviaCurrentQ / total) * 100) + '%';
+    // Robust skip-over for any broken question (missing text or fewer than 2 options).
+    // This prevents the silent JS error that used to freeze the user mid-quiz.
+    var attempts = 0;
+    while (triviaCurrentQ < total && attempts < total) {
+        var qCheck = quiz.questions[triviaCurrentQ];
+        var ok = qCheck && typeof qCheck.question === 'string' && qCheck.question.trim().length > 0 &&
+                 Array.isArray(qCheck.options) && qCheck.options.length >= 2;
+        if (ok) break;
+        console.warn('[trivia] skipping malformed question at index ' + triviaCurrentQ + ':', qCheck);
+        triviaCurrentQ++;
+        attempts++;
+    }
+    if (triviaCurrentQ >= total) { triviaShowResult(); return; }
 
-    var optionsHtml = (q.options || []).map(function(opt, i) {
-        return '<button class="trivia-opt" onclick="triviaAnswer(this,\'' + opt.replace(/'/g,"\\'") + '\')" style="display:block;width:100%;text-align:right;padding:12px 16px;margin-bottom:8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:0.9rem;font-family:inherit;cursor:pointer;transition:all 0.2s;" onmouseover="if(!triviaAnswered)this.style.borderColor=\'var(--primary)\'" onmouseout="if(!triviaAnswered)this.style.borderColor=\'var(--border)\'">' + opt + '</button>';
+    var q = quiz.questions[triviaCurrentQ];
+
+    var scoreEl = document.getElementById('trivia-score');
+    var progBar = document.getElementById('trivia-progress-bar');
+    if (scoreEl) scoreEl.textContent = triviaScore + '/' + total + ' נכונות';
+    if (progBar) progBar.style.width = ((triviaCurrentQ / total) * 100) + '%';
+
+    var optionsHtml = q.options.map(function(opt, i) {
+        var safe = String(opt == null ? '' : opt).replace(/'/g, "\\'");
+        return '<button class="trivia-opt" data-opt-idx="' + i + '" onclick="triviaAnswer(this,\'' + safe + '\')" style="display:block;width:100%;text-align:right;padding:12px 16px;margin-bottom:8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:0.9rem;font-family:inherit;cursor:pointer;transition:all 0.2s;" onmouseover="if(!triviaAnswered)this.style.borderColor=\'var(--primary)\'" onmouseout="if(!triviaAnswered)this.style.borderColor=\'var(--border)\'">' + opt + '</button>';
     }).join('');
 
-    document.getElementById('trivia-question-area').innerHTML =
+    var areaEl = document.getElementById('trivia-question-area');
+    if (!areaEl) { console.warn('[trivia] trivia-question-area element missing'); return; }
+    areaEl.innerHTML =
         '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;">שאלה ' + (triviaCurrentQ+1) + ' מתוך ' + total + '</div>' +
         '<div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:14px;line-height:1.6;">' + q.question + '</div>' +
         '<div id="trivia-options">' + optionsHtml + '</div>' +
-        '<div id="trivia-feedback" style="margin-top:10px;"></div>';
+        '<div id="trivia-feedback" style="margin-top:10px;"></div>' +
+        // Always show a "skip" fallback so a stuck question never blocks the user
+        '<div style="margin-top:14px;text-align:center;"><button onclick="triviaSkipQuestion()" style="font-size:0.78rem;color:var(--text-secondary);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit;">⏩ דלג לשאלה הבאה</button></div>';
+}
+
+// Manual skip — moves to the next question without scoring.
+function triviaSkipQuestion() {
+    if (!triviaCurrentQuiz) return;
+    triviaCurrentQ++;
+    triviaShowQuestion();
 }
 
 function triviaAnswer(btn, answer) {
     if (triviaAnswered) return;
     triviaAnswered = true;
-    var q = triviaCurrentQuiz.questions[triviaCurrentQ];
-    var correct = answer === q.correct;
-    if (correct) triviaScore++;
 
-    // Color all buttons
-    document.querySelectorAll('.trivia-opt').forEach(function(b) {
-        b.style.cursor = 'default';
-        var bText = b.textContent;
-        if (bText === q.correct) { b.style.borderColor = '#059669'; b.style.background = '#D1FAE5'; b.style.fontWeight = '700'; }
-        else if (b === btn && !correct) { b.style.borderColor = '#DC2626'; b.style.background = '#FEE2E2'; }
-        else { b.style.opacity = '0.5'; }
-    });
-
-    var feedbackEl = document.getElementById('trivia-feedback');
-    feedbackEl.innerHTML = correct
-        ? '<div style="color:#059669;font-weight:700;">✅ נכון!</div>'
-        : '<div style="color:#DC2626;font-weight:700;">❌ לא נכון — התשובה: ' + q.correct + '</div>';
-    if (q.explanation) feedbackEl.innerHTML += '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + q.explanation + '</div>';
-
-    // Auto advance
-    document.getElementById('trivia-score').textContent = triviaScore + '/' + triviaCurrentQuiz.questions.length + ' נכונות';
-    setTimeout(function() {
+    // Schedule the auto-advance BEFORE any work that might throw — guarantees
+    // the user is never stuck on a buggy question.
+    var advanceTimer = setTimeout(function() {
         triviaCurrentQ++;
-        triviaShowQuestion();
-    }, correct ? 1500 : 2500);
+        try { triviaShowQuestion(); } catch(e) {
+            console.error('[trivia] error in next question, skipping:', e);
+            triviaCurrentQ++;
+            try { triviaShowQuestion(); } catch(e2) { triviaShowResult(); }
+        }
+    }, 1800);
+
+    try {
+        var q = triviaCurrentQuiz && triviaCurrentQuiz.questions[triviaCurrentQ];
+        if (!q) return; // nothing more to do; timer will advance
+        var correct = answer === q.correct;
+        if (correct) triviaScore++;
+
+        // Color all buttons
+        document.querySelectorAll('.trivia-opt').forEach(function(b) {
+            b.style.cursor = 'default';
+            var bText = b.textContent;
+            if (bText === q.correct) { b.style.borderColor = '#059669'; b.style.background = '#D1FAE5'; b.style.fontWeight = '700'; }
+            else if (b === btn && !correct) { b.style.borderColor = '#DC2626'; b.style.background = '#FEE2E2'; }
+            else { b.style.opacity = '0.5'; }
+        });
+
+        var feedbackEl = document.getElementById('trivia-feedback');
+        if (feedbackEl) {
+            feedbackEl.innerHTML = correct
+                ? '<div style="color:#059669;font-weight:700;">✅ נכון!</div>'
+                : '<div style="color:#DC2626;font-weight:700;">❌ לא נכון — התשובה: ' + (q.correct || '—') + '</div>';
+            if (q.explanation) feedbackEl.innerHTML += '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + q.explanation + '</div>';
+        }
+
+        var scoreEl = document.getElementById('trivia-score');
+        if (scoreEl) scoreEl.textContent = triviaScore + '/' + triviaCurrentQuiz.questions.length + ' נכונות';
+
+        // If user got it wrong, give a bit more time to read the explanation
+        if (!correct && advanceTimer) {
+            clearTimeout(advanceTimer);
+            setTimeout(function() {
+                triviaCurrentQ++;
+                try { triviaShowQuestion(); } catch(e) { triviaShowResult(); }
+            }, 2800);
+        }
+    } catch(err) {
+        console.error('[trivia] answer handling error (auto-advancing):', err);
+        // The advance timer above is already scheduled, so the user moves on
+    }
 }
 
 function triviaShowResult() {
@@ -25550,6 +25650,41 @@ setInterval(updateHebrewDate, 3600000); // Update every hour
 // so we cache the API key, retry on offline, and back failed writes up to
 // localStorage so nothing is lost.
 // ============================================================
+
+// Resilient JSON parser for AI responses. Gemini occasionally returns
+// markdown code fences, leading prose ("הנה הטריוויה: { ... }"), trailing
+// commas, smart quotes, or unescaped control characters. This helper tries
+// progressively more aggressive recovery strategies and returns the parsed
+// object or null. Used by all AI generators so a single fragile response
+// doesn't fail the whole user action.
+function _safeParseAIJson(text) {
+    if (!text || typeof text !== 'string') return null;
+    var raw = text.trim();
+    // Strategy 1 — straight parse
+    try { return JSON.parse(raw); } catch(_) {}
+    // Strategy 2 — outermost braces
+    var firstBrace = raw.indexOf('{');
+    var lastBrace = raw.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+        var slice = raw.substring(firstBrace, lastBrace + 1);
+        try { return JSON.parse(slice); } catch(_) {}
+        // Strategy 3 — remove trailing commas before } or ]
+        try {
+            var cleaned = slice
+                .replace(/,(\s*[}\]])/g, '$1')                // trailing commas
+                .replace(/[ -]+/g, ' ')              // control chars
+                .replace(/[""]/g, '"').replace(/['']/g, "'"); // smart quotes
+            return JSON.parse(cleaned);
+        } catch(_) {}
+    }
+    // Strategy 4 — extract an array directly (in case the root is `[...]`)
+    var firstBrack = raw.indexOf('[');
+    var lastBrack = raw.lastIndexOf(']');
+    if (firstBrack !== -1 && lastBrack > firstBrack) {
+        try { return JSON.parse(raw.substring(firstBrack, lastBrack + 1)); } catch(_) {}
+    }
+    return null;
+}
 
 var _geminiKeyMemory = null;
 var GEMINI_KEY_CACHE_TTL_MS = 90 * 24 * 3600 * 1000; // 90 days — keys rarely rotate
