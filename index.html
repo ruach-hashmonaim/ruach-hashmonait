@@ -21721,6 +21721,14 @@ function _triviaUnsubAll() {
 
 // --- PLAYER: open the join screen (from #play/<code>) ---
 async function openTriviaPlayer(sessionCode) {
+    // If we're already in this session (player joined or actively running),
+    // don't tear down the screen — keep their state.
+    if (_triviaSession && _triviaSession.code === sessionCode.toUpperCase()) return;
+    if (_triviaPlayerId !== null && _triviaSession) return;
+    // Lock further re-entry while we set up
+    if (window._triviaPlayerOpening) return;
+    window._triviaPlayerOpening = true;
+
     document.getElementById('splash-screen').style.display = 'none';
     document.getElementById('app-layout').style.display = 'none';
     var overlay = document.getElementById('trivia-player-overlay');
@@ -21729,28 +21737,79 @@ async function openTriviaPlayer(sessionCode) {
     // Look up session by code
     var body = document.getElementById('trivia-player-body');
     body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;">🔎</div><div style="margin-top:10px;color:var(--primary);">מחפש משחק…</div></div>';
+
+    // === CRITICAL: wait for Firebase to finish booting ===
+    // When a soldier opens the share link cold, this function fires from
+    // initApp() before db / anonymous auth are ready. Without the wait,
+    // db.collection() throws because db is undefined.
+    try {
+        var startWait = Date.now();
+        while (!db || !firebase.auth || !firebase.auth().currentUser) {
+            if (Date.now() - startWait > 12000) break; // give up after 12s
+            await new Promise(function(r) { setTimeout(r, 200); });
+        }
+        // If anonymous auth still hasn't kicked in, try once more directly
+        if (firebase.auth && !firebase.auth().currentUser) {
+            try { await firebase.auth().signInAnonymously(); } catch(_) {}
+        }
+    } catch(e) { console.warn('[player] firebase wait warning:', e); }
+
+    if (!db) {
+        body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="color:var(--danger);font-weight:700;">שגיאה בחיבור לשרת</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">בדוק את החיבור לאינטרנט ונסה שוב.</div><button onclick="window.location.reload()" style="margin-top:14px;background:var(--primary);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;">🔄 רענן</button></div>';
+        window._triviaPlayerOpening = false;
+        return;
+    }
+
     try {
         var qsnap = await db.collection('trivia_sessions').where('code', '==', sessionCode.toUpperCase()).limit(1).get();
         if (qsnap.empty) {
             body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2.5rem;">❌</div><div style="font-weight:700;color:var(--danger);margin-top:10px;">משחק לא נמצא</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">בדוק את הקוד או בקש מהמארח לפתוח משחק חדש.</div></div>';
+            window._triviaPlayerOpening = false;
             return;
         }
-        var sessionId = qsnap.docs[0].id;
-        // Show name-entry form
-        _triviaPlayerShowNameForm(sessionId);
+        var doc = qsnap.docs[0];
+        var sessionId = doc.id;
+        var sessionData = doc.data();
+        // Update browser tab title + meta tags to reflect the trivia name
+        _triviaUpdatePageTitle(sessionData.triviaTitle || 'טריוויה');
+        // Show name-entry form, passing the trivia title for display
+        _triviaPlayerShowNameForm(sessionId, sessionData.triviaTitle || 'טריוויה');
     } catch(e) {
         console.error('[player] lookup failed:', e);
-        body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="color:var(--danger);font-weight:700;">שגיאה בחיבור לשרת</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">' + (e.message || e) + '</div></div>';
+        body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="color:var(--danger);font-weight:700;">שגיאה בחיבור לשרת</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">' + (e.message || e) + '</div><button onclick="window.location.reload()" style="margin-top:14px;background:var(--primary);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;">🔄 רענן</button></div>';
     }
+    window._triviaPlayerOpening = false;
 }
 
-function _triviaPlayerShowNameForm(sessionId) {
+// Update <title> + OG meta tags so the trivia name shows in the browser
+// tab and (for already-loaded pages) in any future share previews.
+function _triviaUpdatePageTitle(triviaTitle) {
+    try {
+        var titleText = '🎮 ' + triviaTitle + ' — משחק טריוויה במצפן';
+        document.title = titleText;
+        var setMeta = function(sel, val) {
+            var el = document.querySelector(sel);
+            if (el) el.setAttribute('content', val);
+        };
+        setMeta('meta[property="og:title"]', titleText);
+        setMeta('meta[name="twitter:title"]', titleText);
+        setMeta('meta[property="og:description"]', 'הצטרף עכשיו למשחק הטריוויה "' + triviaTitle + '" במצפן');
+        setMeta('meta[name="twitter:description"]', 'הצטרף עכשיו למשחק הטריוויה "' + triviaTitle + '" במצפן');
+        setMeta('meta[property="og:url"]', window.location.href);
+    } catch(e) { console.warn('[player] meta update failed:', e); }
+}
+
+function _triviaPlayerShowNameForm(sessionId, triviaTitle) {
     var body = document.getElementById('trivia-player-body');
+    var titleHtml = triviaTitle
+        ? '<h3 style="color:var(--primary);margin:10px 0 4px;font-size:1.25rem;line-height:1.4;">🎮 ' + _htmlEsc(triviaTitle) + '</h3>' +
+          '<p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 0;">משחק טריוויה קבוצתי</p>'
+        : '<h3 style="color:var(--primary);margin:10px 0 4px;font-size:1.15rem;">משחק טריוויה זמין!</h3>';
     body.innerHTML =
         '<div style="text-align:center;padding:10px;">' +
             '<div style="font-size:2.6rem;">🎯</div>' +
-            '<h3 style="color:var(--primary);margin:10px 0 4px;font-size:1.15rem;">משחק טריוויה זמין!</h3>' +
-            '<p style="font-size:0.85rem;color:var(--text-secondary);">הזן כינוי כדי להצטרף למשחק:</p>' +
+            titleHtml +
+            '<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:12px;">הזן כינוי כדי להצטרף:</p>' +
             '<input id="trivia-player-name-input" type="text" maxlength="20" placeholder="כינוי שלך…" autofocus ' +
                 'style="width:100%;padding:14px 16px;font-size:1.1rem;border:2px solid var(--border);border-radius:12px;margin:14px 0 10px;text-align:center;font-family:inherit;direction:rtl;" ' +
                 'onkeydown="if(event.key===\'Enter\')_triviaPlayerJoin(\'' + sessionId + '\')">' +
@@ -21932,7 +21991,10 @@ function _triviaRenderHost() {
                 '<div style="font-size:0.92rem;opacity:0.85;">קוד למשחק:</div>' +
                 '<div style="font-size:3.2rem;font-weight:900;letter-spacing:8px;margin:10px 0;color:#FFD54F;text-shadow:0 4px 12px rgba(0,0,0,0.3);">' + _htmlEsc(s.code) + '</div>' +
                 '<div style="background:rgba(255,255,255,0.15);padding:8px 14px;border-radius:10px;display:inline-block;font-size:0.85rem;font-family:monospace;direction:ltr;margin-bottom:14px;">' + _htmlEsc(shareUrl) + '</div>' +
-                '<div><button onclick="_triviaCopyLink(\'' + shareUrl.replace(/\\/g,'\\\\').replace(/\'/g,"\\'") + '\')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:10px;font-size:0.85rem;cursor:pointer;font-family:inherit;">📋 העתק קישור</button></div>' +
+                '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+                    '<button onclick="_triviaShareLink()" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:10px;font-size:0.85rem;cursor:pointer;font-family:inherit;">📤 שתף</button>' +
+                    '<button onclick="_triviaCopyLink()" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:10px;font-size:0.85rem;cursor:pointer;font-family:inherit;">📋 העתק קישור</button>' +
+                '</div>' +
                 '<div style="margin-top:20px;color:#fff;font-weight:700;">' + _triviaSessionPlayers.length + ' שחקנים הצטרפו</div>' +
                 '<div style="margin-top:8px;">' + playersList + '</div>' +
                 '<button onclick="triviaHostStart()" style="margin-top:24px;background:linear-gradient(135deg,#FFD54F,#F9A825);color:#3B2A00;border:none;padding:14px 32px;font-size:1.1rem;font-weight:800;border-radius:14px;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,0.3);">▶️ התחל משחק</button>' +
@@ -22061,10 +22123,38 @@ function _triviaRenderPlayer() {
     }
 }
 
-function _triviaCopyLink(url) {
+// Build the share message — includes the trivia title so WhatsApp etc.
+// display the game name as part of the message text.
+function _triviaBuildShareText() {
+    if (!_triviaSession) return { title: 'משחק טריוויה', text: '', url: window.location.href };
+    var s = _triviaSession;
+    var url = window.location.origin + window.location.pathname + '#play/' + s.code;
+    var name = s.triviaTitle || 'טריוויה';
+    return {
+        title: '🎮 ' + name,
+        text: '🎮 הצטרף למשחק טריוויה: "' + name + '"\nקוד משחק: ' + s.code + '\n' + url,
+        url: url
+    };
+}
+
+function _triviaCopyLink() {
+    var sh = _triviaBuildShareText();
     try {
-        navigator.clipboard.writeText(url).then(function() { showToast('✅ הקישור הועתק'); });
+        navigator.clipboard.writeText(sh.text).then(function() { showToast('✅ ההודעה הועתקה'); });
     } catch(e) { showToast('שגיאה בהעתקה'); }
+}
+
+function _triviaShareLink() {
+    var sh = _triviaBuildShareText();
+    if (navigator.share) {
+        navigator.share({ title: sh.title, text: sh.text, url: sh.url })
+            .catch(function(err) {
+                // user cancelled or share failed — fall back to copy
+                if (err && err.name !== 'AbortError') _triviaCopyLink();
+            });
+    } else {
+        _triviaCopyLink();
+    }
 }
 
 // ============================================================
