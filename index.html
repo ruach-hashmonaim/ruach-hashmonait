@@ -25660,28 +25660,18 @@ setInterval(updateHebrewDate, 3600000); // Update every hour
 function _safeParseAIJson(text) {
     if (!text || typeof text !== 'string') return null;
     var raw = text.trim();
-    // Strategy 1 — straight parse
     try { return JSON.parse(raw); } catch(_) {}
-    // Strategy 2 — outermost braces
-    var firstBrace = raw.indexOf('{');
-    var lastBrace = raw.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace > firstBrace) {
-        var slice = raw.substring(firstBrace, lastBrace + 1);
+    var fb = raw.indexOf('{');
+    var lb = raw.lastIndexOf('}');
+    if (fb !== -1 && lb > fb) {
+        var slice = raw.substring(fb, lb + 1);
         try { return JSON.parse(slice); } catch(_) {}
-        // Strategy 3 — remove trailing commas before } or ]
-        try {
-            var cleaned = slice
-                .replace(/,(\s*[}\]])/g, '$1')                // trailing commas
-                .replace(/[ -]+/g, ' ')              // control chars
-                .replace(/[""]/g, '"').replace(/['']/g, "'"); // smart quotes
-            return JSON.parse(cleaned);
-        } catch(_) {}
+        try { return JSON.parse(slice.replace(/,(\s*[}\]])/g, '$1')); } catch(_) {}
     }
-    // Strategy 4 — extract an array directly (in case the root is `[...]`)
-    var firstBrack = raw.indexOf('[');
-    var lastBrack = raw.lastIndexOf(']');
-    if (firstBrack !== -1 && lastBrack > firstBrack) {
-        try { return JSON.parse(raw.substring(firstBrack, lastBrack + 1)); } catch(_) {}
+    var fk = raw.indexOf('[');
+    var lk = raw.lastIndexOf(']');
+    if (fk !== -1 && lk > fk) {
+        try { return JSON.parse(raw.substring(fk, lk + 1)); } catch(_) {}
     }
     return null;
 }
