@@ -3006,10 +3006,12 @@ function switchSoldierTab(tab) {
 function navigate(page) {
     // Block navigation when in deep link locked mode (shared quiz)
     if (window._deepLinkLocked) return;
-    // === LOGIN GATE ===
-    // The entire system requires login. If no user is signed in, show the
-    // splash and remember the requested page so we can restore it after login.
-    if (!currentUser) {
+    // === LOGIN GATE (with exemptions for shared trivia game) ===
+    // The trivia "kahoot" game lets external players join via shared link
+    // (#play/<sessionId>) without needing to log in — they just enter a
+    // nickname. Bypass the login gate for those URLs.
+    var bypassLogin = (typeof page === 'string') && page.indexOf('play/') === 0;
+    if (!currentUser && !bypassLogin) {
         window._pendingPostLoginPage = page;
         showSplashLogin();
         return;
@@ -3058,6 +3060,15 @@ function activatePage(page) {
     if (page === 'sakag-create') {
         openStandaloneSakagCreator();
         return;
+    }
+
+    // Handle shared trivia game link: #play/<sessionCode>
+    if (page.indexOf('play/') === 0) {
+        var sessionCode = page.substring(5).trim();
+        if (sessionCode) {
+            openTriviaPlayer(sessionCode);
+            return;
+        }
     }
 
     // Handle deep links: #geography/quiz/ID or #geography/sakal/ID
@@ -20946,13 +20957,17 @@ function triviaRenderCategories() {
         savedTrivias.sort(function(a, b) { return (b.ts && b.ts.seconds || 0) - (a.ts && a.ts.seconds || 0); });
         container.innerHTML = savedTrivias.map(function(t) {
             var pendingTag = t._pending ? '<div style="position:absolute;top:6px;left:6px;font-size:0.62rem;color:#92400E;background:#FEF3C7;padding:2px 6px;border-radius:8px;font-weight:700;">בהמתנה לסנכרון</div>' : '';
-            return '<div onclick="triviaPlaySaved(\''+t.id+'\')" style="position:relative;cursor:pointer;background:#fff;border:2px solid #D9770633;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\'#D97706\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'#D9770633\';this.style.transform=\'\'">' +
+            var hostBtn = t._pending ? '' : '<button onclick="event.stopPropagation();triviaHostCreate(\''+t.id+'\')" style="margin-top:10px;width:100%;background:linear-gradient(135deg,#7C3AED,#A855F7);color:#fff;border:none;padding:8px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;">🎮 משחק קבוצתי</button>';
+            return '<div style="position:relative;background:#fff;border:2px solid #D9770633;border-radius:14px;padding:16px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor=\'#D97706\'" onmouseout="this.style.borderColor=\'#D9770633\'">' +
                 pendingTag +
-                '<div style="font-size:2rem;margin-bottom:6px;">🧠</div>' +
-                '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + t.title + '</div>' +
-                (t.subtitle ? '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">' + t.subtitle + '</div>' : '') +
-                '<div style="font-size:0.75rem;color:#D97706;margin-top:4px;font-weight:600;">' + t.questions.length + ' שאלות</div>' +
-                '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:4px;">נוצר ע"י ' + (t.author || '—') + '</div>' +
+                '<div onclick="triviaPlaySaved(\''+t.id+'\')" style="cursor:pointer;">' +
+                    '<div style="font-size:2rem;margin-bottom:6px;">🧠</div>' +
+                    '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">' + _htmlEsc(t.title) + '</div>' +
+                    (t.subtitle ? '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">' + _htmlEsc(t.subtitle) + '</div>' : '') +
+                    '<div style="font-size:0.75rem;color:#D97706;margin-top:4px;font-weight:600;">' + t.questions.length + ' שאלות</div>' +
+                    '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:4px;">נוצר ע"י ' + _htmlEsc(t.author || '—') + '</div>' +
+                '</div>' +
+                hostBtn +
             '</div>';
         }).join('');
         window._savedTrivias = savedTrivias;
@@ -21507,6 +21522,407 @@ function triviaBackToCategories() {
     var ar = document.getElementById('trivia-ai-result');
     if (ar) ar.style.display = 'none';
     triviaRenderCategories();
+}
+
+// ============================================================
+// KAHOOT-STYLE GROUP TRIVIA GAME
+// One user is "host" — opens a session, gets a shareable link, controls
+// pacing. Multiple players join via the link with just a nickname
+// (no login required). All state syncs through a Firestore session doc
+// + players sub-collection in real time.
+// ============================================================
+
+var _triviaSession = null;            // current session state
+var _triviaSessionUnsub = null;       // session doc unsubscribe
+var _triviaPlayersUnsub = null;       // players sub-collection unsubscribe
+var _triviaSessionPlayers = [];       // current player list (snapshot)
+var _triviaPlayerId = null;           // this device's player id (player mode)
+var _triviaPlayerName = null;         // this device's nickname (player mode)
+var _triviaPlayerLastAnswerQIdx = -1; // last question this player answered (avoid double-submit)
+var _triviaHostMode = false;          // true if this device is hosting
+
+// --- HOST: create a new game session for a saved trivia ---
+async function triviaHostCreate(triviaId) {
+    if (!currentUser) { showToast('יש להתחבר כדי לארח משחק'); return; }
+    var trivia = (window._savedTrivias || []).find(function(t) { return t.id === triviaId; });
+    if (!trivia) {
+        // Maybe a pending-write item; try to fetch from Firestore
+        try {
+            var doc = await db.collection('commander_tools').doc(triviaId).get();
+            if (doc.exists) trivia = doc.data();
+        } catch(e) {}
+    }
+    if (!trivia || !trivia.questions || !trivia.questions.length) {
+        showToast('הטריוויה לא נמצאה');
+        return;
+    }
+
+    // Generate a short, easy-to-share code (5 chars, no ambiguous I/O/0/1)
+    var alpha = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    var code = '';
+    for (var i = 0; i < 5; i++) code += alpha.charAt(Math.floor(Math.random() * alpha.length));
+
+    // Normalize question format for the session (avoid drift if the saved
+    // doc is in an older shape)
+    var normQuestions = [];
+    (trivia.questions || []).forEach(function(q, idx) {
+        if (!q || !Array.isArray(q.options) || q.options.length < 2) return;
+        var correctIdx = typeof q.correct === 'number' ? q.correct : 0;
+        if (correctIdx < 0 || correctIdx >= q.options.length) correctIdx = 0;
+        normQuestions.push({
+            question: String(q.question || '(שאלה ' + (idx+1) + ')'),
+            options: q.options.map(function(o){ return String(o); }),
+            correct: correctIdx,
+            explanation: String(q.explanation || '')
+        });
+    });
+    if (!normQuestions.length) { showToast('כל השאלות פגומות — לא ניתן לפתוח משחק'); return; }
+
+    var sessionData = {
+        code: code,
+        triviaId: triviaId,
+        triviaTitle: trivia.title || 'טריוויה',
+        questions: normQuestions,
+        hostId: currentUser.id || currentUser.email,
+        hostName: currentUser.name || currentUser.email || 'מארח',
+        status: 'lobby',           // lobby → playing → finished
+        currentQuestion: -1,        // -1 lobby, 0..N during play, -2 final
+        questionStartedAt: null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+        var ref = await db.collection('trivia_sessions').add(sessionData);
+        _triviaHostMode = true;
+        _triviaPlayerId = null;
+        // Subscribe to live updates for this session + players list
+        _triviaSubscribeSession(ref.id);
+        showToast('המשחק נפתח! חכה לשחקנים…');
+    } catch(e) {
+        console.error('[host] createSession failed:', e);
+        showToast('שגיאה ביצירת המשחק: ' + (e.message || e));
+    }
+}
+
+function _triviaSubscribeSession(sessionId) {
+    if (_triviaSessionUnsub) { try { _triviaSessionUnsub(); } catch(_){} _triviaSessionUnsub = null; }
+    if (_triviaPlayersUnsub) { try { _triviaPlayersUnsub(); } catch(_){} _triviaPlayersUnsub = null; }
+    _triviaSessionUnsub = db.collection('trivia_sessions').doc(sessionId).onSnapshot(function(snap) {
+        if (!snap.exists) { showToast('המשחק נמחק'); _triviaSession = null; _triviaRenderUI(); return; }
+        _triviaSession = Object.assign({ id: snap.id }, snap.data());
+        _triviaRenderUI();
+    });
+    _triviaPlayersUnsub = db.collection('trivia_sessions').doc(sessionId).collection('players').onSnapshot(function(snap) {
+        _triviaSessionPlayers = [];
+        snap.forEach(function(d) { _triviaSessionPlayers.push(Object.assign({ id: d.id }, d.data())); });
+        _triviaSessionPlayers.sort(function(a,b){ return (b.totalScore||0) - (a.totalScore||0); });
+        _triviaRenderUI();
+    });
+}
+
+// --- HOST: start the quiz (move from lobby to question 0) ---
+async function triviaHostStart() {
+    if (!_triviaSession) return;
+    if (_triviaSessionPlayers.length === 0) {
+        if (!confirm('אין שחקנים שהצטרפו. להתחיל בכל זאת?')) return;
+    }
+    await db.collection('trivia_sessions').doc(_triviaSession.id).update({
+        status: 'playing',
+        currentQuestion: 0,
+        questionStartedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+}
+
+// --- HOST: advance to next question or finish ---
+async function triviaHostNext() {
+    if (!_triviaSession) return;
+    var next = (_triviaSession.currentQuestion || 0) + 1;
+    if (next >= _triviaSession.questions.length) {
+        await db.collection('trivia_sessions').doc(_triviaSession.id).update({
+            status: 'finished',
+            currentQuestion: -2
+        });
+    } else {
+        await db.collection('trivia_sessions').doc(_triviaSession.id).update({
+            currentQuestion: next,
+            questionStartedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+}
+
+// --- HOST: close + delete the session ---
+async function triviaHostEnd() {
+    if (!_triviaSession) return;
+    if (!confirm('לסיים את המשחק?')) return;
+    try {
+        // Delete all player docs, then the session itself
+        var snap = await db.collection('trivia_sessions').doc(_triviaSession.id).collection('players').get();
+        var batch = db.batch();
+        snap.forEach(function(d) { batch.delete(d.ref); });
+        await batch.commit();
+        await db.collection('trivia_sessions').doc(_triviaSession.id).delete();
+    } catch(e) { console.warn('[host] end session warning:', e); }
+    _triviaUnsubAll();
+    _triviaSession = null;
+    _triviaSessionPlayers = [];
+    _triviaHostMode = false;
+    document.getElementById('trivia-host-overlay').style.display = 'none';
+}
+
+function _triviaUnsubAll() {
+    if (_triviaSessionUnsub) { try { _triviaSessionUnsub(); } catch(_){} _triviaSessionUnsub = null; }
+    if (_triviaPlayersUnsub) { try { _triviaPlayersUnsub(); } catch(_){} _triviaPlayersUnsub = null; }
+}
+
+// --- PLAYER: open the join screen (from #play/<code>) ---
+async function openTriviaPlayer(sessionCode) {
+    document.getElementById('splash-screen').style.display = 'none';
+    document.getElementById('app-layout').style.display = 'none';
+    var overlay = document.getElementById('trivia-player-overlay');
+    if (overlay) overlay.style.display = 'block';
+
+    // Look up session by code
+    var body = document.getElementById('trivia-player-body');
+    body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2rem;">🔎</div><div style="margin-top:10px;color:var(--primary);">מחפש משחק…</div></div>';
+    try {
+        var qsnap = await db.collection('trivia_sessions').where('code', '==', sessionCode.toUpperCase()).limit(1).get();
+        if (qsnap.empty) {
+            body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="font-size:2.5rem;">❌</div><div style="font-weight:700;color:var(--danger);margin-top:10px;">משחק לא נמצא</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">בדוק את הקוד או בקש מהמארח לפתוח משחק חדש.</div></div>';
+            return;
+        }
+        var sessionId = qsnap.docs[0].id;
+        // Show name-entry form
+        _triviaPlayerShowNameForm(sessionId);
+    } catch(e) {
+        console.error('[player] lookup failed:', e);
+        body.innerHTML = '<div style="text-align:center;padding:30px;"><div style="color:var(--danger);font-weight:700;">שגיאה בחיבור לשרת</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">' + (e.message || e) + '</div></div>';
+    }
+}
+
+function _triviaPlayerShowNameForm(sessionId) {
+    var body = document.getElementById('trivia-player-body');
+    body.innerHTML =
+        '<div style="text-align:center;padding:10px;">' +
+            '<div style="font-size:2.6rem;">🎯</div>' +
+            '<h3 style="color:var(--primary);margin:10px 0 4px;font-size:1.15rem;">משחק טריוויה זמין!</h3>' +
+            '<p style="font-size:0.85rem;color:var(--text-secondary);">הזן כינוי כדי להצטרף למשחק:</p>' +
+            '<input id="trivia-player-name-input" type="text" maxlength="20" placeholder="כינוי שלך…" autofocus ' +
+                'style="width:100%;padding:14px 16px;font-size:1.1rem;border:2px solid var(--border);border-radius:12px;margin:14px 0 10px;text-align:center;font-family:inherit;direction:rtl;" ' +
+                'onkeydown="if(event.key===\'Enter\')_triviaPlayerJoin(\'' + sessionId + '\')">' +
+            '<button onclick="_triviaPlayerJoin(\'' + sessionId + '\')" class="btn-primary" style="width:100%;padding:14px;font-size:1rem;font-weight:800;border-radius:12px;">🚀 הצטרף למשחק</button>' +
+        '</div>';
+    setTimeout(function(){ var i = document.getElementById('trivia-player-name-input'); if (i) i.focus(); }, 100);
+}
+
+async function _triviaPlayerJoin(sessionId) {
+    var nameInput = document.getElementById('trivia-player-name-input');
+    var name = (nameInput && nameInput.value || '').trim();
+    if (!name) { showToast('הזן כינוי'); return; }
+    if (name.length > 20) name = name.substring(0, 20);
+
+    _triviaPlayerId = 'p_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    _triviaPlayerName = name;
+    _triviaHostMode = false;
+    _triviaPlayerLastAnswerQIdx = -1;
+
+    try {
+        await db.collection('trivia_sessions').doc(sessionId).collection('players').doc(_triviaPlayerId).set({
+            name: name,
+            joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            totalScore: 0
+        });
+        _triviaSubscribeSession(sessionId);
+    } catch(e) {
+        console.error('[player] join failed:', e);
+        showToast('שגיאה בהצטרפות: ' + (e.message || e));
+    }
+}
+
+// --- PLAYER: submit answer for current question ---
+async function _triviaPlayerAnswer(optionIdx) {
+    if (!_triviaSession || _triviaPlayerId === null) return;
+    var qIdx = _triviaSession.currentQuestion;
+    if (qIdx < 0) return;
+    if (_triviaPlayerLastAnswerQIdx === qIdx) return; // already answered
+    _triviaPlayerLastAnswerQIdx = qIdx;
+
+    var q = _triviaSession.questions[qIdx];
+    if (!q) return;
+    var isCorrect = optionIdx === q.correct;
+    // Speed-based scoring — faster correct = more points (Kahoot-style)
+    var startMs = _triviaSession.questionStartedAt && _triviaSession.questionStartedAt.toMillis ? _triviaSession.questionStartedAt.toMillis() : Date.now();
+    var elapsed = Date.now() - startMs;
+    var MAX_TIME = 30000;
+    var timeFactor = Math.max(0.1, Math.min(1, (MAX_TIME - elapsed) / MAX_TIME));
+    var score = isCorrect ? Math.round(500 + 500 * timeFactor) : 0;
+
+    try {
+        await db.collection('trivia_sessions').doc(_triviaSession.id).collection('players').doc(_triviaPlayerId).update({
+            totalScore: firebase.firestore.FieldValue.increment(score),
+            ['answers_q' + qIdx]: { optIdx: optionIdx, isCorrect: isCorrect, score: score, ts: Date.now() }
+        });
+    } catch(e) { console.error('[player] answer save failed:', e); }
+    _triviaRenderUI();
+}
+
+// --- Renderer — paints host UI or player UI based on mode ---
+function _triviaRenderUI() {
+    if (_triviaHostMode) _triviaRenderHost();
+    else _triviaRenderPlayer();
+}
+
+function _triviaRenderHost() {
+    var overlay = document.getElementById('trivia-host-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'block';
+    if (!_triviaSession) {
+        overlay.innerHTML = '<div style="padding:40px;text-align:center;color:#fff;">המשחק הסתיים.</div>';
+        return;
+    }
+    var s = _triviaSession;
+    var shareUrl = window.location.origin + window.location.pathname + '#play/' + s.code;
+
+    var content = '';
+    if (s.status === 'lobby') {
+        var playersList = _triviaSessionPlayers.length === 0
+            ? '<div style="text-align:center;color:rgba(255,255,255,0.6);padding:30px;font-size:0.9rem;">מחכים לשחקנים להצטרף…</div>'
+            : _triviaSessionPlayers.map(function(p) { return '<div style="background:rgba(255,255,255,0.12);padding:8px 14px;border-radius:20px;font-weight:600;display:inline-block;margin:4px;color:#fff;">👤 ' + _htmlEsc(p.name) + '</div>'; }).join('');
+        content =
+            '<div style="text-align:center;color:#fff;">' +
+                '<div style="font-size:0.92rem;opacity:0.85;">קוד למשחק:</div>' +
+                '<div style="font-size:3.2rem;font-weight:900;letter-spacing:8px;margin:10px 0;color:#FFD54F;text-shadow:0 4px 12px rgba(0,0,0,0.3);">' + _htmlEsc(s.code) + '</div>' +
+                '<div style="background:rgba(255,255,255,0.15);padding:8px 14px;border-radius:10px;display:inline-block;font-size:0.85rem;font-family:monospace;direction:ltr;margin-bottom:14px;">' + _htmlEsc(shareUrl) + '</div>' +
+                '<div><button onclick="_triviaCopyLink(\'' + shareUrl.replace(/\\/g,'\\\\').replace(/\'/g,"\\'") + '\')" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:10px;font-size:0.85rem;cursor:pointer;font-family:inherit;">📋 העתק קישור</button></div>' +
+                '<div style="margin-top:20px;color:#fff;font-weight:700;">' + _triviaSessionPlayers.length + ' שחקנים הצטרפו</div>' +
+                '<div style="margin-top:8px;">' + playersList + '</div>' +
+                '<button onclick="triviaHostStart()" style="margin-top:24px;background:linear-gradient(135deg,#FFD54F,#F9A825);color:#3B2A00;border:none;padding:14px 32px;font-size:1.1rem;font-weight:800;border-radius:14px;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,0.3);">▶️ התחל משחק</button>' +
+                '<div style="margin-top:14px;"><button onclick="triviaHostEnd()" style="background:none;color:rgba(255,255,255,0.7);border:none;font-size:0.82rem;cursor:pointer;text-decoration:underline;font-family:inherit;">ביטול המשחק</button></div>' +
+            '</div>';
+    } else if (s.status === 'playing' && s.currentQuestion >= 0) {
+        var q = s.questions[s.currentQuestion];
+        var total = s.questions.length;
+        var answeredCount = _triviaSessionPlayers.filter(function(p){ return p['answers_q' + s.currentQuestion]; }).length;
+        var leaderboard = _triviaSessionPlayers.slice(0, 5).map(function(p, i) {
+            var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.';
+            return '<div style="display:flex;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,0.1);border-radius:8px;margin-bottom:4px;font-size:0.85rem;color:#fff;"><span>' + medal + ' ' + _htmlEsc(p.name) + '</span><span style="font-weight:700;">' + (p.totalScore || 0) + '</span></div>';
+        }).join('');
+        var optColors = ['#EF4444', '#3B82F6', '#F59E0B', '#10B981'];
+        var optsHtml = (q.options || []).map(function(opt, i) {
+            return '<div style="background:' + optColors[i % 4] + ';color:#fff;padding:14px;border-radius:12px;font-weight:700;font-size:1rem;text-align:center;">' + _htmlEsc(opt) + '</div>';
+        }).join('');
+
+        content =
+            '<div style="color:#fff;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:0.88rem;opacity:0.9;">' +
+                    '<span>שאלה ' + (s.currentQuestion + 1) + ' מתוך ' + total + '</span>' +
+                    '<span>👥 ענו: ' + answeredCount + ' / ' + _triviaSessionPlayers.length + '</span>' +
+                '</div>' +
+                '<div style="background:rgba(255,255,255,0.95);color:var(--text);padding:24px;border-radius:18px;font-weight:700;font-size:1.25rem;line-height:1.5;text-align:center;margin-bottom:18px;">' + _htmlEsc(q.question) + '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">' + optsHtml + '</div>' +
+                (leaderboard ? '<div style="background:rgba(0,0,0,0.18);padding:12px;border-radius:14px;margin-bottom:14px;"><div style="font-weight:700;margin-bottom:8px;">🏆 דירוג נוכחי</div>' + leaderboard + '</div>' : '') +
+                '<div style="display:flex;gap:8px;justify-content:center;">' +
+                    '<button onclick="triviaHostNext()" style="background:linear-gradient(135deg,#FFD54F,#F9A825);color:#3B2A00;border:none;padding:12px 26px;font-size:1rem;font-weight:800;border-radius:12px;cursor:pointer;font-family:inherit;">' +
+                        (s.currentQuestion + 1 >= total ? '🏁 סיים' : 'שאלה הבאה ←') +
+                    '</button>' +
+                    '<button onclick="triviaHostEnd()" style="background:rgba(0,0,0,0.3);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:12px 18px;font-size:0.85rem;border-radius:12px;cursor:pointer;font-family:inherit;">✕ סיים מוקדם</button>' +
+                '</div>' +
+            '</div>';
+    } else if (s.status === 'finished') {
+        var winners = _triviaSessionPlayers.slice(0, 10).map(function(p, i) {
+            var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.';
+            var bg = i === 0 ? 'rgba(255,213,79,0.35)' : 'rgba(255,255,255,0.12)';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:' + bg + ';border-radius:12px;margin-bottom:6px;color:#fff;font-size:' + (i === 0 ? '1.1rem' : '0.92rem') + ';font-weight:' + (i < 3 ? '800' : '600') + ';"><span>' + medal + ' ' + _htmlEsc(p.name) + '</span><span>' + (p.totalScore || 0) + ' נק׳</span></div>';
+        }).join('');
+        content =
+            '<div style="text-align:center;color:#fff;">' +
+                '<div style="font-size:3.5rem;margin-bottom:6px;">🏆</div>' +
+                '<h2 style="font-size:1.6rem;margin:6px 0 16px;">סוף המשחק!</h2>' +
+                '<div style="max-width:480px;margin:0 auto 20px;">' + (winners || '<div style="color:rgba(255,255,255,0.7);">אין משתתפים</div>') + '</div>' +
+                '<button onclick="triviaHostEnd()" style="background:#fff;color:var(--primary);border:none;padding:12px 28px;font-size:1rem;font-weight:800;border-radius:12px;cursor:pointer;font-family:inherit;">סגור משחק</button>' +
+            '</div>';
+    }
+
+    overlay.innerHTML =
+        '<div style="position:fixed;inset:0;background:linear-gradient(135deg,#082F49,#0E7490);overflow-y:auto;padding:24px 16px;direction:rtl;z-index:99500;">' +
+            '<div style="max-width:700px;margin:0 auto;">' +
+                '<div style="text-align:center;color:#fff;margin-bottom:18px;">' +
+                    '<div style="font-size:1.3rem;font-weight:800;">🎮 ' + _htmlEsc(s.triviaTitle) + '</div>' +
+                    '<div style="font-size:0.78rem;opacity:0.7;">מארח: ' + _htmlEsc(s.hostName) + '</div>' +
+                '</div>' +
+                content +
+            '</div>' +
+        '</div>';
+}
+
+function _triviaRenderPlayer() {
+    var body = document.getElementById('trivia-player-body');
+    if (!body || !_triviaSession) return;
+    var s = _triviaSession;
+    var myPlayer = _triviaSessionPlayers.find(function(p){ return p.id === _triviaPlayerId; });
+    var myRank = _triviaSessionPlayers.findIndex(function(p){ return p.id === _triviaPlayerId; });
+
+    if (s.status === 'lobby') {
+        body.innerHTML =
+            '<div style="text-align:center;padding:20px 10px;">' +
+                '<div style="font-size:2.6rem;">⏳</div>' +
+                '<div style="font-weight:700;color:var(--primary);margin-top:10px;font-size:1.05rem;">הצטרפת בהצלחה!</div>' +
+                '<div style="font-size:0.88rem;color:var(--text-secondary);margin-top:6px;">' + _htmlEsc(_triviaPlayerName || '') + '</div>' +
+                '<div style="margin-top:18px;background:#F3F4F6;padding:14px;border-radius:12px;font-size:0.85rem;color:var(--text-secondary);">המארח יתחיל את המשחק בקרוב…</div>' +
+                '<div style="margin-top:16px;font-size:0.8rem;color:var(--text-secondary);">' + _triviaSessionPlayers.length + ' שחקנים מחוברים</div>' +
+            '</div>';
+    } else if (s.status === 'playing' && s.currentQuestion >= 0) {
+        var q = s.questions[s.currentQuestion];
+        var hasAnswered = (myPlayer && myPlayer['answers_q' + s.currentQuestion]) ? true : false;
+        if (!hasAnswered) {
+            var optColors = ['#EF4444', '#3B82F6', '#F59E0B', '#10B981'];
+            var optsHtml = (q.options || []).map(function(opt, i) {
+                return '<button onclick="_triviaPlayerAnswer(' + i + ')" style="background:' + optColors[i % 4] + ';color:#fff;border:none;padding:18px 12px;border-radius:14px;font-weight:700;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,0.15);">' + _htmlEsc(opt) + '</button>';
+            }).join('');
+            body.innerHTML =
+                '<div style="text-align:center;">' +
+                    '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;">שאלה ' + (s.currentQuestion + 1) + ' מתוך ' + s.questions.length + '</div>' +
+                    '<div style="background:#F0F9FF;padding:18px 12px;border-radius:12px;font-weight:700;font-size:1rem;line-height:1.55;margin-bottom:16px;">' + _htmlEsc(q.question) + '</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + optsHtml + '</div>' +
+                '</div>';
+        } else {
+            var myAnswer = myPlayer['answers_q' + s.currentQuestion];
+            var earned = (myAnswer && myAnswer.score) || 0;
+            var correct = (myAnswer && myAnswer.isCorrect) ? true : false;
+            body.innerHTML =
+                '<div style="text-align:center;padding:20px 10px;">' +
+                    '<div style="font-size:3rem;">' + (correct ? '🎯' : '⏳') + '</div>' +
+                    '<div style="font-weight:800;color:' + (correct ? '#059669' : '#DC2626') + ';margin-top:10px;font-size:1.1rem;">' + (correct ? '+' + earned + ' נקודות!' : 'תשובה לא נכונה') + '</div>' +
+                    '<div style="font-size:0.88rem;color:var(--text-secondary);margin-top:14px;">מחכים לסיום השאלה…</div>' +
+                    '<div style="margin-top:18px;background:#F3F4F6;padding:12px;border-radius:12px;">' +
+                        '<div style="font-size:0.78rem;color:var(--text-secondary);">הניקוד שלך</div>' +
+                        '<div style="font-size:1.6rem;font-weight:800;color:var(--primary);">' + ((myPlayer && myPlayer.totalScore) || 0) + '</div>' +
+                        '<div style="font-size:0.78rem;color:var(--text-secondary);">מקום ' + (myRank + 1) + ' מתוך ' + _triviaSessionPlayers.length + '</div>' +
+                    '</div>' +
+                '</div>';
+        }
+    } else if (s.status === 'finished') {
+        var top = _triviaSessionPlayers.slice(0, 3);
+        var topHtml = top.map(function(p, i) {
+            var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+            var isMe = p.id === _triviaPlayerId;
+            return '<div style="background:' + (isMe ? '#FEF3C7' : '#F3F4F6') + ';padding:10px;border-radius:10px;margin-bottom:6px;display:flex;justify-content:space-between;font-weight:700;"><span>' + medal + ' ' + _htmlEsc(p.name) + (isMe ? ' (אתה)' : '') + '</span><span>' + (p.totalScore || 0) + '</span></div>';
+        }).join('');
+        body.innerHTML =
+            '<div style="text-align:center;padding:10px;">' +
+                '<div style="font-size:3rem;">' + (myRank === 0 ? '🏆' : myRank < 3 ? '🥉' : '🎯') + '</div>' +
+                '<h3 style="color:var(--primary);margin:8px 0;">' + (myRank === 0 ? 'ניצחת!' : myRank < 3 ? 'מקום ' + (myRank + 1) + '!' : 'סיימת!') + '</h3>' +
+                '<div style="font-size:1.4rem;font-weight:800;color:var(--primary);margin:4px 0;">' + ((myPlayer && myPlayer.totalScore) || 0) + ' נק׳</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);">מקום ' + (myRank + 1) + ' מתוך ' + _triviaSessionPlayers.length + '</div>' +
+                '<h4 style="margin-top:20px;color:var(--primary);font-size:0.95rem;">🏆 שלושת המובילים</h4>' +
+                '<div style="margin-top:8px;">' + (topHtml || '—') + '</div>' +
+            '</div>';
+    }
+}
+
+function _triviaCopyLink(url) {
+    try {
+        navigator.clipboard.writeText(url).then(function() { showToast('✅ הקישור הועתק'); });
+    } catch(e) { showToast('שגיאה בהעתקה'); }
 }
 
 // ============================================================
@@ -26174,6 +26590,29 @@ function runAIInBackground(opts) {
         <button class="ai-float-stack-toggle" id="ai-float-stack-toggle" onclick="event.stopPropagation();aiFloatToggleAll();">▼</button>
     </div>
     <div class="ai-float-stack-body" id="ai-float-stack-body"></div>
+</div>
+
+<!-- ====== Trivia Game-Show Host Overlay (Kahoot-style) ====== -->
+<!-- Shown to the host when they open a group-play session for a saved
+     trivia. Renders lobby → questions → final leaderboard. -->
+<div id="trivia-host-overlay" style="display:none;"></div>
+
+<!-- ====== Trivia Game-Show Player Page (Kahoot-style) ====== -->
+<!-- Standalone page reached via #play/<sessionCode>. Bypasses login;
+     external players join with a nickname and play synced trivia. -->
+<div id="trivia-player-overlay" style="display:none;position:fixed;inset:0;z-index:99000;background:linear-gradient(135deg,#082F49 0%,#0C4A6E 50%,#0E7490 100%);overflow-y:auto;direction:rtl;font-family:'Heebo',sans-serif;">
+    <div style="max-width:540px;margin:0 auto;padding:20px 16px;min-height:100vh;">
+        <div style="text-align:center;margin-bottom:18px;">
+            <div style="font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:1px;">🧠 משחק טריוויה</div>
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.7);">המצפן · חטיבת חשמונאים</div>
+        </div>
+        <div id="trivia-player-body" style="background:#fff;border-radius:18px;padding:20px;min-height:420px;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+            <div style="text-align:center;padding:30px 10px;">
+                <div style="font-size:2.5rem;">⏳</div>
+                <div style="font-weight:700;color:var(--primary);margin-top:10px;">טוען משחק…</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 </body>
