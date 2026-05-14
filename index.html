@@ -2073,8 +2073,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <!-- GovMap iframe — direct embed of govmap.gov.il public site -->
             <div id="govmap-container" style="display:none;width:100%;height:500px;"></div>
             <!-- Toggle button: switch between Leaflet (default) and GovMap -->
-            <button id="govmap-toggle-btn" onclick="toggleGovmapView()" style="position:absolute;top:8px;right:8px;z-index:1002;background:linear-gradient(135deg,#0E7490,#06B6D4);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.18);font-family:inherit;display:flex;align-items:center;gap:6px;">
-                🇮🇱 <span id="govmap-toggle-label">פתח ב-GovMap</span>
+            <button id="govmap-toggle-btn" onclick="toggleGovmapView()" style="position:absolute;top:10px;right:10px;z-index:1002;background:linear-gradient(135deg,#0E7490,#06B6D4);color:#fff;border:2px solid #fff;border-radius:10px;padding:10px 16px;font-size:0.88rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(14,116,144,0.45);font-family:inherit;display:flex;align-items:center;gap:8px;">
+                🇮🇱 <span id="govmap-toggle-label">פתח GovMap (אתרי עתיקות, מורשת ועוד)</span>
             </button>
         </div>
         <div class="card geo-results" id="geo-results-container" style="display:none;">
@@ -18987,17 +18987,34 @@ async function fetchOverpassPOIs(lat, lng, radiusMeters, routePoints, polygonPoi
         ');out center 120;';
     }
 
-    try {
-        var resp = await fetch('https://overpass-api.de/api/interpreter', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'data=' + encodeURIComponent(query)
-        });
-        if (!resp.ok) return [];
-        var data = await resp.json();
+    console.log('[overpass] query around (' + lat + ',' + lng + ') radius=' + (radiusMeters || 2000) + 'm mode=' + (areaMode || 'point'));
+    async function _runQuery(q) {
+        // Try multiple Overpass mirrors — the main one can be heavily loaded
+        var mirrors = [
+            'https://overpass-api.de/api/interpreter',
+            'https://overpass.kumi.systems/api/interpreter',
+            'https://overpass.openstreetmap.fr/api/interpreter'
+        ];
+        for (var i = 0; i < mirrors.length; i++) {
+            try {
+                var resp = await fetch(mirrors[i], {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'data=' + encodeURIComponent(q)
+                });
+                if (resp.ok) return await resp.json();
+                console.warn('[overpass] mirror ' + mirrors[i] + ' returned ' + resp.status);
+            } catch(e) {
+                console.warn('[overpass] mirror ' + mirrors[i] + ' fetch failed:', e.message);
+            }
+        }
+        return null;
+    }
+
+    function _parsePois(data) {
         var pois = [];
         var seen = new Set();
-        (data.elements || []).forEach(function(el) {
+        (data && data.elements || []).forEach(function(el) {
             var name = el.tags?.['name:he'] || el.tags?.name || '';
             if (!name || seen.has(name)) return;
             seen.add(name);
@@ -19011,7 +19028,28 @@ async function fetchOverpassPOIs(lat, lng, radiusMeters, routePoints, polygonPoi
         });
         pois.sort(function(a,b){ return a.dist - b.dist; });
         return pois;
-    } catch(e) { console.warn('Overpass error:', e); return []; }
+    }
+
+    var data = await _runQuery(query);
+    var pois = _parsePois(data);
+    console.log('[overpass] primary query returned ' + pois.length + ' named POIs');
+
+    // Fallback — if the strict query found nothing, do a broader query that
+    // grabs ANY named feature in the area (helps in locations where features
+    // don't have historic/tourism tags but DO have names).
+    if (pois.length === 0 && areaMode !== 'polygon' && areaMode !== 'route') {
+        var r = radiusMeters || 2000;
+        var broad = '[out:json][timeout:25];(' +
+            'nwr["name:he"](around:' + r + ',' + lat + ',' + lng + ');' +
+            'nwr["name"](around:' + r + ',' + lat + ',' + lng + ');' +
+        ');out center 200;';
+        console.log('[overpass] no results — retrying with broad named-features query');
+        var data2 = await _runQuery(broad);
+        pois = _parsePois(data2);
+        console.log('[overpass] broad query returned ' + pois.length + ' POIs');
+    }
+
+    return pois;
 }
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -21333,16 +21371,20 @@ function triviaShowQuestion() {
     if (scoreEl) scoreEl.textContent = triviaScore + '/' + total + ' נכונות';
     if (progBar) progBar.style.width = ((triviaCurrentQ / total) * 100) + '%';
 
+    // Store option strings on window so onclick can fetch by index — avoids
+    // ALL attribute-escape issues (Hebrew gershayim like צה"ל / תנ"ך used to
+    // break the onclick attr because " terminated the attribute early).
+    window._triviaCurrentOptions = q.options.slice();
     var optionsHtml = q.options.map(function(opt, i) {
-        var safe = String(opt == null ? '' : opt).replace(/'/g, "\\'");
-        return '<button class="trivia-opt" data-opt-idx="' + i + '" onclick="triviaAnswer(this,\'' + safe + '\')" style="display:block;width:100%;text-align:right;padding:12px 16px;margin-bottom:8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:0.9rem;font-family:inherit;cursor:pointer;transition:all 0.2s;" onmouseover="if(!triviaAnswered)this.style.borderColor=\'var(--primary)\'" onmouseout="if(!triviaAnswered)this.style.borderColor=\'var(--border)\'">' + opt + '</button>';
+        var displayText = _htmlEsc(String(opt == null ? '' : opt));
+        return '<button class="trivia-opt" data-opt-idx="' + i + '" onclick="triviaAnswerByIndex(this,' + i + ')" style="display:block;width:100%;text-align:right;padding:12px 16px;margin-bottom:8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:0.9rem;font-family:inherit;cursor:pointer;transition:all 0.2s;" onmouseover="if(!triviaAnswered)this.style.borderColor=\'var(--primary)\'" onmouseout="if(!triviaAnswered)this.style.borderColor=\'var(--border)\'">' + displayText + '</button>';
     }).join('');
 
     var areaEl = document.getElementById('trivia-question-area');
     if (!areaEl) { console.warn('[trivia] trivia-question-area element missing'); return; }
     areaEl.innerHTML =
         '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;">שאלה ' + (triviaCurrentQ+1) + ' מתוך ' + total + '</div>' +
-        '<div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:14px;line-height:1.6;">' + q.question + '</div>' +
+        '<div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:14px;line-height:1.6;">' + _htmlEsc(q.question) + '</div>' +
         '<div id="trivia-options">' + optionsHtml + '</div>' +
         '<div id="trivia-feedback" style="margin-top:10px;"></div>' +
         // Always show a "skip" fallback so a stuck question never blocks the user
@@ -21356,28 +21398,34 @@ function triviaSkipQuestion() {
     triviaShowQuestion();
 }
 
+// Click handler that looks up the option by its index, eliminating any need
+// to embed the option's text in the onclick attribute (which broke when the
+// text contained Hebrew gershayim, double quotes, etc.).
+function triviaAnswerByIndex(btn, idx) {
+    var opts = window._triviaCurrentOptions || [];
+    var answer = opts[idx];
+    if (typeof answer === 'undefined') {
+        console.warn('[trivia] could not resolve option index ' + idx);
+        return;
+    }
+    triviaAnswer(btn, answer);
+}
+
 function triviaAnswer(btn, answer) {
     if (triviaAnswered) return;
     triviaAnswered = true;
 
-    // Schedule the auto-advance BEFORE any work that might throw — guarantees
-    // the user is never stuck on a buggy question.
-    var advanceTimer = setTimeout(function() {
-        triviaCurrentQ++;
-        try { triviaShowQuestion(); } catch(e) {
-            console.error('[trivia] error in next question, skipping:', e);
-            triviaCurrentQ++;
-            try { triviaShowQuestion(); } catch(e2) { triviaShowResult(); }
-        }
-    }, 1800);
+    var q = triviaCurrentQuiz && triviaCurrentQuiz.questions[triviaCurrentQ];
+    if (!q) {
+        // Defensive — just advance after a moment
+        setTimeout(function() { triviaCurrentQ++; try { triviaShowQuestion(); } catch(e) { triviaShowResult(); } }, 800);
+        return;
+    }
+    var correct = answer === q.correct;
+    if (correct) triviaScore++;
 
+    // Color all buttons (best-effort, never blocks the advance)
     try {
-        var q = triviaCurrentQuiz && triviaCurrentQuiz.questions[triviaCurrentQ];
-        if (!q) return; // nothing more to do; timer will advance
-        var correct = answer === q.correct;
-        if (correct) triviaScore++;
-
-        // Color all buttons
         document.querySelectorAll('.trivia-opt').forEach(function(b) {
             b.style.cursor = 'default';
             var bText = b.textContent;
@@ -21385,30 +21433,28 @@ function triviaAnswer(btn, answer) {
             else if (b === btn && !correct) { b.style.borderColor = '#DC2626'; b.style.background = '#FEE2E2'; }
             else { b.style.opacity = '0.5'; }
         });
+    } catch(e) { console.warn('[trivia] paint error (non-fatal):', e); }
 
+    try {
         var feedbackEl = document.getElementById('trivia-feedback');
         if (feedbackEl) {
             feedbackEl.innerHTML = correct
                 ? '<div style="color:#059669;font-weight:700;">✅ נכון!</div>'
-                : '<div style="color:#DC2626;font-weight:700;">❌ לא נכון — התשובה: ' + (q.correct || '—') + '</div>';
-            if (q.explanation) feedbackEl.innerHTML += '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + q.explanation + '</div>';
+                : '<div style="color:#DC2626;font-weight:700;">❌ לא נכון — התשובה: ' + _htmlEsc(q.correct || '—') + '</div>';
+            if (q.explanation) feedbackEl.innerHTML += '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:4px;">' + _htmlEsc(q.explanation) + '</div>';
         }
-
         var scoreEl = document.getElementById('trivia-score');
         if (scoreEl) scoreEl.textContent = triviaScore + '/' + triviaCurrentQuiz.questions.length + ' נכונות';
+    } catch(e) { console.warn('[trivia] feedback render error:', e); }
 
-        // If user got it wrong, give a bit more time to read the explanation
-        if (!correct && advanceTimer) {
-            clearTimeout(advanceTimer);
-            setTimeout(function() {
-                triviaCurrentQ++;
-                try { triviaShowQuestion(); } catch(e) { triviaShowResult(); }
-            }, 2800);
+    // Advance exactly once, with timing based on right/wrong
+    setTimeout(function() {
+        triviaCurrentQ++;
+        try { triviaShowQuestion(); } catch(e) {
+            console.error('[trivia] could not show next question, ending quiz:', e);
+            triviaShowResult();
         }
-    } catch(err) {
-        console.error('[trivia] answer handling error (auto-advancing):', err);
-        // The advance timer above is already scheduled, so the user moves on
-    }
+    }, correct ? 1800 : 2800);
 }
 
 function triviaShowResult() {
