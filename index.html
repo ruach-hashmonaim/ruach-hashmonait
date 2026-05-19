@@ -1083,6 +1083,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     </div>
     <nav class="sidebar-nav">
         <a onclick="navigate('home')" data-page="home"><span class="nav-icon">&#9678;</span> דף הבית</a>
+        <a onclick="navigate('today-history')" data-page="today-history"><span class="nav-icon">⏳</span> היום לפני</a>
 
         <a onclick="navigate('training')" data-page="training" class="nav-training" style="display:none;"><span class="nav-icon">&#9702;</span> רוח מכבי</a>
         <a onclick="navigate('yonatan-resilience')" data-page="yonatan-resilience" class="nav-yonatan-resilience" style="display:none;"><span class="nav-icon">&#9702;</span> חוסן יונתן</a>
@@ -1149,6 +1150,12 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div id="home-framework-badge" style="display:none;margin-top:8px;"></div>
     </div>
     <div class="home-grid" id="home-grid">
+        <!-- היום לפני — historical events on today's Hebrew date -->
+        <a class="home-tile tile-today" style="background:linear-gradient(rgba(120,53,15,0.78),rgba(146,64,14,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Hourglass_2.jpg/400px-Hourglass_2.jpg') center/cover;color:#fff;" onclick="navigate('today-history')">
+            <div class="tile-icon" style="background:linear-gradient(135deg,#92400E,#D97706);"><svg viewBox="0 0 24 24" fill="#fff"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div>
+            <div class="tile-title" style="color:#fff;">היום לפני</div>
+            <div class="tile-desc" style="color:rgba(255,255,255,0.92);"><span id="home-today-hdate" style="font-weight:700;"></span> · אירועים, ימי הולדת ופטירה בתאריך עברי זה</div>
+        </a>
         <a class="home-tile tile-training" style="display:none;background:linear-gradient(rgba(240,249,255,0.78),rgba(240,249,255,0.85)),url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/IDF_Hasmonean_Brigade_badge.png/400px-IDF_Hasmonean_Brigade_badge.png') center/cover;" onclick="navigate('training')">
             <div class="tile-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA);"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 3.18L18 7v4c0 4.52-2.98 8.69-6 9.93-3.02-1.24-6-5.41-6-9.93V7l6-2.82z"/></svg></div>
             <div class="tile-title">רוח מכבי</div>
@@ -1175,6 +1182,29 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="tile-title">ניהול מערכת</div>
             <div class="tile-desc">ניהול תכנים, מעקב שבועי, משתמשים והרשאות</div>
         </a>
+    </div>
+</div>
+
+<!-- ====== היום לפני — Today in Hebrew Date History ====== -->
+<div class="page-section" id="page-today-history">
+    <div class="card" style="background:linear-gradient(135deg,#92400E,#D97706);color:#fff;border-right:5px solid var(--brigade-gold);">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">⏳</div>
+            <div style="flex:1;min-width:160px;">
+                <h2 style="font-size:1.2rem;margin:0;">היום לפני</h2>
+                <p style="opacity:0.92;font-size:0.86rem;margin-top:2px;">אירועים, לידות וימי ציון בתאריך עברי זה</p>
+            </div>
+            <div style="text-align:left;background:rgba(0,0,0,0.18);padding:8px 14px;border-radius:12px;">
+                <div id="today-hdate-display" style="font-size:1.05rem;font-weight:800;">—</div>
+                <div id="today-gdate-display" style="font-size:0.78rem;opacity:0.85;">—</div>
+            </div>
+        </div>
+    </div>
+    <div id="today-history-content" style="margin-top:14px;">
+        <div style="text-align:center;padding:40px 16px;color:var(--text-secondary);">
+            <div style="font-size:2.5rem;margin-bottom:10px;">📜</div>
+            <div style="font-weight:700;">טוען אירועים…</div>
+        </div>
     </div>
 </div>
 
@@ -2992,7 +3022,8 @@ const PAGE_TITLES = {
     'reports': 'מעקב שבועי — צוות חינוכי',
     'surveys': 'סקרים ומשובים',
     'admin': 'ניהול מערכת',
-    'content-mgmt': 'ניהול תכנים'
+    'content-mgmt': 'ניהול תכנים',
+    'today-history': 'היום לפני'
 };
 
 // Public pages — none. The system is now fully gated by login (since v48+).
@@ -3184,6 +3215,7 @@ function activatePage(page) {
 
     if (page === 'learning') loadLearningPrograms();
     if (page === 'hebrew') loadHebrewPage();
+    if (page === 'today-history') loadTodayInHistory();
     if (page === 'geography') { initGeoMap(); geoBackToMenu(); }
     if (page === 'surveys') loadSurveys();
     if (page === 'reports') loadReportsPage();
@@ -3758,6 +3790,8 @@ function onLoginSuccess() {
     var app = document.getElementById('app-layout');
     if (splash) splash.style.display = 'none';
     if (app) app.style.display = '';
+    // Show today's Hebrew date on the home tile
+    try { _updateHomeTodayHdate(); } catch(_) {}
     // Attach a real-time listener so admin removals/permission changes
     // take effect immediately without waiting for session expiry.
     setupCurrentUserSnapshot();
@@ -13403,6 +13437,268 @@ function normalizeDocFiles(d) {
 
 function _attrEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'"); }
 function _htmlEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// ============================================================
+// היום לפני — Hebrew-date "this day in history" feature
+// ============================================================
+// Strategy:
+//   1. Use @hebcal/core to compute today's Hebrew date.
+//   2. Fetch the Wikipedia article for that Hebrew date (which lists
+//      events / births / deaths). Parse the HTML to extract the lists.
+//   3. Cache the parsed result in localStorage for the day to avoid
+//      hitting Wikipedia multiple times.
+// ============================================================
+
+// Hebrew gematria helper — converts 1..30 → "א", "ב", ..., "כ׳", "כ״א", ... "ל׳"
+function _todayGematriya(num) {
+    if (num <= 0 || num > 30) return String(num);
+    var ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    var tens = ['', 'י', 'כ', 'ל'];
+    if (num === 15) return 'ט״ו';
+    if (num === 16) return 'ט״ז';
+    var t = Math.floor(num / 10);
+    var o = num % 10;
+    if (t === 0) return ones[o] + '׳';
+    if (o === 0) return tens[t] + '׳';
+    return tens[t] + '״' + ones[o];
+}
+
+// Convert today's date → Hebrew date object {day, monthName, year, fullStr}
+function _todayHebrewDate() {
+    // @hebcal/core is loaded as window.hebcal (UMD bundle) — but the bundle
+    // exposes the classes on `window.hebcal`. We fall back gracefully if it
+    // didn't load (e.g., offline first-load).
+    var hcal = window.hebcal || (window.exports && window.exports.hebcal);
+    if (!hcal || !hcal.HDate) return null;
+    try {
+        var hd = new hcal.HDate(new Date());
+        var dayNum = hd.getDate();
+        var monthName = hd.getMonthName('h'); // Hebrew name
+        var year = hd.getFullYear();
+        var dayGematriya = _todayGematriya(dayNum);
+        // Hebrew Wikipedia articles use a regular apostrophe / quote — convert
+        // geresh (׳ U+05F3) → ' and gershayim (״ U+05F4) → "
+        var dayForUrl = dayGematriya.replace(/׳/g, "'").replace(/״/g, '"');
+        var dayForDisplay = dayGematriya;
+        var titleForUrl = dayForUrl + ' ב' + monthName;
+        var titleForDisplay = dayForDisplay + ' ב' + monthName;
+        return {
+            day: dayNum, monthName: monthName, year: year,
+            dayForUrl: dayForUrl,
+            urlTitle: titleForUrl,
+            displayTitle: titleForDisplay,
+            gregorianStr: new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        };
+    } catch(e) { console.warn('[today] hebcal error:', e); return null; }
+}
+
+// Update the small "today" snippet on the home tile + greeting card
+function _updateHomeTodayHdate() {
+    var hd = _todayHebrewDate();
+    if (!hd) {
+        // Hebcal not loaded yet — retry once after a short delay
+        setTimeout(function() {
+            var hd2 = _todayHebrewDate();
+            var el = document.getElementById('home-today-hdate');
+            if (el && hd2) el.textContent = hd2.displayTitle;
+        }, 1500);
+        return;
+    }
+    var el = document.getElementById('home-today-hdate');
+    if (el) el.textContent = hd.displayTitle;
+}
+
+// Build a list of candidate Wikipedia titles for a Hebrew date, in priority order.
+// Different sources use different month spellings (חשוון vs מרחשוון; סיון vs סיוון).
+function _todayWikiCandidates(dayForUrl, monthName) {
+    var monthAliases = {
+        'חשון': ['חשוון', 'מרחשוון', 'חשון'],
+        'חשוון': ['חשוון', 'מרחשוון', 'חשון'],
+        'מרחשוון': ['מרחשוון', 'חשוון', 'חשון'],
+        'סיון': ['סיון', 'סיוון'],
+        'סיוון': ['סיוון', 'סיון'],
+        'אדר א': ["אדר א'", 'אדר א׳', 'אדר א', 'אדר ראשון'],
+        'אדר ב': ["אדר ב'", 'אדר ב׳', 'אדר ב', 'אדר שני']
+    };
+    var months = monthAliases[monthName] || [monthName];
+    var titles = [];
+    months.forEach(function(m) { titles.push(dayForUrl + ' ב' + m); });
+    return titles;
+}
+
+// Fetch + parse the Wikipedia article for the Hebrew date.
+// Returns { events: [..], births: [..], deaths: [..], holidays: [..] }
+// Each list entry is { text: 'rendered text', link: '...' }
+async function _fetchTodayWikipedia(titleForUrl, dayForUrl, monthName) {
+    var cacheKey = 'today_wiki_' + titleForUrl;
+    try {
+        var raw = localStorage.getItem(cacheKey);
+        if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed.ts && Date.now() - parsed.ts < 20 * 60 * 60 * 1000) {
+                return parsed.data;
+            }
+        }
+    } catch(_) {}
+
+    var candidates = _todayWikiCandidates(dayForUrl, monthName);
+    // Make sure the primary title is first
+    if (candidates.indexOf(titleForUrl) === -1) candidates.unshift(titleForUrl);
+
+    var html = '';
+    var lastError = null;
+    for (var ci = 0; ci < candidates.length; ci++) {
+        var title = candidates[ci];
+        try {
+            var url = 'https://he.wikipedia.org/w/api.php?action=parse&page=' +
+                      encodeURIComponent(title) +
+                      '&format=json&prop=text&redirects=true&origin=*';
+            var res = await fetch(url);
+            if (!res.ok) { lastError = new Error('HTTP ' + res.status); continue; }
+            var json = await res.json();
+            if (json.error) { lastError = new Error(json.error.info || json.error.code); continue; }
+            var pageHtml = (json.parse && json.parse.text && json.parse.text['*']) || '';
+            if (pageHtml) { html = pageHtml; break; }
+        } catch(e) { lastError = e; }
+    }
+    if (!html) throw lastError || new Error('אין תוכן לתאריך זה');
+
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+
+    // Helper — find a section by Hebrew heading name and extract its <li> items
+    function extractSection(names) {
+        var nameArr = Array.isArray(names) ? names : [names];
+        var headings = doc.querySelectorAll('h2 .mw-headline, h3 .mw-headline');
+        for (var i = 0; i < headings.length; i++) {
+            var h = headings[i];
+            var headingText = h.textContent.trim();
+            if (nameArr.indexOf(headingText) === -1) continue;
+            var headerEl = h.closest('h2, h3');
+            var items = [];
+            var el = headerEl.nextElementSibling;
+            while (el && el.tagName !== 'H2' && !(headerEl.tagName === 'H3' && el.tagName === 'H3')) {
+                if (el.tagName === 'UL') {
+                    el.querySelectorAll(':scope > li').forEach(function(li) {
+                        // Clean up: remove <sup> footnotes, edit links, etc.
+                        var clone = li.cloneNode(true);
+                        clone.querySelectorAll('sup, .mw-editsection, style, script').forEach(function(n) { n.remove(); });
+                        // Convert <a> tags to plain text but remember the first wikilink for "more info"
+                        var firstLink = clone.querySelector('a[href^="/wiki/"]');
+                        var linkHref = firstLink ? 'https://he.wikipedia.org' + firstLink.getAttribute('href') : '';
+                        var text = clone.textContent.replace(/\s+/g, ' ').trim();
+                        // Strip [edit] and similar bracket markers
+                        text = text.replace(/\[\d+\]/g, '').replace(/\[עריכה\]/g, '').trim();
+                        if (text.length > 4) items.push({ text: text, link: linkHref });
+                    });
+                }
+                el = el.nextElementSibling;
+                if (!el) break;
+            }
+            return items;
+        }
+        return [];
+    }
+
+    var data = {
+        events: extractSection(['אירועים']),
+        births: extractSection(['נולדו', 'נולדו ביום זה']),
+        deaths: extractSection(['נפטרו', 'נפטרו ביום זה']),
+        holidays: extractSection(['חגים וימי ציון', 'חגים וימי זיכרון', 'ימי זיכרון לאומיים', 'חגים וימי ציון לאומיים'])
+    };
+
+    try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: data })); } catch(_) {}
+    return data;
+}
+
+// Main page loader for "היום לפני"
+async function loadTodayInHistory() {
+    var content = document.getElementById('today-history-content');
+    var hdEl = document.getElementById('today-hdate-display');
+    var gdEl = document.getElementById('today-gdate-display');
+    if (!content) return;
+
+    var hd = _todayHebrewDate();
+    if (!hd) {
+        // Try to wait for hebcal then retry once
+        await new Promise(function(r){ setTimeout(r, 1500); });
+        hd = _todayHebrewDate();
+    }
+    if (!hd) {
+        content.innerHTML = '<div class="card" style="text-align:center;padding:30px;"><div style="color:var(--danger);font-weight:700;">לא ניתן לחשב תאריך עברי</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">ייתכן שאין חיבור לאינטרנט. נסה לרענן.</div></div>';
+        return;
+    }
+    if (hdEl) hdEl.textContent = hd.displayTitle;
+    if (gdEl) gdEl.textContent = hd.gregorianStr;
+
+    content.innerHTML =
+        '<div class="card" style="text-align:center;padding:36px 16px;">' +
+            '<div style="font-size:2.5rem;margin-bottom:10px;">📜</div>' +
+            '<div style="font-weight:700;color:var(--primary);">טוען אירועים היסטוריים מויקיפדיה…</div>' +
+            '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">תאריך: ' + _htmlEsc(hd.displayTitle) + '</div>' +
+        '</div>';
+
+    try {
+        var data = await _fetchTodayWikipedia(hd.urlTitle, hd.dayForUrl, hd.monthName);
+
+        function renderList(items, sectionTitle, emoji, color, emptyMsg) {
+            if (!items || items.length === 0) {
+                return '<div class="card" style="margin-bottom:14px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:1.4rem;">' + emoji + '</span><h3 style="margin:0;color:' + color + ';font-size:1rem;">' + sectionTitle + '</h3></div><div style="font-size:0.85rem;color:var(--text-secondary);text-align:center;padding:14px;">' + emptyMsg + '</div></div>';
+            }
+            var listHtml = items.map(function(item) {
+                var html = _htmlEsc(item.text);
+                if (item.link) {
+                    // Open Wikipedia link for "more details"
+                    html += ' <a href="' + _attrEsc(item.link) + '" target="_blank" rel="noopener" style="font-size:0.75rem;color:var(--primary-light);text-decoration:none;white-space:nowrap;">↗ עוד</a>';
+                }
+                return '<li style="padding:8px 10px;background:rgba(14,116,144,0.04);border-right:3px solid ' + color + ';border-radius:6px;margin-bottom:6px;line-height:1.55;font-size:0.9rem;">' + html + '</li>';
+            }).join('');
+            return '<div class="card" style="margin-bottom:14px;">' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+                    '<span style="font-size:1.6rem;">' + emoji + '</span>' +
+                    '<h3 style="margin:0;color:' + color + ';font-size:1.05rem;">' + sectionTitle + '</h3>' +
+                    '<span style="background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:700;">' + items.length + '</span>' +
+                '</div>' +
+                '<ul style="list-style:none;padding:0;margin:0;">' + listHtml + '</ul>' +
+            '</div>';
+        }
+
+        var total = (data.events||[]).length + (data.births||[]).length + (data.deaths||[]).length + (data.holidays||[]).length;
+        if (total === 0) {
+            content.innerHTML =
+                '<div class="card" style="text-align:center;padding:30px;">' +
+                    '<div style="font-size:2.5rem;">📅</div>' +
+                    '<div style="font-weight:700;margin-top:10px;">לא נמצאו אירועים בתאריך זה</div>' +
+                    '<a href="https://he.wikipedia.org/wiki/' + _attrEsc(hd.urlTitle.replace(/ /g, '_')) + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:12px;color:var(--primary);font-size:0.85rem;">פתח בויקיפדיה ↗</a>' +
+                '</div>';
+            return;
+        }
+
+        var html = '';
+        // Holidays first (most relevant for a brigade context)
+        if (data.holidays && data.holidays.length) {
+            html += renderList(data.holidays, 'חגים וימי ציון', '🕎', '#92400E', 'אין');
+        }
+        html += renderList(data.events, 'אירועים היסטוריים', '📜', '#0E7490', 'לא נמצאו אירועים');
+        html += renderList(data.births, 'נולדו בתאריך זה', '👶', '#059669', 'לא נמצאו לידות');
+        html += renderList(data.deaths, 'נפטרו בתאריך זה', '🕯️', '#475569', 'לא נמצאו פטירות');
+        // Link to Wikipedia for the full article
+        html +=
+            '<div style="text-align:center;margin-top:10px;">' +
+                '<a href="https://he.wikipedia.org/wiki/' + _attrEsc(hd.urlTitle.replace(/ /g, '_')) + '" target="_blank" rel="noopener" style="display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:10px;font-weight:700;text-decoration:none;font-size:0.88rem;">📖 הערך המלא בויקיפדיה ↗</a>' +
+            '</div>';
+
+        content.innerHTML = html;
+    } catch(e) {
+        console.error('[today] load failed:', e);
+        content.innerHTML =
+            '<div class="card" style="text-align:center;padding:30px;">' +
+                '<div style="color:var(--danger);font-weight:700;">שגיאה בטעינת התוכן</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">' + _htmlEsc(e.message || '') + '</div>' +
+                '<button onclick="loadTodayInHistory()" style="margin-top:14px;background:var(--primary);color:#fff;border:none;padding:10px 22px;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;">🔄 נסה שוב</button>' +
+                '<div style="margin-top:10px;"><a href="https://he.wikipedia.org/wiki/' + _attrEsc((hd && hd.urlTitle && hd.urlTitle.replace(/ /g, "_")) || '') + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.85rem;">פתח ידנית בויקיפדיה ↗</a></div>' +
+            '</div>';
+    }
+}
 
 // Build HTML showing all attached files (used in tables, lesson cards, etc.)
 function renderDocFilesHtml(d, opts) {
