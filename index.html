@@ -1192,12 +1192,18 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div style="font-size:2.4rem;">⏳</div>
             <div style="flex:1;min-width:160px;">
                 <h2 style="font-size:1.2rem;margin:0;">היום לפני</h2>
-                <p style="opacity:0.92;font-size:0.86rem;margin-top:2px;">אירועים, לידות וימי ציון בתאריך עברי זה</p>
+                <p style="opacity:0.92;font-size:0.86rem;margin-top:2px;">אירועים משמעותיים בתולדות עם ישראל</p>
             </div>
-            <div style="text-align:left;background:rgba(0,0,0,0.18);padding:8px 14px;border-radius:12px;">
+            <div style="text-align:left;background:rgba(0,0,0,0.18);padding:8px 14px;border-radius:12px;min-width:140px;">
                 <div id="today-hdate-display" style="font-size:1.05rem;font-weight:800;">—</div>
                 <div id="today-gdate-display" style="font-size:0.78rem;opacity:0.85;">—</div>
             </div>
+        </div>
+        <!-- Day navigation -->
+        <div style="display:flex;gap:6px;justify-content:center;align-items:center;margin-top:14px;flex-wrap:wrap;">
+            <button onclick="todayHistoryNavigate(-1)" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.35);padding:7px 14px;border-radius:10px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;">→ יום קודם</button>
+            <button id="today-back-to-today" onclick="todayHistoryReset()" style="display:none;background:#FFD54F;color:#3B2A00;border:none;padding:7px 16px;border-radius:10px;font-size:0.85rem;font-weight:800;cursor:pointer;font-family:inherit;">📅 חזור להיום</button>
+            <button onclick="todayHistoryNavigate(1)" style="background:rgba(255,255,255,0.18);color:#fff;border:1.5px solid rgba(255,255,255,0.35);padding:7px 14px;border-radius:10px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;">יום הבא ←</button>
         </div>
     </div>
     <div id="today-history-content" style="margin-top:14px;">
@@ -13472,13 +13478,18 @@ var _HEB_MONTHS = {
     12: 'אדר', 13: "אדר ב'"
 };
 
-// Convert today's date → Hebrew date object
-function _todayHebrewDate() {
+// Current viewing offset (0 = today, -1 = yesterday, +1 = tomorrow, etc.)
+var _todayHistoryDayOffset = 0;
+
+// Convert a date offset to a Hebrew date object
+function _todayHebrewDate(dayOffset) {
+    var offset = dayOffset || 0;
     // @hebcal/core is loaded as window.hebcal (UMD bundle)
     var hcal = window.hebcal || (window.exports && window.exports.hebcal);
     if (!hcal || !hcal.HDate) return null;
     try {
-        var hd = new hcal.HDate(new Date());
+        var gregDate = new Date(Date.now() + offset * 86400000);
+        var hd = new hcal.HDate(gregDate);
         var dayNum = hd.getDate();
         var monthNum = hd.getMonth();
         var year = hd.getFullYear();
@@ -13498,9 +13509,24 @@ function _todayHebrewDate() {
             dayForUrl: dayForUrl,
             urlTitle: titleForUrl,
             displayTitle: titleForDisplay,
-            gregorianStr: new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+            offset: offset,
+            gregorianStr: gregDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
         };
     } catch(e) { console.warn('[today] hebcal error:', e); return null; }
+}
+
+// Day navigation — wired to the prev/next buttons on the page
+function todayHistoryNavigate(direction) {
+    _todayHistoryDayOffset += direction;
+    // Limit to ~1 year in either direction
+    if (_todayHistoryDayOffset > 366) _todayHistoryDayOffset = 366;
+    if (_todayHistoryDayOffset < -366) _todayHistoryDayOffset = -366;
+    loadTodayInHistory();
+}
+
+function todayHistoryReset() {
+    _todayHistoryDayOffset = 0;
+    loadTodayInHistory();
 }
 
 // Update the small "today" snippet on the home tile + greeting card
@@ -13603,10 +13629,112 @@ function _parseTodaySections(html, sectionMap) {
     return out;
 }
 
-// Fetch + parse the article for the Hebrew date — Chabadpedia first, then
-// Wikipedia as a fallback. Returns categorised lists of items.
+// === Section maps for each source ===
+var _CHABAD_SECTIONS = {
+    _baseUrl: 'https://chabadpedia.co.il',
+    chabad:    ['ימי חב"ד', 'ימי חב״ד', 'אירועים בחב"ד', 'אירועים בחב״ד'],
+    jewish:    ['אירועים ביהדות', 'יהדות'],
+    events:    ['אירועים', 'אירועים היסטוריים'],
+    births:    ['נולדו', 'נולדו ביום זה'],
+    deaths:    ['נפטרו', 'נפטרו ביום זה', 'הילולות'],
+    holidays:  ['חגים וימי ציון', 'חגים', 'ימי ציון']
+};
+var _WIKI_SECTIONS = {
+    _baseUrl: 'https://he.wikipedia.org',
+    holidays:  ['חגים וימי ציון', 'חגים וימי זיכרון', 'ימי זיכרון לאומיים'],
+    events:    ['אירועים', 'אירועים היסטוריים'],
+    births:    ['נולדו', 'נולדו ביום זה'],
+    deaths:    ['נפטרו', 'נפטרו ביום זה']
+};
+
+// Extract the leading year from a list item — supports gregorian (1948, 2007)
+// and Hebrew year strings (תרס"ח, תש"ח, ה'תש"ח, etc.). Returns '' if not found.
+function _extractItemYear(text) {
+    if (!text) return '';
+    var m = text.match(/^\s*(\d{3,4})\b/);
+    if (m) return m[1];
+    // Hebrew year forms — ה'תש"ח, תש"ח, תרצ"ז, etc.
+    var m2 = text.match(/^\s*(ה?'?ת[א-ת"׳״]+)/);
+    if (m2) return m2[1].replace(/\s+/g, '');
+    return '';
+}
+
+// Take the first meaningful Hebrew "topic" (the first 6 words after the year)
+function _itemTopic(text) {
+    if (!text) return '';
+    // Strip leading year part
+    var t = text.replace(/^\s*(?:\d{3,4}|ה?'?ת[א-ת"׳״]+)\s*[–—\-:–—]?\s*/, '');
+    // Take first ~30 chars to compare
+    return t.substring(0, 30).replace(/\s+/g, ' ').trim();
+}
+
+// Merge items from multiple sources into a single de-duplicated list.
+// Items that share a year + topic prefix are considered duplicates; the
+// version with a Chabadpedia link wins (since the user prefers Chabad sourcing).
+function _mergeAndDedupItems(itemsArrays) {
+    var seen = {};
+    var out = [];
+    itemsArrays.forEach(function(arr) {
+        (arr || []).forEach(function(item) {
+            if (!item || !item.text) return;
+            var year = _extractItemYear(item.text);
+            var topic = _itemTopic(item.text);
+            var key = year + '|' + topic.substring(0, 16);
+            if (seen[key]) {
+                // Prefer item from Chabadpedia if existing was from elsewhere
+                if (item._source === 'chabadpedia' && seen[key]._source !== 'chabadpedia') {
+                    var idx = out.indexOf(seen[key]);
+                    if (idx !== -1) out[idx] = item;
+                    seen[key] = item;
+                }
+                return;
+            }
+            seen[key] = item;
+            out.push(item);
+        });
+    });
+    return out;
+}
+
+// Sort items by year (newer → older feels more relevant for "today in history")
+function _sortItemsByYear(items) {
+    return items.slice().sort(function(a, b) {
+        var ay = _extractItemYear(a.text);
+        var by = _extractItemYear(b.text);
+        var an = parseInt(ay, 10);
+        var bn = parseInt(by, 10);
+        if (!isNaN(an) && !isNaN(bn)) return bn - an; // numeric: newer first
+        // If one is numeric and one isn't (Hebrew year), put numeric first
+        if (!isNaN(an) && isNaN(bn)) return -1;
+        if (isNaN(an) && !isNaN(bn)) return 1;
+        return 0;
+    });
+}
+
+// Fetch one MediaWiki source, parse sections, and tag each item with its source
+async function _fetchSourceSections(apiBase, candidates, sectionMap, sourceName) {
+    try {
+        var fetched = await _fetchMediaWikiPage(apiBase, candidates);
+        var sections = _parseTodaySections(fetched.html, sectionMap);
+        // Tag each item with its source for later de-duplication
+        Object.keys(sections).forEach(function(k) {
+            (sections[k] || []).forEach(function(it) { it._source = sourceName; });
+        });
+        var sourceUrl = sourceName === 'chabadpedia'
+            ? 'https://chabadpedia.co.il/index.php?title=' + encodeURIComponent(fetched.title)
+            : 'https://he.wikipedia.org/wiki/' + encodeURIComponent(fetched.title.replace(/ /g, '_'));
+        return { source: sourceName, matchedTitle: fetched.title, sourceUrl: sourceUrl, sections: sections };
+    } catch(e) {
+        console.warn('[today] ' + sourceName + ' failed:', e && e.message);
+        return null;
+    }
+}
+
+// Fetch + parse the article from BOTH Chabadpedia AND Wikipedia in parallel,
+// then merge sections and de-duplicate so we get a richer view focused on
+// events significant to the Jewish people.
 async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
-    var cacheKey = 'today_v2_' + titleForUrl;
+    var cacheKey = 'today_v3_' + titleForUrl;
     try {
         var raw = localStorage.getItem(cacheKey);
         if (raw) {
@@ -13620,69 +13748,98 @@ async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
     var candidates = _todayDateCandidates(dayForUrl, monthName);
     if (candidates.indexOf(titleForUrl) === -1) candidates.unshift(titleForUrl);
 
-    // === Try Chabadpedia first ===
-    var fetched = null;
-    var source = '';
-    try {
-        fetched = await _fetchMediaWikiPage('https://chabadpedia.co.il/api.php', candidates);
-        source = 'chabadpedia';
-    } catch(e) {
-        console.warn('[today] chabadpedia failed:', e && e.message);
-    }
+    // Run both fetches in parallel
+    var results = await Promise.all([
+        _fetchSourceSections('https://chabadpedia.co.il/api.php', candidates, _CHABAD_SECTIONS, 'chabadpedia'),
+        _fetchSourceSections('https://he.wikipedia.org/w/api.php', candidates, _WIKI_SECTIONS, 'wikipedia')
+    ]);
+    var chabadRes = results[0];
+    var wikiRes = results[1];
 
-    // === Fall back to Hebrew Wikipedia ===
-    if (!fetched) {
-        fetched = await _fetchMediaWikiPage('https://he.wikipedia.org/w/api.php', candidates);
-        source = 'wikipedia';
-    }
+    // If both failed, throw
+    if (!chabadRes && !wikiRes) throw new Error('אין תוכן לתאריך זה — בדוק את החיבור');
 
-    var sectionMap;
-    if (source === 'chabadpedia') {
-        sectionMap = {
-            _baseUrl: 'https://chabadpedia.co.il',
-            chabad:    ['ימי חב"ד', 'ימי חב״ד', 'אירועים בחב"ד', 'אירועים בחב״ד'],
-            jewish:    ['אירועים ביהדות', 'יהדות'],
-            events:    ['אירועים', 'אירועים היסטוריים'],
-            births:    ['נולדו', 'נולדו ביום זה'],
-            deaths:    ['נפטרו', 'נפטרו ביום זה', 'הילולות'],
-            holidays:  ['חגים וימי ציון', 'חגים', 'ימי ציון']
-        };
-    } else {
-        sectionMap = {
-            _baseUrl: 'https://he.wikipedia.org',
-            holidays:  ['חגים וימי ציון', 'חגים וימי זיכרון', 'ימי זיכרון לאומיים'],
-            events:    ['אירועים', 'אירועים היסטוריים'],
-            births:    ['נולדו', 'נולדו ביום זה'],
-            deaths:    ['נפטרו', 'נפטרו ביום זה']
-        };
-    }
-    var sections = _parseTodaySections(fetched.html, sectionMap);
+    // Merge each section across sources
+    function getSec(res, key) { return (res && res.sections && res.sections[key]) || []; }
+    var merged = {
+        chabad:   getSec(chabadRes, 'chabad'),              // Chabad-specific (only from Chabadpedia)
+        jewish:   _mergeAndDedupItems([ getSec(chabadRes, 'jewish') ]), // Chabadpedia only
+        holidays: _mergeAndDedupItems([ getSec(chabadRes, 'holidays'), getSec(wikiRes, 'holidays') ]),
+        events:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'events'), getSec(chabadRes, 'events') ])),
+        births:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'births'), getSec(chabadRes, 'births') ])),
+        deaths:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'deaths'), getSec(chabadRes, 'deaths') ]))
+    };
 
     var data = {
-        source: source,
-        matchedTitle: fetched.title,
-        sourceUrl: source === 'chabadpedia'
-            ? 'https://chabadpedia.co.il/index.php?title=' + encodeURIComponent(fetched.title)
-            : 'https://he.wikipedia.org/wiki/' + encodeURIComponent(fetched.title.replace(/ /g, '_')),
-        sections: sections
+        sources: {
+            chabadpedia: chabadRes ? { title: chabadRes.matchedTitle, url: chabadRes.sourceUrl } : null,
+            wikipedia:   wikiRes   ? { title: wikiRes.matchedTitle,   url: wikiRes.sourceUrl }   : null
+        },
+        sections: merged
     };
 
     try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: data })); } catch(_) {}
     return data;
 }
 
-// Main page loader for "היום לפני"
+// Per-section initial item limit (the user wants "not too long, not too short")
+var _TODAY_DEFAULT_LIMIT = 6;
+
+// Render a single section card — collapses to N items by default with "show more"
+function _renderTodaySection(items, sectionTitle, emoji, color, sectionKey) {
+    if (!items || items.length === 0) return '';
+    var limit = _TODAY_DEFAULT_LIMIT;
+    var safeKey = (sectionKey || '').replace(/[^a-z0-9]/gi, '');
+    var listId = 'today-list-' + safeKey + '-' + Math.random().toString(36).substr(2, 5);
+    var shownItems = items.length > limit ? items.slice(0, limit) : items;
+    var hiddenItems = items.length > limit ? items.slice(limit) : [];
+
+    function buildLi(item) {
+        var sourceTag = '';
+        if (item._source === 'chabadpedia') sourceTag = '<span style="background:#7C3AED22;color:#7C3AED;padding:1px 6px;border-radius:6px;font-size:0.66rem;font-weight:700;margin-left:6px;">חב״דפדיה</span>';
+        else if (item._source === 'wikipedia') sourceTag = '<span style="background:#0E749022;color:#0E7490;padding:1px 6px;border-radius:6px;font-size:0.66rem;font-weight:700;margin-left:6px;">ויקיפדיה</span>';
+        var html = _htmlEsc(item.text);
+        if (item.link) {
+            html += ' <a href="' + _attrEsc(item.link) + '" target="_blank" rel="noopener" style="font-size:0.75rem;color:var(--primary-light);text-decoration:none;white-space:nowrap;">↗ עוד</a>';
+        }
+        return '<li style="padding:8px 10px;background:rgba(14,116,144,0.04);border-right:3px solid ' + color + ';border-radius:6px;margin-bottom:6px;line-height:1.55;font-size:0.9rem;">' + html + sourceTag + '</li>';
+    }
+
+    var shownHtml = shownItems.map(buildLi).join('');
+    var hiddenHtml = hiddenItems.map(buildLi).join('');
+    var moreBtn = '';
+    if (hiddenItems.length > 0) {
+        moreBtn =
+            '<div id="' + listId + '-hidden" style="display:none;">' + hiddenHtml + '</div>' +
+            '<div style="text-align:center;margin-top:6px;">' +
+                '<button onclick="(function(b){var h=document.getElementById(\'' + listId + '-hidden\');if(h.style.display===\'none\'){h.style.display=\'block\';b.textContent=\'הסתר\';}else{h.style.display=\'none\';b.textContent=\'הצג עוד ' + hiddenItems.length + '\';}})(this)" style="background:none;color:' + color + ';border:1.5px solid ' + color + ';padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;">הצג עוד ' + hiddenItems.length + '</button>' +
+            '</div>';
+    }
+
+    return '<div class="card" style="margin-bottom:14px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+            '<span style="font-size:1.6rem;">' + emoji + '</span>' +
+            '<h3 style="margin:0;color:' + color + ';font-size:1.05rem;">' + sectionTitle + '</h3>' +
+            '<span style="background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:700;">' + items.length + '</span>' +
+        '</div>' +
+        '<ul id="' + listId + '" style="list-style:none;padding:0;margin:0;">' + shownHtml + '</ul>' +
+        moreBtn +
+    '</div>';
+}
+
+// Main page loader for "היום לפני" — respects the current day offset
 async function loadTodayInHistory() {
     var content = document.getElementById('today-history-content');
     var hdEl = document.getElementById('today-hdate-display');
     var gdEl = document.getElementById('today-gdate-display');
+    var backBtn = document.getElementById('today-back-to-today');
     if (!content) return;
 
-    var hd = _todayHebrewDate();
+    var hd = _todayHebrewDate(_todayHistoryDayOffset);
     if (!hd) {
         // Try to wait for hebcal then retry once
         await new Promise(function(r){ setTimeout(r, 1500); });
-        hd = _todayHebrewDate();
+        hd = _todayHebrewDate(_todayHistoryDayOffset);
     }
     if (!hd) {
         content.innerHTML = '<div class="card" style="text-align:center;padding:30px;"><div style="color:var(--danger);font-weight:700;">לא ניתן לחשב תאריך עברי</div><div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">ייתכן שאין חיבור לאינטרנט. נסה לרענן.</div></div>';
@@ -13690,75 +13847,69 @@ async function loadTodayInHistory() {
     }
     if (hdEl) hdEl.textContent = hd.displayTitle;
     if (gdEl) gdEl.textContent = hd.gregorianStr;
+    if (backBtn) backBtn.style.display = (_todayHistoryDayOffset === 0) ? 'none' : '';
 
     content.innerHTML =
         '<div class="card" style="text-align:center;padding:36px 16px;">' +
             '<div style="font-size:2.5rem;margin-bottom:10px;">📜</div>' +
-            '<div style="font-weight:700;color:var(--primary);">טוען אירועים מחבדפדיה…</div>' +
+            '<div style="font-weight:700;color:var(--primary);">טוען מחב״דפדיה ומויקיפדיה במקביל…</div>' +
             '<div style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">תאריך: ' + _htmlEsc(hd.displayTitle) + '</div>' +
         '</div>';
 
     try {
         var data = await _fetchTodayContent(hd.urlTitle, hd.dayForUrl, hd.monthName);
         var sections = data.sections || {};
-        var sourceLabel = data.source === 'chabadpedia' ? 'חב״דפדיה' : 'ויקיפדיה';
-
-        function renderList(items, sectionTitle, emoji, color) {
-            if (!items || items.length === 0) return '';
-            var listHtml = items.map(function(item) {
-                var html = _htmlEsc(item.text);
-                if (item.link) {
-                    html += ' <a href="' + _attrEsc(item.link) + '" target="_blank" rel="noopener" style="font-size:0.75rem;color:var(--primary-light);text-decoration:none;white-space:nowrap;">↗ עוד</a>';
-                }
-                return '<li style="padding:8px 10px;background:rgba(14,116,144,0.04);border-right:3px solid ' + color + ';border-radius:6px;margin-bottom:6px;line-height:1.55;font-size:0.9rem;">' + html + '</li>';
-            }).join('');
-            return '<div class="card" style="margin-bottom:14px;">' +
-                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
-                    '<span style="font-size:1.6rem;">' + emoji + '</span>' +
-                    '<h3 style="margin:0;color:' + color + ';font-size:1.05rem;">' + sectionTitle + '</h3>' +
-                    '<span style="background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:700;">' + items.length + '</span>' +
-                '</div>' +
-                '<ul style="list-style:none;padding:0;margin:0;">' + listHtml + '</ul>' +
-            '</div>';
-        }
 
         var total = 0;
         Object.keys(sections).forEach(function(k) { total += (sections[k] || []).length; });
         if (total === 0) {
+            var chabadUrl = (data.sources.chabadpedia && data.sources.chabadpedia.url) || ('https://chabadpedia.co.il/index.php?title=' + encodeURIComponent(hd.urlTitle));
+            var wikiUrl = (data.sources.wikipedia && data.sources.wikipedia.url) || ('https://he.wikipedia.org/wiki/' + encodeURIComponent(hd.urlTitle.replace(/ /g, '_')));
             content.innerHTML =
                 '<div class="card" style="text-align:center;padding:30px;">' +
                     '<div style="font-size:2.5rem;">📅</div>' +
                     '<div style="font-weight:700;margin-top:10px;">לא נמצאו אירועים בתאריך זה</div>' +
-                    '<a href="' + _attrEsc(data.sourceUrl) + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:12px;color:var(--primary);font-size:0.85rem;">פתח ב' + sourceLabel + ' ↗</a>' +
+                    '<div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+                        '<a href="' + _attrEsc(chabadUrl) + '" target="_blank" rel="noopener" style="color:#7C3AED;font-size:0.85rem;">פתח בחב״דפדיה ↗</a>' +
+                        '<a href="' + _attrEsc(wikiUrl) + '" target="_blank" rel="noopener" style="color:#0E7490;font-size:0.85rem;">פתח בויקיפדיה ↗</a>' +
+                    '</div>' +
                 '</div>';
             return;
         }
 
         var html = '';
-        // Chabad-specific sections first (only present if source = chabadpedia)
-        html += renderList(sections.chabad,    'ימי חב״ד',           '🕯️', '#7C3AED');
-        html += renderList(sections.jewish,    'אירועים ביהדות',     '🕎', '#92400E');
-        html += renderList(sections.holidays,  'חגים וימי ציון',     '🎉', '#D97706');
-        html += renderList(sections.events,    'אירועים היסטוריים',  '📜', '#0E7490');
-        html += renderList(sections.births,    'נולדו בתאריך זה',    '👶', '#059669');
-        html += renderList(sections.deaths,    'נפטרו בתאריך זה',    '🕯️', '#475569');
+        // Order: most important first
+        html += _renderTodaySection(sections.holidays, 'חגים וימי ציון',     '🎉', '#D97706', 'holidays');
+        html += _renderTodaySection(sections.jewish,   'אירועים ביהדות',     '🕎', '#92400E', 'jewish');
+        html += _renderTodaySection(sections.events,   'אירועים היסטוריים',  '📜', '#0E7490', 'events');
+        html += _renderTodaySection(sections.chabad,   'ימי חב״ד',           '🕯️', '#7C3AED', 'chabad');
+        html += _renderTodaySection(sections.births,   'נולדו בתאריך זה',    '👶', '#059669', 'births');
+        html += _renderTodaySection(sections.deaths,   'נפטרו בתאריך זה',    '🕯️', '#475569', 'deaths');
 
+        // Source footer — both links shown when available
+        var srcLinks = [];
+        if (data.sources.chabadpedia) srcLinks.push('<a href="' + _attrEsc(data.sources.chabadpedia.url) + '" target="_blank" rel="noopener" style="background:#7C3AED;color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;text-decoration:none;font-size:0.86rem;display:inline-block;">📖 הערך בחב״דפדיה ↗</a>');
+        if (data.sources.wikipedia)   srcLinks.push('<a href="' + _attrEsc(data.sources.wikipedia.url)   + '" target="_blank" rel="noopener" style="background:#0E7490;color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;text-decoration:none;font-size:0.86rem;display:inline-block;">📖 הערך בויקיפדיה ↗</a>');
         html +=
-            '<div style="text-align:center;margin-top:10px;">' +
-                '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">מקור: ' + sourceLabel + '</div>' +
-                '<a href="' + _attrEsc(data.sourceUrl) + '" target="_blank" rel="noopener" style="display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:10px;font-weight:700;text-decoration:none;font-size:0.88rem;">📖 הערך המלא ב' + sourceLabel + ' ↗</a>' +
+            '<div style="text-align:center;margin-top:14px;">' +
+                '<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;">מקורות: חב״דפדיה + ויקיפדיה (אומתו ומוזגו)</div>' +
+                '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' + srcLinks.join('') + '</div>' +
             '</div>';
 
         content.innerHTML = html;
     } catch(e) {
         console.error('[today] load failed:', e);
         var chabadUrl = 'https://chabadpedia.co.il/index.php?title=' + encodeURIComponent(hd.urlTitle);
+        var wikiUrl = 'https://he.wikipedia.org/wiki/' + encodeURIComponent(hd.urlTitle.replace(/ /g, '_'));
         content.innerHTML =
             '<div class="card" style="text-align:center;padding:30px;">' +
                 '<div style="color:var(--danger);font-weight:700;">שגיאה בטעינת התוכן</div>' +
                 '<div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">' + _htmlEsc(e.message || '') + '</div>' +
                 '<button onclick="loadTodayInHistory()" style="margin-top:14px;background:var(--primary);color:#fff;border:none;padding:10px 22px;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;">🔄 נסה שוב</button>' +
-                '<div style="margin-top:10px;"><a href="' + _attrEsc(chabadUrl) + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.85rem;">פתח ידנית בחב״דפדיה ↗</a></div>' +
+                '<div style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
+                    '<a href="' + _attrEsc(chabadUrl) + '" target="_blank" rel="noopener" style="color:#7C3AED;font-size:0.85rem;">פתח בחב״דפדיה ↗</a>' +
+                    '<a href="' + _attrEsc(wikiUrl) + '" target="_blank" rel="noopener" style="color:#0E7490;font-size:0.85rem;">פתח בויקיפדיה ↗</a>' +
+                '</div>' +
             '</div>';
     }
 }
