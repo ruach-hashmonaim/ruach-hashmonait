@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ruach-v68';
+const CACHE_NAME = 'ruach-v69';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -61,6 +61,8 @@ self.addEventListener('fetch', event => {
       url.hostname.includes('overpass-api') ||
       url.hostname.includes('govmap.gov.il') ||
       url.hostname.includes('govmap') ||
+      url.hostname.includes('chabadpedia') ||
+      url.hostname.includes('wikipedia') ||
       url.protocol === 'chrome-extension:') {
     return; // Let browser handle natively — no SW interference
   }
