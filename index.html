@@ -20501,15 +20501,31 @@ async function morakGenerate() {
         var aiText = '';
         for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
         aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/^\uFEFF/, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
-        var morakData;
-        try { morakData = JSON.parse(aiText); } catch(e) {
-            var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
-            if (bs !== -1 && be > bs) try { morakData = JSON.parse(aiText.substring(bs, be + 1)); } catch(e2) {}
-            if (!morakData) {
-                console.error('[morak] failed to parse AI JSON. Raw text:', aiText.substring(0, 500));
-                throw new Error('לא ניתן לנתח את תשובת ה-AI');
-            }
+        var morakData = _safeParseAIJson(aiText);
+
+        // Retry once with a stricter "JSON ONLY" prompt if parsing failed
+        if (!morakData) {
+            console.warn('[morak] first parse failed, retrying with stricter prompt. Raw text:', aiText.substring(0, 500));
+            try {
+                var retryResp = await fetch(geminiUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: 'RESPOND WITH ONLY A VALID JSON OBJECT, no markdown fences, no prose, no preamble.\nIMPORTANT: every newline inside a string value MUST be escaped as \\n.\n\n' + buildPrompt }] }],
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+                    })
+                });
+                if (retryResp.ok) {
+                    var retryData = await retryResp.json();
+                    var retryParts = retryData.candidates?.[0]?.content?.parts || [];
+                    var retryText = '';
+                    for (var rpi = retryParts.length - 1; rpi >= 0; rpi--) { if (!retryParts[rpi].thought && retryParts[rpi].text) { retryText = retryParts[rpi].text; break; } }
+                    retryText = retryText.trim();
+                    morakData = _safeParseAIJson(retryText);
+                }
+            } catch(retryErr) { console.warn('[morak] retry failed:', retryErr.message); }
         }
+
+        if (!morakData) throw new Error('לא ניתן לנתח את תשובת ה-AI אחרי 2 ניסיונות');
 
         morakRenderGenerated(morakData);
         aiFloatComplete(_morakTaskId, 'צפה במור"ק', function() {
@@ -26955,21 +26971,59 @@ setInterval(updateHebrewDate, 3600000); // Update every hour
 // progressively more aggressive recovery strategies and returns the parsed
 // object or null. Used by all AI generators so a single fragile response
 // doesn't fail the whole user action.
+// Escape control chars that appear unescaped inside JSON string values
+// (the #1 reason Gemini-generated Hebrew JSON fails to parse — long Hebrew
+// text often has literal newlines/tabs inside string values).
+function _escapeJsonStringControls(json) {
+    var out = '';
+    var inString = false;
+    var i = 0;
+    while (i < json.length) {
+        var c = json.charAt(i);
+        if (c === '\\' && inString) {
+            // Pass through escape sequence intact
+            out += c;
+            if (i + 1 < json.length) { out += json.charAt(i + 1); i += 2; continue; }
+            i++; continue;
+        }
+        if (c === '"') { inString = !inString; out += c; i++; continue; }
+        if (inString) {
+            var code = json.charCodeAt(i);
+            if (code === 0x0A) out += '\\n';
+            else if (code === 0x0D) out += '\\r';
+            else if (code === 0x09) out += '\\t';
+            else if (code < 0x20) out += '\\u' + ('0000' + code.toString(16)).slice(-4);
+            else out += c;
+        } else { out += c; }
+        i++;
+    }
+    return out;
+}
+
 function _safeParseAIJson(text) {
     if (!text || typeof text !== 'string') return null;
     var raw = text.trim();
+    // Strip any markdown fences that snuck through
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
     try { return JSON.parse(raw); } catch(_) {}
     var fb = raw.indexOf('{');
     var lb = raw.lastIndexOf('}');
     if (fb !== -1 && lb > fb) {
         var slice = raw.substring(fb, lb + 1);
         try { return JSON.parse(slice); } catch(_) {}
+        // Remove trailing commas
         try { return JSON.parse(slice.replace(/,(\s*[}\]])/g, '$1')); } catch(_) {}
+        // Escape unescaped control chars inside strings (Hebrew newlines etc.)
+        try { return JSON.parse(_escapeJsonStringControls(slice)); } catch(_) {}
+        // Both — strip trailing commas then escape control chars
+        try { return JSON.parse(_escapeJsonStringControls(slice).replace(/,(\s*[}\]])/g, '$1')); } catch(_) {}
     }
     var fk = raw.indexOf('[');
     var lk = raw.lastIndexOf(']');
     if (fk !== -1 && lk > fk) {
-        try { return JSON.parse(raw.substring(fk, lk + 1)); } catch(_) {}
+        var arr = raw.substring(fk, lk + 1);
+        try { return JSON.parse(arr); } catch(_) {}
+        try { return JSON.parse(_escapeJsonStringControls(arr)); } catch(_) {}
     }
     return null;
 }
