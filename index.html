@@ -13586,36 +13586,78 @@ async function _fetchMediaWikiPage(apiBase, candidates) {
     return { html: html, title: matchedTitle };
 }
 
-// Parse the article HTML into the standard sections.
+// Parse the article HTML into the standard sections — supports both
+// the OLD MediaWiki layout (used by Chabadpedia):
+//     <h2><span class="mw-headline">heading</span></h2><ul>…</ul>
+// and the NEW MediaWiki layout (used by Hebrew Wikipedia today):
+//     <div class="mw-heading"><h2 id="…">heading</h2></div><ul>…</ul>
 function _parseTodaySections(html, sectionMap) {
     var doc = new DOMParser().parseFromString(html, 'text/html');
+
+    // Build a unified list of [headingText, "walk-from" element] pairs.
+    // For the OLD format we walk siblings of the <h2>; for the NEW format
+    // the <h2> is wrapped in <div class="mw-heading"> and the <ul> is a
+    // sibling of that wrapping div, so we walk from the div instead.
+    function collectHeadings() {
+        var out = [];
+        var hs = doc.querySelectorAll('h1, h2, h3, h4');
+        hs.forEach(function(h) {
+            // Drop the [עריכה] / [edit] inline buttons from the heading text
+            var clone = h.cloneNode(true);
+            clone.querySelectorAll('.mw-editsection, .mw-editsection-bracket, span.mw-headline-anchor, script, style').forEach(function(n){ n.remove(); });
+            var text = clone.textContent.replace(/\s+/g, ' ').trim();
+            if (!text) return;
+            // Pick the right "walk-from" element — the wrapping <div class="mw-heading">
+            // if it exists, otherwise the heading itself.
+            var walkFrom = h;
+            var parentDiv = h.parentElement;
+            if (parentDiv && parentDiv.className && /mw-heading/.test(parentDiv.className)) {
+                walkFrom = parentDiv;
+            }
+            out.push({ text: text, walkFrom: walkFrom, level: parseInt(h.tagName.substring(1), 10) });
+        });
+        return out;
+    }
+    var allHeadings = collectHeadings();
+
     function extractByHeadingNames(names) {
-        var headings = doc.querySelectorAll('h2 .mw-headline, h3 .mw-headline');
-        for (var i = 0; i < headings.length; i++) {
-            var h = headings[i];
-            var headingText = h.textContent.trim();
-            if (names.indexOf(headingText) === -1) continue;
-            var headerEl = h.closest('h2, h3');
+        for (var i = 0; i < allHeadings.length; i++) {
+            var h = allHeadings[i];
+            if (names.indexOf(h.text) === -1) continue;
             var items = [];
-            var el = headerEl.nextElementSibling;
-            while (el && el.tagName !== 'H2' && !(headerEl.tagName === 'H3' && el.tagName === 'H3')) {
+            var el = h.walkFrom.nextElementSibling;
+            // Stop when we hit the next heading of the same or higher level
+            while (el) {
+                // Detect "next heading" — either a direct h1-h4, or a wrapping div.mw-heading
+                var isNextHeading = false;
+                if (/^H[1-4]$/.test(el.tagName)) {
+                    var lvl = parseInt(el.tagName.substring(1), 10);
+                    if (lvl <= h.level) isNextHeading = true;
+                } else if (el.classList && el.classList.contains('mw-heading')) {
+                    // Look at the inner h-tag level
+                    var innerH = el.querySelector('h1, h2, h3, h4');
+                    if (innerH) {
+                        var lvl2 = parseInt(innerH.tagName.substring(1), 10);
+                        if (lvl2 <= h.level) isNextHeading = true;
+                    }
+                }
+                if (isNextHeading) break;
                 if (el.tagName === 'UL') {
                     el.querySelectorAll(':scope > li').forEach(function(li) {
-                        var clone = li.cloneNode(true);
-                        clone.querySelectorAll('sup, .mw-editsection, style, script').forEach(function(n){ n.remove(); });
-                        var firstLink = clone.querySelector('a[href*="/wiki/"], a[href*="/index.php"]');
+                        var c = li.cloneNode(true);
+                        c.querySelectorAll('sup, .mw-editsection, style, script').forEach(function(n){ n.remove(); });
+                        var firstLink = c.querySelector('a[href*="/wiki/"], a[href*="/index.php"]');
                         var linkHref = '';
                         if (firstLink) {
-                            var h = firstLink.getAttribute('href') || '';
-                            linkHref = h.charAt(0) === '/' ? sectionMap._baseUrl + h : h;
+                            var hh = firstLink.getAttribute('href') || '';
+                            linkHref = hh.charAt(0) === '/' ? sectionMap._baseUrl + hh : hh;
                         }
-                        var text = clone.textContent.replace(/\s+/g, ' ').trim();
+                        var text = c.textContent.replace(/\s+/g, ' ').trim();
                         text = text.replace(/\[\d+\]/g, '').replace(/\[עריכה\]/g, '').trim();
                         if (text.length > 4) items.push({ text: text, link: linkHref });
                     });
                 }
                 el = el.nextElementSibling;
-                if (!el) break;
             }
             return items;
         }
@@ -13712,6 +13754,28 @@ function _mergeAndDedupItems(itemsArrays) {
     return out;
 }
 
+// For the "נפטרו" section the user only wants:
+//   - rabbis, Torah scholars, religious leaders (all levels, any era)
+//   - in the modern era: ONLY Israeli PMs and Presidents
+// Pre-modern figures (year < 1850 or Hebrew-year-only) are kept by default
+// since Hebrew-Wikipedia "נפטרו" lists for ancient dates are essentially all
+// notable Torah figures.
+function _isSignificantPerson(item) {
+    var text = (item && item.text) || '';
+    if (!text) return false;
+    var yearMatch = text.match(/^\s*(\d{3,4})\b/);
+    var gregYear = yearMatch ? parseInt(yearMatch[1], 10) : 0;
+    // Pre-modern era → include
+    if (gregYear && gregYear < 1850) return true;
+    // Hebrew-year prefix (no Gregorian) → almost always pre-modern → include
+    if (!gregYear && /^\s*ה?'?ת[֐-׿"׳״']+/.test(text)) return true;
+    // Modern era — require explicit signal that the person is a religious
+    // leader or top-tier Israeli political figure.
+    var torahPatterns = /(\bהרב\b|\bרבי\b|\bהרבי\b|\bהאדמו|\bאדמו"ר|\bאדמו״ר|\bראש[ \s]+ישיבה|\bראש[ \s]+כולל|\bר'\s|\bראב"ד|\bראב״ד|\bהגאון|\bהצדיק|\bמקובל\b|\bפוסק\b|\bתלמיד[ \s]+חכם|\bת"ח\b|\bת״ח\b|\bמשגיח\b|\bמגיד\b|\bה?חזן\b|\bבעל[ \s]+ה|\bמחבר[ \s]+ה?ספר|\bמרא[ \s]?ד[ \s]?אתרא|\bה?גרב"[\s ]|\bה?חפץ[ \s]+חיים|\bבן[ \s]+איש[ \s]+חי|\bהבן[ \s]+איש)/;
+    var leaderPatterns = /(ראש[ \s]+הממשלה|ראש[ \s]+ממשלת[ \s]+ישראל|ראש[ \s]+ממשלת[ \s]+מדינת[ \s]+ישראל|נשיא[ \s]+ישראל|נשיא[ \s]+המדינה|נשיא[ \s]+מדינת[ \s]+ישראל)/;
+    return torahPatterns.test(text) || leaderPatterns.test(text);
+}
+
 // Sort items by year (newer → older feels more relevant for "today in history")
 function _sortItemsByYear(items) {
     return items.slice().sort(function(a, b) {
@@ -13750,7 +13814,7 @@ async function _fetchSourceSections(apiBase, candidates, sectionMap, sourceName)
 // then merge sections and de-duplicate so we get a richer view focused on
 // events significant to the Jewish people.
 async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
-    var cacheKey = 'today_v5_' + titleForUrl;
+    var cacheKey = 'today_v6_' + titleForUrl;
     try {
         var raw = localStorage.getItem(cacheKey);
         if (raw) {
@@ -13783,7 +13847,8 @@ async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
         holidays: _mergeAndDedupItems([ getSec(wikiRes, 'holidays'), getSec(chabadRes, 'holidays') ]),
         events:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'events'), getSec(chabadRes, 'events') ])),
         births:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'births'), getSec(chabadRes, 'births') ])),
-        deaths:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'deaths'), getSec(chabadRes, 'deaths') ])),
+        // Deaths: filter to rabbis, Torah scholars, Israeli PMs and Presidents only
+        deaths:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'deaths'), getSec(chabadRes, 'deaths') ])).filter(_isSignificantPerson),
         // Chabad-specific sections last — strictly capped (2 items each) so
         // the overall mix stays ~90% general / 10% Chabad enrichment.
         jewish:   _mergeAndDedupItems([ getSec(chabadRes, 'jewish') ]).slice(0, 2),
