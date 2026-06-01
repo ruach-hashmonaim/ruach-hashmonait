@@ -13641,10 +13641,25 @@ var _CHABAD_SECTIONS = {
 };
 var _WIKI_SECTIONS = {
     _baseUrl: 'https://he.wikipedia.org',
-    holidays:  ['חגים וימי ציון', 'חגים וימי זיכרון', 'ימי זיכרון לאומיים'],
-    events:    ['אירועים', 'אירועים היסטוריים'],
-    births:    ['נולדו', 'נולדו ביום זה'],
-    deaths:    ['נפטרו', 'נפטרו ביום זה']
+    // NOTE: hebrew wikipedia uses several heading conventions across date
+    // articles — must list every variant we've seen, otherwise extraction
+    // silently returns [] and the page looks like it's "only Chabad".
+    holidays:  [
+        'חגים ואירועים החלים ביום זה',
+        'חגים ומועדים',
+        'חגים וימי ציון',
+        'חגים וימי זיכרון',
+        'ימי זיכרון לאומיים',
+        'חגים'
+    ],
+    events:    [
+        'אירועים היסטוריים ביום זה',
+        'אירועים החלים ביום זה',
+        'אירועים היסטוריים',
+        'אירועים'
+    ],
+    births:    ['נולדו ביום זה', 'נולדו'],
+    deaths:    ['נפטרו ביום זה', 'נפטרו']
 };
 
 // Extract the leading year from a list item — supports gregorian (1948, 2007)
@@ -13735,7 +13750,7 @@ async function _fetchSourceSections(apiBase, candidates, sectionMap, sourceName)
 // then merge sections and de-duplicate so we get a richer view focused on
 // events significant to the Jewish people.
 async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
-    var cacheKey = 'today_v4_' + titleForUrl;
+    var cacheKey = 'today_v5_' + titleForUrl;
     try {
         var raw = localStorage.getItem(cacheKey);
         if (raw) {
@@ -13769,10 +13784,10 @@ async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
         events:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'events'), getSec(chabadRes, 'events') ])),
         births:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'births'), getSec(chabadRes, 'births') ])),
         deaths:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'deaths'), getSec(chabadRes, 'deaths') ])),
-        // Chabad-specific sections last — limited to a handful of items so they
-        // stay a small enrichment layer rather than the main feed.
-        jewish:   _mergeAndDedupItems([ getSec(chabadRes, 'jewish') ]).slice(0, 3),
-        chabad:   getSec(chabadRes, 'chabad').slice(0, 3)
+        // Chabad-specific sections last — strictly capped (2 items each) so
+        // the overall mix stays ~90% general / 10% Chabad enrichment.
+        jewish:   _mergeAndDedupItems([ getSec(chabadRes, 'jewish') ]).slice(0, 2),
+        chabad:   getSec(chabadRes, 'chabad').slice(0, 2)
     };
 
     var data = {
