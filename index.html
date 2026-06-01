@@ -13725,30 +13725,86 @@ function _itemTopic(text) {
     return t.substring(0, 30).replace(/\s+/g, ' ').trim();
 }
 
-// Merge items from multiple sources into a single de-duplicated list.
-// Items that share a year + topic prefix are considered duplicates; the
-// Wikipedia version wins (broader/secular framing focused on עם ישראל at large,
-// rather than the Chabad-flavoured version).
-function _mergeAndDedupItems(itemsArrays) {
+// Extract a set of "significant" Hebrew tokens from an item — used to
+// detect duplicates even when the wording differs between sources.
+// Strips year prefix, gershayim, common stop-words and short fillers.
+var _DEDUP_STOP_WORDS = {
+    'של':1,'את':1,'ה':1,'ב':1,'ל':1,'מ':1,'כ':1,'ו':1,
+    'הוא':1,'היא':1,'הם':1,'הן':1,'זה':1,'זו':1,'אבל':1,'אחר':1,
+    'לפי':1,'לא':1,'גם':1,'או':1,'אם':1,'יום':1,'ימי':1,'יומי':1,
+    'מצרים':0,'ישראל':0  // (these are kept — high signal)
+};
+function _itemTokens(text) {
+    if (!text) return new Set();
+    // Strip year prefix
+    var t = text.replace(/^\s*(?:\d{3,4}|ה?'?ת[א-ת"׳״']+)\s*[–—\-:–—]?\s*/, '');
+    // Normalize: drop gershayim/quotes/punctuation
+    t = t.replace(/[׳״'"]+/g, '');
+    // Tokenize on whitespace + punctuation
+    var raw = t.split(/[\s,;.:!?\-–—()\[\]"'״׳]+/);
     var seen = {};
+    var out = new Set();
+    for (var i = 0; i < raw.length; i++) {
+        var w = raw[i];
+        if (!w || w.length < 2) continue;
+        if (_DEDUP_STOP_WORDS[w] === 1) continue;
+        if (seen[w]) continue;
+        seen[w] = 1;
+        out.add(w);
+        if (out.size >= 8) break; // first 8 distinct significant tokens
+    }
+    return out;
+}
+
+// Two items are duplicates if:
+//   1. their tokens overlap by ≥2 shared significant words AND ≥40% of
+//      the smaller token set, AND
+//   2. EITHER the years match, OR one is Gregorian and one is Hebrew
+//      (cross-format — can't compare directly, fall back to tokens only).
+// This catches wording variants between sources without falsely merging
+// two different events that happen to share a word like "פוגרום".
+function _itemsAreDuplicate(a, b) {
+    if (!a || !b || !a._tokens || !b._tokens) return false;
+    if (a._tokens.size === 0 || b._tokens.size === 0) return false;
+    // Year compatibility check first — cheap and prevents most false positives
+    var ay = a._year, by = b._year;
+    if (ay && by) {
+        var aNumeric = /^\d+$/.test(ay);
+        var bNumeric = /^\d+$/.test(by);
+        // Same-style years that differ → different events
+        if (aNumeric === bNumeric && ay !== by) return false;
+    }
+    // Token overlap check
+    var overlap = 0;
+    a._tokens.forEach(function(w) { if (b._tokens.has(w)) overlap++; });
+    var minSize = Math.min(a._tokens.size, b._tokens.size);
+    return overlap >= 2 && (overlap / minSize) >= 0.4;
+}
+
+// Merge items from multiple sources into a single de-duplicated list.
+// Uses token-set overlap + year-compatibility (handles different wording
+// between sources). When two items match, the Wikipedia version is kept
+// (broader עם ישראל framing).
+function _mergeAndDedupItems(itemsArrays) {
     var out = [];
+    function prepare(item) {
+        item._tokens = _itemTokens(item.text);
+        item._year = _extractItemYear(item.text);
+        return item;
+    }
     itemsArrays.forEach(function(arr) {
         (arr || []).forEach(function(item) {
             if (!item || !item.text) return;
-            var year = _extractItemYear(item.text);
-            var topic = _itemTopic(item.text);
-            var key = year + '|' + topic.substring(0, 16);
-            if (seen[key]) {
-                // Prefer Wikipedia framing when both sources mention the same event
-                if (item._source === 'wikipedia' && seen[key]._source !== 'wikipedia') {
-                    var idx = out.indexOf(seen[key]);
-                    if (idx !== -1) out[idx] = item;
-                    seen[key] = item;
-                }
-                return;
+            prepare(item);
+            var dupIdx = -1;
+            for (var i = 0; i < out.length; i++) {
+                if (_itemsAreDuplicate(out[i], item)) { dupIdx = i; break; }
             }
-            seen[key] = item;
-            out.push(item);
+            if (dupIdx === -1) {
+                out.push(item);
+            } else if (item._source === 'wikipedia' && out[dupIdx]._source !== 'wikipedia') {
+                out[dupIdx] = item; // replace with wikipedia framing
+            }
         });
     });
     return out;
@@ -13814,7 +13870,7 @@ async function _fetchSourceSections(apiBase, candidates, sectionMap, sourceName)
 // then merge sections and de-duplicate so we get a richer view focused on
 // events significant to the Jewish people.
 async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
-    var cacheKey = 'today_v6_' + titleForUrl;
+    var cacheKey = 'today_v7_' + titleForUrl;
     try {
         var raw = localStorage.getItem(cacheKey);
         if (raw) {
