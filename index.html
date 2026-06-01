@@ -27518,6 +27518,7 @@ async function _geminiSafeFetch(url, body, opts) {
     var maxRetries = opts.maxRetries != null ? opts.maxRetries : 2;
     var attempt = 0;
     var lastErr = null;
+    var triedWithoutGrounding = false;
     while (attempt <= maxRetries) {
         attempt++;
         try {
@@ -27528,6 +27529,19 @@ async function _geminiSafeFetch(url, body, opts) {
             });
             if (resp.ok) {
                 return await resp.json();
+            }
+            // === SPECIAL CASE: google_search grounding is on a separate
+            // quota track and is often the first thing Google denies when
+            // a project hits a quota / billing issue. If we see 403, retry
+            // ONCE without the grounding tool.
+            if (resp.status === 403 && !triedWithoutGrounding && body && typeof body === 'object' && body.tools) {
+                triedWithoutGrounding = true;
+                var bodyNoGrounding = Object.assign({}, body);
+                delete bodyNoGrounding.tools;
+                console.warn('[gemini] 403 with grounding — retrying without google_search tool');
+                body = bodyNoGrounding;
+                attempt--; // don't count this as a retry slot
+                continue;
             }
             // Non-OK — try to parse the Gemini error body for the real message
             var errText = '';
