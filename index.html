@@ -13670,7 +13670,8 @@ function _itemTopic(text) {
 
 // Merge items from multiple sources into a single de-duplicated list.
 // Items that share a year + topic prefix are considered duplicates; the
-// version with a Chabadpedia link wins (since the user prefers Chabad sourcing).
+// Wikipedia version wins (broader/secular framing focused on עם ישראל at large,
+// rather than the Chabad-flavoured version).
 function _mergeAndDedupItems(itemsArrays) {
     var seen = {};
     var out = [];
@@ -13681,8 +13682,8 @@ function _mergeAndDedupItems(itemsArrays) {
             var topic = _itemTopic(item.text);
             var key = year + '|' + topic.substring(0, 16);
             if (seen[key]) {
-                // Prefer item from Chabadpedia if existing was from elsewhere
-                if (item._source === 'chabadpedia' && seen[key]._source !== 'chabadpedia') {
+                // Prefer Wikipedia framing when both sources mention the same event
+                if (item._source === 'wikipedia' && seen[key]._source !== 'wikipedia') {
                     var idx = out.indexOf(seen[key]);
                     if (idx !== -1) out[idx] = item;
                     seen[key] = item;
@@ -13734,7 +13735,7 @@ async function _fetchSourceSections(apiBase, candidates, sectionMap, sourceName)
 // then merge sections and de-duplicate so we get a richer view focused on
 // events significant to the Jewish people.
 async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
-    var cacheKey = 'today_v3_' + titleForUrl;
+    var cacheKey = 'today_v4_' + titleForUrl;
     try {
         var raw = localStorage.getItem(cacheKey);
         if (raw) {
@@ -13759,15 +13760,19 @@ async function _fetchTodayContent(titleForUrl, dayForUrl, monthName) {
     // If both failed, throw
     if (!chabadRes && !wikiRes) throw new Error('אין תוכן לתאריך זה — בדוק את החיבור');
 
-    // Merge each section across sources
+    // Merge each section across sources — Wikipedia first so when there's
+    // overlap the Wikipedia framing is kept (focused on עם ישראל broadly,
+    // not on Chabad specifically).
     function getSec(res, key) { return (res && res.sections && res.sections[key]) || []; }
     var merged = {
-        chabad:   getSec(chabadRes, 'chabad'),              // Chabad-specific (only from Chabadpedia)
-        jewish:   _mergeAndDedupItems([ getSec(chabadRes, 'jewish') ]), // Chabadpedia only
-        holidays: _mergeAndDedupItems([ getSec(chabadRes, 'holidays'), getSec(wikiRes, 'holidays') ]),
+        holidays: _mergeAndDedupItems([ getSec(wikiRes, 'holidays'), getSec(chabadRes, 'holidays') ]),
         events:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'events'), getSec(chabadRes, 'events') ])),
         births:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'births'), getSec(chabadRes, 'births') ])),
-        deaths:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'deaths'), getSec(chabadRes, 'deaths') ]))
+        deaths:   _sortItemsByYear(_mergeAndDedupItems([ getSec(wikiRes, 'deaths'), getSec(chabadRes, 'deaths') ])),
+        // Chabad-specific sections last — limited to a handful of items so they
+        // stay a small enrichment layer rather than the main feed.
+        jewish:   _mergeAndDedupItems([ getSec(chabadRes, 'jewish') ]).slice(0, 3),
+        chabad:   getSec(chabadRes, 'chabad').slice(0, 3)
     };
 
     var data = {
@@ -13878,13 +13883,15 @@ async function loadTodayInHistory() {
         }
 
         var html = '';
-        // Order: most important first
-        html += _renderTodaySection(sections.holidays, 'חגים וימי ציון',     '🎉', '#D97706', 'holidays');
-        html += _renderTodaySection(sections.jewish,   'אירועים ביהדות',     '🕎', '#92400E', 'jewish');
-        html += _renderTodaySection(sections.events,   'אירועים היסטוריים',  '📜', '#0E7490', 'events');
-        html += _renderTodaySection(sections.chabad,   'ימי חב״ד',           '🕯️', '#7C3AED', 'chabad');
-        html += _renderTodaySection(sections.births,   'נולדו בתאריך זה',    '👶', '#059669', 'births');
-        html += _renderTodaySection(sections.deaths,   'נפטרו בתאריך זה',    '🕯️', '#475569', 'deaths');
+        // Order: general events from עם ישראל first; Chabad-specific
+        // enrichment as a small addendum at the bottom.
+        html += _renderTodaySection(sections.holidays, 'חגים וימי ציון',           '🎉', '#D97706', 'holidays');
+        html += _renderTodaySection(sections.events,   'אירועים בתולדות עם ישראל', '📜', '#0E7490', 'events');
+        html += _renderTodaySection(sections.births,   'נולדו בתאריך זה',          '👶', '#059669', 'births');
+        html += _renderTodaySection(sections.deaths,   'נפטרו בתאריך זה',          '🕯️', '#475569', 'deaths');
+        // Chabad-flavoured sections appear last and are capped to ~3 items each
+        html += _renderTodaySection(sections.jewish,   'מהמסורת היהודית',          '🕎', '#92400E', 'jewish');
+        html += _renderTodaySection(sections.chabad,   'מהמסורת החב״דית',          '🕯️', '#7C3AED', 'chabad');
 
         // Source footer — both links shown when available
         var srcLinks = [];
