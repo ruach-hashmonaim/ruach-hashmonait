@@ -19172,18 +19172,11 @@ async function modalSakagGenerate(lat, lng, placeName) {
         var _modalRadius = '5 ק"מ';
         var researchPrompt = SAKAG_RESEARCH_PROMPT.replace(/\[PLACE_NAME\]/g, placeName).replace(/\[LAT\]/g, lat.toFixed(4)).replace(/\[LNG\]/g, lng.toFixed(4)).replace(/\[RADIUS_LABEL\]/g, _modalRadius);
 
-        var researchResponse = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: researchPrompt }] }],
-                tools: [{ google_search: {} }],
-                generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
-            })
+        var researchData = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: researchPrompt }] }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
         });
-
-        if (!researchResponse.ok) throw new Error('שגיאה בשלב המחקר: ' + researchResponse.status);
-        var researchData = await researchResponse.json();
         var researchParts = researchData.candidates?.[0]?.content?.parts || [];
         var researchText = '';
         for (var ri = researchParts.length - 1; ri >= 0; ri--) {
@@ -19201,18 +19194,10 @@ async function modalSakagGenerate(lat, lng, placeName) {
             + buildSakagContextPrompt(_modalCtx)
             + '\n\n=== מידע שנאסף ממחקר שטח (השתמש בו כבסיס לסק"ג) ===\n' + researchText;
 
-        var response = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: buildPrompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
-            })
+        var data = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: buildPrompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
         });
-
-        if (!response.ok) throw new Error('שגיאת Gemini API: ' + response.status);
-
-        var data = await response.json();
         var parts = data.candidates?.[0]?.content?.parts || [];
         var aiText = '';
         for (var pi = parts.length - 1; pi >= 0; pi--) {
@@ -19898,16 +19883,11 @@ async function sakalGenerateAI(lat, lng, placeName) {
             .replace('[AREA_DESC]', areaContext)
             .replace('[POI_LIST]', poiText);
 
-        var researchResp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: researchPrompt }] }],
-                tools: [{ google_search: {} }],
-                generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
-            })
+        var researchData = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: researchPrompt }] }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
         });
-        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר: ' + researchResp.status);
-        var researchData = await researchResp.json();
         var researchParts = researchData.candidates?.[0]?.content?.parts || [];
         var researchText = '';
         for (var ri = researchParts.length - 1; ri >= 0; ri--) {
@@ -19931,21 +19911,10 @@ async function sakalGenerateAI(lat, lng, placeName) {
             .replace('[AREA_CONTEXT]', areaContext)
             + buildSakagContextPrompt(_sakalCtx);
 
-        var response = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
-            })
+        var data = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
         });
-
-        if (!response.ok) {
-            var errText = await response.text();
-            throw new Error('שגיאת Gemini API: ' + response.status + ' — ' + errText.substring(0, 200));
-        }
-
-        var data = await response.json();
         // Gemini 2.5 may return thinking parts — get last non-thought text part
         var parts = data.candidates?.[0]?.content?.parts || [];
         var aiText = '';
@@ -20614,18 +20583,13 @@ async function morakGenerate() {
 
         var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
 
-        // Step 1: Research
+        // Step 1: Research (with auto-retry on 429/5xx via _geminiSafeFetch)
         var researchPrompt = MORAK_RESEARCH_PROMPT.replace('[SUBJECT_TYPE]', subjectType).replace('[SUBJECT_NAME]', d.subject);
-        var researchResp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.4, maxOutputTokens: 8192 } })
+        var researchData = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: researchPrompt }] }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
         });
-        if (!researchResp.ok) {
-            var researchErrBody = await researchResp.text().catch(function() { return ''; });
-            console.error('[morak] research API error', researchResp.status, researchErrBody);
-            throw new Error('שגיאה בשלב המחקר (' + researchResp.status + ')');
-        }
-        var researchData = await researchResp.json();
         var researchParts = researchData.candidates?.[0]?.content?.parts || [];
         var researchText = '';
         for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
@@ -20638,16 +20602,10 @@ async function morakGenerate() {
         if (d.context) buildPrompt += '\n\n=== דגשים של המפקד ===\n' + d.context;
         buildPrompt += '\n\n=== מידע שנאסף ממחקר ===\n' + researchText;
 
-        var resp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+        var data = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: buildPrompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 16384, responseMimeType: 'application/json' }
         });
-        if (!resp.ok) {
-            var errBody = await resp.text().catch(function() { return ''; });
-            console.error('[morak] build API error', resp.status, errBody);
-            throw new Error('שגיאת Gemini (' + resp.status + ')');
-        }
-        var data = await resp.json();
         var parts = data.candidates?.[0]?.content?.parts || [];
         var aiText = '';
         for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
@@ -20891,12 +20849,11 @@ async function lessonGenerate() {
         var researchPrompt = 'חקור באינטרנט ומצא מידע מדויק ומפורט על הנושא: "' + topic + '".\n' +
             'חפש: מקורות יהודיים (תנ"ך, תלמוד, מדרש), אירועים היסטוריים, דוגמאות, סיפורים רלוונטיים, ציטוטים.\n' +
             'הבא רק מידע שמצאת בפועל. אל תמציא מקורות, ציטוטים, או שמות ספרים.\nכתוב בעברית.' + JEWISH_SOURCES_RESTRICTION;
-        var researchResp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+        var researchData = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: researchPrompt }] }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
         });
-        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
-        var researchData = await researchResp.json();
         var researchParts = researchData.candidates?.[0]?.content?.parts || [];
         var researchText = '';
         for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
@@ -20909,22 +20866,16 @@ async function lessonGenerate() {
         prompt += '\n\n=== מידע שנאסף ממחקר באינטרנט ===\n' + researchText +
             '\n\nהשתמש אך ורק במידע שמופיע למעלה. אל תמציא עובדות, ציטוטים, או מקורות נוספים.';
 
-        var resp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+        var data = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.5, maxOutputTokens: 16384, responseMimeType: 'application/json' }
         });
-        if (!resp.ok) throw new Error('שגיאת Gemini');
-        var data = await resp.json();
         var parts = data.candidates?.[0]?.content?.parts || [];
         var aiText = '';
         for (var pi = parts.length - 1; pi >= 0; pi--) { if (!parts[pi].thought && parts[pi].text) { aiText = parts[pi].text; break; } }
-        aiText = aiText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        var lessonData;
-        try { lessonData = JSON.parse(aiText); } catch(e) {
-            var bs = aiText.indexOf('{'), be = aiText.lastIndexOf('}');
-            if (bs !== -1 && be > bs) try { lessonData = JSON.parse(aiText.substring(bs, be + 1)); } catch(e2) {}
-            if (!lessonData) throw new Error('לא ניתן לנתח את התשובה');
-        }
+        aiText = aiText.trim();
+        var lessonData = _safeParseAIJson(aiText);
+        if (!lessonData) throw new Error('לא ניתן לנתח את תשובת ה-AI — נסה שוב');
 
         lessonRenderGenerated(lessonData, { topic: topic, goals: goals, audience: audience, duration: duration, style: style, notes: notes });
         aiFloatComplete(_lessonTaskId, 'צפה בשיעור', function() {
@@ -21888,12 +21839,11 @@ async function triviaGenerateAI() {
             (sources ? ' (מקורות: ' + sources + ')' : '') +
             '.\n\nהבא עובדות מדויקות, שמות, תאריכים, פרטים מעניינים. ציין מקור לכל עובדה. אל תמציא שום פרט.' +
             '\nכתוב בעברית.' + JEWISH_SOURCES_RESTRICTION;
-        var researchResp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: researchPrompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192 } })
+        var researchData = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: researchPrompt }] }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
         });
-        if (!researchResp.ok) throw new Error('שגיאה בשלב המחקר');
-        var researchData = await researchResp.json();
         var researchParts = researchData.candidates?.[0]?.content?.parts || [];
         var researchText = '';
         for (var ri = researchParts.length - 1; ri >= 0; ri--) { if (!researchParts[ri].thought && researchParts[ri].text) { researchText = researchParts[ri].text; break; } }
@@ -21902,12 +21852,10 @@ async function triviaGenerateAI() {
         aiFloatUpdateStatus(_triviaTaskId, 'יוצר שאלות טריוויה...');
         var buildPrompt = prompt + '\n\n=== מידע שנאסף ממחקר באינטרנט ===\n' + researchText +
             '\n\nהשתמש אך ורק במידע שמופיע למעלה ליצירת השאלות. אל תמציא עובדות נוספות.';
-        var resp = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 8192, responseMimeType: 'application/json' } })
+        var data = await _geminiSafeFetch(geminiUrl, {
+            contents: [{ parts: [{ text: buildPrompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 8192, responseMimeType: 'application/json' }
         });
-        if (!resp.ok) { var errBody = await resp.json().catch(function() { return {}; }); throw new Error(errBody.error?.message || 'שגיאת Gemini'); }
-        var data = await resp.json();
 
         // Extract text — skip thought parts (Gemini 2.5 Flash thinking)
         var aiText = '';
@@ -27413,6 +27361,120 @@ function aiFloatToggleAll() {
     if (t) t.textContent = c.classList.contains('ai-float-collapsed') ? '▲' : '▼';
 }
 
+// ============================================================
+// AI ROBUSTNESS — resilient Gemini fetch + browser notifications
+// ============================================================
+
+// Drop-in replacement for fetch() targeted at Gemini.
+// Retries on transient errors (429 rate-limit, 5xx server) and surfaces
+// the actual Gemini error message instead of a generic "שגיאת Gemini".
+// Returns the parsed JSON response. Throws an Error with .status set on
+// failure so callers can branch on auth / quota / etc.
+async function _geminiSafeFetch(url, body, opts) {
+    opts = opts || {};
+    var maxRetries = opts.maxRetries != null ? opts.maxRetries : 2;
+    var attempt = 0;
+    var lastErr = null;
+    while (attempt <= maxRetries) {
+        attempt++;
+        try {
+            var resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: typeof body === 'string' ? body : JSON.stringify(body)
+            });
+            if (resp.ok) {
+                return await resp.json();
+            }
+            // Non-OK — try to parse the Gemini error body for the real message
+            var errText = '';
+            var errJson = null;
+            try { errText = await resp.text(); errJson = JSON.parse(errText); } catch(_) {}
+            var geminiMsg = (errJson && errJson.error && errJson.error.message) || '';
+            var msg;
+            if (resp.status === 401 || resp.status === 403) {
+                msg = 'מפתח API לא תקף או הגישה נחסמה (' + resp.status + ')' + (geminiMsg ? ' — ' + geminiMsg : '');
+            } else if (resp.status === 429) {
+                msg = 'מכסת השימוש נחרגה זמנית (429)' + (geminiMsg ? ' — ' + geminiMsg : '');
+            } else if (resp.status >= 500) {
+                msg = 'שרת Gemini זמנית לא זמין (' + resp.status + ')' + (geminiMsg ? ' — ' + geminiMsg : '');
+            } else if (resp.status === 400) {
+                msg = 'בקשה לא תקפה (400)' + (geminiMsg ? ' — ' + geminiMsg : '');
+            } else {
+                msg = 'שגיאת Gemini ' + resp.status + (geminiMsg ? ' — ' + geminiMsg : '');
+            }
+            lastErr = new Error(msg);
+            lastErr.status = resp.status;
+            lastErr.geminiMsg = geminiMsg;
+            // Retry on transient errors only
+            var transient = (resp.status === 429 || resp.status >= 500);
+            if (!transient || attempt > maxRetries) throw lastErr;
+            var delayMs = resp.status === 429 ? 2000 * attempt : 1000 * attempt;
+            console.warn('[gemini] transient ' + resp.status + ' — retry #' + attempt + ' in ' + delayMs + 'ms');
+            await new Promise(function(r){ setTimeout(r, delayMs); });
+        } catch(networkErr) {
+            // Pure network failure (offline, DNS, etc.) — also retry-worthy
+            if (networkErr.status) throw networkErr; // already a Gemini-classified error from above
+            lastErr = networkErr;
+            if (attempt > maxRetries) throw new Error('בעיית רשת — לא הצלחנו להתחבר לשרת Gemini: ' + (networkErr.message || ''));
+            console.warn('[gemini] network err — retry #' + attempt + ':', networkErr.message);
+            await new Promise(function(r){ setTimeout(r, 1500 * attempt); });
+        }
+    }
+    throw lastErr || new Error('שגיאת Gemini לא ידועה');
+}
+
+// Track whether we already asked for notification permission this session
+var _aiNotifPermAsked = false;
+function _aiRequestNotificationPermission() {
+    if (_aiNotifPermAsked) return;
+    _aiNotifPermAsked = true;
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+        try { Notification.requestPermission().catch(function(){}); } catch(_) {}
+    }
+}
+
+// Document-title flash — when the tab is hidden and a task completes,
+// keep the original title and flash "✅ X מוכן!" until the user comes back.
+var _aiOriginalTitle = null;
+var _aiTitleFlashInterval = null;
+function _aiTitleFlash(message) {
+    if (document.visibilityState === 'visible') return;
+    if (_aiOriginalTitle === null) _aiOriginalTitle = document.title;
+    if (_aiTitleFlashInterval) clearInterval(_aiTitleFlashInterval);
+    var on = true;
+    _aiTitleFlashInterval = setInterval(function() {
+        document.title = on ? message : _aiOriginalTitle;
+        on = !on;
+    }, 1100);
+}
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && _aiTitleFlashInterval) {
+        clearInterval(_aiTitleFlashInterval);
+        _aiTitleFlashInterval = null;
+        if (_aiOriginalTitle !== null) { document.title = _aiOriginalTitle; _aiOriginalTitle = null; }
+    }
+});
+
+// Browser-level system notification — fires even when tab is in background
+// (still alive). Best-effort; silently does nothing if permission denied.
+function _aiSystemNotify(title, body) {
+    try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        var n = new Notification(title, {
+            body: body || '',
+            icon: '/icons/icon-192x192.png?v=2',
+            badge: '/icons/icon-72x72.png?v=2',
+            tag: 'mtzpen-ai-' + Date.now(),
+            silent: false,
+            requireInteraction: false
+        });
+        n.onclick = function() { try { window.focus(); } catch(_) {} n.close(); };
+        setTimeout(function() { try { n.close(); } catch(_){} }, 12000);
+    } catch(e) { console.warn('[ai] system notify failed:', e); }
+}
+
 function aiFloatShow(taskId, title, estimatedSecs) {
     var body = aiFloatGetStackBody();
     if (!body) { console.error('AI Float: stack body not found'); return; }
@@ -27433,8 +27495,13 @@ function aiFloatShow(taskId, title, estimatedSecs) {
             '<div class="ai-float-status">מכין תוכן...</div>' +
             '<div class="ai-float-bar"><div class="ai-float-bar-fill" style="width:0%"></div></div>' +
             '<div class="ai-float-timer"></div>' +
+            '<div style="font-size:0.72rem;color:rgba(0,0,0,0.55);margin-top:4px;line-height:1.4;">💡 אפשר לעזוב את המסך — נתריע אותך כשזה מוכן</div>' +
             '<div class="ai-float-done"></div>' +
         '</div>';
+
+    // Politely ask for browser notification permission so we can notify the
+    // user even when the tab is in the background.
+    _aiRequestNotificationPermission();
     card.querySelector('.ai-float-title').textContent = title;
     body.appendChild(card);
 
@@ -27556,6 +27623,10 @@ function aiFloatUpdateStatus(taskId, statusText) {
 
 function aiFloatNotifyComplete(title) {
     try { showToast('✅ ' + (title || 'תוכן') + ' — הושלם!'); } catch(e) {}
+    // Browser system notification — works even when tab is in the background
+    _aiSystemNotify('✅ ' + (title || 'תוכן') + ' — מוכן במצפן', 'התוכן שלך הוכן בהצלחה. לחץ כדי לפתוח.');
+    // Flash the tab title if the user has switched away
+    _aiTitleFlash('✅ ' + (title || 'תוכן') + ' — מוכן!');
     // Subtle audio cue (two-note chime) — best effort, ignored if blocked
     try {
         var Ctx = window.AudioContext || window.webkitAudioContext;
