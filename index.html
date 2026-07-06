@@ -4995,7 +4995,13 @@ async function loadTrainingPage(program) {
 
     } catch(e) {
         console.error('Training load error:', e);
-        container.innerHTML = '<div class="card" style="padding:20px;color:var(--danger);">שגיאה בטעינת תכנים: ' + e.message + '</div>';
+        if (_isFirestoreAssertionError(e)) {
+            // Firebase SDK internal-state bug — trigger the recovery flow
+            container.innerHTML = '<div class="card" style="padding:20px;text-align:center;"><p style="color:var(--danger);font-weight:700;">⚠️ שגיאת התחברות זמנית לשרת</p><p style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;">מרענן את החיבור אוטומטית…</p></div>';
+            _recoverFirestoreAssertion();
+        } else {
+            container.innerHTML = '<div class="card" style="padding:20px;color:var(--danger);">שגיאה בטעינת תכנים: ' + e.message + ' <button onclick="window.location.reload()" style="margin-top:10px;background:var(--primary);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:inherit;">🔄 רענן</button></div>';
+        }
     }
 }
 
@@ -25826,6 +25832,72 @@ async function splashPasswordLogin() {
 }
 
 // Firestore offline recovery — detects offline state and re-enables network
+// ============================================================
+// Firestore SDK "INTERNAL ASSERTION FAILED" recovery
+// ============================================================
+// This is a known bug in the Firebase JS SDK — the client's in-memory
+// state gets corrupted (usually after long sessions with many listeners
+// or complex online/offline transitions) and every subsequent read/write
+// throws "FIRESTORE (X.Y.Z) INTERNAL ASSERTION FAILED: Unexpected state".
+//
+// The only reliable fix is to wipe the local Firestore cache in IndexedDB
+// and reload the page. We do it automatically the first time we see it.
+var _firestoreAssertionRecovering = false;
+function _isFirestoreAssertionError(err) {
+    if (!err) return false;
+    var msg = String(err && (err.message || err.toString() || ''));
+    return /INTERNAL ASSERTION FAILED|Unexpected state/i.test(msg);
+}
+
+async function _recoverFirestoreAssertion() {
+    if (_firestoreAssertionRecovering) return;
+    _firestoreAssertionRecovering = true;
+    console.warn('[firestore] recovering from INTERNAL ASSERTION — clearing local cache…');
+    // Show a friendly toast
+    try { showToast('משחזר את החיבור לשרת… הדף ייטען מחדש'); } catch(_) {}
+
+    try {
+        if (db && db.terminate) { try { await db.terminate(); } catch(_){} }
+        if (db && db.clearPersistence) { try { await db.clearPersistence(); } catch(_){} }
+    } catch(e) { console.warn('[firestore] terminate/clear failed:', e); }
+
+    // Wipe all Firebase-related IndexedDB databases as a hard reset
+    try {
+        if (indexedDB.databases) {
+            var dbs = await indexedDB.databases();
+            for (var i = 0; i < dbs.length; i++) {
+                var name = dbs[i].name || '';
+                if (/firestore|firebase|firebaseLocalStorage/i.test(name)) {
+                    try { indexedDB.deleteDatabase(name); console.log('[firestore] deleted IDB:', name); } catch(_){}
+                }
+            }
+        } else {
+            // Older browsers — best-guess known DB names
+            ['firestore/[DEFAULT]/ruach-hashmonait/main', 'firebaseLocalStorageDb'].forEach(function(n) {
+                try { indexedDB.deleteDatabase(n); } catch(_) {}
+            });
+        }
+    } catch(e) { console.warn('[firestore] IDB purge failed:', e); }
+
+    // Small delay so the toast is visible, then hard reload
+    setTimeout(function() { window.location.reload(); }, 900);
+}
+
+// Global catcher — the assertion often surfaces as an unhandled rejection
+// from a background listener, not from an awaited call. Catch both paths.
+window.addEventListener('unhandledrejection', function(ev) {
+    if (_isFirestoreAssertionError(ev.reason)) {
+        ev.preventDefault();
+        _recoverFirestoreAssertion();
+    }
+});
+window.addEventListener('error', function(ev) {
+    if (_isFirestoreAssertionError(ev.error || ev.message)) {
+        ev.preventDefault();
+        _recoverFirestoreAssertion();
+    }
+});
+
 function setupFirestoreRecovery() {
     if (!db) return;
     var _firestoreRetrying = false;
